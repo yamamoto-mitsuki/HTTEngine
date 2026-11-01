@@ -31,4 +31,6 @@ public:
 
 	void Fields(ComponentUI& ui) override;
 	void Evaluate(const TimelineFrame& frame, TimelineTrackState& state) const override;
+	std::span<Curve> GetClipCurves(size_t index) override { return clips[index].curves; }
+	bool CanPreview() const override { return true; }
 };

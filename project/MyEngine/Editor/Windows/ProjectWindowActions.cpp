@@ -7,6 +7,7 @@
 #include "MyEngine/ECS/ComponentUI.h"
 #include "MyEngine/Editor/Assets/ProjectFiles.h"
 #include "MyEngine/Editor/Inspector/AssetInspector.h"
+#include "MyEngine/Editor/Timeline/TimelineWindow.h"
 #include "MyEngine/Editor/Widgets/EditorWidgets.h"
 #include "MyEngine/Editor/Windows/CodeWindow.h"
 #include "MyEngine/Editor/Windows/HierarchyWindow.h"
@@ -15,6 +16,7 @@
 #include "MyEngine/AI/AttackTableManager.h"
 #include "MyEngine/Curve/CurveManager.h"
 #include "MyEngine/Physics/PhysicMaterialManager.h"
+#include "MyEngine/Timeline/TimelineManager.h"
 #include "MyEngine/Scene/PrefabManager.h"
 #include "MyEngine/Scene/SceneManager.h"
 #include "MyEngine/String/ConvertString.h"
@@ -59,6 +61,7 @@ void ProjectWindow::DrawItemMenu(const Item& item) {
 			Open(item);
 		}
 	} else if (item.icon == AssetIcon::Scene) {
+		// シーン
 		const SceneManager* sceneManager = SceneManager::GetMain();
 		const bool canOpen = ProjectFiles::IsOpenableScene(item.path, item.icon, item.name) && sceneManager && sceneManager->GetPlayState() == PlayState::Editing;
 		if (ImGui::MenuItem("Open", nullptr, false, canOpen)) {
@@ -89,6 +92,12 @@ void ProjectWindow::DrawItemMenu(const Item& item) {
 			UIScreenEditor::RequestOpen(item.path);
 		}
 		ImGui::SetItemTooltip("停止中に、Scene ビューで画面を編集する（Hierarchy の Done で保存して閉じる）");
+	} else if (ToUtf8(item.path).ends_with(TimelineManager::kFileExtension)) {
+		// Timeline
+		if (ImGui::MenuItem("Open Timeline")) {
+			TimelineWindow::Open(item.path);
+		}
+		ImGui::SetItemTooltip("Timeline ウィンドウで直す（ダブルクリックと同じ）");
 	}
 	ImGui::Separator();
 
@@ -148,6 +157,11 @@ void ProjectWindow::DrawCreateMenu() {
 			CreateAssetFile("NewCurve", CurveManager::kFileExtension, &CurveManager::CreateNewFile);
 		}
 		ImGui::SetItemTooltip("今のフォルダに作ります（時間に対して値がどう変わるかのカーブ）");
+		// Timeline
+		if (ImGui::MenuItem("Timeline")) {
+			CreateAssetFile("NewTimeline", TimelineManager::kFileExtension, &TimelineManager::CreateNewFile);
+		}
+		ImGui::SetItemTooltip("今のフォルダに作ります（時間に沿って Component の値を動かす。Timeline Component で再生する）");
 		// UIScreen
 		if (ImGui::MenuItem("UI Screen")) {
 			CreateUIScreen();
@@ -217,6 +231,10 @@ void ProjectWindow::Open(const Item& item) {
 	// 画面は編集モードで開く（Scene ビューで置く。Hierarchy の Done で保存して閉じる）
 	if (ToUtf8(item.path).ends_with(kUIScreenFileExtension)) {
 		UIScreenEditor::RequestOpen(item.path);
+	}
+	// Timeline は Timeline ウィンドウで直す
+	if (ToUtf8(item.path).ends_with(TimelineManager::kFileExtension)) {
+		TimelineWindow::Open(item.path);
 	}
 	// そのほかのファイルは、今は何もしない（後で：Inspector へドラッグ）
 }

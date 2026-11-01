@@ -149,6 +149,11 @@
     <ClCompile Include="MyEngine\Editor\Inspector\AttackTableEditor.cpp" />
     <ClCompile Include="MyEngine\Editor\Inspector\CurveAssetEditor.cpp" />
     <ClCompile Include="MyEngine\Editor\Inspector\ScriptEditor.cpp" />
+    <ClCompile Include="MyEngine\Editor\Inspector\TimelineAssetEditor.cpp" />
+    <ClCompile Include="MyEngine\Editor\Timeline\TimelineDetails.cpp" />
+    <ClCompile Include="MyEngine\Editor\Timeline\TimelineEditorState.cpp" />
+    <ClCompile Include="MyEngine\Editor\Timeline\TimelineRows.cpp" />
+    <ClCompile Include="MyEngine\Editor\Timeline\TimelineWindow.cpp" />
     <ClCompile Include="MyEngine\Editor\Viewport\ScenePicking.cpp" />
     <ClCompile Include="MyEngine\Editor\Viewport\SceneVisibility.cpp" />
     <ClCompile Include="MyEngine\Editor\Widgets\CurveEditor.cpp" />
@@ -284,6 +289,7 @@
     <ClCompile Include="MyEngine\Systems\Gameplay\TriggerActivatorSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Physics\WindZoneSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\UI\VectorShapeSystem.cpp" />
+    <ClCompile Include="MyEngine\Timeline\TimelineEdit.cpp" />
     <ClCompile Include="MyEngine\Timeline\TimelineEventTrack.cpp" />
     <ClCompile Include="MyEngine\Timeline\TimelineManager.cpp" />
     <ClCompile Include="MyEngine\Timeline\TimelinePlayhead.cpp" />
@@ -347,6 +353,9 @@
     <ClInclude Include="MyEngine\Editor\Inspector\AttackTableEditor.h" />
     <ClInclude Include="MyEngine\Editor\Inspector\CurveAssetEditor.h" />
     <ClInclude Include="MyEngine\Editor\Inspector\ScriptEditor.h" />
+    <ClInclude Include="MyEngine\Editor\Inspector\TimelineAssetEditor.h" />
+    <ClInclude Include="MyEngine\Editor\Timeline\TimelineEditorState.h" />
+    <ClInclude Include="MyEngine\Editor\Timeline\TimelineWindow.h" />
     <ClInclude Include="MyEngine\Editor\Viewport\ScenePicking.h" />
     <ClInclude Include="MyEngine\Editor\Viewport\SceneVisibility.h" />
     <ClInclude Include="MyEngine\Editor\Widgets\CurveEditor.h" />
@@ -523,11 +532,13 @@
     <ClInclude Include="MyEngine\Systems\Gameplay\TriggerActivatorSystem.h" />
     <ClInclude Include="MyEngine\Systems\Physics\WindZoneSystem.h" />
     <ClInclude Include="MyEngine\Systems\UI\VectorShapeSystem.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineEdit.h" />
     <ClInclude Include="MyEngine\Timeline\TimelineEvent.h" />
     <ClInclude Include="MyEngine\Timeline\TimelineEventTrack.h" />
     <ClInclude Include="MyEngine\Timeline\TimelineManager.h" />
     <ClInclude Include="MyEngine\Timeline\TimelinePlayhead.h" />
     <ClInclude Include="MyEngine\Timeline\TimelineSelfTest.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineTimeView.h" />
     <ClInclude Include="MyEngine\Timeline\TimelineTrack.h" />
     <ClInclude Include="MyEngine\Timeline\TimelineValueTrack.h" />
     <ClInclude Include="MyEngine\Time\EngineTime.h" />

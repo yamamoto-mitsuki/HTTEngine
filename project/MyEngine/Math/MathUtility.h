@@ -1,4 +1,5 @@
 #pragma once
+#include <cmath>
 #include <numbers>
 
 #include "MyEngine/Math/Vector2.h"
@@ -13,17 +14,26 @@
 /// 数学系ユーティリティ。行列・ベクトル演算をまとめたnamespace。
 /// </summary>
 namespace MathUtility {
-
 // ===== 定数 =====
-// 円周率と角度の換算。ファイルごとに書かずに、ここの物を使う
-
+// 円周率と角度の換算
 inline constexpr float kPi = std::numbers::pi_v<float>; // 円周率
 inline constexpr float kTwoPi = 2.0f * kPi;              // 1周（ラジアン）
 inline constexpr float kDegToRad = kPi / 180.0f;         // 度 → ラジアン（std::sin・std::cos に渡すとき）
 inline constexpr float kRadToDeg = 180.0f / kPi;         // ラジアン → 度（std::atan2 の答えを度にするとき）
 
-// ===== 行列生成 =====
+// ===== 目盛り =====
+// 目盛りの間隔。1・2・5 × 10 の n 乗 の中で、minStep 以上の一番小さい値（切りの良い数字が並ぶ）
+inline float CalcNiceStep(float minStep) {
+	const float base = std::pow(10.0f, std::floor(std::log10(minStep)));
+	for (const float multiplier : {1.0f, 2.0f, 5.0f}) {
+		if (base * multiplier >= minStep) {
+			return base * multiplier;
+		}
+	}
+	return base * 10.0f;
+}
 
+// ===== 行列生成 =====
 inline Matrix4x4 MakeIdentity4x4() { return ::MakeIdentity4x4(); }
 inline Matrix3x3 MakeIdentity3x3() { return ::MakeIdentity3x3(); }
 inline Matrix4x4 MakeTranslateMatrix(const Vector3& translate) { return ::MakeTranslateMatrix(translate); }

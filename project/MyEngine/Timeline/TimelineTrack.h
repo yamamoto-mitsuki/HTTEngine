@@ -12,6 +12,7 @@
 #include <externals/nlohmann/json.hpp>
 
 #include "MyEngine/Core/Handle.h"
+#include "MyEngine/Curve/Curve.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/Entity.h"
 #include "MyEngine/Timeline/TimelineEvent.h"
@@ -82,6 +83,24 @@ public:
 	virtual size_t GetClipCount() const = 0;
 	virtual float GetEndTime() const = 0; // 一番遅いクリップの終わり（秒）
 
+	// ===== クリップを直す（Timeline ウィンドウ。クリップの型を知らずに直せるように、TimelineTrackOf が書いてくれる）=====
+	virtual float GetClipStart(size_t index) const = 0;
+	virtual float GetClipDuration(size_t index) const = 0;
+	// クリップに長さがあるか（false はイベントのような1点）
+	virtual bool HasClipDuration() const = 0;
+	// 足す。並びが変わるので、足した場所の番号を返す
+	virtual size_t AddClip(float start, float duration) = 0;
+	virtual void RemoveClip(size_t index) = 0;
+	// 時間を変える。並びが変わるので、新しい番号を返す
+	virtual size_t SetClipTime(size_t index, float start, float duration) = 0;
+	// クリップの項目を描く（Fields を呼ぶ）。時間を打ち換えると並びが変わるので、新しい番号を返す
+	virtual size_t DescribeClip(size_t index, ComponentUI& ui) = 0;
+	// クリップの持つカーブ（カーブを持つ種類だけ書く）。書くと Timeline ウィンドウでキーを直せる
+	virtual std::span<Curve> GetClipCurves(size_t /*index*/) { return {}; }
+
+	// プレビューで Evaluate を呼んでよいか。true にするなら、値は ComponentSerializer::SetValue で書く（書いた値を元へ戻せるのは SetValue だけ）
+	virtual bool CanPreview() const { return false; }
+
 	// ===== 再生 =====
 	// Entity ごとの値を作る（再生を始めるときに1回）
 	virtual std::unique_ptr<TimelineTrackState> CreateState() const { return std::make_unique<TimelineTrackState>(); }
@@ -105,6 +124,7 @@ protected:
 /// <para>Fields に足した値はファイルへ書かれる。ComponentUI で書けない値は WriteExtra・ReadExtra で書く</para>
 /// </summary>
 struct TimelineClip {
+	static constexpr bool kHasDuration = true; // 長さがあるか（イベントのような1点なら、継承先で false にする）
 	float start = 0.0f;    // 始まる時間（秒）
 	float duration = 0.0f; // 長さ（秒）
 
@@ -147,8 +167,7 @@ public:
 			Clip clip;
 			clip.ReadExtra(fields, warnings);
 			ComponentSerializer::ReadFields(typeName, [&clip](ComponentUI& ui) { clip.Fields(ui); }, fields, warnings);
-			clip.start = (clip.start >= 0.0f) ? clip.start : 0.0f; // 比べ方を逆にしないのは、NaN もここで 0 にするため
-			clip.duration = (clip.duration >= 0.0f) ? clip.duration : 0.0f;
+			Normalize(clip);
 			clips.push_back(std::move(clip));
 		}
 		std::ranges::stable_sort(clips, {}, &Clip::start);
@@ -162,6 +181,32 @@ public:
 			end = (std::max)(end, clip.GetEnd());
 		}
 		return end;
+	}
+
+	float GetClipStart(size_t index) const override { return clips[index].start; }
+	float GetClipDuration(size_t index) const override { return clips[index].duration; }
+	bool HasClipDuration() const override { return Clip::kHasDuration; }
+
+	size_t AddClip(float start, float duration) override {
+		Clip clip;
+		clip.start = start;
+		clip.duration = duration;
+		return Insert(std::move(clip));
+	}
+
+	void RemoveClip(size_t index) override { clips.erase(clips.begin() + index); }
+
+	size_t SetClipTime(size_t index, float start, float duration) override {
+		Clip clip = std::move(clips[index]);
+		clips.erase(clips.begin() + index);
+		clip.start = start;
+		clip.duration = duration;
+		return Insert(std::move(clip));
+	}
+
+	size_t DescribeClip(size_t index, ComponentUI& ui) override {
+		clips[index].Fields(ui);
+		return SetClipTime(index, clips[index].start, clips[index].duration);
 	}
 
 protected:
@@ -180,6 +225,21 @@ protected:
 				function(*clip);
 			}
 		}
+	}
+
+private:
+	// 時間を 0 以上にする（比べ方を逆にしないのは、NaN もここで 0 にするため）
+	static void Normalize(Clip& clip) {
+		clip.start = (clip.start >= 0.0f) ? clip.start : 0.0f;
+		clip.duration = (Clip::kHasDuration && clip.duration >= 0.0f) ? clip.duration : 0.0f;
+	}
+
+	// 時間の順を守って入れる（同じ時間のクリップの後ろ）
+	size_t Insert(Clip clip) {
+		Normalize(clip);
+		const auto position = std::ranges::upper_bound(clips, clip.start, {}, &Clip::start);
+		const auto inserted = clips.insert(position, std::move(clip));
+		return static_cast<size_t>(inserted - clips.begin());
 	}
 };
 

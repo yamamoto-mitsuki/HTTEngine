@@ -26,7 +26,8 @@
 #include "MyEngine/Editor/Gizmos/LightGizmo.h"
 #include "MyEngine/Editor/History/EditorHistory.h"
 #include "MyEngine/Editor/Viewport/EditorViewport.h"
-#include "MyEngine/Editor/Widgets/ImeInput.h"
+// Timeline
+#include "MyEngine/Editor/Timeline/TimelineWindow.h"
 // Windows
 #include "MyEngine/Editor/Windows/CodeWindow.h"
 #include "MyEngine/Editor/Windows/AttackTableWindow.h"
@@ -34,8 +35,10 @@
 #include "MyEngine/Editor/Windows/InspectorWindow.h"
 #include "MyEngine/Editor/Windows/ProjectWindow.h"
 #include "MyEngine/Editor/Windows/SceneDialogs.h"
-#include "MyEngine/Editor/Widgets/FontPreview.h"
 #include "MyEngine/Editor/Windows/SettingsWindow.h"
+// Widgets
+#include "MyEngine/Editor/Widgets/ImeInput.h"
+#include "MyEngine/Editor/Widgets/FontPreview.h"
 #include "MyEngine/Graphics/GPU/DirectXCommon.h"
 #include "MyEngine/Window/Win32Window.h"
 
@@ -244,6 +247,9 @@ void ImGuiManager::Begin() {
 
 	// --- シーンのファイルの確認（保存しますか？・名前を付けて保存など） ---
 	SceneDialogs::Draw();
+
+	// --- Timeline を直す ---
+	TimelineWindow::Draw();
 
 	// --- Undo・Redoのショートカット ---
 	HandleGlobalShortcuts();

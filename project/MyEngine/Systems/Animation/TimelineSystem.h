@@ -49,6 +49,18 @@ public:
 	// ===== 外から読む =====
 	static TimelineStatus GetStatus(Handle<Entity> entity);
 
+	// ===== プレビュー（エディタの停止中に、再生せずに値を見る）=====
+	/// <summary>
+	/// 次の Update で、time 秒の値を仮に書く。見るのは1フレームだけなので、見続ける間は毎フレーム呼ぶ（呼ばなくなれば、それだけで元の値のまま）
+	/// <para>値を書くのは Update から描画の要求を積み終わる FinishPreview までの間だけ。フレームの頭の保存・Undo と、後の ImGui のウィンドウは元の値を見る</para>
+	/// </summary>
+	/// <param name="owner">再生する Entity（トラックの対象はここからのパス）</param>
+	/// <param name="timeline">見る Timeline の番号</param>
+	/// <param name="time">見る時間（秒）</param>
+	static void RequestPreview(Handle<Entity> owner, uint32_t timeline, float time);
+	// 仮に書いた値を元へ戻す。描画の要求を全部積んだ後に、1フレームに1回呼ぶ
+	static void FinishPreview();
+
 	// ===== イベントを受け取る =====
 	// Script は OnTimelineEvent を書く。Script 以外で受け取りたいときに、ここへ関数を登録する（登録した関数は Release まで呼ばれる。同じ関数は1回だけ）
 	using EventListener = void (*)(const TimelineEvent& event);

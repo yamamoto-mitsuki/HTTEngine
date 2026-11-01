@@ -49,6 +49,7 @@
 #include "MyEngine/Editor/History/EditorHistory.h"
 #include "MyEngine/Editor/Inspector/AttackTableEditor.h"
 #include "MyEngine/Editor/Inspector/CurveAssetEditor.h"
+#include "MyEngine/Editor/Inspector/TimelineAssetEditor.h"
 #include "MyEngine/Editor/Windows/UIScreenEditor.h"
 #endif
 
@@ -92,6 +93,7 @@ void EngineSystems::Initialize() {
 	UIScreenEditor::Initialize(); // .uiscreen のファイルを Inspector に出す（Edit UI Screen のボタン）
 	AttackTableEditor::Initialize(); // .attacktable のファイルを Inspector で直す
 	CurveAssetEditor::Initialize();  // .curve のファイルを Inspector で直す
+	TimelineAssetEditor::Initialize(); // .timeline のファイルを Inspector に出す（開くボタン）
 #endif
 
 	// --- Script とゲーム固有の Component ---
@@ -215,4 +217,5 @@ void EngineSystems::Draw(Camera* gameCamera, IBLEnvironment* gameEnvironment) {
 	WindZoneSystem::DrawGizmos(gameCamera); // 風の範囲と向き（Collider のギズモと一緒に出す・消す）
 	AnimationSystem::DrawGizmos(gameCamera);
 #endif
+	TimelineSystem::FinishPreview(); // Timeline のプレビューの値を元へ戻す（描画の要求を積んだ後。この後の ImGui と、次のフレームの頭の保存・Undo は元の値を見る）
 }

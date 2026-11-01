@@ -21,6 +21,7 @@ struct Entry {
 	std::function<bool(Handle<Entity>, ComponentUI&)> save;  // 持っていれば書いてtrue
 	std::function<void(Handle<Entity>, ComponentUI&)> load;  // 読んでその場で付ける
 	std::function<bool(Handle<Entity>, ComponentUI&)> visit; // 持っていれば本物に見せ方の関数を呼んで true
+	ComponentSerializer::CaptureFunction capture; // 本物の値を写して、戻す関数を返す（空なら JSON で写す）
 };
 
 // 名前順に並べて持つ。関数の中のstaticなので、ゲームのCOMPONENT（mainより前に作られる）との初期化の順番に左右されない
@@ -334,13 +335,125 @@ private:
 	const ComponentValue& value_; // 書く値
 	bool isWritten_ = false;      // 書いた
 };
+
+//=============================================================================
+// 値を読む係（見せ方の関数に渡すと、数で表せる項目を全部集める）
+//=============================================================================
+class ValueListUI final : public ComponentUI {
+public:
+	/// <summary>
+	/// 集めた項目1つ
+	/// </summary>
+	struct Item {
+		ComponentValueField field; // 名前と形
+		ComponentValue value;      // 今の値
+	};
+
+	const std::vector<Item>& GetItems() const { return items_; }
+
+	void Field(const char* label, float& value, FieldStyle) override { Add(label, &value, 1, false); }
+	void Field(const char* label, int& value, FieldStyle) override {
+		const float number = static_cast<float>(value);
+		Add(label, &number, 1, false);
+	}
+	void Field(const char* label, bool& value, FieldStyle) override {
+		const float number = value ? 1.0f : 0.0f;
+		Add(label, &number, 1, false);
+	}
+	void Field(const char* label, Vector2& value, FieldStyle) override { Add(label, &value.x, 2, false); }
+	void Field(const char* label, Vector3& value, FieldStyle) override { Add(label, &value.x, 3, false); }
+	void Field(const char* label, Vector4& value, FieldStyle) override { Add(label, &value.x, 4, false); }
+	void ColorField(const char* label, Vector3& rgb) override { Add(label, &rgb.x, 3, true); }
+	void ColorField(const char* label, Vector4& rgba) override { Add(label, &rgba.x, 4, true); }
+
+	// 数で表せない項目は集めない（ValueWriterUI が書けない物と同じ）
+	void Field(const char*, EntityRef&, FieldStyle) override {}
+	void Field(const char*, std::string&, FieldStyle) override {}
+	void AssetField(const char*, uint32_t&, AssetType, FieldStyle) override {}
+	void Label(const char*) override {}
+	void Separator(const char*) override {}
+	void Space() override {}
+	bool Button(const char*) override { return false; }
+
+protected:
+	void EnumField(const char*, size_t&, std::span<const std::string_view>, FieldStyle) override {}
+
+private:
+	void Add(const char* label, const float* values, size_t count, bool isColor) {
+		const std::string_view text(label);
+		Item item;
+		item.field.key = KeyOf(label);
+		item.field.label = std::string(text.substr(0, text.find("###")));
+		item.field.channelCount = count;
+		item.field.isColor = isColor;
+		for (size_t i = 0; i < count; ++i) {
+			item.value.channels[i] = values[i];
+			item.value.isUsed[i] = true;
+		}
+		items_.push_back(std::move(item));
+	}
+
+	std::vector<Item> items_; // 集めた項目（見せ方の関数の順）
+};
+
+//=============================================================================
+// 値を一時的に書く（Timeline のプレビュー）
+//=============================================================================
+/// <summary>
+/// 写した Component 1つ
+/// </summary>
+struct CapturedComponent {
+	Handle<Entity> entity;
+	const Entry* entry = nullptr;
+	ComponentSerializer::RestoreFunction restore; // 写した値へ戻す
+};
+
+std::vector<CapturedComponent> captured; // 写した Component（同じ物は1回だけ）
+bool isCapturing = false;                // SetValue の前に写すか
+
+// ===== JSON で写す（型が消えている Script の分）=====
+ComponentSerializer::RestoreFunction CaptureAsJson(const Entry& entry, Handle<Entity> entity) {
+	std::set<std::string> warnings;
+	SceneJson fields = SceneJson::object();
+	JsonWriterUI writer(fields, entry.name, warnings);
+	if (!entry.save(entity, writer)) {
+		return {}; // 持っていない
+	}
+	return [&entry, entity, fields = std::move(fields)] {
+		std::set<std::string> ignored;
+		JsonReaderUI reader(fields, entry.name, ignored);
+		entry.visit(entity, reader);
+	};
+}
+
+// ===== まだ写していなければ写す =====
+void CaptureOnce(const Entry& entry, Handle<Entity> entity) {
+	const bool isCaptured = std::ranges::any_of(captured, [&](const CapturedComponent& item) { return item.entity == entity && item.entry == &entry; });
+	if (isCaptured) {
+		return;
+	}
+	ComponentSerializer::RestoreFunction restore = entry.capture ? entry.capture(entity) : CaptureAsJson(entry, entity);
+	if (restore) {
+		captured.push_back({entity, &entry, std::move(restore)});
+	}
+}
+
+// ===== Component の項目を全部集める（持っていなければ空）=====
+std::vector<ValueListUI::Item> ListValues(Handle<Entity> entity, std::string_view typeName) {
+	ValueListUI list;
+	const Entry* entry = FindEntry(typeName);
+	if (entry != nullptr) {
+		entry->save(entity, list); // save は写しに呼ぶので、本物を変えない
+	}
+	return list.GetItems();
+}
 } // namespace
 
 
 //=============================================================================
 // 登録
 //=============================================================================
-void ComponentSerializer::RegisterErased(const char* name, SaveFunction save, LoadFunction load, SaveFunction visit) {
+void ComponentSerializer::RegisterErased(const char* name, SaveFunction save, LoadFunction load, SaveFunction visit, CaptureFunction capture) {
 	std::vector<Entry>& entries = Entries();
 	// 決まった順番の場所に入れる（IsBefore）
 	const auto position = std::lower_bound(entries.begin(), entries.end(), std::string_view(name), [](const Entry& entry, std::string_view key) { return IsBefore(entry.name, key); });
@@ -348,7 +461,7 @@ void ComponentSerializer::RegisterErased(const char* name, SaveFunction save, Lo
 		LogManager::Error(std::format("Componentの名前 \"{}\" が2つ登録されました。後の方は保存されません", name));
 		return;
 	}
-	entries.insert(position, Entry{name, std::move(save), std::move(load), std::move(visit)});
+	entries.insert(position, Entry{name, std::move(save), std::move(load), std::move(visit), std::move(capture)});
 }
 
 //=============================================================================
@@ -388,11 +501,58 @@ void ComponentSerializer::Load(Handle<Entity> entity, const SceneJson& in, std::
 //=============================================================================
 ComponentValueResult ComponentSerializer::SetValue(Handle<Entity> entity, std::string_view typeName, std::string_view key, const ComponentValue& value) {
 	const Entry* entry = FindEntry(typeName);
+	if (entry != nullptr && isCapturing) {
+		CaptureOnce(*entry, entity);
+	}
 	ValueWriterUI writer(key, value);
 	if (entry == nullptr || !entry->visit(entity, writer)) {
 		return ComponentValueResult::NoComponent;
 	}
 	return writer.IsWritten() ? ComponentValueResult::Written : ComponentValueResult::NoField;
+}
+
+ComponentValueResult ComponentSerializer::GetValue(Handle<Entity> entity, std::string_view typeName, std::string_view key, ComponentValue& out) {
+	const Entry* entry = FindEntry(typeName);
+	ValueListUI list;
+	if (entry == nullptr || !entry->save(entity, list)) {
+		return ComponentValueResult::NoComponent;
+	}
+	const std::vector<ValueListUI::Item>& items = list.GetItems();
+	const auto found = std::ranges::find_if(items, [key](const ValueListUI::Item& item) { return item.field.key == key; });
+	if (found == items.end()) {
+		return ComponentValueResult::NoField;
+	}
+	out = found->value;
+	return ComponentValueResult::Written;
+}
+
+std::vector<std::string> ComponentSerializer::GetComponentNames(Handle<Entity> entity) {
+	std::vector<std::string> names;
+	for (const Entry& entry : Entries()) {
+		ValueListUI list; // 持っているかを調べるだけ（読んだ値は使わない）
+		if (entry.save(entity, list)) {
+			names.push_back(entry.name);
+		}
+	}
+	return names;
+}
+
+std::vector<ComponentValueField> ComponentSerializer::GetValueFields(Handle<Entity> entity, std::string_view typeName) {
+	std::vector<ComponentValueField> fields;
+	for (const ValueListUI::Item& item : ListValues(entity, typeName)) {
+		fields.push_back(item.field);
+	}
+	return fields;
+}
+
+void ComponentSerializer::BeginValueCapture() { isCapturing = true; }
+
+void ComponentSerializer::RestoreCapturedValues() {
+	isCapturing = false;
+	for (const CapturedComponent& item : captured) {
+		item.restore();
+	}
+	captured.clear();
 }
 
 

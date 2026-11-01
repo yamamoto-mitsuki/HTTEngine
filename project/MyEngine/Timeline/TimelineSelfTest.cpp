@@ -1,22 +1,29 @@
 #include "TimelineSelfTest.h"
 
+#include <set>
+#include <array>
 #include <cmath>
 #include <format>
 #include <limits>
 #include <memory>
-#include <set>
-#include <string>
 #include <vector>
+#include <string>
+#include <cstring>
+#include <algorithm>
+#include <filesystem>
 
 #include <externals/nlohmann/json.hpp>
 
+#include "MyEngine/ECS/EntityManager.h"
+#include "MyEngine/Diagnostics/MyAssert.h"
+#include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Components/Core/TransformComponent.h"
 #include "MyEngine/Components/UI/ImageComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/EntityManager.h"
+#include "MyEngine/Systems/Animation/TimelineSystem.h"
+#include "MyEngine/Timeline/TimelineEdit.h"
 #include "MyEngine/Timeline/TimelineEventTrack.h"
 #include "MyEngine/Timeline/TimelineManager.h"
+#include "MyEngine/Timeline/TimelineTimeView.h"
 #include "MyEngine/Timeline/TimelineValueTrack.h"
 
 namespace {
@@ -343,6 +350,254 @@ void TestJson(Tester& t) {
 	t.Check(TimelineTrackRegistry::Create("NotRegistered") == nullptr, "知らない名前は作らない");
 }
 
+// ===== 値を読む（SetValue の逆）=====
+void TestGetValue(Tester& t, Handle<Entity> root, Handle<Entity> panel, Handle<Entity> title) {
+	SetChannel(title, "Image", "color", 3, 0.75f);
+	ComponentValue value;
+	t.Check(ComponentSerializer::GetValue(title, "Image", "color", value) == ComponentValueResult::Written, "読める");
+	t.Near(value.channels[3], 0.75f, "色の a を読む");
+	t.Check(value.isUsed[3], "読んだ成分に印が付く");
+	ComponentValue none;
+	t.Check(ComponentSerializer::GetValue(title, "Unknown", "color", none) == ComponentValueResult::NoComponent, "知らない Component");
+	t.Check(ComponentSerializer::GetValue(title, "Image", "unknown", none) == ComponentValueResult::NoField, "無い項目");
+
+	const std::vector<std::string> names = ComponentSerializer::GetComponentNames(title);
+	t.Check(std::ranges::find(names, std::string("Image")) != names.end() && std::ranges::find(names, std::string("Transform")) != names.end(), "持っている Component の名前");
+	t.Check(std::ranges::find(names, std::string("Text")) == names.end(), "持っていない Component は出ない");
+
+	const std::vector<ComponentValueField> fields = ComponentSerializer::GetValueFields(title, "Image");
+	const auto color = std::ranges::find(fields, std::string("color"), &ComponentValueField::key);
+	t.Check(color != fields.end() && color->channelCount == 4 && color->isColor, "色の項目は 4 成分の色");
+	t.Check(ComponentSerializer::GetValueFields(title, "Text").empty(), "持っていない Component の項目は空");
+
+	t.Check(EntityManager::MakePath(root, title) == "Panel/Title", "孫までのパス");
+	t.Check(EntityManager::MakePath(panel, title) == "Title", "子までのパス");
+	t.Check(EntityManager::MakePath(root, root) == "", "自分は空のパス");
+	t.Check(!EntityManager::MakePath(title, root).has_value(), "子孫でなければ作らない");
+	t.Check(EntityManager::FindByPath(root, *EntityManager::MakePath(root, title)) == title, "FindByPath で同じ Entity に戻る");
+}
+
+// ===== プレビュー：書いた値が1ビットも変わらず戻る =====
+void TestCapture(Tester& t, Handle<Entity> title) {
+	// 度とクォータニオンを行き来するとずれる回転を入れておく
+	SetChannel(title, "Transform", "rotation", 0, 33.3f);
+	SetChannel(title, "Transform", "rotation", 1, 71.7f);
+	SetChannel(title, "Transform", "rotation", 2, -123.4f);
+	SetChannel(title, "Image", "color", 3, 1.0f);
+	const TransformComponent transformBefore = *EntityManager::Get<TransformComponent>(title);
+	bool isSame = true;
+	for (int i = 0; i < 1000; ++i) { // 毎フレーム繰り返すので、たまったずれも見る
+		ComponentSerializer::BeginValueCapture();
+		SetChannel(title, "Transform", "rotation", 1, 10.0f);
+		SetChannel(title, "Transform", "translation", 0, 5.0f);
+		SetChannel(title, "Image", "color", 3, 0.25f);
+		isSame = isSame && EntityManager::Get<ImageComponent>(title)->color.w == 0.25f; // 書いている間は書いた値
+		ComponentSerializer::RestoreCapturedValues();
+		const TransformComponent& now = *EntityManager::Get<TransformComponent>(title);
+		isSame = isSame && std::memcmp(&now.rotation, &transformBefore.rotation, sizeof(now.rotation)) == 0 && now.translation.x == transformBefore.translation.x;
+		isSame = isSame && EntityManager::Get<ImageComponent>(title)->color.w == 1.0f;
+	}
+	t.Check(isSame, "1000 回書いて戻しても、1ビットも変わらない");
+	SetChannel(title, "Image", "color", 3, 0.5f);
+	t.Near(EntityManager::Get<ImageComponent>(title)->color.w, 0.5f, "戻した後の SetValue はそのまま残る");
+	SetChannel(title, "Image", "color", 3, 1.0f);
+}
+
+// ===== プレビュー：TimelineSystem を通す =====
+void TestPreview(Tester& t, Handle<Entity> root, Handle<Entity> title) {
+	const std::filesystem::path path = std::filesystem::temp_directory_path() / "MyEngineTimelineSelfTest.timeline";
+	std::filesystem::remove(path);
+	t.Check(TimelineManager::CreateNewFile(path), "確認用のファイルを作る");
+	const uint32_t handle = TimelineManager::Load(path);
+	TimelineManager::ApplyText(handle, "{}"); // 読み込み済みの中身が残っていても、空から始める
+	Timeline* timeline = TimelineManager::GetForEdit(handle);
+	auto* track = static_cast<TimelineValueTrack*>(timeline->tracks[TimelineEdit::AddTrack(*timeline, "TimelineValueTrack")].get());
+	track->target = "Panel/Title";
+	track->component = "Image";
+	track->property = "color";
+	const size_t clip = track->AddClip(0.0f, 1.0f);
+	TimelineEdit::FillFlat(track->GetClipCurves(clip)[3], 0.25f, 1.0f);
+	TimelineManager::MarkChanged(handle);
+
+	const auto alpha = [title] { return EntityManager::Get<ImageComponent>(title)->color.w; };
+	TimelineSystem::RequestPreview(root, handle, 0.5f);
+	TimelineSystem::Update(false);
+	t.Near(alpha(), 0.25f, "Update の後はプレビューの値");
+	TimelineSystem::FinishPreview();
+	t.Near(alpha(), 1.0f, "FinishPreview で元の値");
+
+	TimelineSystem::Update(false);
+	t.Near(alpha(), 1.0f, "頼まなければ書かない（1回の要求は1フレームだけ）");
+	TimelineSystem::FinishPreview();
+
+	track->isMuted = true;
+	TimelineSystem::RequestPreview(root, handle, 0.5f);
+	TimelineSystem::Update(false);
+	t.Near(alpha(), 1.0f, "Mute のトラックは書かない");
+	TimelineSystem::FinishPreview();
+	track->isMuted = false;
+
+	TimelineSystem::RequestPreview(root, handle, 0.5f);
+	TimelineSystem::Update(true);
+	t.Near(alpha(), 1.0f, "Play 中はプレビューしない");
+	TimelineSystem::Update(false);
+
+	TimelineSystem::RequestPreview({}, handle, 0.5f);
+	TimelineSystem::Update(false);
+	TimelineSystem::FinishPreview();
+	t.Near(alpha(), 1.0f, "無効な Entity のプレビューは何もしない");
+
+	std::filesystem::remove(path);
+}
+
+// ===== トラックとクリップを直す =====
+void TestEditTracks(Tester& t) {
+	Timeline timeline;
+	t.Check(TimelineEdit::AddTrack(timeline, "NotRegistered") == -1, "知らない種類は足さない");
+	for (const char* name : {"a", "b", "c"}) {
+		timeline.tracks[TimelineEdit::AddTrack(timeline, "TimelineEventTrack")]->name = name;
+	}
+	const auto order = [&timeline] {
+		std::string text;
+		for (const std::unique_ptr<TimelineTrack>& track : timeline.tracks) {
+			text += track->name;
+		}
+		return text;
+	};
+	t.Check(TimelineEdit::MoveTrack(timeline, 0, 2) == 2 && order() == "bca", "後ろへ動かす");
+	t.Check(TimelineEdit::MoveTrack(timeline, 2, 0) == 0 && order() == "abc", "前へ動かす");
+	t.Check(TimelineEdit::MoveTrack(timeline, 1, 99) == 2 && order() == "acb", "範囲の外は端へ");
+	TimelineEdit::RemoveTrack(timeline, 1);
+	t.Check(order() == "ab", "消す");
+	TimelineEdit::RemoveTrack(timeline, 9);
+	t.Check(order() == "ab", "知らない番号は何もしない");
+
+	TimelineValueTrack track;
+	t.Check(track.AddClip(2.0f, 1.0f) == 0, "最初のクリップ");
+	t.Check(track.AddClip(1.0f, 0.5f) == 0, "前に足すと 0 番");
+	t.Check(track.AddClip(3.0f, 1.0f) == 2, "後ろに足す");
+	t.Check(track.SetClipTime(0, 5.0f, 2.0f) == 2 && track.GetClipStart(2) == 5.0f && track.GetClipDuration(2) == 2.0f, "追い越すと番号が変わる");
+	t.Check(track.GetClipStart(0) == 2.0f && track.GetClipStart(1) == 3.0f, "ほかのクリップは時間の順のまま");
+	t.Check(track.SetClipTime(0, -3.0f, kNaN) == 0 && track.GetClipStart(0) == 0.0f && track.GetClipDuration(0) == 0.0f, "負の時間と NaN は 0");
+	track.RemoveClip(0);
+	t.Check(track.GetClipCount() == 2, "クリップを消す");
+	t.Check(track.HasClipDuration() && !track.GetClipCurves(0).empty(), "値のクリップは長さとカーブがある");
+
+	TimelineEventTrack events;
+	t.Check(!events.HasClipDuration(), "イベントは1点");
+	t.Check(events.AddClip(1.0f, 5.0f) == 0 && events.GetClipDuration(0) == 0.0f, "イベントの長さは 0 のまま");
+	t.Check(events.GetClipCurves(0).empty(), "イベントにカーブは無い");
+	t.Check(!events.CanPreview() && track.CanPreview(), "プレビューするのは値のトラックだけ");
+
+	TimelineValueTrack gaps;
+	gaps.AddClip(2.0f, 1.0f);
+	t.Near(TimelineEdit::CalcNewClipDuration(gaps, 1.5f), 0.5f, "次のクリップの手前まで");
+	t.Near(TimelineEdit::CalcNewClipDuration(gaps, 0.0f), TimelineEdit::kDefaultClipDuration, "離れていれば既定の長さ");
+	t.Near(TimelineEdit::CalcNewClipDuration(gaps, 3.0f), TimelineEdit::kDefaultClipDuration, "後ろのクリップが無ければ既定の長さ");
+}
+
+// ===== キーを直す =====
+void TestEditKeys(Tester& t) {
+	std::array<Curve, 2> curves;
+	TimelineEdit::FillFlat(curves[0], 2.0f, 1.0f);
+	t.Check(curves[0].GetKeys().size() == 2 && curves[0].GetKeys()[1].time == 1.0f && curves[0].GetKeys()[1].value == 2.0f, "平らな線は2つのキー");
+	Curve single;
+	TimelineEdit::FillFlat(single, 3.0f, 0.0f);
+	t.Check(single.GetKeys().size() == 1, "長さ 0 ならキーは1つ");
+
+	curves[1].AddKey(0.5f, 7.0f);
+	const std::vector<float> times = TimelineEdit::CollectKeyTimes(curves);
+	t.Check(times.size() == 3 && times[1] == 0.5f, "別の成分のキーも時間の順に集める");
+	curves[1].AddKey(1.0f + TimelineEdit::kSameKeyTime * 0.5f, 7.0f);
+	t.Check(TimelineEdit::CollectKeyTimes(curves).size() == 3, "ほとんど同じ時間のキーは1つに見せる");
+
+	Curve shape;
+	shape.AddKey(0.0f, 0.0f);
+	shape.AddKey(1.0f, 1.0f);
+	const float middle = shape.Evaluate(0.3f);
+	TimelineEdit::AddKeys(std::span(&shape, 1), 0.5f);
+	t.Check(shape.GetKeys().size() == 3, "キーが増える");
+	t.Near(shape.Evaluate(0.3f), middle, "足しても形は変わらない");
+	Curve empty;
+	TimelineEdit::AddKeys(std::span(&empty, 1), 0.5f);
+	t.Check(empty.GetKeys().empty(), "キーの無い成分には足さない");
+
+	TimelineEdit::MoveKeys(curves, 1.0f, 0.75f);
+	t.Check(curves[0].GetKeys()[1].time == 0.75f, "1つの成分のキーを動かす");
+	t.Check(curves[1].GetKeys()[1].time == 0.75f, "同じ時間の別の成分のキーも動く");
+	TimelineEdit::MoveKeys(curves, 0.75f, 0.25f);
+	t.Check(curves[1].GetKeys()[0].time == 0.25f && curves[1].GetKeys()[1].time == 0.5f, "追い越すと並びが直る");
+
+	TimelineEdit::RemoveKeys(curves, 0.25f);
+	t.Check(curves[0].GetKeys().size() == 1 && curves[1].GetKeys().size() == 1, "同じ時間のキーを全部の成分で消す");
+}
+
+// ===== Undo の文字 =====
+void TestEditText(Tester& t) {
+	const std::filesystem::path path = std::filesystem::temp_directory_path() / "MyEngineTimelineSelfTest2.timeline";
+	std::filesystem::remove(path);
+	TimelineManager::CreateNewFile(path);
+	const uint32_t handle = TimelineManager::Load(path);
+	TimelineManager::ApplyText(handle, "{}"); // 読み込み済みの中身が残っていても、空から始める
+	Timeline* timeline = TimelineManager::GetForEdit(handle);
+	const std::string empty = TimelineManager::ToText(handle);
+
+	const int index = TimelineEdit::AddTrack(*timeline, "TimelineValueTrack");
+	TimelineTrack& track = *timeline->tracks[index];
+	track.name = "Edited";
+	const size_t clip = track.AddClip(0.5f, 2.0f);
+	TimelineEdit::FillFlat(track.GetClipCurves(clip)[1], 3.0f, 2.0f);
+	const std::string edited = TimelineManager::ToText(handle);
+	t.Check(edited != empty, "直すと文字が変わる");
+
+	const uint32_t revision = TimelineManager::GetRevision(handle);
+	t.Check(TimelineManager::ApplyText(handle, empty), "前の文字へ戻す");
+	t.Check(TimelineManager::GetRevision(handle) == revision + 1, "戻すと版が増える");
+	t.Check(TimelineManager::Get(handle)->tracks.empty() && TimelineManager::ToText(handle) == empty, "戻した中身");
+	t.Check(TimelineManager::ApplyText(handle, edited), "やり直す");
+	t.Check(TimelineManager::ToText(handle) == edited, "文字で往復しても同じ");
+	const TimelineTrack& restored = *TimelineManager::Get(handle)->tracks[0];
+	t.Check(restored.name == "Edited" && restored.GetClipCount() == 1, "トラックとクリップが戻る");
+
+	t.Check(!TimelineManager::ApplyText(handle, "{ broken"), "壊れた文字は読まない");
+	t.Check(TimelineManager::ToText(handle) == edited, "読めなければ中身は変わらない");
+	t.Check(!TimelineManager::ApplyText(0, empty), "知らない番号は読まない");
+	std::filesystem::remove(path);
+}
+
+// ===== 見ている時間の範囲 =====
+void TestTimeView(Tester& t) {
+	TimelineTimeView view;
+	view.pixelsPerSecond = 100.0f;
+	view.scrollTime = 2.0f;
+	t.Near(view.ToPixel(3.0f), 100.0f, "時間 → ピクセル");
+	t.Near(view.ToTime(100.0f), 3.0f, "ピクセル → 時間");
+	view.ZoomAt(100.0f, 2.0f);
+	t.Near(view.pixelsPerSecond, 200.0f, "拡大する");
+	t.Near(view.ToTime(100.0f), 3.0f, "マウスの下の時間は動かない");
+	view.ZoomAt(0.0f, 1000000.0f);
+	t.Check(view.pixelsPerSecond == TimelineTimeView::kMaxPixelsPerSecond, "拡大の上限");
+	view.ZoomAt(0.0f, 0.000001f);
+	t.Check(view.pixelsPerSecond == TimelineTimeView::kMinPixelsPerSecond, "縮小の下限");
+	view.scrollTime = 1.0f;
+	view.ZoomAt(100000.0f, 2.0f);
+	t.Check(view.scrollTime >= 0.0f, "左端は 0 秒より前へ行かない");
+	view.Pan(-1000000000.0f);
+	t.Check(view.scrollTime == 0.0f, "左へ動かしても 0 秒まで");
+	view.Fit(10.0f, 1100.0f);
+	t.Near(view.pixelsPerSecond, 100.0f, "全体が入る");
+	t.Check(view.scrollTime == 0.0f, "全体を見ると左端は 0 秒");
+	view.pixelsPerSecond = 100.0f;
+	t.Near(view.CalcTickStep(60.0f), 1.0f, "60 ピクセル以上の切りの良い間隔");
+	view.pixelsPerSecond = 400.0f;
+	t.Near(view.CalcTickStep(60.0f), 0.2f, "広げると間隔が細かくなる");
+
+	t.Near(SnapTime(0.26f, 0.1f), 0.3f, "目盛りへそろえる");
+	t.Near(SnapTime(0.24f, 0.1f), 0.2f, "近い方へそろえる");
+	t.Near(SnapTime(1.0f / 30.0f * 7.4f, 1.0f / 30.0f), 7.0f / 30.0f, "1/30 秒へそろえる");
+	t.Check(SnapTime(0.26f, 0.0f) == 0.26f, "0 ならそろえない");
+}
+
 // ===== root・Panel・Title（Image 付き）の親子を作る =====
 Handle<Entity> MakeTestEntities(Handle<Entity>& panel, Handle<Entity>& title) {
 	const Handle<Entity> root = EntityManager::Create("TimelineTest");
@@ -371,6 +626,13 @@ void TimelineSelfTest::Run() {
 	TestValueTrack(tester, rootA, titleA, rootB, titleB);
 	TestSetValue(tester, titleA);
 	TestJson(tester);
+	TestGetValue(tester, rootA, panelA, titleA);
+	TestCapture(tester, titleA);
+	TestPreview(tester, rootA, titleA);
+	TestEditTracks(tester);
+	TestEditKeys(tester);
+	TestEditText(tester);
+	TestTimeView(tester);
 
 	// 作った Entity をすぐ消す（シーンを作る前なので、残さない）
 	EntityManager::Destroy(rootA);

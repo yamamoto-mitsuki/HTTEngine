@@ -7,6 +7,7 @@
 /// イベントのクリップ（長さは無い。start の時間ちょうどの1点）
 /// </summary>
 struct TimelineEventClip : TimelineClip {
+	static constexpr bool kHasDuration = false; // 1点
 	std::string name;  // イベントの名前
 	std::string value; // イベントに付ける文字
 

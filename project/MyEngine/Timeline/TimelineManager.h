@@ -50,6 +50,10 @@ public:
 	// 中身を直したと知らせる。版が1つ増えて、再生中の Entity がトラックの値を作り直す
 	static void MarkChanged(uint32_t handle);
 
+	// 中身を JSON の文字にする（Undo の前後の値に使う。Timeline は unique_ptr を持っていて写せないので、文字で写す）
+	static std::string ToText(uint32_t handle);
+	// JSON の文字から中身を作り直す（ToText の逆。版も1つ増える。読めなければ何も変えず false）
+	static bool ApplyText(uint32_t handle, const std::string& text);
 	// 中身の版（TimelineSystem が、作り直すかを決めるのに使う）
 	static uint32_t GetRevision(uint32_t handle);
 

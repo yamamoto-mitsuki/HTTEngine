@@ -1,9 +1,11 @@
 #include "TimelineSystem.h"
 
-#include <algorithm>
-#include <cstdint>
 #include <memory>
 #include <vector>
+#include <cstdint>
+#include <utility>
+#include <optional>
+#include <algorithm>
 
 #include "MyEngine/Components/Animation/TimelineComponent.h"
 #include "MyEngine/ECS/GameComponent.h"
@@ -30,6 +32,18 @@ std::vector<TimelineRange> passedRanges;              // このフレームに�
 std::vector<TimelineEvent> pendingEvents;             // 全部の値を書いた後に呼ぶイベント
 std::vector<TimelineSystem::EventListener> listeners; // AddEventListener の関数
 bool isRunning = false;                               // 再生中（エディタの停止中は false）
+
+/// <summary>
+/// 頼まれたプレビュー
+/// </summary>
+struct PreviewRequest {
+	Handle<Entity> owner;  // 再生する Entity
+	uint32_t timeline = 0; // 見る Timeline
+	float time = 0.0f;     // 見る時間（秒）
+};
+std::optional<PreviewRequest> previewRequest; // 次の Update で見る物（毎フレーム頼まれる）
+TimelineRuntime previewRuntime;               // プレビューのトラックの値（毎フレーム作らないように持っておく）
+bool isPreviewApplied = false;                // 値を仮に書いている（FinishPreview で戻す）
 
 // ===== その Entity の実行中の値（まだ作っていなければ nullptr）=====
 TimelineRuntime* FindRuntime(Handle<Entity> entity) {
@@ -115,6 +129,37 @@ void SendEvents() {
 	pendingEvents.clear();
 }
 
+// ===== プレビュー：今の値を写して、見る時間の値を書く =====
+void ApplyPreview(const PreviewRequest& request) {
+	const Timeline* timeline = TimelineManager::Get(request.timeline);
+	if (timeline == nullptr || !EntityManager::IsAlive(request.owner)) {
+		return;
+	}
+	// --- トラックの値を用意する（警告は出さない。キーを動かすたびに作り直すのでログが埋まる。問題は Timeline ウィンドウの行に出す）---
+	const bool isSameRuntime = previewRuntime.entity == request.owner && previewRuntime.timeline == request.timeline && previewRuntime.revision == TimelineManager::GetRevision(request.timeline);
+	if (!isSameRuntime) {
+		previewRuntime.entity = request.owner;
+		BuildStates(previewRuntime, request.timeline, *timeline);
+		for (const std::unique_ptr<TimelineTrackState>& state : previewRuntime.states) {
+			state->isWarned = true;
+		}
+	}
+	// --- 書く（イベントは呼ばない。ranges が空なので、通った時間は無い）---
+	TimelineFrame frame;
+	frame.owner = request.owner;
+	frame.time = request.time;
+	frame.events = &pendingEvents;
+	ComponentSerializer::BeginValueCapture();
+	isPreviewApplied = true;
+	for (size_t i = 0; i < timeline->tracks.size(); ++i) {
+		const TimelineTrack& track = *timeline->tracks[i];
+		if (!track.isMuted && track.CanPreview()) {
+			track.Evaluate(frame, *previewRuntime.states[i]);
+		}
+	}
+	pendingEvents.clear();
+}
+
 //=============================================================================
 // Inspector・保存
 //=============================================================================
@@ -145,6 +190,8 @@ void TimelineSystem::Release() {
 	runtimes.clear();
 	pendingEvents.clear();
 	listeners.clear();
+	previewRequest.reset();
+	previewRuntime = {};
 	isRunning = false;
 }
 
@@ -153,8 +200,12 @@ void TimelineSystem::Release() {
 //=============================================================================
 void TimelineSystem::Update(bool isGameRunning) {
 	isRunning = isGameRunning;
+	const std::optional<PreviewRequest> preview = std::exchange(previewRequest, std::nullopt); // 頼まれた1フレーム分だけ
 	if (!isGameRunning) {
 		runtimes.clear(); // 停止中は動かさない（Play を押すと、また最初から）
+		if (preview.has_value()) {
+			ApplyPreview(*preview);
+		}
 		return;
 	}
 	// --- Component を外された Entity を片付ける ---
@@ -198,6 +249,20 @@ bool TimelineSystem::Seek(Handle<Entity> entity, float time) {
 		runtime->needsApply = true;
 	}
 	return runtime != nullptr;
+}
+
+//=============================================================================
+// プレビュー
+//=============================================================================
+void TimelineSystem::RequestPreview(Handle<Entity> owner, uint32_t timeline, float time) { previewRequest = PreviewRequest{owner, timeline, time}; }
+
+void TimelineSystem::FinishPreview() {
+	if (!isPreviewApplied) {
+		return;
+	}
+	isPreviewApplied = false;
+	ComponentSerializer::RestoreCapturedValues();
+	EntityManager::UpdateTransforms(); // 動かした物の子のワールド行列も元へ戻す（この後の ImGui のギズモが読む）
 }
 
 //=============================================================================

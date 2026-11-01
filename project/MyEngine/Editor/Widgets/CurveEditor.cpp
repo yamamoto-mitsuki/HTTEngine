@@ -12,6 +12,7 @@
 
 #include "MyEngine/Curve/CurveManager.h"
 #include "MyEngine/ECS/ComponentUI.h"
+#include "MyEngine/Math/MathUtility.h"
 
 namespace {
 constexpr float kKeySize = 5.0f;           // キーの印の大きさ（ピクセル）
@@ -52,24 +53,12 @@ void ClampViewAxis(float& min, float& max) {
 	min = center - half;
 	max = center + half;
 }
-
-// ===== 目盛りの間隔 =====
-// 1・2・5 × 10 の n 乗 の中で、minStep 以上の一番小さい値（切りの良い数字が並ぶ）
-float CalcGridStep(float minStep) {
-	const float base = std::pow(10.0f, std::floor(std::log10(minStep)));
-	for (const float multiplier : {1.0f, 2.0f, 5.0f}) {
-		if (base * multiplier >= minStep) {
-			return base * multiplier;
-		}
-	}
-	return base * 10.0f;
-}
 } // namespace
 
 //=============================================================================
 // 描く
 //=============================================================================
-bool CurveEditor::Draw(const char* id, Curve& curve, float canvasHeight, ComponentUI& ui) {
+bool CurveEditor::Draw(const char* id, Curve& curve, float canvasHeight, ComponentUI& ui, float fieldsWidth) {
 	ImGui::PushID(id);
 	const Curve original = curve;
 	// Undo でキーが減ったときに、消えたキーを選んだままにしない
@@ -78,8 +67,17 @@ bool CurveEditor::Draw(const char* id, Curve& curve, float canvasHeight, Compone
 		drag_ = DragTarget::None;
 	}
 	DrawToolbar(curve);
-	DrawCanvas(curve, canvasHeight);
-	DrawKeyFields(curve, ui);
+	if (fieldsWidth > 0.0f) {
+		// --- 絵の右に数値の欄 ---
+		DrawCanvas(curve, ImGui::GetContentRegionAvail().x - fieldsWidth - ImGui::GetStyle().ItemSpacing.x, canvasHeight);
+		ImGui::SameLine();
+		ImGui::BeginChild("##keyFields", ImVec2(fieldsWidth, canvasHeight));
+		DrawKeyFields(curve, ui);
+		ImGui::EndChild();
+	} else {
+		DrawCanvas(curve, ImGui::GetContentRegionAvail().x, canvasHeight);
+		DrawKeyFields(curve, ui);
+	}
 	FinishEdit(curve);
 	ImGui::PopID();
 	return curve != original;
@@ -130,10 +128,10 @@ void CurveEditor::ApplyPreset(Curve& curve, Ease::Type type) {
 // カーブの絵
 //=============================================================================
 // ===== 全体 =====
-void CurveEditor::DrawCanvas(Curve& curve, float canvasHeight) {
+void CurveEditor::DrawCanvas(Curve& curve, float canvasWidth, float canvasHeight) {
 	// ボタンを置くと、つまんでいる間 IsAnyItemActive が true になる（保存と Undo の区切りに使う）
 	canvasMin_ = ImGui::GetCursorScreenPos();
-	canvasSize_ = ImVec2((std::max)(ImGui::GetContentRegionAvail().x, 1.0f), (std::max)(canvasHeight, 1.0f));
+	canvasSize_ = ImVec2((std::max)(canvasWidth, 1.0f), (std::max)(canvasHeight, 1.0f));
 	ImGui::InvisibleButton("canvas", canvasSize_, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonMiddle);
 	ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY); // ホイールを、ウィンドウのスクロールより先に受け取る
 
@@ -339,7 +337,7 @@ void CurveEditor::DrawGridLines(ImDrawList* drawList, bool isTime) const {
 	const float min = isTime ? viewMin_.x : viewMin_.y;
 	const float max = isTime ? viewMax_.x : viewMax_.y;
 	const float pixels = isTime ? canvasSize_.x : canvasSize_.y;
-	const float step = CalcGridStep(kGridMinPixels * (max - min) / pixels);
+	const float step = MathUtility::CalcNiceStep(kGridMinPixels * (max - min) / pixels);
 	const float first = std::ceil(min / step);
 	const float lineHeight = ImGui::GetTextLineHeight();
 	const ImU32 gridColor = ImGui::GetColorU32(ImGuiCol_TextDisabled, kGridAlpha);

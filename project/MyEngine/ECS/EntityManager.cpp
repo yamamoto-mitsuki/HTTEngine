@@ -254,6 +254,21 @@ Handle<Entity> EntityManager::FindByPath(Handle<Entity> root, std::string_view p
 	return IsAlive(current) ? current : Handle<Entity>{};
 }
 
+std::optional<std::string> EntityManager::MakePath(Handle<Entity> root, Handle<Entity> entity) {
+	std::string path;
+	Handle<Entity> current = entity;
+	// 親へ上りながら、名前を前につなぐ
+	while (IsAlive(current) && current != root) {
+		const Entity* data = Get(current);
+		path = path.empty() ? data->name : data->name + "/" + path;
+		current = data->parent;
+	}
+	if (current != root || !IsAlive(root)) {
+		return std::nullopt;
+	}
+	return path;
+}
+
 //=============================================================================
 // Componentの写し（Undo・コピー用）
 //=============================================================================

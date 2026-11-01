@@ -33,8 +33,9 @@ public:
 	/// <param name="curve">直すカーブ</param>
 	/// <param name="canvasHeight">カーブの絵の高さ（ピクセル）</param>
 	/// <param name="ui">選んでいるキーの数値を描く係</param>
+	/// <param name="fieldsWidth">数値の欄を絵の右に置くときの幅（0 なら絵の下に置く）</param>
 	/// <returns>このフレームで curve を変えたか</returns>
-	bool Draw(const char* id, Curve& curve, float canvasHeight, ComponentUI& ui);
+	bool Draw(const char* id, Curve& curve, float canvasHeight, ComponentUI& ui, float fieldsWidth = 0.0f);
 
 	/// <summary>
 	/// 操作（つまんで離す・打って確定する・足す・消す）が終わっていれば、その前と後を返す。1回の操作につき1回だけ返る
@@ -65,7 +66,7 @@ private:
 	void ApplyPreset(Curve& curve, Ease::Type type);
 
 	// ===== カーブの絵 =====
-	void DrawCanvas(Curve& curve, float canvasHeight);
+	void DrawCanvas(Curve& curve, float canvasWidth, float canvasHeight);
 	void HandleView();
 	void HandleMouse(Curve& curve);
 	void HandleKeyboard(Curve& curve);

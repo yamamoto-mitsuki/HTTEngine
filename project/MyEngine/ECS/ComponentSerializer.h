@@ -38,6 +38,16 @@ enum class ComponentValueResult {
 	NoField,     // 項目が無い。または書けない形（文字・Entity・アセット・enum）
 };
 
+/// <summary>
+/// 値を読み書きできる項目1つ（GetValueFields）
+/// </summary>
+struct ComponentValueField {
+	std::string key;         // 保存の名前（SetValue・GetValue に渡す）
+	std::string label;       // 表示名
+	size_t channelCount = 1; // 成分の数（float は 1、Vector3 は 3）
+	bool isColor = false;    // 色（成分は r, g, b, a の順）
+};
+
 
 /// <summary>
 /// Componentの型ごとの「保存する項目」の表。型の名前（ファイルに書く名前）と、見せ方の関数（COMPONENTの中身と同じ形）を持つ
@@ -76,6 +86,18 @@ public:
 			    }
 			    describe(ui, *component);
 			    return true;
+		    },
+		    // --- 写す：本物の値を型のまま写して、戻す関数を返す（プレビュー。Transform の回転はクォータニオンなので、見せ方の関数を通すとずれる）---
+		    [](Handle<Entity> entity) -> RestoreFunction {
+			    const T* component = EntityManager::Get<T>(entity);
+			    if (component == nullptr) {
+				    return {}; // 持っていない
+			    }
+			    return [entity, copy = *component] {
+				    if (T* now = EntityManager::Get<T>(entity)) {
+					    *now = copy;
+				    }
+			    };
 		    });
 	}
 
@@ -85,12 +107,27 @@ public:
 	static void Load(Handle<Entity> entity, const SceneJson& in, std::set<std::string>& warnings, const EntityIdMap* idMap = nullptr);
 
 	/// <summary>
-	/// Component の1つの項目へ値を書く（Timeline）。見せ方の関数を本物に呼ぶので、Inspector に出せる項目なら Component の種類を問わず書ける
+	/// Component の1つの項目へ値を書く（Timeline）。見せ方の関数を本物に呼ぶことで、Inspector に出せる項目なら Component の種類を問わず書ける
 	/// <para>書けるのは float・int（四捨五入）・bool（0.5 以上で true）・Vector2〜4・色。Transform の rotation は度で書く</para>
 	/// </summary>
 	/// <param name="typeName">保存の名前（Inspector の見出しと同じ。"Image"・Script の名前）</param>
 	/// <param name="key">項目の保存の名前（"表示名###名前" の名前）</param>
 	static ComponentValueResult SetValue(Handle<Entity> entity, std::string_view typeName, std::string_view key, const ComponentValue& value);
+
+	/// <summary>
+	/// Component の1つの項目の今の値を読む（SetValue の逆。使う成分の isUsed が true になる）
+	/// </summary>
+	static ComponentValueResult GetValue(Handle<Entity> entity, std::string_view typeName, std::string_view key, ComponentValue& out);
+	// Entity が持っている Component の名前（保存の順）
+	static std::vector<std::string> GetComponentNames(Handle<Entity> entity);
+	// Component の中の、値を読み書きできる項目の一覧（持っていなければ空）
+	static std::vector<ComponentValueField> GetValueFields(Handle<Entity> entity, std::string_view typeName);
+
+	// ===== 値を一時的に書く（Timeline のプレビュー）=====
+	// これより後の SetValue は、書く前にその Component を丸ごと写す
+	static void BeginValueCapture();
+	// 写した Component を全部元へ戻して、写すのをやめる
+	static void RestoreCapturedValues();
 
 	// エンジンのComponent（Transform・ModelRenderer・ライト）を登録する。定義は EngineComponents.cpp
 	static void RegisterEngineComponents();
@@ -98,10 +135,12 @@ public:
 	// ===== EntityManager の置き場所を使わない物（Script）の登録 =====
 	using SaveFunction = std::function<bool(Handle<Entity>, ComponentUI&)>; // 持っていなければfalse
 	using LoadFunction = std::function<void(Handle<Entity>, ComponentUI&)>;
+	using RestoreFunction = std::function<void()>; // 写した値へ戻す関数
+	using CaptureFunction = std::function<RestoreFunction(Handle<Entity>)>; // 持っていなければ空の関数を返す
 
-	// 型を消した形で表に入れる（名前順に並べる）。save・load の中で、渡された ComponentUI に見せ方の関数を呼ぶ
 	// visit は本物に見せ方の関数を呼ぶ（持っていなければ false。save と違い、写しに呼んではいけない）
-	static void RegisterErased(const char* name, SaveFunction save, LoadFunction load, SaveFunction visit);
+	// capture は値を写す関数（空なら、JSON に書いて読み戻す）
+	static void RegisterErased(const char* name, SaveFunction save, LoadFunction load, SaveFunction visit, CaptureFunction capture = {});
 
 	// ===== 見せ方の関数1つ分を JSON に書く・読む（Script の写し。Undo・コピーで使う）=====
 	// typeName は警告に出す名前。読むときは、ファイルに無い項目は今の値のまま

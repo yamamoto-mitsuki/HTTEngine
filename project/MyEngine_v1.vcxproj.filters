@@ -703,6 +703,12 @@
     <ClCompile Include="MyEngine\Timeline\TimelineManager.cpp" />
     <ClCompile Include="MyEngine\Systems\Animation\TimelineSystem.cpp" />
     <ClCompile Include="MyEngine\Timeline\TimelineSelfTest.cpp" />
+    <ClCompile Include="MyEngine\Timeline\TimelineEdit.cpp" />
+    <ClCompile Include="MyEngine\Editor\Timeline\TimelineEditorState.cpp" />
+    <ClCompile Include="MyEngine\Editor\Timeline\TimelineWindow.cpp" />
+    <ClCompile Include="MyEngine\Editor\Timeline\TimelineRows.cpp" />
+    <ClCompile Include="MyEngine\Editor\Timeline\TimelineDetails.cpp" />
+    <ClCompile Include="MyEngine\Editor\Inspector\TimelineAssetEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\spdlog\async.h">
@@ -1360,6 +1366,11 @@
     <ClInclude Include="MyEngine\Components\Animation\TimelineComponent.h" />
     <ClInclude Include="MyEngine\Systems\Animation\TimelineSystem.h" />
     <ClInclude Include="MyEngine\Timeline\TimelineSelfTest.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineTimeView.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineEdit.h" />
+    <ClInclude Include="MyEngine\Editor\Timeline\TimelineWindow.h" />
+    <ClInclude Include="MyEngine\Editor\Timeline\TimelineEditorState.h" />
+    <ClInclude Include="MyEngine\Editor\Inspector\TimelineAssetEditor.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="MyEngine.props" />

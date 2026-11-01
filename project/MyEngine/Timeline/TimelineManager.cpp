@@ -181,6 +181,26 @@ void TimelineManager::MarkChanged(uint32_t handle) {
 	}
 }
 
+std::string TimelineManager::ToText(uint32_t handle) {
+	const Timeline* timeline = Get(handle);
+	return (timeline != nullptr) ? ToJson(*timeline).dump() : std::string();
+}
+
+bool TimelineManager::ApplyText(uint32_t handle, const std::string& text) {
+	TimelineAsset* asset = Find(handle);
+	const SceneJson json = SceneJson::parse(text, nullptr, false); // false: 壊れていても例外を投げず、discarded を返す
+	if (asset == nullptr || json.is_discarded() || !json.is_object()) {
+		return false;
+	}
+	std::set<std::string> warnings;
+	asset->timeline = FromJson(json, warnings);
+	for (const std::string& warning : warnings) {
+		LogManager::Warning(std::format("{}: {}", asset->path, warning));
+	}
+	++asset->revision;
+	return true;
+}
+
 uint32_t TimelineManager::GetRevision(uint32_t handle) {
 	const TimelineAsset* asset = Find(handle);
 	return (asset != nullptr) ? asset->revision : 0;
