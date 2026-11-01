@@ -1,0 +1,23 @@
+{
+	"settings": {"length": 2.0},
+	"tracks": [
+		{"type": "TimelineValueTrack", "settings": {"name": "Alpha", "target": "Title", "component": "Image", "property": "color"},
+		 "clips": [{"start": 0.0, "duration": 1.0, "curves": {"w": {"keys": [{"time": 0.0, "value": 0.0, "interp": "Linear"}, {"time": 1.0, "value": 1.0}]}}}]},
+		{"type": "TimelineValueTrack", "settings": {"name": "Move", "target": "Title", "component": "Transform", "property": "translation"},
+		 "clips": [{"start": 0.0, "duration": 2.0, "curves": {"x": {"keys": [
+			{"time": 0.0, "value": -200.0, "outHandle": [0.6, 0.0]},
+			{"time": 2.0, "value": 200.0, "inHandle": [-0.6, 0.0]}]}}}]},
+		{"type": "TimelineValueTrack", "settings": {"name": "Spin", "target": "Title", "component": "Transform", "property": "rotation"},
+		 "clips": [{"start": 0.0, "duration": 2.0, "curves": {"z": {"keys": [{"time": 0.0, "value": 0.0, "interp": "Linear"}, {"time": 2.0, "value": 90.0}]}}}]},
+		{"type": "TimelineValueTrack", "settings": {"name": "Grow", "target": "Title", "component": "Transform", "property": "scale"},
+		 "clips": [{"start": 0.0, "duration": 2.0, "curves": {
+			"x": {"keys": [{"time": 0.0, "value": 1.0, "interp": "Linear"}, {"time": 2.0, "value": 2.0}]},
+			"y": {"keys": [{"time": 0.0, "value": 1.0, "interp": "Linear"}, {"time": 2.0, "value": 2.0}]}}}]},
+		{"type": "TimelineValueTrack", "settings": {"name": "Font", "target": "Label", "component": "Text", "property": "fontSize"},
+		 "clips": [{"start": 1.0, "duration": 1.0, "curves": {"x": {"keys": [{"time": 0.0, "value": 24.0, "interp": "Linear"}, {"time": 1.0, "value": 48.0}]}}}]},
+		{"type": "TimelineValueTrack", "settings": {"name": "Gauge", "target": "Shape", "component": "Vector Shape", "property": "gaugeAmount"},
+		 "clips": [{"start": 0.0, "duration": 2.0, "curves": {"x": {"keys": [{"time": 0.0, "value": 0.0, "interp": "Linear"}, {"time": 2.0, "value": 1.0}]}}}]},
+		{"type": "TimelineEventTrack", "settings": {"name": "Events"},
+		 "clips": [{"start": 0.0, "name": "Start"}, {"start": 1.0, "name": "Middle", "value": "1 秒"}, {"start": 2.0, "name": "End"}]}
+	]
+}

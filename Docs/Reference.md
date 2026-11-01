@@ -1231,6 +1231,24 @@ Curve bounce = Curve::FromEase(Ease::Type::OutBounce); // Ease と同じ形（�
 - キーは時間の順に並び、値は有限で、ハンドルは隣のキーまでの長さに収まる（書き換えは全部 `Curve` の関数を通る）。同じ時間のキーは値の段差になる。
 - 作りと確認の表は [Tasks/Curve.md](Tasks/Curve.md)。
 
+### 時間に沿って動かす（Timeline）
+
+`.timeline` のファイルに、トラック → クリップ → キーの形で動きを書き、Entity の **Timeline** Component で再生する（Add Component → Animation。`#include <MyEngine/Systems/Animation/TimelineSystem.h>`）。同じファイルを何体でも同時に再生できる。
+
+```cpp
+TimelineSystem::Play(entity);       // 止まっていれば最初から、一時停止中なら続きから
+TimelineSystem::Pause(entity);
+TimelineSystem::Stop(entity);       // 時間を 0 に戻して、0 の値を書く
+TimelineSystem::Seek(entity, 1.5f); // イベントは呼ばない
+const TimelineStatus status = TimelineSystem::GetStatus(entity); // state・time・duration・loopCount
+```
+
+- **値のトラック：** `component`（Inspector の見出し）と `property`（シーンファイルの項目の名前）で、Component の数の項目を `Curve` で動かす。Script の `Fields` も動かせる。
+- **イベントのトラック：** 指定の時間に、対象の Entity の Script の `OnTimelineEvent(const TimelineEvent&)` を呼ぶ。シークでは呼ばない。
+- **対象：** 再生する Entity から子の名前を `/` でつないだパス（`Panel/Title`。空なら自分）。見つからなければ、そのトラックだけ飛ばして警告を1回出す。
+- **Time Mode：** Game はスロー・ヒットストップ・ポーズで止まる。Real はゲームの時間が止まっても動く。
+- **新しい種類：** `TimelineTrackOf<クリップ>` を継承して `Evaluate` を書き、ゲーム側の `.cpp` に `TIMELINE_TRACK(型, "説明");`。手順と決まりは [Tasks/Timeline.md](Tasks/Timeline.md)。
+
 ### Collider（当たり判定の Component）
 
 Inspector の **Add Component → Physics → Collider** で付ける（コードなら `EntityManager::RequestAdd<ColliderComponent>(entity, collider)`）。形は球（Radius）・箱（Size）・カプセル（Radius・Height）・多角形（Polygon：同じ Entity の Polygon Shape の点。[8. 描画](#横から見た形の足場polygon-shapepolygon-renderer)）で、Entity の Scale（親の分も）が掛かる。エディタの Scene / Game ビューに緑の線で出て（Release では出ない）、重なると赤になる。**押し戻しはしない**（重なったことを知らせるだけ）。
@@ -1643,6 +1661,7 @@ void GameScene::ApplyGV() {
 | **Restart** | 再生中だけ押せる。Play を押した瞬間からやり直す |
 | **Save（Ctrl+S）** | Control ウィンドウ。停止中だけ。シーンファイル（`resources/scenes/〇〇.scene.json`）に書く。1つ前は `.bak` に残る |
 | **カーブ（`.curve`）** | Project で選ぶと Inspector に出る。クリックで選ぶ・つまんで動かす、ダブルクリックでキーを足す（線の近くなら形を変えない）、Delete で消す、ホイールで拡大縮小（Ctrl：時間だけ、Shift：値だけ）、中ボタンか Alt+左ボタンで移動、F で全体。Ease Preset はキーを選んでいれば次のキーまでの区間に、選んでいなければ全体に入る。直すと自動で保存（1つ前は `.bak`） |
+| **Timeline（`.timeline`）** | Project で Create → Timeline。選ぶと Inspector に長さとトラックの設定が出る（Add Track で種類を選ぶ）。クリップとキーはファイルを手で書く。直すと自動で保存（1つ前は `.bak`。Undo は無い） |
 | **Undo / Redo** | Ctrl+Z / Ctrl+Y。作成・削除・名前・有効・親子・Componentの追加削除・Inspectorの値変更・**Settings（PostEffect など）の値変更**・**カーブの編集**が、やった順に戻る。Play・Stop・シーン切り替えで履歴は消える |
 | **Project** | `resources/` のファイル。左にフォルダの木、右に中身（画像は小さい絵）。シーンはダブルクリックで開く。右クリックで Create（Folder / Scene）・Rename（F2）・Delete（ごみ箱へ）・Copy Path・Show in Explorer。右上の数字でアイコンの大きさ |
 | **File** | New Scene（Ctrl+N）・Open Scene・Save（Ctrl+S）・Save As（Ctrl+Shift+S）。停止中だけ |
