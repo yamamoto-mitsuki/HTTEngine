@@ -182,12 +182,12 @@ class AttackTableAssetEditor final : public AssetEditor {
 public:
 	std::string_view GetExtension() const override { return AttackTableManager::kFileExtension; }
 	std::string_view GetTypeName() const override { return kTypeName; }
+	bool CanLoad(const std::filesystem::path& filePath) override { return AttackTableManager::Load(filePath) != 0; }
 
 	bool Draw(const std::filesystem::path& filePath, ComponentUI& ui) override {
 		const uint32_t handle = AttackTableManager::Load(filePath);
 		const AttackTable* current = AttackTableManager::Get(handle);
 		if (current == nullptr) {
-			ui.Label("このファイルは読めません（JSON が壊れている）");
 			return false;
 		}
 		// 写しを直して、変わっていたら書き戻す（値は、再生中でも次のフレームからすぐ効く）

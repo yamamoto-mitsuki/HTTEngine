@@ -20,6 +20,12 @@ public:
 	// Inspector の見出しに出す種類の名前（"Physic Material"）
 	virtual std::string_view GetTypeName() const = 0;
 
+	// ファイルを読めるか調べる（クリックで選ばれたときに1回だけ呼ばれる）。読めないと Draw は呼ばれない。ここで中身を読まない種類は書かなくてよい
+	virtual bool CanLoad(const std::filesystem::path& filePath) {
+		(void)filePath;
+		return true;
+	}
+
 	/// <summary>
 	/// 中身を描いて、直す（毎フレーム）
 	/// </summary>

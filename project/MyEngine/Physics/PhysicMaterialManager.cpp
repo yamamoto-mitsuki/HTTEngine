@@ -90,11 +90,11 @@ class PhysicMaterialEditor final : public AssetEditor {
 public:
 	std::string_view GetExtension() const override { return PhysicMaterialManager::kFileExtension; }
 	std::string_view GetTypeName() const override { return kTypeName; }
+	bool CanLoad(const std::filesystem::path& filePath) override { return PhysicMaterialManager::Load(filePath) != 0; }
 
 	bool Draw(const std::filesystem::path& filePath, ComponentUI& ui) override {
 		const uint32_t handle = PhysicMaterialManager::Load(filePath);
 		if (handle == 0) {
-			ui.Label("このファイルは読めません（JSON が壊れている）");
 			return false;
 		}
 		// 写しを直して、変わっていたら書き戻す（実行中なら、次のフレームの物理からすぐ効く）

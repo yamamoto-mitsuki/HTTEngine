@@ -16,6 +16,8 @@ namespace {
 std::vector<std::unique_ptr<AssetEditor>> editors; // 直せるファイルの種類（Register で足す）
 std::filesystem::path selected; // Inspector に出しているファイル（空なら無し）
 std::filesystem::path unsaved;  // 直して、まだ保存していないファイル（空なら無し）
+bool needsLoadCheck = false;    // 選んだファイルを読めるか、まだ調べていない
+bool isBroken = false;          // 選んでいるファイルが読めない
 
 // そのファイルの係（いなければ nullptr）。拡張子を小文字にして比べる（.PHYSMAT でもよい）
 AssetEditor* FindEditor(const std::filesystem::path& filePath) {
@@ -46,6 +48,7 @@ void AssetInspector::Select(const std::filesystem::path& filePath) {
 		SaveUnsaved(); // 別のファイルへ移る前に、直した物を保存する
 	}
 	selected = filePath;
+	needsLoadCheck = true; // クリックのたびに調べ直す（直したファイルは、クリックし直せば読める）
 }
 
 bool AssetInspector::HasSelection() { return CanEdit(selected); }
@@ -62,6 +65,16 @@ void AssetInspector::Draw() {
 	ImGui::TextDisabled("%s", ToUtf8(selected.filename()).c_str());
 	ImGui::SetItemTooltip("%s", ToUtf8(selected).c_str());
 	ImGui::Separator();
+
+	// --- 読めるかは選んだときに1回だけ調べる（読めないファイルを毎フレーム読むと、ログがエラーで埋まる）---
+	if (needsLoadCheck) {
+		needsLoadCheck = false;
+		isBroken = !editor->CanLoad(selected);
+	}
+	if (isBroken) {
+		GetInspectorUI().Label("このファイルは読めません（無い・JSON が壊れている。直したらクリックし直す）");
+		return;
+	}
 
 	// --- 中身。変えたら覚えておき、つまむ・打つのが終わったら（どの項目も操作していない）保存する ---
 	// ドラッグしている間に毎フレームファイルを書かないように（Component の Undo の履歴と同じタイミング）
