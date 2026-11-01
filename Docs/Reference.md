@@ -1215,6 +1215,22 @@ if (Collision::RaySphere(ray, sphere, &t)) { … } // 当たった距離が t �
 > **Rigidbody を付けた物だけ**、PhysicsSystem が重力で動かし、Collider から押し戻す（Add Component → Physics → Rigidbody。`velocity` を書いて動かす。`isGrounded` で乗っているかが分かる）。Collider だけなら押し戻さない。
 > Rigidbody 同士は **Mass の逆の割合**で押し合う（軽い方がたくさん動き、ぶつかった後は同じ速さになる。跳ね返らない）。**Collide With Rigidbodies** を外した方は、ほかの Rigidbody とすり抜ける（壁・床にはぶつかる。当たりの知らせ `OnCollision〜` は来る。当たると吹き飛ぶプレイヤーなど。相手の図形の動きは変わらない）。
 
+### 時間で値を変えるカーブ（Curve）
+
+時間に対して値がどう変わるかを、キーでつないだカーブで表す（`#include <MyEngine/Curve/CurveManager.h>`）。補間はキーごとに Constant・Linear・Bezier。カーブの端より外は端のキーの値。
+
+```cpp
+const Curve* curve = CurveManager::Get(handle);   // .curve のファイルの番号から（選んでいなければ nullptr）
+const float value = curve->Evaluate(time);        // 時間の値
+
+Curve bounce = Curve::FromEase(Ease::Type::OutBounce); // Ease と同じ形（時間 0〜1・値 0〜1）
+```
+
+- ファイルは Project の **Create → Curve** で作り、選ぶと Inspector で直せる（17章）。Script の `Fields` に `ui.AssetField("Curve", handle, AssetType::Curve);` と書くと選べる。
+- ほかのファイルの中に入れるときは `CurveManager::ToJson`・`FromJson` を使う。
+- キーは時間の順に並び、値は有限で、ハンドルは隣のキーまでの長さに収まる（書き換えは全部 `Curve` の関数を通る）。同じ時間のキーは値の段差になる。
+- 作りと確認の表は [Tasks/Curve.md](Tasks/Curve.md)。
+
 ### Collider（当たり判定の Component）
 
 Inspector の **Add Component → Physics → Collider** で付ける（コードなら `EntityManager::RequestAdd<ColliderComponent>(entity, collider)`）。形は球（Radius）・箱（Size）・カプセル（Radius・Height）・多角形（Polygon：同じ Entity の Polygon Shape の点。[8. 描画](#横から見た形の足場polygon-shapepolygon-renderer)）で、Entity の Scale（親の分も）が掛かる。エディタの Scene / Game ビューに緑の線で出て（Release では出ない）、重なると赤になる。**押し戻しはしない**（重なったことを知らせるだけ）。
@@ -1626,7 +1642,8 @@ void GameScene::ApplyGV() {
 | **Play / Pause / Stop** | Playで `Update` が回り出す（**停止中に編集した状態のまま始まる**）。**Stopで Play を押した瞬間の状態へ戻る**（Play 中に動いた・作った・消した物は全部戻る。選んでいた Entity もそのまま） |
 | **Restart** | 再生中だけ押せる。Play を押した瞬間からやり直す |
 | **Save（Ctrl+S）** | Control ウィンドウ。停止中だけ。シーンファイル（`resources/scenes/〇〇.scene.json`）に書く。1つ前は `.bak` に残る |
-| **Undo / Redo** | Ctrl+Z / Ctrl+Y。作成・削除・名前・有効・親子・Componentの追加削除・Inspectorの値変更・**Settings（PostEffect など）の値変更**が、やった順に戻る。Play・Stop・シーン切り替えで履歴は消える |
+| **カーブ（`.curve`）** | Project で選ぶと Inspector に出る。クリックで選ぶ・つまんで動かす、ダブルクリックでキーを足す（線の近くなら形を変えない）、Delete で消す、ホイールで拡大縮小（Ctrl：時間だけ、Shift：値だけ）、中ボタンか Alt+左ボタンで移動、F で全体。Ease Preset はキーを選んでいれば次のキーまでの区間に、選んでいなければ全体に入る。直すと自動で保存（1つ前は `.bak`） |
+| **Undo / Redo** | Ctrl+Z / Ctrl+Y。作成・削除・名前・有効・親子・Componentの追加削除・Inspectorの値変更・**Settings（PostEffect など）の値変更**・**カーブの編集**が、やった順に戻る。Play・Stop・シーン切り替えで履歴は消える |
 | **Project** | `resources/` のファイル。左にフォルダの木、右に中身（画像は小さい絵）。シーンはダブルクリックで開く。右クリックで Create（Folder / Scene）・Rename（F2）・Delete（ごみ箱へ）・Copy Path・Show in Explorer。右上の数字でアイコンの大きさ |
 | **File** | New Scene（Ctrl+N）・Open Scene・Save（Ctrl+S）・Save As（Ctrl+Shift+S）。停止中だけ |
 | **Settings（Edit → Settings）** | 調整項目（前の Parameters ウィンドウ）。Project：Audio（音量）・PostEffect・ゲームのグループ／Editor：Scene View（Scene ビューのカメラ）。ページごとに Save / Revert、保存していなければ `*` |
