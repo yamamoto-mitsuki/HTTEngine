@@ -1,0 +1,248 @@
+#include "TimelineManager.h"
+
+#include <algorithm>
+#include <format>
+#include <fstream>
+
+#include <externals/nlohmann/json.hpp>
+
+#include "MyEngine/Diagnostics/LogManager.h"
+#include "MyEngine/Diagnostics/MyAssert.h"
+#include "MyEngine/ECS/ComponentUI.h"
+#include "MyEngine/Scene/SceneSerializer.h"
+#include "MyEngine/String/ConvertString.h"
+
+namespace {
+constexpr std::string_view kTypeName = "Timeline"; // 警告に出す名前
+
+/// <summary>
+/// 読み込んだファイル1つ
+/// </summary>
+struct TimelineAsset {
+	std::string path;      // ファイル（ToPathKey の形）
+	Timeline timeline;     // 中身
+	uint32_t revision = 0; // 中身の版（MarkChanged のたびに増える）
+};
+
+/// <summary>
+/// TimelineManager が持つ物（Initialize で作り、Release で消す）
+/// </summary>
+struct TimelineStorage {
+	std::vector<TimelineAsset> assets; // 番号 - 1 番目のファイル
+};
+std::unique_ptr<TimelineStorage> state;
+
+const std::string kEmptyPath; // 知らない番号のパス
+
+// 番号のファイル（知らない番号なら nullptr）
+TimelineAsset* Find(uint32_t handle) {
+	if (state == nullptr || handle == 0 || handle > state->assets.size()) {
+		return nullptr;
+	}
+	return &state->assets[handle - 1];
+}
+
+// ファイルに書く（前のファイルは .bak として1つ残る）
+bool WriteFile(const std::string& path, const Timeline& timeline) {
+	if (!SceneSerializer::WriteFile(path, TimelineManager::ToJson(timeline))) {
+		LogManager::Error(std::format("Timeline を保存できませんでした: {}", path));
+		return false;
+	}
+	return true;
+}
+
+// ===== トラック1つを JSON にする =====
+SceneJson TrackToJson(TimelineTrack& track, std::set<std::string>& warnings) {
+	const std::string& typeName = track.typeName;
+	SceneJson settings;
+	ComponentSerializer::WriteFields(
+	    typeName,
+	    [&track](ComponentUI& ui) {
+		    track.DescribeCommon(ui);
+		    track.Fields(ui);
+	    },
+	    settings, warnings);
+	SceneJson clips;
+	track.WriteClips(clips, warnings);
+
+	SceneJson json = SceneJson::object();
+	json["type"] = typeName;
+	json["settings"] = std::move(settings);
+	json["clips"] = std::move(clips);
+	return json;
+}
+
+// ===== トラック1つを読む（知らない種類なら、JSON の文字のまま覚える）=====
+void ReadTrack(const SceneJson& json, Timeline& timeline, std::set<std::string>& warnings) {
+	const auto type = json.find("type");
+	if (type == json.end() || !type->is_string()) {
+		warnings.insert("\"type\" の無いトラックを飛ばしました");
+		return;
+	}
+	const std::string& typeName = type->get_ref<const std::string&>();
+	std::unique_ptr<TimelineTrack> track = TimelineTrackRegistry::Create(typeName);
+	if (track == nullptr) {
+		warnings.insert(std::format("知らない種類のトラック \"{}\" は動かしません（TIMELINE_TRACK(...) を確かめてください。ファイルからは消しません）", typeName));
+		timeline.unknownTracks.push_back(json.dump());
+		return;
+	}
+	if (const auto settings = json.find("settings"); settings != json.end()) {
+		TimelineTrack* pointer = track.get();
+		ComponentSerializer::ReadFields(
+		    typeName,
+		    [pointer](ComponentUI& ui) {
+			    pointer->DescribeCommon(ui);
+			    pointer->Fields(ui);
+		    },
+		    *settings, warnings);
+	}
+	if (const auto clips = json.find("clips"); clips != json.end() && clips->is_array()) {
+		track->ReadClips(*clips, warnings);
+	}
+	timeline.tracks.push_back(std::move(track));
+}
+} // namespace
+
+//=============================================================================
+// Timeline
+//=============================================================================
+float Timeline::GetDuration() const {
+	float duration = length;
+	for (const std::unique_ptr<TimelineTrack>& track : tracks) {
+		duration = (std::max)(duration, track->GetEndTime());
+	}
+	return duration;
+}
+
+//=============================================================================
+// 初期化 / 解放
+//=============================================================================
+void TimelineManager::Initialize() {
+	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	state = std::make_unique<TimelineStorage>();
+}
+
+void TimelineManager::Release() { state.reset(); }
+
+//=============================================================================
+// 読み込み
+//=============================================================================
+uint32_t TimelineManager::Load(const std::filesystem::path& filePath) {
+	MY_ASSERT_MSG(state != nullptr, "TimelineManager::Initialize()を先に呼んでください");
+	// --- 読み込み済みなら、同じ番号を返す ---
+	const std::string key = ToPathKey(filePath);
+	const auto cached = std::ranges::find(state->assets, key, &TimelineAsset::path);
+	if (cached != state->assets.end()) {
+		return static_cast<uint32_t>(cached - state->assets.begin()) + 1;
+	}
+	// --- ファイルから読む（ファイルに無い項目は、既定の値のまま）---
+	std::ifstream stream(filePath);
+	if (!stream) {
+		LogManager::Warning(std::format("Timeline のファイルを開けませんでした: {}", key));
+		return 0;
+	}
+	const SceneJson json = SceneJson::parse(stream, nullptr, false); // false: 壊れていても例外を投げず、discarded を返す
+	if (json.is_discarded() || !json.is_object()) {
+		LogManager::Error(std::format("Timeline のファイルが壊れています: {}", key));
+		return 0;
+	}
+	std::set<std::string> warnings;
+	Timeline timeline = FromJson(json, warnings);
+	for (const std::string& warning : warnings) {
+		LogManager::Warning(std::format("{}: {}", key, warning));
+	}
+	state->assets.push_back({key, std::move(timeline)});
+	const uint32_t handle = static_cast<uint32_t>(state->assets.size());
+	LogManager::Log(std::format("Loaded timeline: {} -> {}", key, handle));
+	return handle;
+}
+
+const std::string& TimelineManager::GetPath(uint32_t handle) {
+	const TimelineAsset* asset = Find(handle);
+	return (asset != nullptr) ? asset->path : kEmptyPath;
+}
+
+const Timeline* TimelineManager::Get(uint32_t handle) {
+	const TimelineAsset* asset = Find(handle);
+	return (asset != nullptr) ? &asset->timeline : nullptr;
+}
+
+//=============================================================================
+// 書き換え・保存
+//=============================================================================
+Timeline* TimelineManager::GetForEdit(uint32_t handle) {
+	TimelineAsset* asset = Find(handle);
+	return (asset != nullptr) ? &asset->timeline : nullptr;
+}
+
+void TimelineManager::MarkChanged(uint32_t handle) {
+	if (TimelineAsset* asset = Find(handle)) {
+		++asset->revision;
+	}
+}
+
+uint32_t TimelineManager::GetRevision(uint32_t handle) {
+	const TimelineAsset* asset = Find(handle);
+	return (asset != nullptr) ? asset->revision : 0;
+}
+
+bool TimelineManager::Save(uint32_t handle) {
+	const TimelineAsset* asset = Find(handle);
+	return (asset != nullptr) && WriteFile(asset->path, asset->timeline);
+}
+
+bool TimelineManager::CreateNewFile(const std::filesystem::path& filePath) {
+	std::error_code error;
+	if (std::filesystem::exists(filePath, error)) {
+		return false; // 上書きしない
+	}
+	return WriteFile(ToUtf8(filePath), Timeline{});
+}
+
+//=============================================================================
+// JSON
+//=============================================================================
+SceneJson TimelineManager::ToJson(const Timeline& timeline) {
+	std::set<std::string> warnings;
+	float length = timeline.length;
+	SceneJson settings;
+	ComponentSerializer::WriteFields(kTypeName, [&length](ComponentUI& ui) { DescribeLength(ui, length); }, settings, warnings);
+
+	SceneJson tracks = SceneJson::array();
+	for (const std::unique_ptr<TimelineTrack>& track : timeline.tracks) {
+		tracks.push_back(TrackToJson(*track, warnings));
+	}
+	for (const std::string& text : timeline.unknownTracks) {
+		tracks.push_back(SceneJson::parse(text, nullptr, false));
+	}
+	for (const std::string& warning : warnings) {
+		LogManager::Warning(warning);
+	}
+	SceneJson root = SceneJson::object();
+	root["settings"] = std::move(settings);
+	root["tracks"] = std::move(tracks);
+	return root;
+}
+
+Timeline TimelineManager::FromJson(const SceneJson& json, std::set<std::string>& warnings) {
+	Timeline timeline;
+	if (const auto settings = json.find("settings"); settings != json.end()) {
+		ComponentSerializer::ReadFields(kTypeName, [&timeline](ComponentUI& ui) { DescribeLength(ui, timeline.length); }, *settings, warnings);
+		timeline.length = (timeline.length >= 0.0f) ? timeline.length : 0.0f; // 比べ方を逆にしないのは、NaN もここで 0 にするため
+	}
+	if (const auto tracks = json.find("tracks"); tracks != json.end() && tracks->is_array()) {
+		for (const SceneJson& item : *tracks) {
+			if (item.is_object()) {
+				ReadTrack(item, timeline, warnings);
+			} else {
+				warnings.insert("\"tracks\" の中に、トラックではない物があります（読み飛ばします）");
+			}
+		}
+	}
+	return timeline;
+}
+
+//=============================================================================
+// 見せ方（Inspector とファイル）
+//=============================================================================
+void TimelineManager::DescribeLength(ComponentUI& ui, float& length) { ui.Field("Length###length", length, AtLeast(0.0f).Tip("長さ（秒）。クリップがこれより長ければ、クリップの終わりまで再生する")); }

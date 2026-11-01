@@ -236,6 +236,24 @@ void EntityManager::GetRoots(std::vector<Handle<Entity>>& out) {
 	}
 }
 
+Handle<Entity> EntityManager::FindByPath(Handle<Entity> root, std::string_view path) {
+	Handle<Entity> current = root;
+	std::vector<Handle<Entity>> children;
+	while (!path.empty() && IsAlive(current)) {
+		// --- 次の / までが、1段下の子の名前 ---
+		const size_t slash = path.find('/');
+		const std::string_view name = path.substr(0, slash);
+		GetChildren(current, children);
+		const auto found = std::ranges::find_if(children, [name](Handle<Entity> child) { return Get(child)->name == name; });
+		if (found == children.end()) {
+			return {};
+		}
+		current = *found;
+		path = (slash == std::string_view::npos) ? std::string_view{} : path.substr(slash + 1);
+	}
+	return IsAlive(current) ? current : Handle<Entity>{};
+}
+
 //=============================================================================
 // Componentの写し（Undo・コピー用）
 //=============================================================================

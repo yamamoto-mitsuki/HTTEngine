@@ -182,6 +182,7 @@
     <ClCompile Include="MyEngine\Scene\PrefabManager.cpp" />
     <ClCompile Include="MyEngine\Scene\SceneTransition.cpp" />
     <ClCompile Include="MyEngine\Systems\Animation\AnimationSystem.cpp" />
+    <ClCompile Include="MyEngine\Systems\Animation\TimelineSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Camera\CameraFollow.cpp" />
     <ClCompile Include="MyEngine\Systems\Camera\CameraShake.cpp" />
     <ClCompile Include="MyEngine\Systems\Camera\CameraVolume.cpp" />
@@ -283,6 +284,12 @@
     <ClCompile Include="MyEngine\Systems\Gameplay\TriggerActivatorSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Physics\WindZoneSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\UI\VectorShapeSystem.cpp" />
+    <ClCompile Include="MyEngine\Timeline\TimelineEventTrack.cpp" />
+    <ClCompile Include="MyEngine\Timeline\TimelineManager.cpp" />
+    <ClCompile Include="MyEngine\Timeline\TimelinePlayhead.cpp" />
+    <ClCompile Include="MyEngine\Timeline\TimelineSelfTest.cpp" />
+    <ClCompile Include="MyEngine\Timeline\TimelineTrack.cpp" />
+    <ClCompile Include="MyEngine\Timeline\TimelineValueTrack.cpp" />
     <ClCompile Include="MyEngine\UI\GameNotification.cpp" />
     <ClCompile Include="MyEngine\UI\GlobalVariables.cpp" />
     <ClCompile Include="MyEngine\UI\UIScreen.cpp" />
@@ -296,6 +303,7 @@
   <ItemGroup>
     <ClInclude Include="MyEngine\AI\AttackPart.h" />
     <ClInclude Include="MyEngine\AI\AttackTableManager.h" />
+    <ClInclude Include="MyEngine\Components\Animation\TimelineComponent.h" />
     <ClInclude Include="MyEngine\Components\Camera\CameraLookAtComponent.h" />
     <ClInclude Include="MyEngine\Components\Camera\CameraShakeComponent.h" />
     <ClInclude Include="MyEngine\Components\Camera\CameraVolumeComponent.h" />
@@ -379,6 +387,7 @@
     <ClInclude Include="MyEngine\String\FileNameRule.h" />
     <ClInclude Include="MyEngine\String\FixedString.h" />
     <ClInclude Include="MyEngine\Systems\Animation\AnimationSystem.h" />
+    <ClInclude Include="MyEngine\Systems\Animation\TimelineSystem.h" />
     <ClInclude Include="MyEngine\Systems\Camera\CameraFollow.h" />
     <ClInclude Include="MyEngine\Systems\Camera\CameraShake.h" />
     <ClInclude Include="MyEngine\Systems\Camera\CameraVolume.h" />
@@ -514,6 +523,13 @@
     <ClInclude Include="MyEngine\Systems\Gameplay\TriggerActivatorSystem.h" />
     <ClInclude Include="MyEngine\Systems\Physics\WindZoneSystem.h" />
     <ClInclude Include="MyEngine\Systems\UI\VectorShapeSystem.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineEvent.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineEventTrack.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineManager.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelinePlayhead.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineSelfTest.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineTrack.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineValueTrack.h" />
     <ClInclude Include="MyEngine\Time\EngineTime.h" />
     <ClInclude Include="MyEngine\UI\GameNotification.h" />
     <ClInclude Include="MyEngine\UI\GlobalVariables.h" />

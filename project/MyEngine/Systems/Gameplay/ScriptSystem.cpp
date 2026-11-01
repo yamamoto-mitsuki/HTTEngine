@@ -130,23 +130,24 @@ void ScriptSystem::RegisterType(const char* name, std::type_index type, CreateFu
 	types.push_back({name, type, create});
 
 	// --- 保存（シーンファイル・Play を押した瞬間の退避）。データの Component と同じ表に、同じ形で入る ---
+	// 書く：付いていれば、見せ方の関数に係を渡す（書く係は値を変えないので、本物に呼んでよい。SetValue の係もそのまま使える）
+	const auto visit = [type](Handle<Entity> entity, ComponentUI& ui) {
+		Script* script = Get(entity, type);
+		if (script == nullptr) {
+			return false; // 付いていない
+		}
+		Describe(*script, ui);
+		return true;
+	};
 	ComponentSerializer::RegisterErased(
-	    name,
-	    // 書く：付いていれば、見せ方の関数に書く係を渡す（書く係は値を変えないので、本物に呼んでよい）
-	    [type](Handle<Entity> entity, ComponentUI& writer) {
-		    Script* script = Get(entity, type);
-		    if (script == nullptr) {
-			    return false; // 付いていない
-		    }
-		    Describe(*script, writer);
-		    return true;
-	    },
+	    name, visit,
 	    // 読む：付けてから、ファイルにある項目だけ上書きする
 	    [type](Handle<Entity> entity, ComponentUI& reader) {
 		    if (Script* script = Add(entity, type)) {
 			    Describe(*script, reader);
 		    }
-	    });
+	    },
+	    visit);
 
 	// --- Inspector の区画・Add Component のメニュー（COMPONENT(...) と同じ Gameplay に並ぶ）---
 	ComponentEditorRegistry::Register(std::make_unique<ScriptEditor>(name, type, sourceFile, std::move(category)));
@@ -218,6 +219,19 @@ void ScriptSystem::LateUpdate(EntityFilter filter) {
 	}
 }
 
+// ===== entity に付いている動いている Script 全部の OnTimelineEvent を呼ぶ（TimelineSystem から）=====
+void ScriptSystem::SendTimelineEvent(Handle<Entity> entity, const TimelineEvent& event) {
+	// 呼んだ先で Script が増えても大丈夫なように、添字で回す（Update と同じ）
+	const size_t count = scripts.size();
+	for (size_t i = 0; i < count; ++i) {
+		Script& script = *scripts[i];
+		if (script.gameObject_.handle == entity && IsRunning(script)) {
+			script.OnTimelineEvent(event);
+		}
+	}
+}
+
+// ===== Destroy(Script) の予約を反映する（OnDisable・OnDestroy を呼んでから消す）。EntityManager::FlushDestroy の前に呼ぶ =====
 void ScriptSystem::FlushDestroy() {
 	// 消す物を先に取り出してから呼ぶ（OnDestroy の中で Script が増えても、回している配列が動かないように）
 	std::vector<std::unique_ptr<Script>> removed;

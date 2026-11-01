@@ -52,7 +52,7 @@ struct CameraBlend {
 	float elapsed = 0.0f;                           // 経った秒
 	float duration = 0.0f;                          // 補間にかける秒
 	Ease::Type ease = Ease::Type::Linear;           // 速さの変え方
-	CameraTimeMode timeMode = CameraTimeMode::Game; // 使う時間
+	TimeMode timeMode = TimeMode::Game;             // 使う時間
 };
 
 /// <summary>
@@ -113,22 +113,10 @@ void UseDefaultCamera() {
 //=============================================================================
 // 時間
 //=============================================================================
-// ===== 時間の種類ごとの、このフレームの秒 =====
-float GetCameraDeltaTime(CameraTimeMode mode) {
-	switch (mode) {
-	case CameraTimeMode::Game:
-		return Time::GetDeltaTime();
-	case CameraTimeMode::Real:
-		return Time::GetRealDeltaTime();
-	}
-	MY_ASSERT_MSG(false, "知らない CameraTimeMode です");
-	return 0.0f;
-}
-
 // ===== その Entity のカメラが使う時間の秒（Camera Component が無ければゲームの時間）=====
 float GetCameraDeltaTime(Handle<Entity> entity) {
 	const CameraComponent* camera = EntityManager::Get<CameraComponent>(entity);
-	return GetCameraDeltaTime(camera ? camera->timeMode : CameraTimeMode::Game);
+	return Time::GetDeltaTime(camera ? camera->timeMode : TimeMode::Game);
 }
 
 //=============================================================================
@@ -308,7 +296,7 @@ CameraOutput ApplyBlend(const CameraOutput& target, bool isGameRunning) {
 	if (!blend.isActive) {
 		return target;
 	}
-	blend.elapsed += GetCameraDeltaTime(blend.timeMode);
+	blend.elapsed += Time::GetDeltaTime(blend.timeMode);
 	if (blend.elapsed >= blend.duration) {
 		blend.isActive = false;
 		return target;

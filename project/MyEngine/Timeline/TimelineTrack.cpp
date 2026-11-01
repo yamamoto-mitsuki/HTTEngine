@@ -1,0 +1,110 @@
+#include "TimelineTrack.h"
+
+#include <algorithm>
+#include <format>
+
+#include "MyEngine/Diagnostics/LogManager.h"
+#include "MyEngine/ECS/ComponentUI.h"
+#include "MyEngine/ECS/EntityManager.h"
+
+namespace {
+/// <summary>
+/// トラックの種類1つ
+/// </summary>
+struct TrackType {
+	std::string name;
+	TimelineTrackRegistry::CreateFunction create = nullptr;
+	std::string description;
+};
+
+// 関数の中の static なので、ゲームの TIMELINE_TRACK（main より前に作られる）との初期化の順番に左右されない
+std::vector<TrackType>& Types() {
+	static std::vector<TrackType> types;
+	return types;
+}
+
+const std::string kEmptyDescription; // 知らない名前の説明
+} // namespace
+
+//=============================================================================
+// トラック
+//=============================================================================
+// ===== 見せ方 =====
+void TimelineTrack::DescribeCommon(ComponentUI& ui) {
+	ui.Field("Name###name", name, Tip("トラックの名前（警告に出す）"));
+	ui.Field("Target###target", target, Tip("動かす相手。再生する Entity から、子の名前を / でつないで書く（Panel/Title）。空なら再生する Entity 自身"));
+	ui.Field("Muted###isMuted", isMuted, Tip("このトラックを動かさない"));
+}
+
+// ===== 対象を探す =====
+Handle<Entity> TimelineTrack::FindTarget(const TimelineFrame& frame, TimelineTrackState& state) const {
+	// 覚えている相手が生きていれば、それを使う（探すのは Entity を全部調べるので、毎フレームはしない）
+	if (EntityManager::IsAlive(state.target)) {
+		return state.target;
+	}
+	// 見つからなかった後は、Entity の数が変わるまで探し直さない。覚えていた相手が消えたときは、すぐ探す
+	const size_t entityCount = EntityManager::GetCount();
+	if (state.isSearched && !state.target.IsValid() && state.searchedEntities == entityCount) {
+		return {};
+	}
+	state.isSearched = true;
+	state.searchedEntities = entityCount;
+	state.target = EntityManager::FindByPath(frame.owner, target);
+	if (!state.target.IsValid()) {
+		WarnOnce(state, std::format("対象が見つかりません: \"{}\"", target));
+	}
+	return state.target;
+}
+
+// ===== 警告を1回だけ出す =====
+void TimelineTrack::WarnOnce(TimelineTrackState& state, std::string_view message) const {
+	if (!state.isWarned) {
+		state.isWarned = true;
+		LogManager::Warning(std::format("Timeline のトラック \"{}\"：{}", name, message));
+	}
+}
+
+//=============================================================================
+// クリップ
+//=============================================================================
+void TimelineClip::Fields(ComponentUI& ui) {
+	ui.Field("Start###start", start, AtLeast(0.0f).Tip("始まる時間（秒）"));
+	ui.Field("Duration###duration", duration, AtLeast(0.0f).Tip("長さ（秒）"));
+}
+
+//=============================================================================
+// 種類の表
+//=============================================================================
+void TimelineTrackRegistry::Register(const char* name, CreateFunction create, const char* description) {
+	std::vector<TrackType>& types = Types();
+	if (std::ranges::find(types, std::string_view(name), &TrackType::name) != types.end()) {
+		return; // 同じ名前は1回だけ（エンジンを作り直しても、登録が重ならないように）
+	}
+	types.push_back({name, create, description});
+}
+
+std::unique_ptr<TimelineTrack> TimelineTrackRegistry::Create(std::string_view name) {
+	const std::vector<TrackType>& types = Types();
+	const auto found = std::ranges::find(types, name, &TrackType::name);
+	if (found == types.end()) {
+		return nullptr;
+	}
+	std::unique_ptr<TimelineTrack> track = found->create();
+	track->typeName = found->name;
+	return track;
+}
+
+std::vector<std::string> TimelineTrackRegistry::GetNames() {
+	std::vector<std::string> names;
+	for (const TrackType& type : Types()) {
+		names.push_back(type.name);
+	}
+	std::ranges::sort(names);
+	return names;
+}
+
+const std::string& TimelineTrackRegistry::GetDescription(std::string_view name) {
+	const std::vector<TrackType>& types = Types();
+	const auto found = std::ranges::find(types, name, &TrackType::name);
+	return (found != types.end()) ? found->description : kEmptyDescription;
+}

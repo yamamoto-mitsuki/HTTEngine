@@ -9,6 +9,7 @@
 #include "MyEngine/ECS/GameObject.h"
 #include "MyEngine/Systems/Gameplay/ScriptSystem.h"
 #include "MyEngine/Time/EngineTime.h"
+#include "MyEngine/Timeline/TimelineEvent.h"
 
 
 // ゲーム固有の振る舞いを、Unity の MonoBehaviour と同じ形で書くための基底クラス。ゲーム側はこのヘッダ1つだけをインクルードする
@@ -74,6 +75,10 @@ public:
 	virtual void OnCollisionEnter(const CollisionInfo& /*collision*/) {} // ぶつかり始めた
 	virtual void OnCollisionStay(const CollisionInfo& /*collision*/) {}  // ぶつかっている（床に乗っている間もずっと）
 	virtual void OnCollisionExit(const CollisionInfo& /*collision*/) {}  // 離れた（normal は離れる前のフレームの向き）
+
+	// ===== Timeline =====
+	// Timeline のイベントトラックの時間になった（トラックの Target の Entity に付いている Script に来る）
+	virtual void OnTimelineEvent(const TimelineEvent& /*event*/) {}
 
 	// ===== Inspector に出す・保存する値 =====
 	// 書き方は COMPONENT(...) の中と同じ（ui.Field の並びが、そのまま Inspector の見た目とシーンファイルの項目になる）

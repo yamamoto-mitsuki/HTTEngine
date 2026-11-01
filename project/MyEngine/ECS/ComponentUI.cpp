@@ -20,6 +20,7 @@
 #include "MyEngine/Sound/SoundManager.h"
 #include "MyEngine/String/ConvertString.h"
 #include "MyEngine/String/FileNameRule.h"
+#include "MyEngine/Timeline/TimelineManager.h"
 #include "MyEngine/Scene/PrefabManager.h"
 
 //=============================================================================
@@ -49,6 +50,8 @@ const std::string& GetAssetPath(AssetType type, uint32_t handle) {
 		return AttackTableManager::GetPath(handle);
 	case AssetType::Curve:
 		return CurveManager::GetPath(handle);
+	case AssetType::Timeline:
+		return TimelineManager::GetPath(handle);
 	}
 	return kEmpty;
 }
@@ -84,6 +87,8 @@ uint32_t LoadAsset(AssetType type, const std::string& path) {
 		return AttackTableManager::Load(filePath);
 	case AssetType::Curve:
 		return CurveManager::Load(filePath);
+	case AssetType::Timeline:
+		return TimelineManager::Load(filePath);
 	}
 	return 0;
 }
@@ -101,6 +106,7 @@ constexpr std::array<std::string_view, 3> kFontExtensions = {".ttf", ".otf", ".t
 constexpr std::array<std::string_view, 1> kPhysicMaterialExtensions = {PhysicMaterialManager::kFileExtension}; // ".physmat"
 constexpr std::array<std::string_view, 1> kAttackTableExtensions = {AttackTableManager::kFileExtension};       // ".attacktable"
 constexpr std::array<std::string_view, 1> kCurveExtensions = {CurveManager::kFileExtension};                   // ".curve"
+constexpr std::array<std::string_view, 1> kTimelineExtensions = {TimelineManager::kFileExtension};             // ".timeline"
 
 // その種類の拡張子の一覧
 std::span<const std::string_view> ExtensionsOf(AssetType type) {
@@ -123,6 +129,8 @@ std::span<const std::string_view> ExtensionsOf(AssetType type) {
 		return kAttackTableExtensions;
 	case AssetType::Curve:
 		return kCurveExtensions;
+	case AssetType::Timeline:
+		return kTimelineExtensions;
 	}
 	return {};
 }

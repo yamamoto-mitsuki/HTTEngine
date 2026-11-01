@@ -1,13 +1,14 @@
 #pragma once
+#include <vector>
+#include <memory>
 #include <cstddef>
 #include <cstdint>
-#include <memory>
-#include <string>
-#include <type_traits>
-#include <typeindex>
-#include <unordered_map>
 #include <utility>
-#include <vector>
+#include <typeindex>
+#include <type_traits>
+#include <unordered_map>
+#include <string>
+#include <string_view>
 
 #include "MyEngine/Core/SlotMap.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
@@ -76,6 +77,9 @@ public:
 	static bool IsRelated(Handle<Entity> a, Handle<Entity> b) { return a == b || IsDescendantOf(a, b) || IsDescendantOf(b, a); }
 	// 子のHandleを out に詰める（outは使い回す）
 	static void GetChildren(Handle<Entity> handle, std::vector<Handle<Entity>>& out);
+	// root から子の名前を / でつないだパス（"Panel/Title"）で探す。空なら root。同じ名前の子が2つあれば先の物。無ければ無効なHandle
+	// Prefab・画面（UI Screen）から作るたびに EntityId が変わる物を、作り直しても同じ相手として指すのに使う。全部の Entity を調べるので、毎フレームは呼ばない
+	static Handle<Entity> FindByPath(Handle<Entity> root, std::string_view path);
 	// 親を持たないEntity（一番上）のHandleを out に詰める
 	static void GetRoots(std::vector<Handle<Entity>>& out);
 

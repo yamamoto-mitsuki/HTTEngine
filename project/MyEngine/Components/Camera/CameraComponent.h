@@ -2,6 +2,7 @@
 #include <type_traits>
 
 #include "MyEngine/Math/Easing.h"
+#include "MyEngine/Time/EngineTime.h"
 
 // ゲームの絵を撮るカメラ。Entityに付けるComponent（カテゴリ：Camera）
 // 位置・向きは Transform（親の下に置けば一緒に動く）。ここに持つのは写り方と、このカメラへ切り替わるときの動き方
@@ -19,13 +20,6 @@ enum class CameraBlendStyle {
 	Ease, // Blend Time の秒をかけて、イージングで補間する
 };
 
-/// <summary>
-/// カメラが動くのに使う時間
-/// </summary>
-enum class CameraTimeMode {
-	Game, // ゲームの時間（スローで遅くなり、ヒットストップ・ポーズで止まる）
-	Real, // 止まらない時間（スロー・ヒットストップ・ポーズの間も同じ速さで動く。エディタの一時停止では止まる）
-};
 
 /// <summary>
 /// カメラ
@@ -40,7 +34,7 @@ struct CameraComponent {
 	float blendTime = 1.0f;                              // 補間にかける秒（Ease のとき）
 	Ease::Type blendEase = Ease::Type::InOutCubic;       // 補間の速さの変え方（Ease のとき）
 	// --- 時間 ---
-	CameraTimeMode timeMode = CameraTimeMode::Game; // 切り替え・追いかけ・注視点・揺れに使う時間
+	TimeMode timeMode = TimeMode::Game; // 切り替え・追いかけ・注視点・揺れに使う時間
 };
 
 static_assert(std::is_trivially_copyable_v<CameraComponent>);

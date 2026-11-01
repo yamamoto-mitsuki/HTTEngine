@@ -2,6 +2,7 @@
 
 #include "MyEngine/AI/AttackTableManager.h"
 #include "MyEngine/Curve/CurveManager.h"
+#include "MyEngine/Timeline/TimelineManager.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/ECS/GameComponent.h"
@@ -12,6 +13,7 @@
 // --- Systems ---
 // Animation
 #include "MyEngine/Systems/Animation/AnimationSystem.h"
+#include "MyEngine/Systems/Animation/TimelineSystem.h"
 // Audio
 #include "MyEngine/Systems/Audio/AudioSystem.h"
 // Camera
@@ -25,10 +27,12 @@
 #include "MyEngine/Systems/Gameplay/TriggerActivatorSystem.h"
 // Lights
 #include "MyEngine/Systems/Lighting/LightSystem.h"
+// Physics
 #include "MyEngine/Systems/Physics/CollisionSystem.h"
 #include "MyEngine/Systems/Physics/ElasticSurfaceSystem.h"
 #include "MyEngine/Systems/Physics/PhysicsSystem.h"
 #include "MyEngine/Systems/Physics/WindZoneSystem.h"
+// Rendering2D
 #include "MyEngine/Systems/Rendering2D/SpriteRenderSystem.h"
 // Rendering3D
 #include "MyEngine/Systems/Rendering3D/ArrowStripSystem.h"
@@ -81,6 +85,8 @@ void EngineSystems::Initialize() {
 	AttackTableManager::Initialize();     // 攻撃表（.attacktable）。AttackTableSystem が読むので先に
 	AttackTableSystem::Initialize();      // Attack Table
 	CurveManager::Initialize();           // カーブ（.curve）
+	TimelineManager::Initialize();        // Timeline（.timeline）。TimelineSystem が読むので先に
+	TimelineSystem::Initialize();         // Timeline
 	UIScreen::Initialize();               // UI Screen・UI Screen Element
 #ifdef USE_IMGUI
 	UIScreenEditor::Initialize(); // .uiscreen のファイルを Inspector に出す（Edit UI Screen のボタン）
@@ -120,6 +126,8 @@ void EngineSystems::Release() {
 	AttackTableSystem::Release();
 	AttackTableManager::Release();
 	CurveManager::Release();
+	TimelineSystem::Release();
+	TimelineManager::Release();
 	UIScreen::Release();
 
 	AnimationSystem::Release(); // AnimationManager::Release より前にする（AnimationPlayer が中身を見ているので）
@@ -151,6 +159,7 @@ void EngineSystems::Update(bool isGameRunning, const std::shared_ptr<Camera>& ga
 	ParticleManager::SetCamera(gameCamera); // パーティクルのビルボード用カメラは、現在のシーンから毎フレーム取る。見つけたカメラを毎フレーム渡す（シーンが替わっても古いカメラを掴まない）
 	AttackTableSystem::Update(isGameRunning, Time::GetDeltaTime()); // 攻撃表の AI（シーン・Script・SYSTEM の後。攻撃部品が動かした位置を、このフレームのワールド行列・物理に使う）
 	AnimationSystem::Update(isGameRunning, Time::GetDeltaTime());   // アニメーション。停止中もInspectorのPreview Timeのポーズを見せる。
+	TimelineSystem::Update(isGameRunning);                          // Timeline（Script とアニメーションの後。書いた値を、このフレームのワールド行列・描画に使う。時間は Component ごとに選ぶ）
 	EntityManager::UpdateTransforms();      // ワールド行列（親→子）
 	WindZoneSystem::Update(isGameRunning, Time::GetDeltaTime()); // 風（Wind Zone）の範囲を集め直して、再生中なら Rigidbody を押す（押した速さで、すぐ後の物理が動かす）。画面の風の線の値も書く
 	

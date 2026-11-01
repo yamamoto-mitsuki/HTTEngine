@@ -91,6 +91,7 @@ enum class AssetType {
 	PhysicMaterial, // PhysicMaterialManager::Load の番号（.physmat）
 	AttackTable,    // AttackTableManager::Load の番号（.attacktable）
 	Curve,          // CurveManager::Load の番号（.curve）
+	Timeline,       // TimelineManager::Load の番号（.timeline）
 };
 
 // アセットの番号からパスを引く（未選択・知らない番号なら空）。保存とInspectorの表示で使う

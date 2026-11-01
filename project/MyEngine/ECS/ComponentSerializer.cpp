@@ -1,10 +1,11 @@
 #include "ComponentSerializer.h"
 
+#include <cmath>
+#include <format>
+#include <utility>
 #include <algorithm>
 #include <filesystem>
-#include <format>
 #include <string_view>
-#include <utility>
 
 #include <externals/nlohmann/json.hpp>
 
@@ -16,9 +17,10 @@ namespace {
 // 登録表
 //=============================================================================
 struct Entry {
-	std::string name;                                       // ファイルに書く型の名前
-	std::function<bool(Handle<Entity>, ComponentUI&)> save; // 持っていれば書いてtrue
-	std::function<void(Handle<Entity>, ComponentUI&)> load; // 読んでその場で付ける
+	std::string name; // ファイルに書く型の名前
+	std::function<bool(Handle<Entity>, ComponentUI&)> save;  // 持っていれば書いてtrue
+	std::function<void(Handle<Entity>, ComponentUI&)> load;  // 読んでその場で付ける
+	std::function<bool(Handle<Entity>, ComponentUI&)> visit; // 持っていれば本物に見せ方の関数を呼んで true
 };
 
 // 名前順に並べて持つ。関数の中のstaticなので、ゲームのCOMPONENT（mainより前に作られる）との初期化の順番に左右されない
@@ -47,14 +49,14 @@ const Entry* FindEntry(std::string_view name) {
 	return nullptr;
 }
 
-// 保存に使う項目の名前。"表示名###キー" と書いてあれば ### より後ろ、無ければ label そのもの
-// ImGuiの決まり（"表示###ID" は表示が変わっても同じID）と同じ。表示名を後から変えたくなったら
 // "新しい表示名###前の名前" と書けば、前に保存したファイルもそのまま読める
-std::string KeyOf(const char* label) {
+std::string_view KeyViewOf(const char* label) {
 	const std::string_view text(label);
 	const size_t mark = text.find("###");
-	return std::string(mark == std::string_view::npos ? text : text.substr(mark + 3));
+	return (mark == std::string_view::npos) ? text : text.substr(mark + 3);
 }
+
+std::string KeyOf(const char* label) { return std::string(KeyViewOf(label)); }
 
 //=============================================================================
 // 書く係（見せ方の関数に渡すと、ui.Field の1行ごとにJSONの項目を1つ書く）
@@ -267,12 +269,78 @@ private:
 	std::set<std::string>& warnings_; // 警告
 	std::vector<std::string> used_;   // 読んだ項目の名前
 };
+
+//=============================================================================
+// 値を書く係（見せ方の関数に渡すと、名前の合う項目にだけ値を書く）
+//=============================================================================
+class ValueWriterUI final : public ComponentUI {
+public:
+	ValueWriterUI(std::string_view key, const ComponentValue& value) : key_(key), value_(value) {}
+
+	bool IsWritten() const { return isWritten_; }
+
+	void Field(const char* label, float& value, FieldStyle) override { WriteFloats(label, &value, 1); }
+	void Field(const char* label, int& value, FieldStyle) override {
+		if (Match(label) && value_.isUsed[0]) {
+			value = static_cast<int>(std::lround(value_.channels[0]));
+		}
+	}
+	void Field(const char* label, bool& value, FieldStyle) override {
+		if (Match(label) && value_.isUsed[0]) {
+			value = value_.channels[0] >= 0.5f;
+		}
+	}
+	void Field(const char* label, Vector2& value, FieldStyle) override { WriteFloats(label, &value.x, 2); }
+	void Field(const char* label, Vector3& value, FieldStyle) override { WriteFloats(label, &value.x, 3); }
+	void Field(const char* label, Vector4& value, FieldStyle) override { WriteFloats(label, &value.x, 4); }
+	void ColorField(const char* label, Vector3& rgb) override { WriteFloats(label, &rgb.x, 3); }
+	void ColorField(const char* label, Vector4& rgba) override { WriteFloats(label, &rgba.x, 4); }
+
+	// 数で表せない項目は書かない（isWritten_ が false のままなので、NoField になる）
+	void Field(const char*, EntityRef&, FieldStyle) override {}
+	void Field(const char*, std::string&, FieldStyle) override {}
+	void AssetField(const char*, uint32_t&, AssetType, FieldStyle) override {}
+	void Label(const char*) override {}
+	void Separator(const char*) override {}
+	void Space() override {}
+	bool Button(const char*) override { return false; }
+
+protected:
+	void EnumField(const char*, size_t&, std::span<const std::string_view>, FieldStyle) override {}
+
+private:
+	// 名前が合えば、書いたことにする
+	bool Match(const char* label) {
+		if (KeyViewOf(label) != key_) {
+			return false;
+		}
+		isWritten_ = true;
+		return true;
+	}
+
+	// 使う成分だけ書く（x, y, z, w は並んでいるので、先頭のポインタから順に書ける）
+	void WriteFloats(const char* label, float* out, size_t count) {
+		if (!Match(label)) {
+			return;
+		}
+		for (size_t i = 0; i < count; ++i) {
+			if (value_.isUsed[i]) {
+				out[i] = value_.channels[i];
+			}
+		}
+	}
+
+	std::string_view key_;        // 書く項目の名前
+	const ComponentValue& value_; // 書く値
+	bool isWritten_ = false;      // 書いた
+};
 } // namespace
+
 
 //=============================================================================
 // 登録
 //=============================================================================
-void ComponentSerializer::RegisterErased(const char* name, SaveFunction save, LoadFunction load) {
+void ComponentSerializer::RegisterErased(const char* name, SaveFunction save, LoadFunction load, SaveFunction visit) {
 	std::vector<Entry>& entries = Entries();
 	// 決まった順番の場所に入れる（IsBefore）
 	const auto position = std::lower_bound(entries.begin(), entries.end(), std::string_view(name), [](const Entry& entry, std::string_view key) { return IsBefore(entry.name, key); });
@@ -280,7 +348,7 @@ void ComponentSerializer::RegisterErased(const char* name, SaveFunction save, Lo
 		LogManager::Error(std::format("Componentの名前 \"{}\" が2つ登録されました。後の方は保存されません", name));
 		return;
 	}
-	entries.insert(position, Entry{name, std::move(save), std::move(load)});
+	entries.insert(position, Entry{name, std::move(save), std::move(load), std::move(visit)});
 }
 
 //=============================================================================
@@ -312,6 +380,19 @@ void ComponentSerializer::Load(Handle<Entity> entity, const SceneJson& in, std::
 		entry->load(entity, reader);
 		reader.WarnUnused();
 	}
+}
+
+
+//=============================================================================
+// 値を書く（Timeline）
+//=============================================================================
+ComponentValueResult ComponentSerializer::SetValue(Handle<Entity> entity, std::string_view typeName, std::string_view key, const ComponentValue& value) {
+	const Entry* entry = FindEntry(typeName);
+	ValueWriterUI writer(key, value);
+	if (entry == nullptr || !entry->visit(entity, writer)) {
+		return ComponentValueResult::NoComponent;
+	}
+	return writer.IsWritten() ? ComponentValueResult::Written : ComponentValueResult::NoField;
 }
 
 

@@ -696,6 +696,13 @@
     <ClCompile Include="MyEngine\Curve\CurveSelfTest.cpp" />
     <ClCompile Include="MyEngine\Editor\Widgets\CurveEditor.cpp" />
     <ClCompile Include="MyEngine\Editor\Inspector\CurveAssetEditor.cpp" />
+    <ClCompile Include="MyEngine\Timeline\TimelinePlayhead.cpp" />
+    <ClCompile Include="MyEngine\Timeline\TimelineTrack.cpp" />
+    <ClCompile Include="MyEngine\Timeline\TimelineValueTrack.cpp" />
+    <ClCompile Include="MyEngine\Timeline\TimelineEventTrack.cpp" />
+    <ClCompile Include="MyEngine\Timeline\TimelineManager.cpp" />
+    <ClCompile Include="MyEngine\Systems\Animation\TimelineSystem.cpp" />
+    <ClCompile Include="MyEngine\Timeline\TimelineSelfTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\spdlog\async.h">
@@ -1344,6 +1351,15 @@
     <ClInclude Include="MyEngine\Curve\CurveSelfTest.h" />
     <ClInclude Include="MyEngine\Editor\Widgets\CurveEditor.h" />
     <ClInclude Include="MyEngine\Editor\Inspector\CurveAssetEditor.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineEvent.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelinePlayhead.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineTrack.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineValueTrack.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineEventTrack.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineManager.h" />
+    <ClInclude Include="MyEngine\Components\Animation\TimelineComponent.h" />
+    <ClInclude Include="MyEngine\Systems\Animation\TimelineSystem.h" />
+    <ClInclude Include="MyEngine\Timeline\TimelineSelfTest.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="MyEngine.props" />

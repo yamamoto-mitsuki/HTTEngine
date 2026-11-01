@@ -1,6 +1,15 @@
 #pragma once
 #include <memory>
 
+/// <summary>
+/// 動くのに使う時間の種類（Component の Time Mode の項目）
+/// </summary>
+enum class TimeMode {
+	Game, // ゲームの時間（スローで遅くなり、ヒットストップ・ポーズで止まる）
+	Real, // 止まらない時間（スロー・ヒットストップ・ポーズの間も同じ速さで動く。エディタの一時停止では止まる）
+};
+
+
 // 時間計測クラス
 // 経過時間には「一時停止（エンジン）」「ゲームのスロー（ゲーム）」「ヒットストップ（ゲーム）」の3つが掛かる
 // 一時停止とゲームのスローを別々に持つのは、SceneManager が毎フレーム一時停止の値を書き直しても、ゲームのスローが消えないようにするため
@@ -27,6 +36,8 @@ public:
 	// ===== 経過時間 =====
 	// 前フレームからの秒（一時停止・ゲームのスロー・ヒットストップを掛けた物）。ゲームの動きは全部これで
 	static float GetDeltaTime() { return instance_->deltaTime_ * GetTimeScale(); }
+	// 種類を選んで読む
+	static float GetDeltaTime(TimeMode mode) { return (mode == TimeMode::Real) ? GetRealDeltaTime() : GetDeltaTime(); }
 	// 何も掛けていない秒（UIの演出など、スロー・一時停止で止めたくない物に）
 	static float GetUnscaleDeltaTime() { return instance_->deltaTime_; }
 	// 止めない時間の秒（スロー・ヒットストップ・ポーズは掛からない。エディタの一時停止のときだけ0）。カメラのように、ゲームの時間が止まっても動かしたい物に

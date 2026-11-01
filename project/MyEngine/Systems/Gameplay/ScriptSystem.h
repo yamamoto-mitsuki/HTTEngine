@@ -11,6 +11,7 @@
 // 前方宣言
 class Script;
 class ComponentUI;
+struct TimelineEvent;
 
 
 /// <summary>
@@ -57,6 +58,8 @@ public:
 	static Script* Find(Handle<Entity> entity, bool (*match)(const Script& script));
 	// matchがtrue を返す Script を全部outに入れる（有効な Entity に付いている物だけ。outは最初に空にする）
 	static void FindAll(bool (*match)(const Script& script), std::vector<Script*>& out);
+	// entity に付いている動いている Script 全部の OnTimelineEvent を呼ぶ（TimelineSystem から）
+	static void SendTimelineEvent(Handle<Entity> entity, const TimelineEvent& event);
 	// 消す予約（フレームの終わりに消える。Script::Destroy から）
 	static void RequestDestroy(Script* script);
 	// その場で外す（エディタの Remove Component・Undo から。フレームの境目でだけ呼ぶ）
