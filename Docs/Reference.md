@@ -1248,6 +1248,7 @@ const TimelineStatus status = TimelineSystem::GetStatus(entity); // state・time
 - **対象：** 再生する Entity から子の名前を `/` でつないだパス（`Panel/Title`。空なら自分）。見つからなければ、そのトラックだけ飛ばして警告を1回出す。
 - **Time Mode：** Game はスロー・ヒットストップ・ポーズで止まる。Real はゲームの時間が止まっても動く。
 - **新しい種類：** `TimelineTrackOf<クリップ>` を継承して `Evaluate` を書き、ゲーム側の `.cpp` に `TIMELINE_TRACK(型, "説明");`。手順と決まりは [Tasks/Timeline.md](Tasks/Timeline.md)。
+- **直す：** Timeline ウィンドウで、トラック・クリップ・キーを直し、停止中に再生位置をつまんで結果を見る。Timeline の付いた Entity を選ぶか、Project で `.timeline` をダブルクリックして開く。使い方は [Tasks/TimelineWindow.md](Tasks/TimelineWindow.md) の 1.4。ゲーム側のトラックに `GetClipCurves`・`CanPreview` を書くと、キーとプレビューも使える。
 
 ### Collider（当たり判定の Component）
 
@@ -1661,7 +1662,7 @@ void GameScene::ApplyGV() {
 | **Restart** | 再生中だけ押せる。Play を押した瞬間からやり直す |
 | **Save（Ctrl+S）** | Control ウィンドウ。停止中だけ。シーンファイル（`resources/scenes/〇〇.scene.json`）に書く。1つ前は `.bak` に残る |
 | **カーブ（`.curve`）** | Project で選ぶと Inspector に出る。クリックで選ぶ・つまんで動かす、ダブルクリックでキーを足す（線の近くなら形を変えない）、Delete で消す、ホイールで拡大縮小（Ctrl：時間だけ、Shift：値だけ）、中ボタンか Alt+左ボタンで移動、F で全体。Ease Preset はキーを選んでいれば次のキーまでの区間に、選んでいなければ全体に入る。直すと自動で保存（1つ前は `.bak`） |
-| **Timeline（`.timeline`）** | Project で Create → Timeline。選ぶと Inspector に長さとトラックの設定が出る（Add Track で種類を選ぶ）。クリップとキーはファイルを手で書く。直すと自動で保存（1つ前は `.bak`。Undo は無い） |
+| **Timeline（`.timeline`）** | Project で Create → Timeline。Timeline ウィンドウで直す（ダブルクリック・Inspector の Open Timeline・Timeline の付いた Entity を選ぶ）。トラック・クリップ・キー・カーブ・停止中のプレビュー。直すと自動で保存（1つ前は `.bak`）。Ctrl+Z で戻せる |
 | **Undo / Redo** | Ctrl+Z / Ctrl+Y。作成・削除・名前・有効・親子・Componentの追加削除・Inspectorの値変更・**Settings（PostEffect など）の値変更**・**カーブの編集**が、やった順に戻る。Play・Stop・シーン切り替えで履歴は消える |
 | **Project** | `resources/` のファイル。左にフォルダの木、右に中身（画像は小さい絵）。シーンはダブルクリックで開く。右クリックで Create（Folder / Scene）・Rename（F2）・Delete（ごみ箱へ）・Copy Path・Show in Explorer。右上の数字でアイコンの大きさ |
 | **File** | New Scene（Ctrl+N）・Open Scene・Save（Ctrl+S）・Save As（Ctrl+Shift+S）。停止中だけ |

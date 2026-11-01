@@ -2652,6 +2652,8 @@ include に足す。
 
 ## パートD ファイルの仮の Inspector
 
+**UI 段階4 の [TimelineWindow.md](TimelineWindow.md) に置き換えたので、ここは写さなくてよい。**
+
 ### D-1 `Editor/Inspector/TimelineAssetEditor.h`（新しいファイル）
 
 ```cpp
