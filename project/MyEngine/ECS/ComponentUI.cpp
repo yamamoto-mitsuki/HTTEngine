@@ -8,6 +8,7 @@
 #include <filesystem>
 
 #include "MyEngine/AI/AttackTableManager.h"
+#include "MyEngine/Curve/CurveManager.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/ECS/GameObject.h"
@@ -46,6 +47,8 @@ const std::string& GetAssetPath(AssetType type, uint32_t handle) {
 		return PhysicMaterialManager::GetPath(handle);
 	case AssetType::AttackTable:
 		return AttackTableManager::GetPath(handle);
+	case AssetType::Curve:
+		return CurveManager::GetPath(handle);
 	}
 	return kEmpty;
 }
@@ -79,6 +82,8 @@ uint32_t LoadAsset(AssetType type, const std::string& path) {
 		return PhysicMaterialManager::Load(filePath);
 	case AssetType::AttackTable:
 		return AttackTableManager::Load(filePath);
+	case AssetType::Curve:
+		return CurveManager::Load(filePath);
 	}
 	return 0;
 }
@@ -95,6 +100,7 @@ constexpr std::array<std::string_view, 1> kPrefabExtensions = {kPrefabFileExtens
 constexpr std::array<std::string_view, 3> kFontExtensions = {".ttf", ".otf", ".ttc"}; // .ttc は何個かのフォントが1つに入った物（1つ目を使う）
 constexpr std::array<std::string_view, 1> kPhysicMaterialExtensions = {PhysicMaterialManager::kFileExtension}; // ".physmat"
 constexpr std::array<std::string_view, 1> kAttackTableExtensions = {AttackTableManager::kFileExtension};       // ".attacktable"
+constexpr std::array<std::string_view, 1> kCurveExtensions = {CurveManager::kFileExtension};                   // ".curve"
 
 // その種類の拡張子の一覧
 std::span<const std::string_view> ExtensionsOf(AssetType type) {
@@ -115,6 +121,8 @@ std::span<const std::string_view> ExtensionsOf(AssetType type) {
 		return kPhysicMaterialExtensions;
 	case AssetType::AttackTable:
 		return kAttackTableExtensions;
+	case AssetType::Curve:
+		return kCurveExtensions;
 	}
 	return {};
 }

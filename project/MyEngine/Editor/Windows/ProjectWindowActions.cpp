@@ -13,6 +13,7 @@
 #include "MyEngine/Editor/Windows/SceneDialogs.h"
 #include "MyEngine/Editor/Windows/UIScreenEditor.h"
 #include "MyEngine/AI/AttackTableManager.h"
+#include "MyEngine/Curve/CurveManager.h"
 #include "MyEngine/Physics/PhysicMaterialManager.h"
 #include "MyEngine/Scene/PrefabManager.h"
 #include "MyEngine/Scene/SceneManager.h"
@@ -142,6 +143,11 @@ void ProjectWindow::DrawCreateMenu() {
 			CreateAssetFile("NewAttackTable", AttackTableManager::kFileExtension, &AttackTableManager::CreateNewFile);
 		}
 		ImGui::SetItemTooltip("今のフォルダに作ります（敵のフェーズと攻撃。Attack Table の Table で選ぶ）");
+		// Curve
+		if (ImGui::MenuItem("Curve")) {
+			CreateAssetFile("NewCurve", CurveManager::kFileExtension, &CurveManager::CreateNewFile);
+		}
+		ImGui::SetItemTooltip("今のフォルダに作ります（時間に対して値がどう変わるかのカーブ）");
 		// UIScreen
 		if (ImGui::MenuItem("UI Screen")) {
 			CreateUIScreen();
@@ -428,4 +434,4 @@ const ProjectWindow::Item* ProjectWindow::FindSelected() {
 	}
 	return nullptr;
 }
-#endif
+#endif

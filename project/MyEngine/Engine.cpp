@@ -21,6 +21,8 @@
 #include "MyEngine/Math/MathIncludes.h"
 // Collision
 #include "MyEngine/Collision/Profiling/CollisionProfiler.h"
+// Curve
+#include "MyEngine/Curve/CurveSelfTest.h"
 // Particle
 #include "MyEngine/Particle/ParticleManager.h"
 // Graphics
@@ -109,6 +111,7 @@ void Engine::Initialize(const WindowConfig& config, SceneFactory initialScene) {
 
 #ifdef _DEBUG
 	ComputeSelfTest::Run(); // CSの土台が動くかを確かめる（Debugだけ。.hlsl を作った後に）
+	CurveSelfTest::Run();   // カーブの計算が合っているかを確かめる（Debugだけ）
 #endif
 
 	IBLBaker::Initialize(); // IBL

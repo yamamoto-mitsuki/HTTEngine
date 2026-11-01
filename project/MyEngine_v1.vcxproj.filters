@@ -691,6 +691,11 @@
     <ClCompile Include="MyEngine\Systems\Camera\CameraFollow.cpp" />
     <ClCompile Include="MyEngine\Systems\Camera\CameraShake.cpp" />
     <ClCompile Include="MyEngine\Systems\Camera\CameraVolume.cpp" />
+    <ClCompile Include="MyEngine\Curve\Curve.cpp" />
+    <ClCompile Include="MyEngine\Curve\CurveManager.cpp" />
+    <ClCompile Include="MyEngine\Curve\CurveSelfTest.cpp" />
+    <ClCompile Include="MyEngine\Editor\Widgets\CurveEditor.cpp" />
+    <ClCompile Include="MyEngine\Editor\Inspector\CurveAssetEditor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\spdlog\async.h">
@@ -1334,6 +1339,11 @@
     <ClInclude Include="MyEngine\Systems\Camera\CameraFollow.h" />
     <ClInclude Include="MyEngine\Systems\Camera\CameraShake.h" />
     <ClInclude Include="MyEngine\Systems\Camera\CameraVolume.h" />
+    <ClInclude Include="MyEngine\Curve\Curve.h" />
+    <ClInclude Include="MyEngine\Curve\CurveManager.h" />
+    <ClInclude Include="MyEngine\Curve\CurveSelfTest.h" />
+    <ClInclude Include="MyEngine\Editor\Widgets\CurveEditor.h" />
+    <ClInclude Include="MyEngine\Editor\Inspector\CurveAssetEditor.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="MyEngine.props" />

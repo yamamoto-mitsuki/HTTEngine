@@ -132,6 +132,9 @@
     <!-- MyEngine -->
     <ClCompile Include="MyEngine\AI\AttackPart.cpp" />
     <ClCompile Include="MyEngine\AI\AttackTableManager.cpp" />
+    <ClCompile Include="MyEngine\Curve\Curve.cpp" />
+    <ClCompile Include="MyEngine\Curve\CurveManager.cpp" />
+    <ClCompile Include="MyEngine\Curve\CurveSelfTest.cpp" />
     <ClCompile Include="MyEngine\ECS\GameObject.cpp" />
     <ClCompile Include="MyEngine\Editor\Assets\AssetIcons.cpp" />
     <ClCompile Include="MyEngine\Editor\Assets\AssetThumbnails.cpp" />
@@ -144,9 +147,11 @@
     <ClCompile Include="MyEngine\Editor\Gizmos\UIGizmo.cpp" />
     <ClCompile Include="MyEngine\Editor\Inspector\AssetInspector.cpp" />
     <ClCompile Include="MyEngine\Editor\Inspector\AttackTableEditor.cpp" />
+    <ClCompile Include="MyEngine\Editor\Inspector\CurveAssetEditor.cpp" />
     <ClCompile Include="MyEngine\Editor\Inspector\ScriptEditor.cpp" />
     <ClCompile Include="MyEngine\Editor\Viewport\ScenePicking.cpp" />
     <ClCompile Include="MyEngine\Editor\Viewport\SceneVisibility.cpp" />
+    <ClCompile Include="MyEngine\Editor\Widgets\CurveEditor.cpp" />
     <ClCompile Include="MyEngine\Editor\Widgets\FontPreview.cpp" />
     <ClCompile Include="MyEngine\Editor\Widgets\ToolIcons.cpp" />
     <ClCompile Include="MyEngine\Editor\Windows\AttackTableWindow.cpp" />
@@ -316,6 +321,9 @@
     <ClInclude Include="MyEngine\Components\Gameplay\TriggerActivatorComponent.h" />
     <ClInclude Include="MyEngine\Components\Physics\WindZoneComponent.h" />
     <ClInclude Include="MyEngine\Components\UI\VectorShapeComponent.h" />
+    <ClInclude Include="MyEngine\Curve\Curve.h" />
+    <ClInclude Include="MyEngine\Curve\CurveManager.h" />
+    <ClInclude Include="MyEngine\Curve\CurveSelfTest.h" />
     <ClInclude Include="MyEngine\ECS\GameObject.h" />
     <ClInclude Include="MyEngine\ECS\Script.h" />
     <ClInclude Include="MyEngine\Editor\Assets\AssetIcons.h" />
@@ -329,9 +337,11 @@
     <ClInclude Include="MyEngine\Editor\Gizmos\UIGizmo.h" />
     <ClInclude Include="MyEngine\Editor\Inspector\AssetInspector.h" />
     <ClInclude Include="MyEngine\Editor\Inspector\AttackTableEditor.h" />
+    <ClInclude Include="MyEngine\Editor\Inspector\CurveAssetEditor.h" />
     <ClInclude Include="MyEngine\Editor\Inspector\ScriptEditor.h" />
     <ClInclude Include="MyEngine\Editor\Viewport\ScenePicking.h" />
     <ClInclude Include="MyEngine\Editor\Viewport\SceneVisibility.h" />
+    <ClInclude Include="MyEngine\Editor\Widgets\CurveEditor.h" />
     <ClInclude Include="MyEngine\Editor\Widgets\FontPreview.h" />
     <ClInclude Include="MyEngine\Editor\Widgets\ToolIcons.h" />
     <ClInclude Include="MyEngine\Editor\Windows\AttackTableWindow.h" />

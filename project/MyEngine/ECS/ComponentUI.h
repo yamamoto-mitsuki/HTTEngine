@@ -90,6 +90,7 @@ enum class AssetType {
 	Font,      // FontManager::Load の番号
 	PhysicMaterial, // PhysicMaterialManager::Load の番号（.physmat）
 	AttackTable,    // AttackTableManager::Load の番号（.attacktable）
+	Curve,          // CurveManager::Load の番号（.curve）
 };
 
 // アセットの番号からパスを引く（未選択・知らない番号なら空）。保存とInspectorの表示で使う

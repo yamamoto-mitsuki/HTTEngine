@@ -1,6 +1,7 @@
 #include "MyEngine/Systems/EngineSystems.h"
 
 #include "MyEngine/AI/AttackTableManager.h"
+#include "MyEngine/Curve/CurveManager.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/ECS/GameComponent.h"
@@ -43,6 +44,7 @@
 #ifdef USE_IMGUI
 #include "MyEngine/Editor/History/EditorHistory.h"
 #include "MyEngine/Editor/Inspector/AttackTableEditor.h"
+#include "MyEngine/Editor/Inspector/CurveAssetEditor.h"
 #include "MyEngine/Editor/Windows/UIScreenEditor.h"
 #endif
 
@@ -78,10 +80,12 @@ void EngineSystems::Initialize() {
 	TriggerActivatorSystem::Initialize(); // Trigger Activator
 	AttackTableManager::Initialize();     // 攻撃表（.attacktable）。AttackTableSystem が読むので先に
 	AttackTableSystem::Initialize();      // Attack Table
+	CurveManager::Initialize();           // カーブ（.curve）
 	UIScreen::Initialize();               // UI Screen・UI Screen Element
 #ifdef USE_IMGUI
 	UIScreenEditor::Initialize(); // .uiscreen のファイルを Inspector に出す（Edit UI Screen のボタン）
 	AttackTableEditor::Initialize(); // .attacktable のファイルを Inspector で直す
+	CurveAssetEditor::Initialize();  // .curve のファイルを Inspector で直す
 #endif
 
 	// --- Script とゲーム固有の Component ---
@@ -115,6 +119,7 @@ void EngineSystems::Release() {
 	TriggerActivatorSystem::Release();
 	AttackTableSystem::Release();
 	AttackTableManager::Release();
+	CurveManager::Release();
 	UIScreen::Release();
 
 	AnimationSystem::Release(); // AnimationManager::Release より前にする（AnimationPlayer が中身を見ているので）
