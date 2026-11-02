@@ -1021,7 +1021,33 @@ void GameScene::Update() {
 }
 ```
 
-Sceneビューのカメラ（デバッグカメラ）は別物で、ゲームのカメラには影響しない。
+Sceneビューのカメラ（デバッグカメラ）は別物で、ゲームのカメラには影響しない。Scene ビューには、Camera Component の位置にアイコンが出る（クリックで選べる。View → Camera Icons で消せる）。Game ビューには出ない。
+
+### 線に沿って動くカメラ（Camera Path）
+
+空の Entity の子に点の Entity を上から順に並べると線になる。カメラに **Camera Path** を付けて、Path へ親の Entity をドラッグする。
+
+| 項目 | 中身 |
+|---|---|
+| Path | 線の Entity。子を順に通るなめらかな線（`PathCurve`）になる。子が 2 つ以上要る |
+| Position | 線の上の位置（0〜1。長さに対する割合）。Timeline のキーで動かす |
+| Rotation | `Keep`（Transform の向き。Camera Look At があれば注視点を見る）／`AlongPath`（線の進む向きを見る） |
+
+写す位置だけを置き換えるので、Transform は変わらない。線は Scene ビューに水色で出る（View → Camera Paths）。
+
+### Timeline でカメラを動かす
+
+Timeline のカメラのトラック（`TimelineCameraTrack`）は、通常のカメラ（Priority で選ぶカメラ）の代わりに写すカメラを毎フレーム頼む。頼まなくなれば通常のカメラへ戻る。
+
+- 演出に使うカメラは、通常のカメラより **Priority を小さくして**置く（無効にはしない）。
+- カメラの指し方は2つ。再生する Entity の子孫なら `Rig Cam A`、シーンのほかの場所なら `/Cameras/Cam Wide`（`/` で始まる、シーンの一番上からのパス）。Hierarchy の Camera を Timeline ウィンドウの列へドラッグすると、その時間のクリップになる。
+- クリップを並べるとカット、重ねると補間。重なった長さが補間の秒。
+- 最初の補間はクリップの Blend In。終わった後は Exit で選ぶ（`Cut`：すぐ戻す／`Ease`：Exit Time の秒で戻す。この秒は Timeline の長さに入る／`Hold`：次のクリップか `TimelineSystem::Stop` までこのカメラ）。
+- `TimelineSystem::Stop` で途中で止めても、クリップの Exit の設定で戻る。
+- Timeline の Time Mode を Real にすると、ヒットストップの間も演出が進む。写しているカメラは Camera の Time Mode に関係なく Timeline の時間で動く。
+- 位置・FOV・ポストエフェクト・ノイズの強さは値のトラック（`TimelineValueTrack`）で動かす（Component は Transform・Camera・Camera Volume・Camera Shake・Camera Path）。衝撃は `TimelineCameraShakeTrack`。
+- 停止中に再生位置をつまむと、切り替え・補間・キー・揺れが Game ビューに出る。
+- コードから頼むときは `CameraSystem::RequestOverride`。使い方は [Tasks/CameraTimeline.md](Tasks/CameraTimeline.md)。
 
 ---
 
@@ -1245,7 +1271,8 @@ const TimelineStatus status = TimelineSystem::GetStatus(entity); // state・time
 
 - **値のトラック：** `component`（Inspector の見出し）と `property`（シーンファイルの項目の名前）で、Component の数の項目を `Curve` で動かす。Script の `Fields` も動かせる。
 - **イベントのトラック：** 指定の時間に、対象の Entity の Script の `OnTimelineEvent(const TimelineEvent&)` を呼ぶ。シークでは呼ばない。
-- **対象：** 再生する Entity から子の名前を `/` でつないだパス（`Panel/Title`。空なら自分）。見つからなければ、そのトラックだけ飛ばして警告を1回出す。
+- **カメラのトラック・衝撃のトラック：** 写すカメラを時間で切り替える・カメラを揺らす。10章の「Timeline でカメラを動かす」。
+- **対象：** 再生する Entity から子の名前を `/` でつないだパス（`Panel/Title`。空なら自分）。先頭が `/` ならシーンの一番上からのパス（`/Cameras/Close`）。見つからなければ、そのトラックだけ飛ばして警告を1回出す。
 - **Time Mode：** Game はスロー・ヒットストップ・ポーズで止まる。Real はゲームの時間が止まっても動く。
 - **新しい種類：** `TimelineTrackOf<クリップ>` を継承して `Evaluate` を書き、ゲーム側の `.cpp` に `TIMELINE_TRACK(型, "説明");`。手順と決まりは [Tasks/Timeline.md](Tasks/Timeline.md)。
 - **直す：** Timeline ウィンドウで、トラック・クリップ・キーを直し、停止中に再生位置をつまんで結果を見る。Timeline の付いた Entity を選ぶか、Project で `.timeline` をダブルクリックして開く。使い方は [Tasks/TimelineWindow.md](Tasks/TimelineWindow.md) の 1.4。ゲーム側のトラックに `GetClipCurves`・`CanPreview` を書くと、キーとプレビューも使える。
@@ -1667,7 +1694,7 @@ void GameScene::ApplyGV() {
 | **Project** | `resources/` のファイル。左にフォルダの木、右に中身（画像は小さい絵）。シーンはダブルクリックで開く。右クリックで Create（Folder / Scene）・Rename（F2）・Delete（ごみ箱へ）・Copy Path・Show in Explorer。右上の数字でアイコンの大きさ |
 | **File** | New Scene（Ctrl+N）・Open Scene・Save（Ctrl+S）・Save As（Ctrl+Shift+S）。停止中だけ |
 | **Settings（Edit → Settings）** | 調整項目（前の Parameters ウィンドウ）。Project：Audio（音量）・PostEffect・ゲームのグループ／Editor：Scene View（Scene ビューのカメラ）。ページごとに Save / Revert、保存していなければ `*` |
-| **View → Gizmos** | ライトのアイコンと範囲、Collider の線（Colliders）の表示切り替え |
+| **View → Gizmos** | ライトのアイコンと範囲・カメラのアイコンと線（Camera Icons・Camera Paths。どれも Scene ビューだけに出る）、Collider の線（Colliders）の表示切り替え |
 | **View → Scene View → Post Effects** | Scene ビューにもポストエフェクト（ブルームなど）を掛けるか（既定 ON）。Lens は Scene ビューでは掛けない（ギズモ・クリックの位置がずれるので） |
 | **View → Scene View → Fog** | Scene ビューにも霧（Fog）を掛けるか（既定 ON）。Game ビューにはいつも掛ける |
 | **View → Scene View → Depth of Field** | Scene ビューにも被写界深度を掛けるか（既定 ON）。Game ビューにはいつも掛ける |

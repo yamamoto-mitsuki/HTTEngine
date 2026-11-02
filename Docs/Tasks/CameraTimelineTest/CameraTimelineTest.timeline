@@ -1,0 +1,39 @@
+{
+	"settings": {"length": 8.0},
+	"tracks": [
+		{"type": "TimelineCameraTrack", "settings": {"name": "Camera"}, "clips": [
+			{"start": 0.0, "duration": 2.5, "camera": "/Cameras/Cam Wide", "blendIn": 0.6, "blendEase": "InOutCubic"},
+			{"start": 2.0, "duration": 3.0, "camera": "/Cameras/Cam Dolly", "blendEase": "InOutCubic"},
+			{"start": 5.0, "duration": 1.0, "camera": "/Cameras/Cam Hero"},
+			{"start": 6.0, "duration": 1.5, "camera": "/Cameras/Cam Impact"},
+			{"start": 7.2, "duration": 1.8, "camera": "/Cameras/Cam Final", "blendEase": "InOutSine", "exit": "Ease", "exitTime": 1.2, "exitEase": "InOutCubic"}
+		]},
+		{"type": "TimelineValueTrack", "settings": {"name": "Wide FOV", "target": "/Cameras/Cam Wide", "component": "Camera", "property": "fovY"}, "clips": [
+			{"start": 0.0, "duration": 2.5, "curves": {"x": {"keys": [{"time": 0.0, "value": 50.0, "interp": "Linear"}, {"time": 2.5, "value": 35.0}]}}}
+		]},
+		{"type": "TimelineValueTrack", "settings": {"name": "Dolly", "target": "/Cameras/Cam Dolly", "component": "Camera Path", "property": "position"}, "clips": [
+			{"start": 2.0, "duration": 3.0, "curves": {"x": {"keys": [{"time": 0.0, "value": 0.0, "outHandle": [1.0, 0.0]}, {"time": 3.0, "value": 1.0, "inHandle": [-1.0, 0.0]}]}}}
+		]},
+		{"type": "TimelineValueTrack", "settings": {"name": "Hero Push", "target": "/Cameras/Cam Hero", "component": "Transform", "property": "translation"}, "clips": [
+			{"start": 5.0, "duration": 1.0, "curves": {"z": {"keys": [{"time": 0.0, "value": -5.0, "interp": "Linear"}, {"time": 1.0, "value": -3.6}]}}}
+		]},
+		{"type": "TimelineValueTrack", "settings": {"name": "Hero Focus", "target": "/Cameras/Cam Hero", "component": "Camera Volume", "property": "maxBlur"}, "clips": [
+			{"start": 5.0, "duration": 1.0, "curves": {"x": {"keys": [{"time": 0.0, "value": 2.0, "interp": "Linear"}, {"time": 1.0, "value": 14.0}]}}}
+		]},
+		{"type": "TimelineValueTrack", "settings": {"name": "Impact Noise", "target": "/Cameras/Cam Impact", "component": "Camera Shake", "property": "noiseGain"}, "clips": [
+			{"start": 6.0, "duration": 1.5, "curves": {"x": {"keys": [{"time": 0.0, "value": 1.0, "interp": "Linear"}, {"time": 1.5, "value": 0.0}]}}}
+		]},
+		{"type": "TimelineValueTrack", "settings": {"name": "Impact Exposure", "target": "/Cameras/Cam Impact", "component": "Camera Volume", "property": "exposure"}, "clips": [
+			{"start": 6.0, "duration": 0.6, "curves": {"x": {"keys": [{"time": 0.0, "value": 3.0, "interp": "Linear"}, {"time": 0.6, "value": 1.0}]}}}
+		]},
+		{"type": "TimelineValueTrack", "settings": {"name": "Impact Radial", "target": "/Cameras/Cam Impact", "component": "Camera Volume", "property": "lensRadialBlur"}, "clips": [
+			{"start": 6.0, "duration": 0.6, "curves": {"x": {"keys": [{"time": 0.0, "value": 0.15, "interp": "Linear"}, {"time": 0.6, "value": 0.0}]}}}
+		]},
+		{"type": "TimelineCameraShakeTrack", "settings": {"name": "Impact Shake"}, "clips": [
+			{"start": 6.0, "strength": 0.45, "useDirection": true, "direction": [1.0, 0.3, 0.0]}
+		]},
+		{"type": "TimelineEventTrack", "settings": {"name": "Events", "target": ""}, "clips": [
+			{"start": 6.0, "name": "HitStop", "value": "0.4"}
+		]}
+	]
+}

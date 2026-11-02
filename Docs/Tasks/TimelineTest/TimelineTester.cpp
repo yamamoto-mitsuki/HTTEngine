@@ -110,22 +110,3 @@ public:
 	void Update() override { CheckCloseKey(); }
 };
 SCRIPT(TimelineTesterScreen);
-
-
-// 新しいトラックの見本：クリップの始まる時間に、カメラを揺らす
-struct ImpulseClip : TimelineClip {
-	float strength = 0.5f; // 揺れの強さ
-
-	void Fields(ComponentUI& ui) {
-		TimelineClip::Fields(ui);
-		ui.Field("Strength###strength", strength, AtLeast(0.0f));
-	}
-};
-
-class ImpulseTrack : public TimelineTrackOf<ImpulseClip> {
-public:
-	void Evaluate(const TimelineFrame& frame, TimelineTrackState& /*state*/) const override {
-		ForEachStarted(frame.ranges, [](const ImpulseClip& clip) { CameraSystem::AddImpulse(clip.strength); });
-	}
-};
-TIMELINE_TRACK(ImpulseTrack, "クリップの始まる時間にカメラを揺らす");

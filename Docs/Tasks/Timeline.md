@@ -274,7 +274,7 @@ public:
 
 ### 1.9 新しいトラックを足す手順
 
-本体のファイルは1つも変えない。見本は `TimelineTest/TimelineTester.cpp` の `ImpulseTrack`。
+本体のファイルは1つも変えない。下の `ImpulseTrack` は書き方の例（2026-11-02 に見本の `TimelineTester.cpp` から消した。カメラを揺らすのはエンジンの `TimelineCameraShakeTrack` を使う。[CameraTimeline.md](CameraTimeline.md) の 1.12）。
 
 **1. クリップを書く。** `TimelineClip` を継承して、値と `Fields` を足す。`Fields` の並びがファイルの項目になる。
 

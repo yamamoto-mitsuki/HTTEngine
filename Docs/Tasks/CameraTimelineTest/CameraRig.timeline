@@ -1,0 +1,12 @@
+{
+	"settings": {"length": 2.0},
+	"tracks": [
+		{"type": "TimelineCameraTrack", "settings": {"name": "Camera"}, "clips": [
+			{"start": 0.0, "duration": 1.2, "camera": "Rig Cam A"},
+			{"start": 0.9, "duration": 1.1, "camera": "Rig Cam B", "blendEase": "InOutCubic", "exit": "Ease", "exitTime": 0.8, "exitEase": "InOutCubic"}
+		]},
+		{"type": "TimelineValueTrack", "settings": {"name": "A FOV", "target": "Rig Cam A", "component": "Camera", "property": "fovY"}, "clips": [
+			{"start": 0.0, "duration": 1.2, "curves": {"x": {"keys": [{"time": 0.0, "value": 60.0, "interp": "Linear"}, {"time": 1.2, "value": 40.0}]}}}
+		]}
+	]
+}
