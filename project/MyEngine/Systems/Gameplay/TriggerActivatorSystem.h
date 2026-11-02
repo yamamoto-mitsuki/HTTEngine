@@ -1,4 +1,6 @@
 #pragma once
+#include "MyEngine/Core/Handle.h"
+#include "MyEngine/ECS/Entity.h"
 #include "MyEngine/Components/Gameplay/TriggerActivatorComponent.h"
 
 /// <summary>
@@ -20,4 +22,11 @@ public:
 	/// <param name="isGameRunning">再生中か（一時停止中も true。そのときは deltaTime が 0 なので、フェードは止まる）</param>
 	/// <param name="deltaTime">経過秒（Time::GetDeltaTime）</param>
 	static void Update(bool isGameRunning, float deltaTime);
+
+	/// <summary>
+	/// 今、反応する相手が entity の Collider の範囲の中にいるか（Enter・Stay の当たりに、相手が1つでもあれば中）。Timeline Trigger も使う
+	/// </summary>
+	/// <param name="source">誰が入ったら反応するか</param>
+	/// <param name="sourceEntity">source が Entity のときの相手</param>
+	static bool IsSourceInside(Handle<Entity> entity, TriggerSource source, EntityRef sourceEntity);
 };

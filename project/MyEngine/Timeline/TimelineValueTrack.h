@@ -26,10 +26,11 @@ struct TimelineValueClip : TimelineClip {
 /// </summary>
 class TimelineValueTrack : public TimelineTrackOf<TimelineValueClip> {
 public:
-	std::string component = "Transform";  // Component の名前（Inspector の見出しと同じ。Script の名前でもよい）
-	std::string property = "translation"; // 項目の名前
+	TimelinePropertyBinding binding; // 動かす Component と項目
 
-	void Fields(ComponentUI& ui) override;
+	void Fields(ComponentUI& ui) override { binding.Fields(ui); }
+	TimelinePropertyBinding* GetPropertyBinding() override { return &binding; }
+	const TimelinePropertyBinding* GetPropertyBinding() const override { return &binding; }
 	void Evaluate(const TimelineFrame& frame, TimelineTrackState& state) const override;
 	std::span<Curve> GetClipCurves(size_t index) override { return clips[index].curves; }
 	bool CanPreview() const override { return true; }

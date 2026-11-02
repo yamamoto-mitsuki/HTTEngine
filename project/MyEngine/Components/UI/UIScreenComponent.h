@@ -1,11 +1,14 @@
 #pragma once
+#include <cstdint>
 #include <type_traits>
 
 #include "MyEngine/Math/Easing.h"
+#include "MyEngine/Time/EngineTime.h"
 
 // 画面（ポーズ画面・クリア画面など）の出し方・消し方。resources/ui/〇〇.uiscreen の一番上の Entity に付ける（カテゴリ：UI）
 // 動かすのは UIScreen（UI/UIScreen.h）。UIScreen::Open で出して、UIScreen::Close で消す
-// 動く単位は「一番上の Entity の直下の子」1つずつ。Hierarchy の上から順に、Stagger の秒ずつ遅れて動く
+// 出し方・消し方は2通り：Timeline（一番上の Entity を再生する Entity にして再生する。要素ごとに好きに動かせる）か、
+// Motion（ファイル無しで、一番上の Entity の直下の子を1つずつ同じ動きで動かす。Hierarchy の上から順に、Stagger の秒ずつ遅れて動く）
 
 /// <summary>
 /// 出し方・消し方の動き
@@ -46,8 +49,11 @@ static_assert(std::is_trivially_copyable_v<UIScreenMotion>);
 /// 画面の出し方・消し方（画面のファイルの一番上の Entity に付ける）
 /// </summary>
 struct UIScreenComponent {
-	bool pauseGame = true;                                                                                  // 出している間、ゲームを止める（Time::SetGamePaused。中の Script は動く）
-	UIScreenMotion show;                                                                                    // 出し方
+	bool pauseGame = true;              // 出している間、ゲームを止める（Time::SetGamePaused。中の Script は動く）
+	TimeMode timeMode = TimeMode::Real; // 出す・消す動きの時間（Pause Game を入れた画面は、いつも Real）
+	uint32_t showTimeline = 0;          // 出すときに再生する .timeline（選べば Show の Motion の代わりに使う。0 なら Motion）
+	uint32_t hideTimeline = 0;          // 消すときに再生する .timeline（選べば Hide の Motion の代わりに使う。0 なら Motion）
+	UIScreenMotion show;                // 出し方
 	UIScreenMotion hide = {.type = UIScreenMotionType::Fade, .duration = 0.2f, .ease = Ease::Type::Linear}; // 消し方
 	float showStagger = 0.05f; // 出すとき、要素1つごとに遅らせる秒数（上から2つ目は 0.05 秒、3つ目は 0.1 秒遅れて動き出す）
 	float hideStagger = 0.0f;  // 消すとき、要素1つごとに遅らせる秒数

@@ -44,12 +44,6 @@ void TimelineValueClip::ReadExtra(SceneJson& in, std::set<std::string>& warnings
 //=============================================================================
 // トラック
 //=============================================================================
-// ===== 見せ方 =====
-void TimelineValueTrack::Fields(ComponentUI& ui) {
-	ui.Field("Component###component", component, Tip("動かす Component の名前（Inspector の見出しと同じ。Image・Vector Shape など）"));
-	ui.Field("Property###property", property, Tip("動かす項目の名前（Transform は translation・rotation・scale。ほかはシーンファイルに書かれている名前）"));
-}
-
 // ===== 動かす =====
 void TimelineValueTrack::Evaluate(const TimelineFrame& frame, TimelineTrackState& state) const {
 	if (clips.empty()) {
@@ -72,14 +66,14 @@ void TimelineValueTrack::Evaluate(const TimelineFrame& frame, TimelineTrackState
 		return;
 	}
 	// --- 書く ---
-	switch (ComponentSerializer::SetValue(entity, component, property, value)) {
+	switch (ComponentSerializer::SetValue(entity, binding.component, binding.property, value)) {
 	case ComponentValueResult::Written:
 		break;
 	case ComponentValueResult::NoComponent:
-		WarnOnce(state, std::format("\"{}\" に Component \"{}\" がありません", target, component));
+		WarnOnce(state, std::format("\"{}\" に Component \"{}\" がありません", target, binding.component));
 		break;
 	case ComponentValueResult::NoField:
-		WarnOnce(state, std::format("Component \"{}\" に、動かせる項目 \"{}\" がありません", component, property));
+		WarnOnce(state, std::format("Component \"{}\" に、動かせる項目 \"{}\" がありません", binding.component, binding.property));
 		break;
 	}
 }

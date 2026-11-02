@@ -7,6 +7,7 @@
 #include "MyEngine/Core/Handle.h"
 #include "MyEngine/ECS/Entity.h"
 #include "MyEngine/Editor/Widgets/CurveEditor.h"
+#include "MyEngine/Systems/Animation/TimelineSystem.h"
 #include "MyEngine/Timeline/TimelineManager.h"
 #include "MyEngine/Timeline/TimelinePlayhead.h"
 #include "MyEngine/Timeline/TimelineTimeView.h"
@@ -39,13 +40,39 @@ enum class TimelineDrag {
 };
 
 /// <summary>
+/// 再生する Entity の、Timeline のファイルを選ぶ欄1つ（Timeline Component の Timeline・UI Screen の Show・UI State の Hover など）
+/// </summary>
+struct TimelineSource {
+	std::string label;                              // 欄の名前（Timeline・Show・Hover など）
+	uint32_t handle = 0;                            // 欄のファイル（0 なら空）
+	TimelineLayer layer = TimelineLayer::Component; // Play 中に、再生の様子を読む層
+	std::function<void(uint32_t)> assign;           // 欄にファイルを入れる（Inspector で変えたときと同じく Undo に積む）
+};
+
+/// <summary>
+/// 前に開いていた物（Preset を開いた後に Back で戻る）
+/// </summary>
+struct TimelineBackItem {
+	uint32_t handle = 0;
+	EntityId ownerId = 0;
+	int source = -1;
+	bool isExplicitOwner = false;
+};
+
+/// <summary>
 /// Timeline ウィンドウの状態（1つのファイルだけ開ける）
 /// </summary>
 struct TimelineEditorState {
 	// ===== 開いている物 =====
-	uint32_t handle = 0;  // 開いているファイル（0 なら開いていない）
-	EntityId ownerId = 0; // 再生する Entity。Play・Stop で作り直されると Handle は変わるが、番号は変わらない
-	Handle<Entity> owner; // ownerId から毎フレーム引き直す（居なければ無効。プレビューできない）
+	uint32_t handle = 0;                     // 開いているファイル（0 なら開いていない）
+	EntityId ownerId = 0;                    // 再生する Entity。Play・Stop で作り直されると Handle は変わるが、番号は変わらない
+	Handle<Entity> owner;                    // ownerId から毎フレーム引き直す（居なければ無効。プレビューできない）
+	std::vector<TimelineSource> sources;     // 再生する Entity の Timeline の欄（毎フレーム集め直す）
+	int source = -1;                         // 開いているファイルの欄の番号（-1：欄からではない。Project から開いた・Preset を開いた）
+	bool isExplicitOwner = false;            // 欄に無いファイルでも、owner でプレビューする（Preset を、その対象の上で開いた）
+	std::vector<TimelineBackItem> backStack; // Back で戻る先（Preset を開くたびに積む）
+	uint32_t openRequest = 0;                // 次に描くときの頭で開くファイル（詳細の Preset の Open。0 なら頼まれていない）
+	EntityId openOwnerId = 0;                // そのときの、再生する Entity
 
 	// ===== 見え方 =====
 	TimelineTimeView view;  // 見ている時間の範囲
@@ -82,6 +109,8 @@ struct TimelineEditorState {
 	std::span<Curve> GetSelectedCurves() const;
 	// 時間を目盛りへそろえる（Ctrl を押している間はそろえない）
 	float Snap(float value) const;
+	// Play 中に再生の様子を読む層（欄から開いていなければ Component）
+	TimelineLayer GetLayer() const { return (source >= 0 && source < static_cast<int>(sources.size())) ? sources[source].layer : TimelineLayer::Component; }
 
 	// ===== 変える =====
 	// 中身を直した後に呼ぶ（操作が終わったら TimelineWindow が保存して Undo に積む）

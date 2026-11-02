@@ -22,22 +22,16 @@ namespace {
 bool IsSelfOrDescendant(Handle<Entity> other, Handle<Entity> who) { return who.IsValid() && (other == who || EntityManager::IsDescendantOf(other, who)); }
 
 // other が、反応する相手か
-bool IsSource(const TriggerActivatorComponent& activator, Handle<Entity> other) {
-	switch (activator.source) {
+bool IsSource(TriggerSource source, EntityRef sourceEntity, Handle<Entity> other) {
+	switch (source) {
 	case TriggerSource::FollowTarget:
 		return IsSelfOrDescendant(other, CameraSystem::GetFollowTargetEntity());
 	case TriggerSource::Entity:
-		return IsSelfOrDescendant(other, EntityManager::Find(activator.sourceEntity));
+		return IsSelfOrDescendant(other, EntityManager::Find(sourceEntity));
 	case TriggerSource::AnyRigidbody:
 		return EntityManager::Get<RigidbodyComponent>(other) != nullptr;
 	}
 	return false;
-}
-
-// 今、反応する相手が範囲の中にいるか（自分の当たりのうち、Enter・Stay の物に、相手が1つでもあれば中）
-// Exit の知らせを待たずに毎フレーム数え直すので、中にいた相手が消えても（Exit が来なくても）、次のフレームには「出た」になる
-bool IsSourceInside(Handle<Entity> entity, const TriggerActivatorComponent& activator) {
-	return std::ranges::any_of(CollisionSystem::GetHits(entity), [&activator](const CollisionHit& hit) { return hit.phase != HitPhase::Exit && IsSource(activator, hit.other); });
 }
 
 //=============================================================================
@@ -179,6 +173,14 @@ void TriggerActivatorSystem::Initialize() {
 void TriggerActivatorSystem::Release() {} // 持っている物は無い（実行中の値は、全部 Component の中）
 
 //=============================================================================
+// 範囲に入ったか
+//=============================================================================
+bool TriggerActivatorSystem::IsSourceInside(Handle<Entity> entity, TriggerSource source, EntityRef sourceEntity) {
+	// Exit の知らせを待たずに毎フレーム数え直すので、中にいた相手が消えても（Exit が来なくても）、次のフレームには「出た」になる
+	return std::ranges::any_of(CollisionSystem::GetHits(entity), [&](const CollisionHit& hit) { return hit.phase != HitPhase::Exit && IsSource(source, sourceEntity, hit.other); });
+}
+
+//=============================================================================
 // 毎フレーム
 //=============================================================================
 void TriggerActivatorSystem::Update(bool isGameRunning, float deltaTime) {
@@ -200,7 +202,7 @@ void TriggerActivatorSystem::Update(bool isGameRunning, float deltaTime) {
 		}
 		// --- 入った・出たを見る（Enabled を外した・Entity が無効の間は見ない。フェードは続ける）---
 		if (activator.enabled && EntityManager::IsActiveInHierarchy(entity)) {
-			const bool isInside = IsSourceInside(entity, activator);
+			const bool isInside = IsSourceInside(entity, activator.source, activator.sourceEntity);
 			if (isInside && !activator.isInside) {
 				React(activator.onEnter, activator.isEnterUsed, activator, *target);
 			} else if (!isInside && activator.isInside) {

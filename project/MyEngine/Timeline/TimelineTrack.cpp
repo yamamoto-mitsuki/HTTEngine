@@ -39,6 +39,12 @@ void TimelineTrack::DescribeCommon(ComponentUI& ui) {
 
 // ===== 対象を探す =====
 Handle<Entity> TimelineTrack::FindTarget(const TimelineFrame& frame, TimelineTrackState& state) const {
+	// 実行中に差し替えた対象があれば、それを使う（差し替えた先の Timeline のトラックだけ。Preset の中のパスは別の Entity から数えるので使わない）
+	if (frame.overrides != nullptr && frame.overrides->owner == frame.owner) {
+		if (const Handle<Entity>* replaced = frame.overrides->FindTarget(target)) {
+			return EntityManager::IsAlive(*replaced) ? *replaced : Handle<Entity>{};
+		}
+	}
 	// 覚えている相手が生きていれば、それを使う（探すのは Entity を全部調べるので、毎フレームはしない）
 	if (EntityManager::IsAlive(state.target)) {
 		return state.target;
@@ -63,6 +69,27 @@ void TimelineTrack::WarnOnce(TimelineTrackState& state, std::string_view message
 		state.isWarned = true;
 		LogManager::Warning(std::format("Timeline のトラック \"{}\"：{}", name, message));
 	}
+}
+
+//=============================================================================
+// 実行中に渡した値・差し替えた対象
+//=============================================================================
+const Vector4* TimelineOverrides::FindParameter(std::string_view name) const {
+	const auto found = std::ranges::find(parameters, name, &TimelineParameter::name);
+	return (found != parameters.end()) ? &found->value : nullptr;
+}
+
+const Handle<Entity>* TimelineOverrides::FindTarget(std::string_view path) const {
+	const auto found = std::ranges::find(targets, path, &TimelineTargetOverride::path);
+	return (found != targets.end()) ? &found->target : nullptr;
+}
+
+//=============================================================================
+// Component の項目の指し方
+//=============================================================================
+void TimelinePropertyBinding::Fields(ComponentUI& ui) {
+	ui.Field("Component###component", component, Tip("動かす Component の名前（Inspector の見出しと同じ。Image・Vector Shape など）"));
+	ui.Field("Property###property", property, Tip("動かす項目の名前（Transform は translation・rotation・scale。ほかはシーンファイルに書かれている名前）"));
 }
 
 //=============================================================================

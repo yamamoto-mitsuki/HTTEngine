@@ -15,6 +15,7 @@
 #include "MyEngine/Curve/Curve.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/Entity.h"
+#include "MyEngine/Math/Vector4.h"
 #include "MyEngine/Time/EngineTime.h"
 #include "MyEngine/Timeline/TimelineEvent.h"
 #include "MyEngine/Timeline/TimelinePlayhead.h"
@@ -36,6 +37,36 @@
 // Entity ごとに変わる値は TimelineTrackState を継承して持つ
 
 /// <summary>
+/// 実行中に渡した値1つ（TimelineSystem::SetParameter。Tween の Parameter が名前で読む）
+/// </summary>
+struct TimelineParameter {
+	std::string name;
+	Vector4 value;
+};
+
+/// <summary>
+/// 実行中に差し替えた対象1つ（TimelineSystem::SetTargetOverride）
+/// </summary>
+struct TimelineTargetOverride {
+	std::string path;      // トラックの Target に書いてある文字
+	Handle<Entity> target; // 代わりに動かす Entity
+};
+
+/// <summary>
+/// 再生する Entity に、実行中に渡した値・差し替えた対象（同じ Entity の全部の層の再生が見る）
+/// </summary>
+struct TimelineOverrides {
+	Handle<Entity> owner;                        // 渡した先の、再生する Entity（対象の差し替えは、この Entity を再生する Entity にしたトラックだけに効く）
+	std::vector<TimelineParameter> parameters;   // 渡した値
+	std::vector<TimelineTargetOverride> targets; // 差し替えた対象
+
+	// 名前の値（無ければ nullptr）
+	const Vector4* FindParameter(std::string_view name) const;
+	// path の代わりの Entity（無ければ nullptr）
+	const Handle<Entity>* FindTarget(std::string_view path) const;
+};
+
+/// <summary>
 /// 1フレーム分の再生の様子（トラックの Evaluate に渡す）
 /// </summary>
 struct TimelineFrame {
@@ -45,6 +76,17 @@ struct TimelineFrame {
 	std::vector<TimelineEvent>* events = nullptr; // 呼ぶイベントを足す場所（全部の値を書いた後にまとめて呼ばれる）
 	TimeMode timeMode = TimeMode::Game;           // 再生に使っている時間（Timeline Component の Time Mode）
 	bool isPreview = false;                       // エディタの停止中のプレビュー
+	const TimelineOverrides* overrides = nullptr; // 実行中に渡した値・差し替えた対象（無ければ nullptr。プレビューも nullptr）
+};
+
+/// <summary>
+/// Component の1つの項目の指し方（値のトラック・Tween のトラックが持つ。Timeline ウィンドウの Component・Property の欄に使う）
+/// </summary>
+struct TimelinePropertyBinding {
+	std::string component = "Transform";  // Component の名前（Inspector の見出しと同じ。Script の名前でもよい）
+	std::string property = "translation"; // 項目の名前
+
+	void Fields(ComponentUI& ui);
 };
 
 /// <summary>
@@ -121,6 +163,9 @@ public:
 	virtual bool CanPreview() const { return false; }
 	// 時間が止まっている間も、毎フレーム Evaluate を呼ぶか（カメラの切り替えのように、毎フレーム頼む種類）。再生していない（Stopped）間は呼ばない
 	virtual bool EvaluatesEveryFrame() const { return false; }
+	// Component の1つの項目を動かす種類なら、その指し方（Timeline ウィンドウが Component・Property の欄を出す）。違えば nullptr
+	virtual TimelinePropertyBinding* GetPropertyBinding() { return nullptr; }
+	virtual const TimelinePropertyBinding* GetPropertyBinding() const { return nullptr; }
 
 	// ===== 再生 =====
 	// Entity ごとの値を作る（再生を始めるときに1回）

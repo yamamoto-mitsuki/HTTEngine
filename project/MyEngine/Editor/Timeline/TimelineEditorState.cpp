@@ -37,7 +37,10 @@ void TimelineEditorState::MarkEdited() {
 void TimelineEditorState::SeekTo(float value) {
 	time = std::clamp(value, 0.0f, duration);
 	if (isGameRunning) {
-		TimelineSystem::Seek(owner, time);
+		// Play 中に動かせるのは Timeline Component の再生だけ（UI State・UI Screen の再生は、その係が時間を決める）
+		if (GetLayer() == TimelineLayer::Component) {
+			TimelineSystem::Seek(owner, time);
+		}
 		return;
 	}
 	playhead.Seek(time, duration);

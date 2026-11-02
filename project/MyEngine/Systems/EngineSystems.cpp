@@ -24,6 +24,7 @@
 // GamePlay
 #include "MyEngine/Systems/Gameplay/ScriptSystem.h"
 #include "MyEngine/Systems/Gameplay/AttackTableSystem.h"
+#include "MyEngine/Systems/Gameplay/TimelineTriggerSystem.h"
 #include "MyEngine/Systems/Gameplay/TriggerActivatorSystem.h"
 // Lights
 #include "MyEngine/Systems/Lighting/LightSystem.h"
@@ -41,8 +42,11 @@
 #include "MyEngine/Systems/Rendering3D/PolygonShapeSystem.h"
 #include "MyEngine/Systems/Rendering3D/PrimitiveRenderSystem.h"
 // UI
+#include "MyEngine/Systems/UI/UIStateSystem.h"
 #include "MyEngine/Systems/UI/TextRenderSystem.h"
 #include "MyEngine/Systems/UI/VectorShapeSystem.h"
+
+
 #include "MyEngine/Time/EngineTime.h"
 #include "MyEngine/UI/UIScreen.h"
 #ifdef USE_IMGUI
@@ -84,12 +88,14 @@ void EngineSystems::Initialize() {
 	FogSystem::Initialize();              // Fog
 	DepthOfFieldSystem::Initialize();     // Depth Of Field
 	TriggerActivatorSystem::Initialize(); // Trigger Activator
+	TimelineTriggerSystem::Initialize();  // Timeline Trigger（範囲に入ったら Timeline を再生する）
 	AttackTableManager::Initialize();     // 攻撃表（.attacktable）。AttackTableSystem が読むので先に
 	AttackTableSystem::Initialize();      // Attack Table
 	CurveManager::Initialize();           // カーブ（.curve）
 	TimelineManager::Initialize();        // Timeline（.timeline）。TimelineSystem が読むので先に
 	TimelineSystem::Initialize();         // Timeline
 	UIScreen::Initialize();               // UI Screen・UI Screen Element
+	UIStateSystem::Initialize();          // UI State（要素の状態で Timeline を再生する）
 #ifdef USE_IMGUI
 	UIScreenEditor::Initialize(); // .uiscreen のファイルを Inspector に出す（Edit UI Screen のボタン）
 	AttackTableEditor::Initialize(); // .attacktable のファイルを Inspector で直す
@@ -126,11 +132,13 @@ void EngineSystems::Release() {
 	FogSystem::Release();
 	DepthOfFieldSystem::Release();
 	TriggerActivatorSystem::Release();
+	TimelineTriggerSystem::Release();
 	AttackTableSystem::Release();
 	AttackTableManager::Release();
 	CurveManager::Release();
 	TimelineSystem::Release();
 	TimelineManager::Release();
+	UIStateSystem::Release();
 	UIScreen::Release();
 
 	AnimationSystem::Release(); // AnimationManager::Release より前にする（AnimationPlayer が中身を見ているので）
@@ -162,6 +170,7 @@ void EngineSystems::Update(bool isGameRunning, const std::shared_ptr<Camera>& ga
 	ParticleManager::SetCamera(gameCamera); // パーティクルのビルボード用カメラは、現在のシーンから毎フレーム取る。見つけたカメラを毎フレーム渡す（シーンが替わっても古いカメラを掴まない）
 	AttackTableSystem::Update(isGameRunning, Time::GetDeltaTime()); // 攻撃表の AI（シーン・Script・SYSTEM の後。攻撃部品が動かした位置を、このフレームのワールド行列・物理に使う）
 	AnimationSystem::Update(isGameRunning, Time::GetDeltaTime());   // アニメーション。停止中もInspectorのPreview Timeのポーズを見せる。
+	UIStateSystem::Update(isGameRunning);                           // UI State（マウスで状態を決めて、状態の Timeline の再生を頼む。Script の後・Timeline の前）
 	TimelineSystem::Update(isGameRunning);                          // Timeline（Script とアニメーションの後。書いた値を、このフレームのワールド行列・描画に使う。時間は Component ごとに選ぶ）
 	EntityManager::UpdateTransforms();      // ワールド行列（親→子）
 	WindZoneSystem::Update(isGameRunning, Time::GetDeltaTime()); // 風（Wind Zone）の範囲を集め直して、再生中なら Rigidbody を押す（押した速さで、すぐ後の物理が動かす）。画面の風の線の値も書く
@@ -186,7 +195,8 @@ void EngineSystems::Update(bool isGameRunning, const std::shared_ptr<Camera>& ga
 	EntityManager::FlushDestroy();          // 破棄予約の反映
 	CollisionSystem::Update();              // 当たり判定（消すと決めたEntityを消した後。結果は次のフレームのSYSTEMが読む）
 	TriggerActivatorSystem::Update(isGameRunning, Time::GetDeltaTime()); // 範囲に入った・出たで、Target を出す・消す（当たり判定の後。入ったフレームのうちに出し始める）
-	UIScreen::Update(isGameRunning);        // 画面（ポーズ画面など）の出す・消す動きを進めて、ゲームを止める・動かす（止めない時間で動く）
+	TimelineTriggerSystem::Update(isGameRunning);                        // 範囲に入った・出たで、Timeline の再生を頼む（当たり判定の後。値が動くのは次のフレームの TimelineSystem::Update から）
+	UIScreen::Update(isGameRunning);        // 画面（ポーズ画面など）の出す・消す動きを進めて、ゲームを止める・動かす（Motion の動きと、Timeline が終わったかを見る）
 	SceneTransition::Update(isGameRunning); // シーンを切り替える幕を進める（閉じきったら切り替えを頼む。切り替わるのは次のフレームの頭）
 	AudioSystem::Update(isGameRunning, gameCamera.get()); // 音（消したEntityの音を止めるので、FlushDestroy の後）。エディタの停止中はAudioSourceを鳴らさない
 	TrailSystem::Update(isGameRunning, Time::GetDeltaTime());

@@ -8,8 +8,8 @@
 
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/Components/UI/AlphaGroupComponent.h"
 #include "MyEngine/Components/Core/TransformComponent.h"
+#include "MyEngine/Components/UI/AlphaGroupComponent.h"
 #include "MyEngine/Components/UI/UIScreenComponent.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
@@ -23,6 +23,7 @@
 #include "MyEngine/Scene/SceneManager.h"
 #include "MyEngine/Scene/SceneSerializer.h"
 #include "MyEngine/String/ConvertString.h"
+#include "MyEngine/Systems/Animation/TimelineSystem.h"
 #include "MyEngine/Time/EngineTime.h"
 
 namespace {
@@ -37,17 +38,25 @@ enum class UIScreenPhase {
 };
 
 /// <summary>
+/// 要素の形（Motion が動かす3つの値）
+/// </summary>
+struct UIScreenPose {
+	Vector3 translation;
+	Vector3 scale;
+	float alpha = 1.0f; // Alpha Group の Alpha
+};
+
+/// <summary>
 /// 動く要素1つ（画面の一番上の Entity の直下の子）
 /// </summary>
 struct UIScreenElement {
 	Handle<Entity> entity;
-	Vector3 baseTranslation; // 出きったときの位置（ファイルに書いてある位置）
-	Vector3 baseScale;       // 出きったときの大きさ
-	float baseAlpha = 1.0f;  // 出きったときの Alpha Group の Alpha
-	UIScreenMotion show;     // 出し方（UI Screen Element で変えていれば、そちら）
-	UIScreenMotion hide;     // 消し方
-	float showDelay = 0.0f;  // 出し始めるまでの秒（Stagger × 何番目か ＋ UI Screen Element の Delay）
-	float hideDelay = 0.0f;  // 消し始めるまでの秒
+	UIScreenPose basePose;  // 出きったときの形（ファイルに書いてある形。出すときの基準）
+	UIScreenPose closePose; // Close したときの形（消すときの基準。出している途中に閉じても、その形から消える）
+	UIScreenMotion show;    // 出し方（UI Screen Element で変えていれば、そちら）
+	UIScreenMotion hide;    // 消し方
+	float showDelay = 0.0f; // 出し始めるまでの秒（Stagger × 何番目か ＋ UI Screen Element の Delay）
+	float hideDelay = 0.0f; // 消し始めるまでの秒
 };
 
 /// <summary>
@@ -57,11 +66,14 @@ struct OpenUIScreen {
 	std::string name;
 	Handle<Entity> root; // 一番上の Entity（UI Screen Component が付いている）
 	UIScreenPhase phase = UIScreenPhase::Waiting;
-	float time = 0.0f;                     // 出し始めて・消し始めてからの秒（止めない時間）
+	float time = 0.0f;                     // 出し始めて・消し始めてからの秒
 	bool pauseGame = false;                // 出している間、ゲームを止めるか
+	TimeMode timeMode = TimeMode::Real;    // 出す・消す動きの時間
+	uint32_t showTimeline = 0;             // 出すときの Timeline（0 なら Motion）
+	uint32_t hideTimeline = 0;             // 消すときの Timeline（0 なら Motion）
 	std::vector<UIScreenElement> elements; // 動く要素（Hierarchy の上から順）
-	float showEnd = 0.0f;                  // 全部の要素が出きる秒
-	float hideEnd = 0.0f;                  // 全部の要素が消えきる秒
+	float showEnd = 0.0f;                  // 全部の要素が出きる秒（Motion）
+	float hideEnd = 0.0f;                  // 全部の要素が消えきる秒（Motion）
 };
 
 /// <summary>
@@ -106,16 +118,27 @@ float CalcVisible(const UIScreenMotion& motion, float time, float delay, bool is
 	return isShowing ? eased : 1.0f - eased;
 }
 
-// ===== 要素1つに、見えている量 visible の形を当てる（Translation・Scale・Alpha Group の Alpha）=====
-void ApplyElement(const UIScreenElement& element, const UIScreenMotion& motion, float visible) {
+// ===== 要素の今の形（Transform か Alpha Group が無ければ false）=====
+bool ReadPose(Handle<Entity> entity, UIScreenPose& out) {
+	const TransformComponent* transform = EntityManager::Get<TransformComponent>(entity);
+	const AlphaGroupComponent* group = EntityManager::Get<AlphaGroupComponent>(entity);
+	if (transform == nullptr || group == nullptr) {
+		return false;
+	}
+	out = {transform->translation, transform->scale, group->enabled ? group->alpha : 1.0f}; // 切ってあった Alpha Group は 1 と同じ
+	return true;
+}
+
+// ===== 要素1つに、pose を基準にして、見えている量 visible の形を当てる（Translation・Scale・Alpha Group の Alpha）=====
+void ApplyElement(const UIScreenElement& element, const UIScreenPose& pose, const UIScreenMotion& motion, float visible) {
 	TransformComponent* transform = EntityManager::Get<TransformComponent>(element.entity);
 	AlphaGroupComponent* group = EntityManager::Get<AlphaGroupComponent>(element.entity);
 	if (transform == nullptr || group == nullptr) {
 		return;
 	}
-	Vector3 translation = element.baseTranslation;
-	Vector3 scale = element.baseScale;
-	float alpha = element.baseAlpha;
+	Vector3 translation = pose.translation;
+	Vector3 scale = pose.scale;
+	float alpha = pose.alpha;
 	switch (motion.type) {
 	case UIScreenMotionType::None:
 		break; // 動かさない
@@ -134,17 +157,27 @@ void ApplyElement(const UIScreenElement& element, const UIScreenMotion& motion, 
 	}
 	transform->translation = translation;
 	transform->scale = scale;
+	group->enabled = true;
 	group->alpha = std::clamp(alpha, 0.0f, 1.0f);
 }
 
-// ===== 画面の全部の要素に、今の時間の形を当てる =====
+// ===== 画面の全部の要素に、今の時間の形を当てる（Motion）=====
 void ApplyScreen(const OpenUIScreen& screen) {
 	const bool isShowing = (screen.phase != UIScreenPhase::Hiding);
 	for (const UIScreenElement& element : screen.elements) {
 		const UIScreenMotion& motion = isShowing ? element.show : element.hide;
 		const float delay = isShowing ? element.showDelay : element.hideDelay;
-		ApplyElement(element, motion, CalcVisible(motion, screen.time, delay, isShowing));
+		ApplyElement(element, isShowing ? element.basePose : element.closePose, motion, CalcVisible(motion, screen.time, delay, isShowing));
 	}
+}
+
+// ===== 出す・消す Timeline を再生する =====
+void PlayScreenTimeline(const OpenUIScreen& screen, uint32_t timeline) { TimelineSystem::PlayLayer(screen.root, TimelineLayer::UIScreen, {.timeline = timeline, .timeMode = screen.timeMode}); }
+
+// ===== 出す・消す Timeline が終わったか（再生していない・ファイルが無いときも終わった扱い）=====
+bool IsScreenTimelineFinished(const OpenUIScreen& screen) {
+	const TimelineStatus status = TimelineSystem::GetStatus(screen.root, TimelineLayer::UIScreen);
+	return !status.isValid || status.state == TimelinePlayState::Finished || status.state == TimelinePlayState::Stopped;
 }
 
 // ===== Component が付いた画面の要素を集めて、出し始める（フレームの頭で呼ぶ。Alpha Group をその場で付けるので）=====
@@ -160,27 +193,26 @@ void BeginShow(OpenUIScreen& screen) {
 		settings.hide.type = UIScreenMotionType::None;
 	}
 	screen.pauseGame = settings.pauseGame;
+	screen.timeMode = settings.pauseGame ? TimeMode::Real : settings.timeMode; // ゲームを止める画面が、自分の時間で止まらないように
+	screen.showTimeline = settings.showTimeline;
+	screen.hideTimeline = settings.hideTimeline;
 
 	// --- 要素（直下の子。Hierarchy の上から順）---
 	std::vector<Handle<Entity>> children;
 	EntityManager::GetChildren(screen.root, children);
 	screen.elements.clear();
 	for (size_t i = 0; i < children.size(); ++i) {
-		const TransformComponent* transform = EntityManager::Get<TransformComponent>(children[i]);
-		if (transform == nullptr) {
+		if (EntityManager::Get<TransformComponent>(children[i]) == nullptr) {
 			continue;
 		}
 		// フェードは Alpha Group で掛ける。無ければ今付ける（フレームの頭なので、予約せずにその場で付けてよい）
 		if (EntityManager::Get<AlphaGroupComponent>(children[i]) == nullptr) {
 			EntityManager::RestoreComponents(children[i], {ComponentSnapshot::Make(AlphaGroupComponent{})});
 		}
-		AlphaGroupComponent* group = EntityManager::Get<AlphaGroupComponent>(children[i]);
 		UIScreenElement element;
 		element.entity = children[i];
-		element.baseTranslation = transform->translation;
-		element.baseScale = transform->scale;
-		element.baseAlpha = group->enabled ? group->alpha : 1.0f; // 切ってあった Alpha Group は 1 と同じ
-		group->enabled = true;
+		ReadPose(children[i], element.basePose);
+		element.closePose = element.basePose;
 		element.show = settings.show;
 		element.hide = settings.hide;
 		float extraDelay = 0.0f;
@@ -197,16 +229,84 @@ void BeginShow(OpenUIScreen& screen) {
 	}
 	screen.phase = UIScreenPhase::Showing;
 	screen.time = 0.0f;
-	ApplyScreen(screen); // 描く前に、出し始めの形にしておく
+	// --- 描く前に、出し始めの形にしておく（Timeline はこのフレームの TimelineSystem::Update が最初の値を書く）---
+	if (screen.showTimeline != 0) {
+		PlayScreenTimeline(screen, screen.showTimeline);
+	} else {
+		ApplyScreen(screen);
+	}
 }
 
-// ===== 画面がゲームを止めるか（止める画面が1つでも出ていれば止める。消している途中の画面は数えない）=====
+// ===== 消し始める =====
+void BeginHide(OpenUIScreen& screen) {
+	screen.phase = UIScreenPhase::Hiding;
+	screen.time = 0.0f;
+	if (screen.hideTimeline != 0) {
+		PlayScreenTimeline(screen, screen.hideTimeline); // 出す Timeline と同じ層なので、出す方は置き換わって止まる
+		return;
+	}
+	// --- Motion：今の形から消す（出す Timeline が書くのもやめる）---
+	TimelineSystem::StopLayer(screen.root, TimelineLayer::UIScreen);
+	for (UIScreenElement& element : screen.elements) {
+		ReadPose(element.entity, element.closePose);
+	}
+}
+
+// ===== 画面がゲームを止めるか =====
+// 止める画面が1つでも出ていれば止める。消している途中の画面は数えない。
+// Component が付くのを待っている画面は、止めているかが分からないので今のまま（Switch Screen で消して出す間に、1フレームだけ動き出さないように）
 void UpdatePause() {
-	const bool wantsPause = std::ranges::any_of(state->screens, [](const OpenUIScreen& screen) { return screen.pauseGame && screen.phase != UIScreenPhase::Hiding; });
+	const bool wantsPause = std::ranges::any_of(state->screens, [](const OpenUIScreen& screen) {
+		switch (screen.phase) {
+		case UIScreenPhase::Waiting:
+			return state->isPausing;
+		case UIScreenPhase::Showing:
+		case UIScreenPhase::Shown:
+			return screen.pauseGame;
+		case UIScreenPhase::Hiding:
+			return false;
+		}
+		return false;
+	});
 	if (wantsPause != state->isPausing) {
 		state->isPausing = wantsPause;
 		Time::SetGamePaused(wantsPause);
 	}
+}
+
+// ===== 画面1つを1フレーム進める（もう忘れてよければ true）=====
+bool UpdateScreen(OpenUIScreen& screen, float deltaTime) {
+	switch (screen.phase) {
+	case UIScreenPhase::Waiting:
+	case UIScreenPhase::Shown:
+		return false;
+	case UIScreenPhase::Showing:
+		screen.time += deltaTime;
+		if (screen.showTimeline != 0) {
+			screen.phase = IsScreenTimelineFinished(screen) ? UIScreenPhase::Shown : screen.phase;
+			return false;
+		}
+		ApplyScreen(screen);
+		if (screen.time >= screen.showEnd) {
+			screen.phase = UIScreenPhase::Shown;
+		}
+		return false;
+	case UIScreenPhase::Hiding: {
+		screen.time += deltaTime;
+		bool isFinished = false;
+		if (screen.hideTimeline != 0) {
+			isFinished = IsScreenTimelineFinished(screen);
+		} else {
+			ApplyScreen(screen);
+			isFinished = screen.time >= screen.hideEnd;
+		}
+		if (isFinished) {
+			EntityManager::Destroy(screen.root); // 子も一緒に消える（Timeline の再生も、Entity と一緒に消える）
+		}
+		return isFinished;
+	}
+	}
+	return false;
 }
 
 //=============================================================================
@@ -238,18 +338,29 @@ void DescribeMotion(ComponentUI& ui, UIScreenMotion& motion, const char* id) {
 }
 
 void DescribeUIScreen(ComponentUI& ui, UIScreenComponent& value) {
-	ui.Label("画面のファイルの一番上の Entity に付ける。直下の子が、上から順に1つずつ動く");
+	ui.Label("画面のファイルの一番上の Entity に付ける。Timeline を選ぶとそれを再生し、選ばなければ直下の子が上から順に1つずつ Motion で動く");
 	ui.Field("Pause Game###pauseGame", value.pauseGame, Tip("出している間、ゲームを止める（時間が0・Script を呼ばない）。この画面の中の Script は動く"));
+	ui.BeginDisabled(value.pauseGame);
+	ui.Field("Time Mode###timeMode", value.timeMode, Tip("出す・消す動きの時間。Real：ゲームが止まっていても動く / Game：ポーズ・スローで止まる（Pause Game を入れた画面は、いつも Real）"));
+	ui.EndDisabled();
 	ui.Separator("Show");
+	ui.AssetField("Timeline###showTimeline", value.showTimeline, AssetType::Timeline, Tip("出すときに再生する Timeline（この Entity を再生する Entity にする）。選ぶと下の Motion は使わない"));
+	ui.BeginDisabled(value.showTimeline != 0);
 	DescribeMotion(ui, value.show, "show");
 	ui.Field("Stagger###showStagger", value.showStagger, AtLeast(0.0f).Tip("要素1つごとに遅らせる秒数（上から2つ目はこの秒、3つ目は2倍遅れて動き出す）"));
+	ui.EndDisabled();
 	ui.Separator("Hide");
+	ui.AssetField(
+	    "Timeline###hideTimeline", value.hideTimeline, AssetType::Timeline,
+	    Tip("消すときに再生する Timeline。出している途中で消しても値が飛ばないように、Tween の From は Current にする。選ぶと下の Motion は使わない"));
+	ui.BeginDisabled(value.hideTimeline != 0);
 	DescribeMotion(ui, value.hide, "hide");
 	ui.Field("Stagger###hideStagger", value.hideStagger, AtLeast(0.0f).Tip("要素1つごとに遅らせる秒数"));
+	ui.EndDisabled();
 }
 
 void DescribeUIScreenElement(ComponentUI& ui, UIScreenElementComponent& value) {
-	ui.Label("画面の一番上の Entity の直下の子に付ける。この要素だけ動き方を変える");
+	ui.Label("画面の一番上の Entity の直下の子に付ける。この要素だけ動き方を変える（Motion で出す・消すときだけ使う）");
 	ui.Field("Override Show###overrideShow", value.overrideShow, Tip("出し方を、ここで決めた物にする"));
 	if (value.overrideShow) {
 		DescribeMotion(ui, value.show, "show");
@@ -317,18 +428,30 @@ bool UIScreen::Close(const std::string& name) {
 	if (it->phase == UIScreenPhase::Waiting) {
 		EntityManager::Destroy(it->root);
 		state->screens.erase(it);
+		UpdatePause();
 		return true;
 	}
-	it->phase = UIScreenPhase::Hiding;
-	it->time = 0.0f;
+	BeginHide(*it);
 	UpdatePause(); // 消し始めたら、すぐゲームを動かす（消える動きを待たずに遊べるように）
 	return true;
+}
+
+bool UIScreen::CloseContaining(Handle<Entity> entity) {
+	MY_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
+	const auto it = std::ranges::find_if(state->screens, [entity](const OpenUIScreen& screen) { return entity == screen.root || EntityManager::IsDescendantOf(entity, screen.root); });
+	return it != state->screens.end() && Close(std::string(it->name)); // Close が screens を書き換えるので、名前は写して渡す
 }
 
 bool UIScreen::IsOpen(const std::string& name) {
 	MY_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
 	const auto it = FindScreen(name);
 	return it != state->screens.end() && it->phase != UIScreenPhase::Hiding;
+}
+
+Handle<Entity> UIScreen::GetRoot(const std::string& name) {
+	MY_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
+	const auto it = FindScreen(name);
+	return (it != state->screens.end()) ? it->root : Handle<Entity>{};
 }
 
 //=============================================================================
@@ -362,34 +485,13 @@ void UIScreen::Update(bool isGameRunning) {
 	if (main != nullptr && main->GetPlayState() == PlayState::Paused) {
 		return;
 	}
-	const float deltaTime = Time::GetUnscaleDeltaTime(); // 止めない時間（ポーズ中も動く）
 	// erase_if：条件に合う物を配列から全部消す（C++20）。true を返した画面は、もう忘れる
-	std::erase_if(state->screens, [deltaTime](OpenUIScreen& screen) {
+	std::erase_if(state->screens, [](OpenUIScreen& screen) {
 		// シーンが変わった・誰かが Destroy した
 		if (!EntityManager::IsAlive(screen.root)) {
 			return true;
 		}
-		switch (screen.phase) {
-		case UIScreenPhase::Waiting:
-		case UIScreenPhase::Shown:
-			return false;
-		case UIScreenPhase::Showing:
-			screen.time += deltaTime;
-			ApplyScreen(screen);
-			if (screen.time >= screen.showEnd) {
-				screen.phase = UIScreenPhase::Shown;
-			}
-			return false;
-		case UIScreenPhase::Hiding:
-			screen.time += deltaTime;
-			ApplyScreen(screen);
-			if (screen.time >= screen.hideEnd) {
-				EntityManager::Destroy(screen.root); // 子も一緒に消える
-				return true;
-			}
-			return false;
-		}
-		return false;
+		return UpdateScreen(screen, Time::GetDeltaTime(screen.timeMode));
 	});
 	UpdatePause();
 }

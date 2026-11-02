@@ -708,6 +708,10 @@
     <ClCompile Include="MyEngine\Timeline\Camera\TimelineCameraTrack.cpp" />
     <ClCompile Include="MyEngine\Timeline\Camera\TimelineCameraShakeTrack.cpp" />
     <ClCompile Include="MyEngine\Editor\Gizmos\CameraGizmo.cpp" />
+    <ClCompile Include="MyEngine\Timeline\Tween\TimelineTweenTrack.cpp" />
+    <ClCompile Include="MyEngine\Timeline\Tween\TimelinePresetTrack.cpp" />
+    <ClCompile Include="MyEngine\Systems\UI\UIStateSystem.cpp" />
+    <ClCompile Include="MyEngine\Systems\Gameplay\TimelineTriggerSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\spdlog\async.h">
@@ -1370,6 +1374,12 @@
     <ClInclude Include="MyEngine\Timeline\Camera\TimelineCameraTrack.h" />
     <ClInclude Include="MyEngine\Timeline\Camera\TimelineCameraShakeTrack.h" />
     <ClInclude Include="MyEngine\Editor\Gizmos\CameraGizmo.h" />
+    <ClInclude Include="MyEngine\Timeline\Tween\TimelineTweenTrack.h" />
+    <ClInclude Include="MyEngine\Timeline\Tween\TimelinePresetTrack.h" />
+    <ClInclude Include="MyEngine\Components\UI\UIStateComponent.h" />
+    <ClInclude Include="MyEngine\Systems\UI\UIStateSystem.h" />
+    <ClInclude Include="MyEngine\Components\Gameplay\TimelineTriggerComponent.h" />
+    <ClInclude Include="MyEngine\Systems\Gameplay\TimelineTriggerSystem.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="MyEngine.props" />

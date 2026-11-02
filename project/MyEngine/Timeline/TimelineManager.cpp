@@ -28,7 +28,9 @@ struct TimelineAsset {
 /// TimelineManager が持つ物（Initialize で作り、Release で消す）
 /// </summary>
 struct TimelineStorage {
-	std::vector<TimelineAsset> assets; // 番号 - 1 番目のファイル
+	// 番号 - 1 番目のファイル。unique_ptr で1つずつ持つのは、読んでいる途中に別のファイルを読んでも（Preset のクリップ）、中身の場所が動かないように
+	std::vector<std::unique_ptr<TimelineAsset>> assets;
+	std::vector<std::string> loadingPaths; // 読んでいる途中のファイル（Preset のクリップが自分を指していても、読み続けないように）
 };
 std::unique_ptr<TimelineStorage> state;
 
@@ -39,7 +41,7 @@ TimelineAsset* Find(uint32_t handle) {
 	if (state == nullptr || handle == 0 || handle > state->assets.size()) {
 		return nullptr;
 	}
-	return &state->assets[handle - 1];
+	return state->assets[handle - 1].get();
 }
 
 // ファイルに書く（前のファイルは .bak として1つ残る）
@@ -114,6 +116,38 @@ float Timeline::GetDuration() const {
 	return duration;
 }
 
+void Timeline::Evaluate(const TimelineFrame& frame, TimelineStates& states, bool isApplying, bool isStopped) const {
+	for (size_t i = 0; i < tracks.size() && i < states.tracks.size(); ++i) {
+		const TimelineTrack& track = *tracks[i];
+		const bool isEvaluated = frame.isPreview ? track.CanPreview() : (track.EvaluatesEveryFrame() ? !isStopped : isApplying);
+		if (isEvaluated && !track.isMuted) {
+			track.Evaluate(frame, *states.tracks[i]);
+		}
+	}
+}
+
+//=============================================================================
+// トラックの Entity ごとの値
+//=============================================================================
+bool TimelineStates::Prepare(uint32_t handle) {
+	const Timeline* timeline = TimelineManager::Get(handle);
+	const uint32_t current = TimelineManager::GetRevision(handle);
+	if (timeline == nullptr) {
+		*this = {};
+		return false;
+	}
+	if (handle == this->timeline && current == revision && tracks.size() == timeline->tracks.size()) {
+		return false;
+	}
+	this->timeline = handle;
+	revision = current;
+	tracks.clear();
+	for (const std::unique_ptr<TimelineTrack>& track : timeline->tracks) {
+		tracks.push_back(track->CreateState());
+	}
+	return true;
+}
+
 //=============================================================================
 // 初期化 / 解放
 //=============================================================================
@@ -131,9 +165,14 @@ uint32_t TimelineManager::Load(const std::filesystem::path& filePath) {
 	MY_ASSERT_MSG(state != nullptr, "TimelineManager::Initialize()を先に呼んでください");
 	// --- 読み込み済みなら、同じ番号を返す ---
 	const std::string key = ToPathKey(filePath);
-	const auto cached = std::ranges::find(state->assets, key, &TimelineAsset::path);
+	const auto cached = std::ranges::find(state->assets, key, [](const std::unique_ptr<TimelineAsset>& asset) -> const std::string& { return asset->path; });
 	if (cached != state->assets.end()) {
 		return static_cast<uint32_t>(cached - state->assets.begin()) + 1;
+	}
+	// --- 読んでいる途中のファイル（Preset のクリップが自分を指している）は読まない（読むと、また同じファイルを読み続ける）---
+	if (std::ranges::find(state->loadingPaths, key) != state->loadingPaths.end()) {
+		LogManager::Warning(std::format("Timeline が自分をプリセットにしています（そのクリップは空にします）: {}", key));
+		return 0;
 	}
 	// --- ファイルから読む（ファイルに無い項目は、既定の値のまま）---
 	std::ifstream stream(filePath);
@@ -147,11 +186,13 @@ uint32_t TimelineManager::Load(const std::filesystem::path& filePath) {
 		return 0;
 	}
 	std::set<std::string> warnings;
-	Timeline timeline = FromJson(json, warnings);
+	state->loadingPaths.push_back(key);
+	Timeline timeline = FromJson(json, warnings); // Preset のクリップの中のファイルも、ここで読む
+	std::erase(state->loadingPaths, key);
 	for (const std::string& warning : warnings) {
 		LogManager::Warning(std::format("{}: {}", key, warning));
 	}
-	state->assets.push_back({key, std::move(timeline)});
+	state->assets.push_back(std::make_unique<TimelineAsset>(key, std::move(timeline)));
 	const uint32_t handle = static_cast<uint32_t>(state->assets.size());
 	LogManager::Log(std::format("Loaded timeline: {} -> {}", key, handle));
 	return handle;

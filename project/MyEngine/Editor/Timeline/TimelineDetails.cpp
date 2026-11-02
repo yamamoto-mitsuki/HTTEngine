@@ -1,35 +1,36 @@
 #ifdef USE_IMGUI
+#include <algorithm>
 #include <array>
 #include <cmath>
 #include <format>
 #include <optional>
 #include <string>
 #include <vector>
-#include <algorithm>
 
 #include <externals/imgui/imgui.h>
 #include <externals/imgui/imgui_internal.h>
 
+#include "MyEngine/Components/Camera/CameraComponent.h"
 #include "MyEngine/ECS/ComponentUI.h"
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/Editor/Timeline/TimelineEditorState.h"
 #include "MyEngine/Editor/Windows/HierarchyWindow.h"
+#include "MyEngine/Timeline/Camera/TimelineCameraTrack.h"
 #include "MyEngine/Timeline/TimelineEdit.h"
 #include "MyEngine/Timeline/TimelineValueTrack.h"
-#include "MyEngine/Timeline/Camera/TimelineCameraTrack.h"
-#include "MyEngine/Components/Camera/CameraComponent.h"
-
+#include "MyEngine/Timeline/Tween/TimelinePresetTrack.h"
+#include "MyEngine/Timeline/Tween/TimelineTweenTrack.h"
 
 // Timeline ウィンドウの下の詳細（トラックの結び付け・クリップ・キー・カーブ）
 
 namespace {
-constexpr float kFieldsWidth = 280.0f;             // 項目の列（トラック・クリップ）1つの幅
-constexpr float kItemLabelWidth = 90.0f;           // 項目の右の名前に残す幅
-constexpr float kCurveMinHeight = 80.0f;           // カーブの絵の高さの下限
-constexpr float kCurveFooterHeight = 120.0f;       // 欄が狭いとき、カーブの絵の下の数値の欄に残す高さ
-constexpr float kCurveWideWidth = 640.0f;          // 欄の幅がこれ以上なら、数値の欄を絵の右に置く
-constexpr float kCurveFieldsWidth = 280.0f;        // カーブの絵の右の数値の欄の幅
-constexpr const char* kDefaultTrackName = "Track"; // トラックの名前の既定の値（結び付けを選ぶと自動の名前に替える）
+constexpr float kFieldsWidth = 280.0f;                                                                // 項目の列（トラック・クリップ）1つの幅
+constexpr float kItemLabelWidth = 90.0f;                                                              // 項目の右の名前に残す幅
+constexpr float kCurveMinHeight = 80.0f;                                                              // カーブの絵の高さの下限
+constexpr float kCurveFooterHeight = 120.0f;                                                          // 欄が狭いとき、カーブの絵の下の数値の欄に残す高さ
+constexpr float kCurveWideWidth = 640.0f;                                                             // 欄の幅がこれ以上なら、数値の欄を絵の右に置く
+constexpr float kCurveFieldsWidth = 280.0f;                                                           // カーブの絵の右の数値の欄の幅
+constexpr const char* kDefaultTrackName = "Track";                                                    // トラックの名前の既定の値（結び付けを選ぶと自動の名前に替える）
 constexpr std::array<const char*, ComponentValue::kChannelCount> kVectorNames = {"x", "y", "z", "w"}; // 成分の名前
 constexpr std::array<const char*, ComponentValue::kChannelCount> kColorNames = {"r", "g", "b", "a"};  // 色の成分の名前
 
@@ -40,23 +41,26 @@ std::string_view LeafName(std::string_view path) {
 }
 
 // ===== 自動の名前（Title.color）=====
-std::string MakeAutoName(const TimelineValueTrack& track) { return track.target.empty() ? track.component + "." + track.property : std::string(LeafName(track.target)) + "." + track.property; }
+std::string MakeAutoName(const TimelineTrack& track, const TimelinePropertyBinding& binding) {
+	return track.target.empty() ? binding.component + "." + binding.property : std::string(LeafName(track.target)) + "." + binding.property;
+}
 
 // ===== 結び付けを変えた後、名前が自動のままなら付け直す =====
-void UpdateAutoName(TimelineValueTrack& track, const std::string& oldAutoName) {
+void UpdateAutoName(TimelineTrack& track, const TimelinePropertyBinding& binding, const std::string& oldAutoName) {
 	if (track.name == kDefaultTrackName || track.name == oldAutoName) {
-		track.name = MakeAutoName(track);
+		track.name = MakeAutoName(track, binding);
 	}
 }
 
-// ===== 対象の Entity の項目の形（分からなければ空）=====
-std::optional<ComponentValueField> FindField(const TimelineEditorState& state, const TimelineValueTrack& track) {
-	const Handle<Entity> target = EntityManager::FindByPath(state.owner, track.target);
+// ===== 対象の Entity の項目の形（項目を動かす種類でない・分からなければ空）=====
+std::optional<ComponentValueField> FindField(const TimelineEditorState& state, const TimelineTrack& track) {
+	const TimelinePropertyBinding* binding = track.GetPropertyBinding();
+	const Handle<Entity> target = (binding != nullptr) ? EntityManager::FindByPath(state.owner, track.target) : Handle<Entity>{};
 	if (!target.IsValid()) {
 		return std::nullopt;
 	}
-	const std::vector<ComponentValueField> fields = ComponentSerializer::GetValueFields(target, track.component);
-	const auto found = std::ranges::find(fields, track.property, &ComponentValueField::key);
+	const std::vector<ComponentValueField> fields = ComponentSerializer::GetValueFields(target, binding->component);
+	const auto found = std::ranges::find(fields, binding->property, &ComponentValueField::key);
 	return (found != fields.end()) ? std::optional(*found) : std::nullopt;
 }
 
@@ -64,10 +68,10 @@ std::optional<ComponentValueField> FindField(const TimelineEditorState& state, c
 ComponentValue ReadTargetValue(const TimelineEditorState& state, const TimelineTrack& track) {
 	ComponentValue value;
 	value.isUsed[0] = true;
-	if (const auto* valueTrack = dynamic_cast<const TimelineValueTrack*>(&track)) {
-		const Handle<Entity> target = EntityManager::FindByPath(state.owner, valueTrack->target);
+	if (const TimelinePropertyBinding* binding = track.GetPropertyBinding()) {
+		const Handle<Entity> target = EntityManager::FindByPath(state.owner, track.target);
 		if (target.IsValid()) {
-			ComponentSerializer::GetValue(target, valueTrack->component, valueTrack->property, value);
+			ComponentSerializer::GetValue(target, binding->component, binding->property, value);
 		}
 	}
 	return value;
@@ -85,8 +89,7 @@ std::string ChannelName(const std::optional<ComponentValueField>& field, size_t 
 }
 
 // ===== シーンのカメラを選択肢に出す（onSelect は選んだ Entity を受け取る。isOutsideOnly なら、再生する Entity の外のカメラだけ）=====
-template<class Function> 
-void DrawCameraChoices(const TimelineEditorState& state, const std::string& current, bool isOutsideOnly, Function&& onSelect) {
+template<class Function> void DrawCameraChoices(const TimelineEditorState& state, const std::string& current, bool isOutsideOnly, Function&& onSelect) {
 	int id = 0;
 	EntityManager::ForEach<CameraComponent>([&](Handle<Entity> entity, const CameraComponent&) {
 		const std::string path = EntityManager::MakeBindingPath(state.owner, entity);
@@ -139,21 +142,21 @@ void DrawTarget(TimelineEditorState& state, TimelineTrack& track) {
 }
 
 // ===== Component と項目 =====
-void DrawValueBinding(TimelineEditorState& state, TimelineValueTrack& track) {
+void DrawPropertyBinding(TimelineEditorState& state, TimelineTrack& track, TimelinePropertyBinding& binding) {
 	const Handle<Entity> target = EntityManager::FindByPath(state.owner, track.target);
 	if (!target.IsValid()) {
-		track.Fields(GetInspectorUI()); // 対象が無い間は、文字で直せるようにする
+		binding.Fields(GetInspectorUI()); // 対象が無い間は、文字で直せるようにする
 		return;
 	}
-	const std::string oldAutoName = MakeAutoName(track);
+	const std::string oldAutoName = MakeAutoName(track, binding);
 	// --- Component（値を動かせる項目がある物だけ）---
-	if (ImGui::BeginCombo("Component###component", track.component.c_str())) {
+	if (ImGui::BeginCombo("Component###component", binding.component.c_str())) {
 		for (const std::string& name : ComponentSerializer::GetComponentNames(target)) {
 			if (ComponentSerializer::GetValueFields(target, name).empty()) {
 				continue;
 			}
-			if (ImGui::Selectable(name.c_str(), name == track.component)) {
-				track.component = name;
+			if (ImGui::Selectable(name.c_str(), name == binding.component)) {
+				binding.component = name;
 				state.MarkEdited();
 			}
 		}
@@ -161,12 +164,12 @@ void DrawValueBinding(TimelineEditorState& state, TimelineValueTrack& track) {
 	}
 	ImGui::SetItemTooltip("動かす Component");
 	// --- 項目 ---
-	const std::vector<ComponentValueField> fields = ComponentSerializer::GetValueFields(target, track.component);
-	if (ImGui::BeginCombo("Property###property", track.property.c_str())) {
+	const std::vector<ComponentValueField> fields = ComponentSerializer::GetValueFields(target, binding.component);
+	if (ImGui::BeginCombo("Property###property", binding.property.c_str())) {
 		for (const ComponentValueField& field : fields) {
-			if (ImGui::Selectable(std::format("{}###{}", field.label.empty() ? field.key : field.label, field.key).c_str(), field.key == track.property)) {
-				track.property = field.key;
-				UpdateAutoName(track, oldAutoName);
+			if (ImGui::Selectable(std::format("{}###{}", field.label.empty() ? field.key : field.label, field.key).c_str(), field.key == binding.property)) {
+				binding.property = field.key;
+				UpdateAutoName(track, binding, oldAutoName);
 				state.MarkEdited();
 			}
 		}
@@ -183,8 +186,8 @@ void DrawTrackFields(TimelineEditorState& state, TimelineTrack& track) {
 	if (track.UsesTarget()) {
 		DrawTarget(state, track);
 	}
-	if (auto* valueTrack = dynamic_cast<TimelineValueTrack*>(&track)) {
-		DrawValueBinding(state, *valueTrack);
+	if (TimelinePropertyBinding* binding = track.GetPropertyBinding()) {
+		DrawPropertyBinding(state, track, *binding);
 	} else {
 		track.Fields(GetInspectorUI());
 	}
@@ -196,8 +199,7 @@ void DrawTrackFields(TimelineEditorState& state, TimelineTrack& track) {
 //=============================================================================
 // ===== 成分（チェック：キーがある＝動かす / 名前：カーブの絵に出す）=====
 void DrawChannels(TimelineEditorState& state, TimelineTrack& track, std::span<Curve> curves) {
-	const auto* valueTrack = dynamic_cast<const TimelineValueTrack*>(&track);
-	const std::optional<ComponentValueField> field = (valueTrack != nullptr) ? FindField(state, *valueTrack) : std::nullopt;
+	const std::optional<ComponentValueField> field = FindField(state, track);
 	const size_t count = field.has_value() ? (std::min)(field->channelCount, curves.size()) : curves.size();
 	state.selection.channel = (std::min)(state.selection.channel, static_cast<int>(count) - 1);
 	// --- 選んでいる成分にキーが無ければ、キーのある最初の成分を絵に出す ---
@@ -210,7 +212,7 @@ void DrawChannels(TimelineEditorState& state, TimelineTrack& track, std::span<Cu
 	}
 	const auto hasKeys = [](const Curve& curve) { return !curve.GetKeys().empty(); };
 	const ptrdiff_t usedCount = std::ranges::count_if(curves.first(count), hasKeys); // キーのある成分の数
-	ImGui::PushID("channels"); // 下のキーの値の欄と同じ名前（a など）になるので分ける
+	ImGui::PushID("channels");                                                       // 下のキーの値の欄と同じ名前（a など）になるので分ける
 	for (size_t i = 0; i < count; ++i) {
 		ImGui::PushID(static_cast<int>(i));
 		bool isUsed = hasKeys(curves[i]);
@@ -265,8 +267,7 @@ void DrawKeyFields(TimelineEditorState& state, TimelineTrack& track, std::span<C
 	}
 	ImGui::SetItemTooltip("キーの時間（クリップの始まりからの秒）");
 	// --- その時間にキーのある成分の値 ---
-	const auto* valueTrack = dynamic_cast<const TimelineValueTrack*>(&track);
-	const std::optional<ComponentValueField> field = (valueTrack != nullptr) ? FindField(state, *valueTrack) : std::nullopt;
+	const std::optional<ComponentValueField> field = FindField(state, track);
 	ImGui::PushID("keyValues");
 	for (size_t i = 0; i < curves.size(); ++i) {
 		const std::vector<CurveKey>& keys = curves[i].GetKeys();
@@ -307,6 +308,67 @@ void DrawClipCamera(TimelineEditorState& state, TimelineCameraTrack& track) {
 	}
 }
 
+// ===== Tween の端1つ（決め方・値・Parameter の名前）=====
+void DrawTweenPoint(TimelineEditorState& state, const char* label, TimelineTweenPoint& point, const std::optional<ComponentValueField>& field) {
+	ImGui::PushID(label);
+	ImGui::SeparatorText(label);
+	GetInspectorUI().Field(
+	    "Mode###mode", point.mode, Tip("Current：始まったときの今の値 / Value：下の値 / Add：元の値 ＋ 下の値 / Multiply：元の値 × 下の値 / Parameter：TimelineSystem::SetParameter で渡す値"));
+	if (point.mode == TimelineTweenMode::Parameter) {
+		GetInspectorUI().Field("Name###parameter", point.parameter, Tip("TimelineSystem::SetParameter に渡す名前。渡していないときは下の値"));
+	}
+	// --- 値（項目の成分の数だけ。Current は使わない）---
+	const size_t count = field.has_value() ? field->channelCount : ComponentValue::kChannelCount;
+	std::array<float*, ComponentValue::kChannelCount> channels = {&point.value.x, &point.value.y, &point.value.z, &point.value.w};
+	ImGui::BeginDisabled(point.mode == TimelineTweenMode::Current);
+	for (size_t i = 0; i < count; ++i) {
+		ImGui::PushID(static_cast<int>(i));
+		if (ImGui::DragFloat(ChannelName(field, i).c_str(), channels[i], 0.01f)) {
+			state.MarkEdited();
+		}
+		ImGui::PopID();
+	}
+	ImGui::EndDisabled();
+	ImGui::PopID();
+}
+
+// ===== Tween のクリップ（From・To）=====
+void DrawClipTween(TimelineEditorState& state, TimelineTweenTrack& track) {
+	TimelineTweenClip& clip = track.clips[state.selection.clip];
+	const std::optional<ComponentValueField> field = FindField(state, track);
+	DrawTweenPoint(state, "From", clip.from, field);
+	DrawTweenPoint(state, "To", clip.to, field);
+	ImGui::TextDisabled("動き方は右のカーブ（横：時間の割合 0〜1 / 縦：From〜To の割合）");
+}
+
+// ===== Preset のクリップ（長さを合わせる・プリセットを開く）=====
+void DrawClipPreset(TimelineEditorState& state, TimelinePresetTrack& track, uint32_t before) {
+	TimelinePresetClip& clip = track.clips[state.selection.clip];
+	const Timeline* preset = TimelineManager::Get(clip.timeline);
+	// --- ファイルを選び直したら、長さをプリセットに合わせる ---
+	if (clip.timeline != before && preset != nullptr) {
+		state.selection.clip = static_cast<int>(track.SetClipTime(state.selection.clip, clip.start, preset->GetDuration()));
+		state.MarkEdited();
+		return;
+	}
+	ImGui::BeginDisabled(preset == nullptr);
+	if (ImGui::SmallButton("Fit Length")) {
+		state.selection.clip = static_cast<int>(track.SetClipTime(state.selection.clip, clip.start, preset->GetDuration()));
+		state.MarkEdited();
+	}
+	ImGui::SetItemTooltip("クリップの長さを、プリセットの長さにする");
+	ImGui::SameLine();
+	const Handle<Entity> target = EntityManager::FindByPath(state.owner, track.target);
+	ImGui::BeginDisabled(!target.IsValid());
+	if (ImGui::SmallButton("Open Preset")) {
+		state.openRequest = clip.timeline;
+		state.openOwnerId = EntityManager::Get(target)->id;
+	}
+	ImGui::EndDisabled();
+	ImGui::SetItemTooltip("プリセットを、このトラックの対象の上で開く（Back で戻る）。直したプリセットは、使っている全部の場所に効く");
+	ImGui::EndDisabled();
+}
+
 // ===== クリップ全体 =====
 void DrawClipFields(TimelineEditorState& state, TimelineTrack& track) {
 	ImGui::SeparatorText("Clip");
@@ -314,7 +376,15 @@ void DrawClipFields(TimelineEditorState& state, TimelineTrack& track) {
 	if (auto* cameraTrack = dynamic_cast<TimelineCameraTrack*>(&track)) {
 		DrawClipCamera(state, *cameraTrack);
 	}
+	auto* presetTrack = dynamic_cast<TimelinePresetTrack*>(&track);
+	const uint32_t presetBefore = (presetTrack != nullptr) ? presetTrack->clips[state.selection.clip].timeline : 0;
 	state.selection.clip = static_cast<int>(track.DescribeClip(state.selection.clip, GetInspectorUI()));
+	if (presetTrack != nullptr) {
+		DrawClipPreset(state, *presetTrack, presetBefore);
+	}
+	if (auto* tweenTrack = dynamic_cast<TimelineTweenTrack*>(&track)) {
+		DrawClipTween(state, *tweenTrack);
+	}
 	const std::span<Curve> curves = track.GetClipCurves(state.selection.clip);
 	if (!curves.empty()) {
 		DrawChannels(state, track, curves);
@@ -330,7 +400,20 @@ void DrawClipFields(TimelineEditorState& state, TimelineTrack& track) {
 	ImGui::PopID();
 }
 
-// ===== カーブの絵 =====
+// ===== カーブの絵（描く高さを決めて、絵を描く）=====
+void DrawCurveCanvas(TimelineEditorState& state, Curve& curve) {
+	// 広ければ数値の欄を右に置いて、上の並びを除いた高さを全部カーブの絵に使う
+	const ImVec2 available = ImGui::GetContentRegionAvail();
+	const bool isWide = available.x >= kCurveWideWidth;
+	const float footerHeight = isWide ? 0.0f : kCurveFooterHeight;
+	const float canvasHeight = (std::max)(available.y - ImGui::GetFrameHeightWithSpacing() - footerHeight, kCurveMinHeight);
+	if (state.curveEditor.Draw("curve", curve, canvasHeight, GetInspectorUI(), isWide ? kCurveFieldsWidth : 0.0f)) {
+		state.MarkEdited();
+	}
+	state.curveEditor.TakeFinishedEdit(); // Undo は TimelineWindow がファイル全体でまとめて積むので、使わず受け取る
+}
+
+// ===== カーブの絵（値のトラック）=====
 void DrawCurvePanel(TimelineEditorState& state, std::span<Curve> curves) {
 	if (curves.empty()) {
 		ImGui::TextDisabled("このクリップにカーブはありません");
@@ -340,15 +423,13 @@ void DrawCurvePanel(TimelineEditorState& state, std::span<Curve> curves) {
 		ImGui::TextDisabled("動かす成分にチェックを入れると、ここでカーブを直せる");
 		return;
 	}
-	// 広ければ数値の欄を右に置いて、上の並びを除いた高さを全部カーブの絵に使う
-	const ImVec2 available = ImGui::GetContentRegionAvail();
-	const bool isWide = available.x >= kCurveWideWidth;
-	const float footerHeight = isWide ? 0.0f : kCurveFooterHeight;
-	const float canvasHeight = (std::max)(available.y - ImGui::GetFrameHeightWithSpacing() - footerHeight, kCurveMinHeight);
-	if (state.curveEditor.Draw("curve", curves[state.selection.channel], canvasHeight, GetInspectorUI(), isWide ? kCurveFieldsWidth : 0.0f)) {
-		state.MarkEdited();
-	}
-	state.curveEditor.TakeFinishedEdit(); // Undo は TimelineWindow がファイル全体でまとめて積むので、使わず受け取る
+	DrawCurveCanvas(state, curves[state.selection.channel]);
+}
+
+// ===== Tween の動き方のカーブ（Ease の形は、カーブの絵の Ease Preset で作り直せる）=====
+void DrawTweenEasePanel(TimelineEditorState& state, TimelineTweenClip& clip) {
+	ImGui::TextDisabled("動き方（横：時間の割合 0〜1 / 縦：From〜To の割合。1 を超えると To より行き過ぎる）");
+	DrawCurveCanvas(state, clip.ease);
 }
 } // namespace
 
@@ -386,13 +467,16 @@ void DrawTimelineDetails(TimelineEditorState& state, float height) {
 	if (ImGui::GetCurrentContext()->ActiveIdHasBeenEditedThisFrame) {
 		state.MarkEdited();
 	}
-	// --- 右：カーブ ---
+	// --- 右：カーブ（Tween は動き方のカーブ）---
 	ImGui::SameLine();
 	ImGui::BeginChild("##curve", ImVec2(0.0f, height), ImGuiChildFlags_Borders);
-	if (state.selection.clip >= 0) {
-		DrawCurvePanel(state, state.GetSelectedCurves());
-	} else {
+	auto* tweenTrack = dynamic_cast<TimelineTweenTrack*>(track);
+	if (state.selection.clip < 0) {
 		ImGui::TextDisabled("クリップを選ぶと、ここでカーブを直せる（列の何も無い所をダブルクリックでクリップを足す）");
+	} else if (tweenTrack != nullptr) {
+		DrawTweenEasePanel(state, tweenTrack->clips[state.selection.clip]);
+	} else {
+		DrawCurvePanel(state, state.GetSelectedCurves());
 	}
 	ImGui::EndChild();
 }
@@ -401,11 +485,15 @@ void DrawTimelineDetails(TimelineEditorState& state, float height) {
 // 部品の間で使う
 //=============================================================================
 void FillNewClipCurves(const TimelineEditorState& state, TimelineTrack& track, size_t clip) {
-	const std::span<Curve> curves = track.GetClipCurves(clip);
-	if (curves.empty()) {
+	const ComponentValue value = ReadTargetValue(state, track);
+	// --- Tween：今の値から、今の値へ（何も動かない形から直していく）---
+	if (auto* tweenTrack = dynamic_cast<TimelineTweenTrack*>(&track)) {
+		tweenTrack->clips[clip].to.value = {value.channels[0], value.channels[1], value.channels[2], value.channels[3]};
+		tweenTrack->clips[clip].from.value = tweenTrack->clips[clip].to.value;
 		return;
 	}
-	const ComponentValue value = ReadTargetValue(state, track);
+	// --- 値のトラック：対象の今の値で平らなキー ---
+	const std::span<Curve> curves = track.GetClipCurves(clip);
 	for (size_t i = 0; i < curves.size(); ++i) {
 		if (value.isUsed[i]) {
 			TimelineEdit::FillFlat(curves[i], value.channels[i], track.GetClipDuration(clip));
@@ -424,28 +512,28 @@ std::string FindTimelineBindingProblem(const TimelineEditorState& state, const T
 	if (!target.IsValid()) {
 		return std::format("対象が見つかりません: \"{}\"", track.target);
 	}
-	const auto* valueTrack = dynamic_cast<const TimelineValueTrack*>(&track);
-	if (valueTrack == nullptr) {
+	const TimelinePropertyBinding* binding = track.GetPropertyBinding();
+	if (binding == nullptr) {
 		return {};
 	}
 	ComponentValue value;
-	switch (ComponentSerializer::GetValue(target, valueTrack->component, valueTrack->property, value)) {
+	switch (ComponentSerializer::GetValue(target, binding->component, binding->property, value)) {
 	case ComponentValueResult::Written:
 		return {};
 	case ComponentValueResult::NoComponent:
-		return std::format("\"{}\" に Component \"{}\" がありません", track.target, valueTrack->component);
+		return std::format("\"{}\" に Component \"{}\" がありません", track.target, binding->component);
 	case ComponentValueResult::NoField:
-		return std::format("Component \"{}\" に、動かせる項目 \"{}\" がありません", valueTrack->component, valueTrack->property);
+		return std::format("Component \"{}\" に、動かせる項目 \"{}\" がありません", binding->component, binding->property);
 	}
 	return {};
 }
 
 void SetTimelineTarget(TimelineEditorState& state, TimelineTrack& track, Handle<Entity> entity) {
-	auto* valueTrack = dynamic_cast<TimelineValueTrack*>(&track);
-	const std::string oldAutoName = (valueTrack != nullptr) ? MakeAutoName(*valueTrack) : std::string();
+	const TimelinePropertyBinding* binding = track.GetPropertyBinding();
+	const std::string oldAutoName = (binding != nullptr) ? MakeAutoName(track, *binding) : std::string();
 	track.target = EntityManager::MakeBindingPath(state.owner, entity);
-	if (valueTrack != nullptr) {
-		UpdateAutoName(*valueTrack, oldAutoName);
+	if (binding != nullptr) {
+		UpdateAutoName(track, *binding, oldAutoName);
 	}
 	state.MarkEdited();
 }
