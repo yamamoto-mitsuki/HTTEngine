@@ -239,11 +239,21 @@ void EntityManager::GetRoots(std::vector<Handle<Entity>>& out) {
 Handle<Entity> EntityManager::FindByPath(Handle<Entity> root, std::string_view path) {
 	Handle<Entity> current = root;
 	std::vector<Handle<Entity>> children;
-	while (!path.empty() && IsAlive(current)) {
+	// --- 先頭が / なら、最初の1段はシーンの一番上から探す ---
+	bool isFromScene = path.starts_with('/');
+	if (isFromScene) {
+		path.remove_prefix(1);
+	}
+	while (!path.empty() && (isFromScene || IsAlive(current))) {
 		// --- 次の / までが、1段下の子の名前 ---
 		const size_t slash = path.find('/');
 		const std::string_view name = path.substr(0, slash);
-		GetChildren(current, children);
+		if (isFromScene) {
+			GetRoots(children);
+		} else {
+			GetChildren(current, children);
+		}
+		isFromScene = false;
 		const auto found = std::ranges::find_if(children, [name](Handle<Entity> child) { return Get(child)->name == name; });
 		if (found == children.end()) {
 			return {};
@@ -265,6 +275,18 @@ std::optional<std::string> EntityManager::MakePath(Handle<Entity> root, Handle<E
 	}
 	if (current != root || !IsAlive(root)) {
 		return std::nullopt;
+	}
+	return path;
+}
+
+std::string EntityManager::MakeBindingPath(Handle<Entity> root, Handle<Entity> entity) {
+	if (const std::optional<std::string> path = MakePath(root, entity)) {
+		return *path;
+	}
+	// 親へ上りながら、名前を前につなぐ（先頭にも / が付く）
+	std::string path;
+	for (Handle<Entity> current = entity; IsAlive(current); current = Get(current)->parent) {
+		path = "/" + Get(current)->name + path;
 	}
 	return path;
 }

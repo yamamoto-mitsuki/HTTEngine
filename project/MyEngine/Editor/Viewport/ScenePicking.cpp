@@ -18,6 +18,7 @@
 #include "MyEngine/Components/Core/TransformComponent.h"
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/Editor/Gizmos/LightGizmo.h"
+#include "MyEngine/Editor/Gizmos/CameraGizmo.h"
 #include "MyEngine/Editor/Viewport/SceneVisibility.h"
 #include "MyEngine/Graphics/Model/ModelManager.h"
 #include "MyEngine/Systems/Physics/CollisionSystem.h"
@@ -208,9 +209,11 @@ void PickPolygons(const Ray& ray, ClosestHit& closest) {
 	});
 }
 
-// ===== ライト・カメラ：形が無いので、置いてある所の小さい球 =====
+// ===== ライト・カメラ：形が無いので、置いてある所（アイコンの所）の小さい球 =====
 // その種類の Component を持つ Entity を、球で調べる。showIcon が false の物（アイコンを出していない物）は飛ばす
-template<class T> void PickIcons(const Ray& ray, ClosestHit& closest, bool (*showIcon)(const T&)) {
+// カメラも Transform の位置（Camera Path で写す位置が変わっても、ギズモと同じ所）
+template<class T>
+void PickIcons(const Ray& ray, ClosestHit& closest, bool (*showIcon)(const T&)) {
 	EntityManager::ForEach<T>([&](Handle<Entity> entity, const T& component) {
 		if (!showIcon(component) || !EntityManager::IsActiveInHierarchy(entity)) {
 			return;
@@ -230,8 +233,8 @@ template<class T> void PickIcons(const Ray& ray, ClosestHit& closest, bool (*sho
 // ===== ライトのアイコンを出しているか =====
 template<class T> bool IsLightIconShown(const T& light) { return LightGizmo::GetGlobalFlags().showIcon && light.gizmo.showIcon; }
 
-// ===== カメラはいつも錐台の線が出ている =====
-bool IsCameraShown(const CameraComponent&) { return true; }
+// ===== カメラのアイコンを出しているか =====
+bool IsCameraIconShown(const CameraComponent&) { return CameraGizmo::GetShowIcons(); }
 
 // ===== Collider：線を出している時だけ。見た目の無い物（透明な壁など）を選べるように =====
 void PickColliders(const Ray& ray, ClosestHit& closest) {
@@ -276,7 +279,7 @@ Handle<Entity> ScenePicking::Pick(const Ray& ray, const Camera& camera) {
 	PickIcons<DirectionalLightComponent>(worldRay, closest, &IsLightIconShown<DirectionalLightComponent>);
 	PickIcons<PointLightComponent>(worldRay, closest, &IsLightIconShown<PointLightComponent>);
 	PickIcons<SpotLightComponent>(worldRay, closest, &IsLightIconShown<SpotLightComponent>);
-	PickIcons<CameraComponent>(worldRay, closest, &IsCameraShown);
+	PickIcons<CameraComponent>(worldRay, closest, &IsCameraIconShown);
 	PickColliders(worldRay, closest);
 	return closest.entity;
 }

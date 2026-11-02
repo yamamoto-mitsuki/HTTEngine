@@ -2,6 +2,7 @@
 #include <shobjidl.h>
 // Editor
 #include "MyEngine/Editor/Gizmos/LightGizmo.h"
+#include "MyEngine/Editor/Gizmos/CameraGizmo.h"
 #include "MyEngine/Editor/Viewport/EditorOverlay.h"
 #include "MyEngine/Editor/FrameStats.h"
 #include "MyEngine/Editor/Profiler.h"
@@ -22,13 +23,10 @@
 // Collision
 #include "MyEngine/Collision/Profiling/CollisionProfiler.h"
 // Curve
-#include "MyEngine/Curve/CurveSelfTest.h"
 // Timeline
-#include "MyEngine/Timeline/TimelineSelfTest.h"
 // Particle
 #include "MyEngine/Particle/ParticleManager.h"
 // Graphics
-#include "MyEngine/Graphics/Compute/ComputeSelfTest.h"
 #include "MyEngine/Graphics/GPU/UploadContext.h"
 #include "MyEngine/Graphics/IBL/IBLBaker.h"
 #include "MyEngine/Graphics/Animation/AnimationManager.h"
@@ -106,16 +104,15 @@ void Engine::Initialize(const WindowConfig& config, SceneFactory initialScene) {
 	ShaderCompiler::Initialize();
 	RandomEngine::Initialize();
 	ParticleManager::Initialize();
+
+	// ギズモ
+#ifdef USE_IMGUI
 	LightGizmo::Initialize();
+	CameraGizmo::Initialize();
+#endif
 	EngineSystems::Initialize(); // EntityManager と全 System（Component の登録もここ）
 
 	ShaderPackageLoader::LoadAll(ShaderPackageLoader::FindDataDir()); // .hlsl生成
-
-#ifdef _DEBUG
-	ComputeSelfTest::Run(); // CSの土台が動くかを確かめる（Debugだけ。.hlsl を作った後に）
-	CurveSelfTest::Run();   // カーブの計算が合っているかを確かめる（Debugだけ）
-	TimelineSelfTest::Run(); // Timeline の時間の進め方と、値の書き込みを確かめる（Debugだけ）
-#endif
 
 	IBLBaker::Initialize(); // IBL
 	SceneRenderer::InitializeSkybox(); // 天球初期化

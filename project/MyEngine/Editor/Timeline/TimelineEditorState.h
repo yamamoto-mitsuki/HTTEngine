@@ -110,5 +110,5 @@ void DrawTimelineDetails(TimelineEditorState& state, float height);
 void FillNewClipCurves(const TimelineEditorState& state, TimelineTrack& track, size_t clip);
 // 結び付けの問題（無ければ空。トラックの行に出す）
 std::string FindTimelineBindingProblem(const TimelineEditorState& state, const TimelineTrack& track);
-// トラックの対象を entity にする（再生する Entity の子孫でなければ、ログに出して変えない）
+// トラックの対象を entity にする（再生する Entity の子孫でなければ、/ で始まるシーンのパスで指す）
 void SetTimelineTarget(TimelineEditorState& state, TimelineTrack& track, Handle<Entity> entity);

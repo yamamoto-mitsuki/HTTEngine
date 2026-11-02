@@ -21,7 +21,7 @@ public:
 	/// <summary>
 	/// CSの名前から作る
 	/// </summary>
-	/// <param name="csName">.shaderのpathから作った名前（"Compute/ComputeTest.CS.hlsl" なら "ComputeTestCS"）</param>
+	/// <param name="csName">.shaderのpathから作った名前（"Compute/Skinning.CS.hlsl" なら "SkinningCS"）</param>
 	explicit ComputePipeline(const std::string& csName);
 
 	// コピー禁止（PSOManagerの中に1つだけ置く）

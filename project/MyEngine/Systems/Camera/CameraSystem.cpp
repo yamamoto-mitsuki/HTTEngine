@@ -24,6 +24,7 @@
 #include "MyEngine/Systems/Camera/CameraFollow.h"
 #include "MyEngine/Systems/Camera/CameraShake.h"
 #include "MyEngine/Systems/Camera/CameraVolume.h"
+#include "MyEngine/Systems/Camera/CameraPath.h"
 #include "MyEngine/Time/EngineTime.h"
 
 namespace {
@@ -65,18 +66,38 @@ struct PendingImpulse {
 };
 
 /// <summary>
+/// プレビューで見せる衝撃1つ
+/// </summary>
+struct PreviewImpulse {
+	PendingImpulse impulse; // 受けた衝撃
+	float age = 0.0f;       // 受けてからの秒
+};
+
+/// <summary>
+/// 停止中のプレビューの揺れ
+/// </summary>
+struct PreviewShake {
+	float time = 0.0f;                    // 見ている時間（秒）
+	std::vector<PreviewImpulse> impulses; // 受けた衝撃
+};
+
+/// <summary>
 /// CameraSystem が持つ物（Initialize で作り、Release で消す）
 /// </summary>
 struct CameraState {
 	// ゲームの絵を撮るカメラ（GetMainCamera はいつもこれを返す）
 	// shared_ptr にするのは、パーティクル（ParticleManager）が weak_ptr で「見ているだけ」にできるように
 	std::shared_ptr<Camera> camera = std::make_shared<Camera>();
-	Handle<Entity> mainEntity;            // 今使っている Camera Component の Entity
-	bool hasLoggedNoCamera = false;       // 「Camera Component が無い」を知らせたか（続けて何度も出さない）
-	bool hasOutput = false;               // output に前のフレームの値が入っているか（false なら、次の切り替えは補間しない）
-	CameraOutput output;                  // 前のフレームに写した値（切り替えの途中でさらに切り替えるときは、ここから始める）
-	CameraBlend blend;                    // 切り替えの補間
-	std::vector<PendingImpulse> impulses; // 送られた衝撃
+	Handle<Entity> mainEntity;                     // 今使っている Camera Component の Entity（上書きの間はそのカメラ）
+	Handle<Entity> normalEntity;                   // 通常のカメラ（priority で選んだカメラ）
+	bool hasLoggedNoCamera = false;                // 「Camera Component が無い」を知らせたか（続けて何度も出さない）
+	bool hasOutput = false;                        // output に前のフレームの値が入っているか（false なら、次の切り替えは補間しない）
+	CameraOutput output;                           // 前のフレームに写した値（切り替えの途中でさらに切り替えるときは、ここから始める）
+	CameraBlend blend;                             // 切り替えの補間
+	std::vector<PendingImpulse> impulses;          // 送られた衝撃
+	std::optional<CameraOverride> overrideRequest; // このフレームの上書きの頼み
+	std::optional<CameraOverride> lastOverride;    // 前のフレームの上書き（頼みが無くなったフレームに、戻し方を読む）
+	std::optional<PreviewShake> previewShake;      // このフレームのプレビューの揺れ
 };
 std::unique_ptr<CameraState> state;
 
@@ -115,6 +136,11 @@ void UseDefaultCamera() {
 //=============================================================================
 // ===== その Entity のカメラが使う時間の秒（Camera Component が無ければゲームの時間）=====
 float GetCameraDeltaTime(Handle<Entity> entity) {
+	// Timeline が写しているカメラは Timeline の時間で動かす（Timeline を Real にするだけで、ヒットストップの間も動く）
+	const std::optional<CameraOverride>& request = state->overrideRequest;
+	if (request.has_value() && (entity == request->from || entity == request->to)) {
+		return Time::GetDeltaTime(request->timeMode);
+	}
 	const CameraComponent* camera = EntityManager::Get<CameraComponent>(entity);
 	return Time::GetDeltaTime(camera ? camera->timeMode : TimeMode::Game);
 }
@@ -192,6 +218,27 @@ std::optional<Vector3> GetLookAtPoint(const CameraLookAtComponent& lookAt, bool 
 }
 
 //=============================================================================
+// 揺れのプレビュー
+//=============================================================================
+// ===== 見ている時間の揺れの値を持った写しを作る =====
+// 衝撃は減衰振動の式をそのまま解いて進めるので（CameraShake::Update）、受けてからの秒を1回で進められる。受けた衝撃ごとに進めて足す
+CameraShakeComponent MakePreviewShake(const CameraShakeComponent& shake, const Quaternion& rotation) {
+	CameraShakeComponent preview = shake;
+	preview.noiseTime = state->previewShake->time * shake.noiseFrequency;
+	preview.impulseOffset = {0.0f, 0.0f, 0.0f};
+	for (const PreviewImpulse& item : state->previewShake->impulses) {
+		const PendingImpulse& impulse = item.impulse;
+		CameraShakeComponent single = shake;
+		single.impulseOffset = {0.0f, 0.0f, 0.0f};
+		single.impulseVelocity = {0.0f, 0.0f, 0.0f};
+		CameraShake::AddImpulse(single, impulse.strength, impulse.isWorldDirection ? RotateVector(impulse.direction, Conjugate(rotation)) : impulse.direction);
+		CameraShake::Update(single, item.age);
+		preview.impulseOffset += single.impulseOffset;
+	}
+	return preview;
+}
+
+//=============================================================================
 // カメラ1台分の値
 //=============================================================================
 // ===== Camera Volume のピントの奥行き（m。全体の設定のままなら nullopt）=====
@@ -225,6 +272,10 @@ CameraOutput EvaluateCamera(Handle<Entity> entity, const TransformComponent& tra
 	output.nearZ = camera.nearZ;
 	output.farZ = camera.farZ;
 
+	// --- 線：位置を線の上へ置き換える ---
+	if (const CameraPathComponent* path = EntityManager::Get<CameraPathComponent>(entity)) {
+		CameraPath::Apply(*path, output.position, output.rotation);
+	}
 	// --- 注視点：向きだけ置き換える ---
 	std::optional<Vector3> lookAtPoint;
 	if (const CameraLookAtComponent* lookAt = EntityManager::Get<CameraLookAtComponent>(entity)) {
@@ -239,8 +290,8 @@ CameraOutput EvaluateCamera(Handle<Entity> entity, const TransformComponent& tra
 	}
 	// --- 揺れ：カメラの向きから見たずれを足す ---
 	const CameraShakeComponent* shake = EntityManager::Get<CameraShakeComponent>(entity);
-	if (isGameRunning && shake != nullptr && shake->enabled) {
-		const CameraShakeOffset offset = CameraShake::CalcOffset(*shake);
+	if ((isGameRunning || state->previewShake.has_value()) && shake != nullptr && shake->enabled) {
+		const CameraShakeOffset offset = CameraShake::CalcOffset(isGameRunning ? *shake : MakePreviewShake(*shake, output.rotation));
 		output.position += RotateVector(offset.position, output.rotation);
 		output.rotation = Normalize(output.rotation * MakeQuaternionFromEuler(offset.rotation)); // 右に掛けた方が先に回る＝カメラの軸のまわりに回る
 	}
@@ -278,6 +329,18 @@ void StartBlend(Handle<Entity> previous, const CameraComponent& next) {
 	blend.timeMode = next.timeMode;
 }
 
+// ===== 上書きが終わったら、頼まれていた戻し方で通常のカメラへ補間する =====
+void StartExitBlend(const CameraOverride& last) {
+	CameraBlend& blend = state->blend;
+	blend.isActive = last.exitTime > 0.0f;
+	blend.from = state->output;
+	blend.fromEntity = {}; // 2つのカメラの間の値かもしれないので、止まった値のまま使う
+	blend.elapsed = 0.0f;
+	blend.duration = last.exitTime;
+	blend.ease = last.exitEase;
+	blend.timeMode = last.timeMode;
+}
+
 // ===== 切り替え前のカメラの今の値を取り直す =====
 void RefreshBlendSource(bool isGameRunning) {
 	CameraBlend& blend = state->blend;
@@ -303,6 +366,22 @@ CameraOutput ApplyBlend(const CameraOutput& target, bool isGameRunning) {
 	}
 	RefreshBlendSource(isGameRunning);
 	return LerpOutput(blend.from, target, Ease::Apply(blend.elapsed / blend.duration, blend.ease));
+}
+
+// ===== 上書きのカメラ1台の値（無効な Handle・カメラでない Entity なら通常のカメラの値）=====
+CameraOutput EvaluateOverrideCamera(Handle<Entity> entity, const CameraOutput& normal, bool isGameRunning) {
+	const TransformComponent* transform = EntityManager::Get<TransformComponent>(entity);
+	const CameraComponent* camera = EntityManager::Get<CameraComponent>(entity);
+	return (transform != nullptr && camera != nullptr) ? EvaluateCamera(entity, *transform, *camera, isGameRunning) : normal;
+}
+
+// ===== 上書きを掛ける =====
+CameraOutput ApplyOverride(const CameraOverride& request, const CameraOutput& normal, bool isGameRunning) {
+	const CameraOutput to = EvaluateOverrideCamera(request.to, normal, isGameRunning);
+	if (request.weight >= 1.0f) {
+		return to;
+	}
+	return LerpOutput(EvaluateOverrideCamera(request.from, normal, isGameRunning), to, request.weight);
 }
 
 //=============================================================================
@@ -368,6 +447,10 @@ void CameraSystem::Initialize() {
 	EntityManager::RegisterComponent<CameraVolumeComponent>();
 	ComponentSerializer::Register<CameraVolumeComponent>("Camera Volume", &CameraVolume::Describe);
 	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraVolumeComponent>>("Camera Volume", "Camera", &CameraVolume::Describe));
+
+	EntityManager::RegisterComponent<CameraPathComponent>();
+	ComponentSerializer::Register<CameraPathComponent>("Camera Path", &CameraPath::Describe);
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraPathComponent>>("Camera Path", "Camera", &CameraPath::Describe));
 }
 
 void CameraSystem::Release() { state.reset(); }
@@ -395,7 +478,7 @@ bool CameraSystem::UpdateFollow() {
 void CameraSystem::Update(bool isGameRunning) {
 	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
 
-	// ===== 1. 使う Camera を選ぶ（有効な物の中で priority が一番大きい物。同じなら先に見つけた物）=====
+	// ===== 1. 通常のカメラを選ぶ（有効な物の中で priority が一番大きい物。同じなら先に見つけた物）=====
 	Handle<Entity> best;
 	CameraComponent bestComponent;
 	EntityManager::ForEach<CameraComponent>([&](Handle<Entity> entity, const CameraComponent& component) {
@@ -407,8 +490,8 @@ void CameraSystem::Update(bool isGameRunning) {
 			bestComponent = component;
 		}
 	});
-	const Handle<Entity> previous = state->mainEntity;
-	state->mainEntity = best;
+	const Handle<Entity> previous = state->normalEntity;
+	state->normalEntity = best;
 
 	// ===== 2. 無ければ既定のカメラ =====
 	const TransformComponent* transform = EntityManager::Get<TransformComponent>(best);
@@ -417,6 +500,7 @@ void CameraSystem::Update(bool isGameRunning) {
 			LogManager::Log("Camera Component が無いので、既定のカメラ（(0, 0, -10) から +Z を向く）で撮ります。Hierarchy の ＋ → Camera で置けます");
 			state->hasLoggedNoCamera = true;
 		}
+		state->mainEntity = {};
 		UseDefaultCamera();
 		SceneRenderer::SetCameraPostOverrides({});
 		ResetOutput();
@@ -426,9 +510,12 @@ void CameraSystem::Update(bool isGameRunning) {
 
 	// ===== 3. カメラが変わったら、補間を始める =====
 	// 停止中と、シーンの最初のフレームは補間しない（エディタで値を変えた結果・置いた通りの絵をすぐ見せる）
+	const std::optional<CameraOverride>& request = state->overrideRequest;
 	if (!isGameRunning) {
 		state->blend.isActive = false;
 		state->impulses.clear();
+	} else if (!request.has_value() && state->lastOverride.has_value()) {
+		StartExitBlend(*state->lastOverride);
 	} else if (best != previous && state->hasOutput) {
 		StartBlend(previous, bestComponent);
 	}
@@ -440,15 +527,27 @@ void CameraSystem::Update(bool isGameRunning) {
 
 	// ===== 5. 写す値を作って、カメラへ写す =====
 	// 大きさは写さない（ビュー行列に大きさが混ざると、絵が伸び縮みする）
-	const CameraOutput output = ApplyBlend(EvaluateCamera(best, *transform, bestComponent, isGameRunning), isGameRunning);
+	CameraOutput output = ApplyBlend(EvaluateCamera(best, *transform, bestComponent, isGameRunning), isGameRunning);
+	if (request.has_value()) {
+		output = ApplyOverride(*request, output, isGameRunning);
+	}
 	ApplyOutput(output);
 	state->output = output;
 	state->hasOutput = true;
+	state->mainEntity = (request.has_value() && request->to.IsValid()) ? request->to : best;
+
+	// ===== 6. 頼みは1フレームだけ（頼まなくなれば、次のフレームから通常のカメラ）=====
+	state->lastOverride = isGameRunning ? state->overrideRequest : std::nullopt;
+	state->overrideRequest.reset();
+	state->previewShake.reset();
 }
 
 void CameraSystem::ResetOutput() {
 	state->hasOutput = false;
 	state->blend.isActive = false;
+	state->overrideRequest.reset();
+	state->lastOverride.reset();
+	state->previewShake.reset();
 }
 
 //=============================================================================
@@ -471,7 +570,20 @@ Handle<Entity> CameraSystem::GetMainCameraEntity() {
 
 bool CameraSystem::IsBlending() {
 	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
-	return state->blend.isActive;
+	return state->blend.isActive || (state->lastOverride.has_value() && state->lastOverride->weight < 1.0f);
+}
+
+Vector3 CameraSystem::CalcCameraPosition(Handle<Entity> entity) {
+	const TransformComponent* transform = EntityManager::Get<TransformComponent>(entity);
+	if (transform == nullptr) {
+		return {0.0f, 0.0f, 0.0f};
+	}
+	Vector3 position = GetWorldPosition(*transform);
+	Quaternion rotation = GetWorldRotation(*transform);
+	if (const CameraPathComponent* path = EntityManager::Get<CameraPathComponent>(entity)) {
+		CameraPath::Apply(*path, position, rotation);
+	}
+	return position;
 }
 
 const TransformComponent* CameraSystem::GetFollowTargetTransform() {
@@ -501,4 +613,25 @@ void CameraSystem::AddImpulse(float strength) {
 void CameraSystem::AddImpulse(float strength, const Vector3& worldDirection) {
 	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
 	state->impulses.push_back({strength, worldDirection, true});
+}
+
+//=============================================================================
+// Timeline から使う
+//=============================================================================
+void CameraSystem::RequestOverride(const CameraOverride& request) {
+	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
+	state->overrideRequest = request;
+}
+
+void CameraSystem::BeginPreviewShake(float time) {
+	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
+	state->previewShake = PreviewShake{.time = time};
+}
+
+void CameraSystem::AddPreviewImpulse(float strength, const Vector3& direction, bool isWorldDirection, float age) {
+	MY_ASSERT_MSG(state != nullptr && state->previewShake.has_value(), "BeginPreviewShake を先に呼んでください");
+	state->previewShake->impulses.push_back({
+	    {strength, direction, isWorldDirection},
+        age
+    });
 }

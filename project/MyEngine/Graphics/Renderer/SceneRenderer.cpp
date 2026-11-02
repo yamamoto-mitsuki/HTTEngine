@@ -53,7 +53,8 @@ void SceneRenderer::Release() { instance_.reset(); }
 void SceneRenderer::ApplyViewOptions(const SceneViewOptions& options) {
 	instance_->viewOptions_ = options;
 	RenderQueue::SetLayerVisible(DrawLayer::EditorGrid, options.editorGrid); // グリッドは描く物を1回だけ積み、ビューごとに飛ばす
-	RenderQueue::SetSceneHiddenVisible(options.sceneHidden);                 // 目で隠した物も同じ（積むのは1回、Scene ビューだけ飛ばす）
+	RenderQueue::SetLayerVisible(DrawLayer::EditorGizmo, options.editorGizmo); // ギズモは描く物を1回だけ積み、ビューごとに飛ばす
+	RenderQueue::SetSceneHiddenVisible(options.sceneHidden); // 目で隠した物も同じ（積むのは1回、Scene ビューだけ飛ばす）
 }
 
 // ===== このビューに掛けるカメラの上書き =====

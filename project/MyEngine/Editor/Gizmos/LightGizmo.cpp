@@ -51,6 +51,7 @@ void LightGizmo::Initialize() {
 	// フェードしない値にする
 	rangeLines_.fadeStartDistance = kNoFadeStart;
 	rangeLines_.fadeEndDistance = kNoFadeEnd;
+	rangeLines_.layer = DrawLayer::EditorGizmo; // Scene ビューだけに描く
 }
 
 
@@ -86,6 +87,7 @@ void LightGizmo::DrawIcon(const Vector3& position, uint32_t textureHandle) {
 	icon.depthMode = DepthMode::TestNoWrite; // 半透明として描く（深度を書かない。Skyboxの後に奥から順に描かれる）
 	icon.isBillboard = true;
 	icon.camera = camera_;
+	icon.layer = DrawLayer::EditorGizmo; // Scene ビューだけに描く
 	icon.transform.translation = position;
 	Renderer::DrawRect3d(icon);
 }

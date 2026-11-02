@@ -122,7 +122,7 @@ public:
 	/// <summary>
 	/// CSの名前から ComputePipeline を取得（初めて使うときに作る）
 	/// </summary>
-	/// <param name="csName">.shader の path から作った名前（"Compute/ComputeTest.CS.hlsl" なら "ComputeTestCS"）</param>
+	/// <param name="csName">.shader の path から作った名前（"Compute/Skinning.CS.hlsl" なら "SkinningCS"）</param>
 	static const ComputePipeline& GetComputePipeline(const std::string& csName);
 
 

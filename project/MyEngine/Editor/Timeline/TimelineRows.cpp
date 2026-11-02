@@ -8,14 +8,18 @@
 
 #include <externals/imgui/imgui.h>
 
+#include "MyEngine/Components/Camera/CameraComponent.h"
+#include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/Editor/Timeline/TimelineEditorState.h"
 #include "MyEngine/Editor/Windows/HierarchyWindow.h"
 #include "MyEngine/Timeline/TimelineEdit.h"
+#include "MyEngine/Timeline/Camera/TimelineCameraTrack.h"
 
 // Timeline ウィンドウの真ん中（時間の目盛り・トラックの一覧・時間の列・スクロールバー）
 
 namespace {
 constexpr const char* kTrackDragType = "TIMELINE_TRACK"; // トラックの行をドラッグで運ぶときの種類の名前
+constexpr float kClipLabelPadding = 6.0f;                // クリップの左端と名前のすき間
 constexpr float kRulerHeight = 24.0f;                    // 時間の目盛りの高さ
 constexpr float kTickMinPixels = 60.0f;                  // 目盛りの間隔の下限（ピクセル）
 constexpr int kMaxTicks = 256;                           // 目盛りの線の数の上限
@@ -39,6 +43,8 @@ constexpr ImU32 kClipColor = IM_COL32(60, 130, 170, 255);     // クリップ
 constexpr ImU32 kSelectedColor = IM_COL32(255, 160, 40, 255); // 選んでいる物（選んだ物の枠と同じ橙）
 constexpr ImU32 kPlayheadColor = IM_COL32(240, 90, 90, 255);  // 再生位置
 constexpr ImU32 kProblemColor = IM_COL32(240, 110, 110, 255); // 結び付けの問題
+constexpr ImU32 kFadeColor = IM_COL32(0, 0, 0, 90);           // クリップの補間の部分（斜めの線の外を暗くする）
+constexpr ImU32 kFadeOutColor = IM_COL32(60, 130, 170, 110);  // クリップの終わった後の補間
 
 /// <summary>
 /// 列の上のマウスの下にある物
@@ -95,6 +101,16 @@ void AddKeyAt(TimelineEditorState& state, int trackIndex, int clipIndex, float t
 	state.MarkEdited();
 }
 
+// ===== カメラのクリップを足す（Hierarchy からドラッグした Camera。カメラのトラックでなければ何もしない）=====
+void AddCameraClipAt(TimelineEditorState& state, int trackIndex, float time, Handle<Entity> camera) {
+	auto* track = dynamic_cast<TimelineCameraTrack*>(state.GetTimeline()->tracks[trackIndex].get());
+	if (track == nullptr || EntityManager::Get<CameraComponent>(camera) == nullptr) {
+		return;
+	}
+	AddClipAt(state, trackIndex, time);
+	track->clips[state.selection.clip].camera = EntityManager::MakeBindingPath(state.owner, camera);
+}
+
 // ===== 選んでいる物を消す（キー → クリップ → トラックの順に、一番細かい物）=====
 void DeleteSelected(TimelineEditorState& state) {
 	Timeline* timeline = state.GetTimeline();
@@ -129,7 +145,13 @@ void AcceptRowDrop(TimelineEditorState& state, int index, int& moveFrom, int& mo
 		moveTo = index;
 	}
 	if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(HierarchyWindow::kDragDropType)) {
-		SetTimelineTarget(state, *state.GetTimeline()->tracks[index], *static_cast<const Handle<Entity>*>(payload->Data));
+		const Handle<Entity> entity = *static_cast<const Handle<Entity>*>(payload->Data);
+		TimelineTrack& track = *state.GetTimeline()->tracks[index];
+		if (track.UsesTarget()) {
+			SetTimelineTarget(state, track, entity);
+		} else {
+			AddCameraClipAt(state, index, state.time, entity);
+		}
 	}
 	ImGui::EndDragDropTarget();
 }
@@ -231,16 +253,19 @@ LaneHit FindHit(const TimelineEditorState& state, const LaneArea& area, const Im
 	}
 	hit.track = row;
 	TimelineTrack& track = *timeline.tracks[row];
-	// --- 上に描かれている物（後ろのクリップ）から調べる ---
+	// --- 右端のすぐ外は長さを変える（終わりにキーがあっても、後ろのクリップの下に隠れていても、ここならつかめる）---
 	for (int clip = static_cast<int>(track.GetClipCount()) - 1; clip >= 0; --clip) {
-		const float left = ClipLeft(state, area, track, clip);
 		const float right = ClipRight(state, area, track, clip);
-		// 右端のすぐ外は長さを変える（終わりにキーがあっても、ここならつかめる）
 		if (track.HasClipDuration() && mouse.x > right && mouse.x <= right + kEndHitWidth) {
 			hit.clip = clip;
 			hit.isEnd = true;
 			return hit;
 		}
+	}
+	// --- 上に描かれている物（後ろのクリップ）から調べる ---
+	for (int clip = static_cast<int>(track.GetClipCount()) - 1; clip >= 0; --clip) {
+		const float left = ClipLeft(state, area, track, clip);
+		const float right = ClipRight(state, area, track, clip);
 		// キーはクリップの外へはみ出して描くことがあるので、範囲の前に調べる
 		const std::span<Curve> curves = track.GetClipCurves(clip);
 		for (const float keyTime : TimelineEdit::CollectKeyTimes(curves)) {
@@ -391,6 +416,21 @@ void HandleMouse(TimelineEditorState& state, const LaneArea& area) {
 	}
 }
 
+// ===== 列のドロップ：Hierarchy の Camera を、落とした時間のクリップにする =====
+void AcceptLaneDrop(TimelineEditorState& state, const LaneArea& area) {
+	if (!ImGui::BeginDragDropTarget()) {
+		return;
+	}
+	if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(HierarchyWindow::kDragDropType)) {
+		const ImVec2 mouse = ImGui::GetIO().MousePos;
+		const int row = static_cast<int>(std::floor((mouse.y - area.min.y) / kTimelineRowHeight));
+		if (row >= 0 && row < static_cast<int>(state.GetTimeline()->tracks.size())) {
+			AddCameraClipAt(state, row, state.view.ToTime(mouse.x - area.min.x), *static_cast<const Handle<Entity>*>(payload->Data));
+		}
+	}
+	ImGui::EndDragDropTarget();
+}
+
 // ===== 右クリックのメニュー =====
 void DrawLaneMenu(TimelineEditorState& state) {
 	if (!ImGui::BeginPopup("##laneMenu")) {
@@ -444,8 +484,24 @@ void DrawClip(ImDrawList* drawList, const TimelineEditorState& state, const Lane
 	const ImVec2 min(left, rowTop + kClipPadding);
 	const ImVec2 max(ClipRight(state, area, track, clip), rowTop + kTimelineRowHeight - kClipPadding);
 	drawList->AddRectFilled(min, max, kClipColor, kClipRounding);
+	// --- 補間の部分：始まりは左上を斜めに暗くする。終わった後は、右へ細くなる三角 ---
+	const TimelineClipFade fade = track.GetClipFade(clip);
+	if (fade.in > 0.0f) {
+		const float fadeX = (std::min)(min.x + fade.in * state.view.pixelsPerSecond, max.x);
+		drawList->AddTriangleFilled(min, ImVec2(fadeX, min.y), ImVec2(min.x, max.y), kFadeColor);
+	}
+	if (fade.out > 0.0f) {
+		drawList->AddTriangleFilled(ImVec2(max.x, min.y), ImVec2(max.x + fade.out * state.view.pixelsPerSecond, max.y), max, kFadeOutColor);
+	}
 	if (isSelected) {
 		drawList->AddRect(min, max, kSelectedColor, kClipRounding, 0, 2.0f);
+	}
+	// --- 名前 ---
+	const std::string label = track.GetClipLabel(clip);
+	if (!label.empty()) {
+		drawList->PushClipRect(min, max, true);
+		drawList->AddText(ImVec2(min.x + kClipLabelPadding, centerY - ImGui::GetTextLineHeight() * 0.5f), ImGui::GetColorU32(ImGuiCol_Text), label.c_str());
+		drawList->PopClipRect();
 	}
 	// --- キーの印（同じ時間のキーは1つに見せる）---
 	for (const float keyTime : TimelineEdit::CollectKeyTimes(track.GetClipCurves(clip))) {
@@ -492,7 +548,8 @@ void DrawTimelineRuler(TimelineEditorState& state) {
 	ImGui::SetNextItemWidth(kTimelineListWidth - ImGui::GetStyle().ItemSpacing.x);
 	if (ImGui::BeginCombo("##addTrack", "Add Track")) {
 		for (const std::string& name : TimelineTrackRegistry::GetNames()) {
-			if (ImGui::Selectable(name.c_str())) {
+			// 見せるのは頭の Timeline を省いた名前。ID は元の名前（省いた名前がゲームの種類と同じになっても衝突しない）
+			if (ImGui::Selectable(std::format("{}###{}", TimelineTrackRegistry::GetDisplayName(name), name).c_str())) {
 				state.SelectTrack(TimelineEdit::AddTrack(timeline, name));
 				state.MarkEdited();
 			}
@@ -568,6 +625,7 @@ void DrawTimelineRows(TimelineEditorState& state, float height) {
 	ImGui::InvisibleButton("##lanes", area.size, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight | ImGuiButtonFlags_MouseButtonMiddle);
 	ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY); // ホイールを、窓のスクロールより先に受け取る
 	// IsItem〜 は直前の項目＝上のボタンを見るので、間に項目を置かない
+	AcceptLaneDrop(state, area);
 	HandleView(state, area);
 	HandleMouse(state, area);
 	HandleKeyboard(state);

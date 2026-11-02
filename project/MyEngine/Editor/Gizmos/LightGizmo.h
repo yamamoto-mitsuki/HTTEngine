@@ -9,7 +9,7 @@ class Camera;
 
 
 /// <summary>
-/// ライトをエディタ上で見せるための表示用のギズモ
+/// ライトをエディタ上で見せるための表示用のギズモ（Scene ビューだけ。Game ビューには出さない）
 /// <para>位置と向きはLightSystemがEntityのTransformから計算して渡す</para>
 /// </summary>
 class LightGizmo {

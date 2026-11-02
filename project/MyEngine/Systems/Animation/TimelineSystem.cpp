@@ -9,10 +9,13 @@
 
 #include "MyEngine/Components/Animation/TimelineComponent.h"
 #include "MyEngine/ECS/GameComponent.h"
+#include "MyEngine/Systems/Camera/CameraSystem.h"
 #include "MyEngine/Systems/Gameplay/ScriptSystem.h"
 #include "MyEngine/Timeline/TimelineEventTrack.h"
 #include "MyEngine/Timeline/TimelineManager.h"
 #include "MyEngine/Timeline/TimelineValueTrack.h"
+#include "MyEngine/Timeline/Camera/TimelineCameraShakeTrack.h"
+#include "MyEngine/Timeline/Camera/TimelineCameraTrack.h"
 
 namespace {
 //=============================================================================
@@ -86,16 +89,19 @@ TimelineRuntime* PrepareRuntime(Handle<Entity> entity) {
 //=============================================================================
 // 毎フレーム
 //=============================================================================
-// ===== 全部のトラックを動かす =====
-void EvaluateTracks(TimelineRuntime& runtime, const Timeline& timeline) {
+// ===== トラックを動かす（isApplying が false のフレームは、毎フレーム動かす種類だけ）=====
+void EvaluateTracks(TimelineRuntime& runtime, const Timeline& timeline, TimeMode timeMode, bool isApplying) {
+	const bool isStopped = runtime.playhead.GetState() == TimelinePlayState::Stopped;
 	TimelineFrame frame;
 	frame.owner = runtime.entity;
 	frame.time = runtime.playhead.GetTime();
 	frame.ranges = passedRanges;
 	frame.events = &pendingEvents;
+	frame.timeMode = timeMode;
 	for (size_t i = 0; i < timeline.tracks.size(); ++i) {
 		const TimelineTrack& track = *timeline.tracks[i];
-		if (!track.isMuted) {
+		const bool isEvaluated = track.EvaluatesEveryFrame() ? !isStopped : isApplying;
+		if (isEvaluated && !track.isMuted) {
 			track.Evaluate(frame, *runtime.states[i]);
 		}
 	}
@@ -111,10 +117,8 @@ void UpdateEntity(Handle<Entity> entity, const TimelineComponent& component) {
 	// --- 時間を進める。通った幅があるか、時間が飛んだときだけ書く（止まっている間は、ゲームが書いた値を上書きしない）---
 	const float speed = (component.speed > 0.0f) ? component.speed : 0.0f; // 比べ方を逆にしないのは、NaN もここで 0 にするため
 	runtime->playhead.Advance(Time::GetDeltaTime(component.timeMode) * speed, timeline.GetDuration(), component.loop, passedRanges);
-	if (!passedRanges.empty() || runtime->needsApply) {
-		runtime->needsApply = false;
-		EvaluateTracks(*runtime, timeline);
-	}
+	EvaluateTracks(*runtime, timeline, component.timeMode, !passedRanges.empty() || runtime->needsApply);
+	runtime->needsApply = false;
 }
 
 // ===== 集めたイベントを呼ぶ =====
@@ -149,8 +153,10 @@ void ApplyPreview(const PreviewRequest& request) {
 	frame.owner = request.owner;
 	frame.time = request.time;
 	frame.events = &pendingEvents;
+	frame.isPreview = true;
 	ComponentSerializer::BeginValueCapture();
 	isPreviewApplied = true;
+	CameraSystem::BeginPreviewShake(request.time);
 	for (size_t i = 0; i < timeline->tracks.size(); ++i) {
 		const TimelineTrack& track = *timeline->tracks[i];
 		if (!track.isMuted && track.CanPreview()) {
@@ -184,6 +190,8 @@ void TimelineSystem::Initialize() {
 	// エンジンのトラック（.lib の中の TIMELINE_TRACK はリンカに捨てられるので、ここで登録する）
 	TimelineTrackRegistrar<TimelineValueTrack>("TimelineValueTrack", "Component の1つの項目をカーブで動かす");
 	TimelineTrackRegistrar<TimelineEventTrack>("TimelineEventTrack", "指定の時間に Script の OnTimelineEvent を呼ぶ");
+	TimelineTrackRegistrar<TimelineCameraTrack>("TimelineCameraTrack", "クリップごとに写すカメラを決める。クリップを重ねると補間する");
+	TimelineTrackRegistrar<TimelineCameraShakeTrack>("TimelineCameraShakeTrack", "指定の時間に、カメラへ衝撃を送って揺らす");
 }
 
 void TimelineSystem::Release() {

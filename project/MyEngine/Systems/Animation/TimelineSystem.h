@@ -32,6 +32,7 @@ public:
 
 	/// <summary>
 	/// 全部の Timeline を1フレーム進める。Script の後、ワールド行列の計算の前に呼ぶ（動かした位置を、そのフレームの描画に使うため）
+	/// <para>CameraSystem::Update より前に呼ぶ（カメラのトラックの頼みを、そのフレームのカメラに使うため）</para>
 	/// </summary>
 	/// <param name="isGameRunning">再生中か（エディタの停止中は何も動かさない）</param>
 	static void Update(bool isGameRunning);

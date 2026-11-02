@@ -24,6 +24,7 @@
 #include "MyEngine/Editor/Assets/AssetIcons.h"
 #include "MyEngine/Editor/Assets/AssetThumbnails.h"
 #include "MyEngine/Editor/Gizmos/LightGizmo.h"
+#include "MyEngine/Editor/Gizmos/CameraGizmo.h"
 #include "MyEngine/Editor/History/EditorHistory.h"
 #include "MyEngine/Editor/Viewport/EditorViewport.h"
 // Timeline
@@ -125,6 +126,8 @@ void DrawViewMenu() {
 		ImGui::SeparatorText("Gizmos");
 		ImGui::MenuItem("Light Icons", nullptr, &lightGizmo.showIcon);
 		ImGui::MenuItem("Light Ranges", nullptr, &lightGizmo.showRange);
+		ImGui::MenuItem("Camera Icons", nullptr, &CameraGizmo::GetShowIcons());
+		ImGui::MenuItem("Camera Paths", nullptr, &CameraGizmo::GetShowPaths());
 		ImGui::MenuItem("Colliders", nullptr, &CollisionSystem::GetShowGizmos());
 		ImGui::MenuItem("Skeletons", nullptr, &AnimationSystem::GetShowGizmos());
 		// Scene ビューの絵（ブルームなど。レンズは Scene では掛けない）

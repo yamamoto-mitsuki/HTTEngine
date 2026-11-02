@@ -23,7 +23,8 @@ std::vector<TrackType>& Types() {
 	return types;
 }
 
-const std::string kEmptyDescription; // 知らない名前の説明
+const std::string kEmptyDescription;                 // 知らない名前の説明
+constexpr std::string_view kOmittedPrefix = "Timeline"; // ウィンドウに出すときに省く名前の頭（エンジンのトラックは Timeline〇〇Track）
 } // namespace
 
 //=============================================================================
@@ -32,7 +33,7 @@ const std::string kEmptyDescription; // 知らない名前の説明
 // ===== 見せ方 =====
 void TimelineTrack::DescribeCommon(ComponentUI& ui) {
 	ui.Field("Name###name", name, Tip("トラックの名前（警告に出す）"));
-	ui.Field("Target###target", target, Tip("動かす相手。再生する Entity から、子の名前を / でつないで書く（Panel/Title）。空なら再生する Entity 自身"));
+	ui.Field("Target###target", target, Tip("動かす相手。再生する Entity から、子の名前を / でつないで書く（Panel/Title）。空なら再生する Entity 自身。先頭が / ならシーンの一番上から（/Cameras/Close）"));
 	ui.Field("Muted###isMuted", isMuted, Tip("このトラックを動かさない"));
 }
 
@@ -99,7 +100,7 @@ std::vector<std::string> TimelineTrackRegistry::GetNames() {
 	for (const TrackType& type : Types()) {
 		names.push_back(type.name);
 	}
-	std::ranges::sort(names);
+	std::ranges::sort(names, {}, [](const std::string& name) { return GetDisplayName(name); }); // ウィンドウに出す名前の順に並べる
 	return names;
 }
 
@@ -107,4 +108,9 @@ const std::string& TimelineTrackRegistry::GetDescription(std::string_view name) 
 	const std::vector<TrackType>& types = Types();
 	const auto found = std::ranges::find(types, name, &TrackType::name);
 	return (found != types.end()) ? found->description : kEmptyDescription;
+}
+
+std::string_view TimelineTrackRegistry::GetDisplayName(std::string_view name) {
+	// "Timeline" そのものは、省くと空になるのでそのまま
+	return (name.starts_with(kOmittedPrefix) && name.size() > kOmittedPrefix.size()) ? name.substr(kOmittedPrefix.size()) : name;
 }

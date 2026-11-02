@@ -46,6 +46,7 @@
 #include "MyEngine/Time/EngineTime.h"
 #include "MyEngine/UI/UIScreen.h"
 #ifdef USE_IMGUI
+#include "MyEngine/Editor/Gizmos/CameraGizmo.h"
 #include "MyEngine/Editor/History/EditorHistory.h"
 #include "MyEngine/Editor/Inspector/AttackTableEditor.h"
 #include "MyEngine/Editor/Inspector/CurveAssetEditor.h"
@@ -213,6 +214,7 @@ void EngineSystems::Draw(Camera* gameCamera, IBLEnvironment* gameEnvironment) {
 #ifdef USE_IMGUI
 	// --- ライト・Collider のギズモ（エディタ用）---
 	LightSystem::DrawGizmos(gameCamera);
+	CameraGizmo::Draw(gameCamera);
 	CollisionSystem::DrawGizmos(gameCamera);
 	WindZoneSystem::DrawGizmos(gameCamera); // 風の範囲と向き（Collider のギズモと一緒に出す・消す）
 	AnimationSystem::DrawGizmos(gameCamera);

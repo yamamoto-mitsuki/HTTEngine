@@ -80,8 +80,9 @@ enum class BillboardMode {
 
 // 描く物の層（ビューごとに、描く・描かないを選べる。Unity の Layer とカメラの Culling Mask の小さい版）
 enum class DrawLayer {
-	Default,    // ふつうの物（いつも描く）
-	EditorGrid, // エディタのグリッド（Scene・Game ビューで別々に切れる。View メニュー）
+	Default,     // ふつうの物（いつも描く）
+	EditorGrid,  // エディタのグリッド（Scene・Game ビューで別々に切れる。View メニュー）
+	EditorGizmo, // エディタのギズモ（Scene ビューだけ描く。カメラのアイコンなど、ゲームの絵に入れない物）
 };
 
 /// <summary>

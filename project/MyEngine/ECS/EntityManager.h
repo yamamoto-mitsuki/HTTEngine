@@ -79,10 +79,13 @@ public:
 	// 子のHandleを out に詰める（outは使い回す）
 	static void GetChildren(Handle<Entity> handle, std::vector<Handle<Entity>>& out);
 	// root から子の名前を / でつないだパス（"Panel/Title"）で探す。空なら root。同じ名前の子が2つあれば先の物。無ければ無効なHandle
+	// 先頭が / なら root を見ず、シーンの一番上から探す（"/Cameras/Close"）
 	// Prefab・画面（UI Screen）から作るたびに EntityId が変わる物を、作り直しても同じ相手として指すのに使う。全部の Entity を調べるので、毎フレームは呼ばない
 	static Handle<Entity> FindByPath(Handle<Entity> root, std::string_view path);
 	// FindByPath の逆。root から entity までの名前のパス（entity が root なら空。root の子孫でなければ std::nullopt）
 	static std::optional<std::string> MakePath(Handle<Entity> root, Handle<Entity> entity);
+	// root から entity を指すパス。子孫なら root からのパス、それ以外はシーンの一番上からのパス（/ で始まる）。どちらも FindByPath で同じ Entity に戻る
+	static std::string MakeBindingPath(Handle<Entity> root, Handle<Entity> entity);
 	// 親を持たないEntity（一番上）のHandleを out に詰める
 	static void GetRoots(std::vector<Handle<Entity>>& out);
 

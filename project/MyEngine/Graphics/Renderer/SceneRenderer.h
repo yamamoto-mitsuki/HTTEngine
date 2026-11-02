@@ -20,6 +20,7 @@ struct SceneViewOptions {
 	bool fog = true;          // 霧（Fog Component）を掛ける
 	bool depthOfField = true; // 被写界深度（Depth Of Field Component）を掛ける（ポストエフェクトを掛けるときだけ）
 	bool editorGrid = true;   // エディタのグリッド（DrawLayer::EditorGrid）を描く
+	bool editorGizmo = false; // エディタのギズモ（DrawLayer::EditorGizmo）を描く（Scene ビューだけ true）
 	bool sceneHidden = true;  // Hierarchy の目で隠した物（DrawTarget::isSceneHidden）を描く（Scene ビューだけ false）
 	bool cameraVolume = true; // カメラごとのポストエフェクト（Camera Volume）を掛ける（Scene ビューだけ false。別のカメラから見るので、ピントが合わない）
 };

@@ -4,22 +4,39 @@
 #include "MyEngine/Components/Camera/CameraComponent.h"
 #include "MyEngine/Components/Camera/CameraFollowComponent.h"
 #include "MyEngine/Components/Camera/CameraLookAtComponent.h"
+#include "MyEngine/Components/Camera/CameraPathComponent.h"
 #include "MyEngine/Components/Camera/CameraShakeComponent.h"
 #include "MyEngine/Components/Camera/CameraVolumeComponent.h"
 #include "MyEngine/Core/Handle.h"
 #include "MyEngine/ECS/Entity.h"
+#include "MyEngine/Math/Easing.h"
 #include "MyEngine/Math/Vector3.h"
+#include "MyEngine/Time/EngineTime.h"
 
 // 前方宣言
 class Camera;
 struct TransformComponent;
 
 /// <summary>
+/// 通常のカメラ（Priority で選ぶカメラ）の代わりに写すカメラの頼み。無効な Handle は「通常のカメラ」という意味
+/// </summary>
+struct CameraOverride {
+	Handle<Entity> from;                      // 混ぜる前のカメラ
+	Handle<Entity> to;                        // 混ぜた先のカメラ
+	float weight = 1.0f;                      // to の割合（0：from 〜 1：to）
+	float exitTime = 0.0f;                    // 頼むのをやめたら、この秒をかけて通常のカメラへ戻す（0 ならすぐ）
+	Ease::Type exitEase = Ease::Type::Linear; // 戻すときの速さの変え方
+	TimeMode timeMode = TimeMode::Game;       // from・to のカメラの動きと、戻す補間に使う時間
+};
+
+
+/// <summary>
 /// CameraComponent を持つEntityから、ゲームの絵を撮るカメラを決める（Unity の Cinemachine の Brain と Virtual Camera の小さい版）
 /// <para>カメラ（Camera クラス）はここが1つだけ持ち、毎フレーム、有効な Camera Component の中で priority が一番大きい物の値をそこへ写す。
 /// シーンの GetCamera() は、上書きしなければこのカメラを返す</para>
-/// <para>1台分の値 ＝ Transform ＋ Camera Look At（向き）＋ Camera Shake（揺れ）＋ Camera Volume（ポストエフェクト）。Transform を動かすのは Camera Follow だけで、ほかは写す値にだけ入る</para>
+/// <para>1台分の値 ＝ Transform ＋ Camera Path（位置）＋ Camera Look At（向き）＋ Camera Shake（揺れ）＋ Camera Volume（ポストエフェクト）。Transform を動かすのは Camera Follow と Timelineのキーだけで、ほかは写す値にだけ入る</para>
 /// <para>priority が一番大きいカメラが変わると、Camera の Blend の設定で、今見えている値からそのカメラの値へ補間する</para>
+/// <para>Timeline のカメラのトラックは RequestOverride で、そのフレームに写すカメラを頼む（頼まなくなれば通常のカメラへ戻る）</para>
 /// </summary>
 class CameraSystem {
 public:
@@ -52,6 +69,8 @@ public:
 	static Handle<Entity> GetMainCameraEntity();
 	// カメラの切り替えの補間の途中か
 	static bool IsBlending();
+	// そのカメラの本来の位置（Camera Path があれば線の上。注視点・揺れ・補間は入らない。エディタの Camera Path の印に使う）
+	static Vector3 CalcCameraPosition(Handle<Entity> entity);
 
 	// メインカメラの Camera Follow が追っている物の Transform（Camera Follow・Target が無ければ nullptr。停止中も返す）
 	// 風の線（WindZoneSystem）・被写界深度のピント（DepthOfFieldSystem）が使う
@@ -61,7 +80,6 @@ public:
 	static Handle<Entity> GetFollowTargetEntity();
 
 	// ===== ゲームから使う =====
-
 	/// <summary>
 	/// 有効な Camera Shake 全部へ、衝撃を送る（Unity の Cinemachine の Impulse Source の GenerateImpulse と同じ）。向きは画面の面の中でランダム
 	/// </summary>
@@ -74,4 +92,25 @@ public:
 	/// <param name="strength">最初に振れる幅（m）。Camera Shake の Gain が掛かる</param>
 	/// <param name="worldDirection">最初に振れる向き（ワールド）。長さは1でなくてよい</param>
 	static void AddImpulse(float strength, const Vector3& worldDirection);
+
+
+	// ===== Timeline から使う（どれも頼んだフレームの Update だけ効く。TimelineSystem::Update の中から呼ぶ）=====
+	/// <summary>
+	/// このフレームに写すカメラを頼む（停止中のプレビューでも効く）。2つ頼まれたら、後の頼みが勝つ
+	/// </summary>
+	static void RequestOverride(const CameraOverride& request);
+
+	/// <summary>
+	/// 停止中のプレビューで揺れを見せる。ノイズは time 秒の所を読む
+	/// </summary>
+	static void BeginPreviewShake(float time);
+
+	/// <summary>
+	/// BeginPreviewShake の後に呼ぶ。age 秒前に受けた衝撃を、今の揺れに足して見せる
+	/// </summary>
+	/// <param name="strength">最初に振れる幅（m）</param>
+	/// <param name="direction">最初に振れる向き</param>
+	/// <param name="isWorldDirection">true：direction はワールドの向き false：カメラの右・上・前の向き</param>
+	/// <param name="age">受けてからの秒</param>
+	static void AddPreviewImpulse(float strength, const Vector3& direction, bool isWorldDirection, float age);
 };

@@ -1,21 +1,24 @@
 #ifdef USE_IMGUI
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <format>
 #include <optional>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include <externals/imgui/imgui.h>
 #include <externals/imgui/imgui_internal.h>
 
-#include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/ECS/ComponentUI.h"
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/Editor/Timeline/TimelineEditorState.h"
+#include "MyEngine/Editor/Windows/HierarchyWindow.h"
 #include "MyEngine/Timeline/TimelineEdit.h"
 #include "MyEngine/Timeline/TimelineValueTrack.h"
+#include "MyEngine/Timeline/Camera/TimelineCameraTrack.h"
+#include "MyEngine/Components/Camera/CameraComponent.h"
+
 
 // Timeline ウィンドウの下の詳細（トラックの結び付け・クリップ・キー・カーブ）
 
@@ -57,6 +60,19 @@ std::optional<ComponentValueField> FindField(const TimelineEditorState& state, c
 	return (found != fields.end()) ? std::optional(*found) : std::nullopt;
 }
 
+// ===== 対象の今の値（読めなければ全部 0 で、最初の成分だけ使う）=====
+ComponentValue ReadTargetValue(const TimelineEditorState& state, const TimelineTrack& track) {
+	ComponentValue value;
+	value.isUsed[0] = true;
+	if (const auto* valueTrack = dynamic_cast<const TimelineValueTrack*>(&track)) {
+		const Handle<Entity> target = EntityManager::FindByPath(state.owner, valueTrack->target);
+		if (target.IsValid()) {
+			ComponentSerializer::GetValue(target, valueTrack->component, valueTrack->property, value);
+		}
+	}
+	return value;
+}
+
 // ===== 成分の名前 =====
 std::string ChannelName(const std::optional<ComponentValueField>& field, size_t channel) {
 	if (!field.has_value()) {
@@ -66,6 +82,23 @@ std::string ChannelName(const std::optional<ComponentValueField>& field, size_t 
 		return "value";
 	}
 	return field->isColor ? kColorNames[channel] : kVectorNames[channel];
+}
+
+// ===== シーンのカメラを選択肢に出す（onSelect は選んだ Entity を受け取る。isOutsideOnly なら、再生する Entity の外のカメラだけ）=====
+template<class Function> 
+void DrawCameraChoices(const TimelineEditorState& state, const std::string& current, bool isOutsideOnly, Function&& onSelect) {
+	int id = 0;
+	EntityManager::ForEach<CameraComponent>([&](Handle<Entity> entity, const CameraComponent&) {
+		const std::string path = EntityManager::MakeBindingPath(state.owner, entity);
+		if (isOutsideOnly && !path.starts_with('/')) {
+			return;
+		}
+		ImGui::PushID(id++); // 同じ名前のカメラがあっても項目が衝突しないように、数えた番号で分ける
+		if (ImGui::Selectable(path.empty() ? "(self)" : path.c_str(), path == current)) {
+			onSelect(entity);
+		}
+		ImGui::PopID();
+	});
 }
 
 //=============================================================================
@@ -89,7 +122,7 @@ void DrawTargetChoices(TimelineEditorState& state, TimelineTrack& track, Handle<
 // ===== 対象 =====
 void DrawTarget(TimelineEditorState& state, TimelineTrack& track) {
 	if (!state.owner.IsValid()) {
-		GetInspectorUI().Field("Target###target", track.target, Tip("動かす相手。再生する Entity から、子の名前を / でつないで書く。空なら再生する Entity 自身"));
+		GetInspectorUI().Field("Target###target", track.target, Tip("動かす相手。再生する Entity から、子の名前を / でつないで書く。空なら再生する Entity 自身。先頭が / ならシーンの一番上から"));
 		return;
 	}
 	if (ImGui::BeginCombo("Target###target", track.target.empty() ? "(self)" : track.target.c_str())) {
@@ -98,9 +131,11 @@ void DrawTarget(TimelineEditorState& state, TimelineTrack& track) {
 		}
 		int id = 0;
 		DrawTargetChoices(state, track, state.owner, id);
+		ImGui::SeparatorText("Scene Cameras");
+		DrawCameraChoices(state, track.target, true, [&](Handle<Entity> entity) { SetTimelineTarget(state, track, entity); });
 		ImGui::EndCombo();
 	}
-	ImGui::SetItemTooltip("動かす相手（再生する Entity とその子孫）。Hierarchy の Entity をトラックの行へドラッグしても選べる");
+	ImGui::SetItemTooltip("動かす相手（再生する Entity とその子孫・シーンのカメラ）。Hierarchy の Entity をトラックの行へドラッグすると、シーンのどの Entity でも選べる");
 }
 
 // ===== Component と項目 =====
@@ -129,7 +164,7 @@ void DrawValueBinding(TimelineEditorState& state, TimelineValueTrack& track) {
 	const std::vector<ComponentValueField> fields = ComponentSerializer::GetValueFields(target, track.component);
 	if (ImGui::BeginCombo("Property###property", track.property.c_str())) {
 		for (const ComponentValueField& field : fields) {
-			if (ImGui::Selectable(std::format("{}###{}", field.label, field.key).c_str(), field.key == track.property)) {
+			if (ImGui::Selectable(std::format("{}###{}", field.label.empty() ? field.key : field.label, field.key).c_str(), field.key == track.property)) {
 				track.property = field.key;
 				UpdateAutoName(track, oldAutoName);
 				state.MarkEdited();
@@ -142,10 +177,12 @@ void DrawValueBinding(TimelineEditorState& state, TimelineValueTrack& track) {
 
 // ===== トラック全体 =====
 void DrawTrackFields(TimelineEditorState& state, TimelineTrack& track) {
-	ImGui::SeparatorText(track.typeName.c_str());
+	ImGui::SeparatorText(std::string(TimelineTrackRegistry::GetDisplayName(track.typeName)).c_str());
 	ImGui::PushID("track"); // クリップの項目と名前が重なる（Name###name）ので分ける
 	GetInspectorUI().Field("Name###name", track.name, Tip("トラックの名前（一覧と警告に出す）"));
-	DrawTarget(state, track);
+	if (track.UsesTarget()) {
+		DrawTarget(state, track);
+	}
 	if (auto* valueTrack = dynamic_cast<TimelineValueTrack*>(&track)) {
 		DrawValueBinding(state, *valueTrack);
 	} else {
@@ -171,20 +208,30 @@ void DrawChannels(TimelineEditorState& state, TimelineTrack& track, std::span<Cu
 			state.curveEditor = CurveEditor{};
 		}
 	}
+	const auto hasKeys = [](const Curve& curve) { return !curve.GetKeys().empty(); };
+	const ptrdiff_t usedCount = std::ranges::count_if(curves.first(count), hasKeys); // キーのある成分の数
 	ImGui::PushID("channels"); // 下のキーの値の欄と同じ名前（a など）になるので分ける
 	for (size_t i = 0; i < count; ++i) {
 		ImGui::PushID(static_cast<int>(i));
-		bool isUsed = !curves[i].GetKeys().empty();
+		bool isUsed = hasKeys(curves[i]);
+		// 最後の1つは外せない（外すとクリップが何も動かさなくなる。要らなければクリップを消す）
+		const bool isLastUsed = isUsed && usedCount == 1;
+		ImGui::BeginDisabled(isLastUsed);
 		if (ImGui::Checkbox("##used", &isUsed)) {
 			if (isUsed) {
-				TimelineEdit::FillFlat(curves[i], 0.0f, track.GetClipDuration(state.selection.clip));
+				// 入れ直したら、対象の今の値の平らな線から（0 から始めると、FOV などが一瞬で壊れた値になる）
+				TimelineEdit::FillFlat(curves[i], ReadTargetValue(state, track).channels[i], track.GetClipDuration(state.selection.clip));
 			} else {
 				curves[i] = Curve();
 			}
 			state.curveEditor = CurveEditor{};
 			state.MarkEdited();
 		}
-		ImGui::SetItemTooltip("この成分を動かす（外すとキーを全部消す）");
+		ImGui::EndDisabled();
+		// 押せないときも説明を出す（SetItemTooltip は押せない項目では出ない）
+		if (ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip | ImGuiHoveredFlags_AllowWhenDisabled)) {
+			ImGui::SetTooltip("%s", isLastUsed ? "最後の1つは外せない（動かさないなら、クリップを消す）" : "この成分を動かす（外すとキーを全部消す。入れ直すと今の値の平らな線になる）");
+		}
 		ImGui::SameLine();
 		if (ImGui::Selectable(ChannelName(field, i).c_str(), state.selection.channel == static_cast<int>(i), 0, ImVec2(40.0f, 0.0f))) {
 			state.selection.channel = static_cast<int>(i);
@@ -240,10 +287,33 @@ void DrawKeyFields(TimelineEditorState& state, TimelineTrack& track, std::span<C
 	ImGui::PopID();
 }
 
+// ===== カメラのクリップの、写すカメラ =====
+void DrawClipCamera(TimelineEditorState& state, TimelineCameraTrack& track) {
+	TimelineCameraClip& clip = track.clips[state.selection.clip];
+	const auto select = [&](Handle<Entity> entity) {
+		clip.camera = EntityManager::MakeBindingPath(state.owner, entity);
+		state.MarkEdited();
+	};
+	if (ImGui::BeginCombo("Camera###camera", clip.camera.empty() ? "(self)" : clip.camera.c_str())) {
+		DrawCameraChoices(state, clip.camera, false, select);
+		ImGui::EndCombo();
+	}
+	ImGui::SetItemTooltip("このクリップの間に写すカメラ。Hierarchy の Camera をここへドラッグしても選べる。再生する Entity の外のカメラは / で始まるパスになる");
+	if (ImGui::BeginDragDropTarget()) {
+		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(HierarchyWindow::kDragDropType)) {
+			select(*static_cast<const Handle<Entity>*>(payload->Data));
+		}
+		ImGui::EndDragDropTarget();
+	}
+}
+
 // ===== クリップ全体 =====
 void DrawClipFields(TimelineEditorState& state, TimelineTrack& track) {
 	ImGui::SeparatorText("Clip");
 	ImGui::PushID("clip");
+	if (auto* cameraTrack = dynamic_cast<TimelineCameraTrack*>(&track)) {
+		DrawClipCamera(state, *cameraTrack);
+	}
 	state.selection.clip = static_cast<int>(track.DescribeClip(state.selection.clip, GetInspectorUI()));
 	const std::span<Curve> curves = track.GetClipCurves(state.selection.clip);
 	if (!curves.empty()) {
@@ -335,15 +405,7 @@ void FillNewClipCurves(const TimelineEditorState& state, TimelineTrack& track, s
 	if (curves.empty()) {
 		return;
 	}
-	// --- 対象の今の値を読む（読めなければ最初の成分を 0 で）---
-	ComponentValue value;
-	value.isUsed[0] = true;
-	if (const auto* valueTrack = dynamic_cast<const TimelineValueTrack*>(&track)) {
-		const Handle<Entity> target = EntityManager::FindByPath(state.owner, valueTrack->target);
-		if (target.IsValid()) {
-			ComponentSerializer::GetValue(target, valueTrack->component, valueTrack->property, value);
-		}
-	}
+	const ComponentValue value = ReadTargetValue(state, track);
 	for (size_t i = 0; i < curves.size(); ++i) {
 		if (value.isUsed[i]) {
 			TimelineEdit::FillFlat(curves[i], value.channels[i], track.GetClipDuration(clip));
@@ -354,6 +416,9 @@ void FillNewClipCurves(const TimelineEditorState& state, TimelineTrack& track, s
 std::string FindTimelineBindingProblem(const TimelineEditorState& state, const TimelineTrack& track) {
 	if (!state.owner.IsValid()) {
 		return {}; // 再生する Entity が分からないので、調べられない
+	}
+	if (!track.UsesTarget()) {
+		return track.FindClipProblem(state.owner);
 	}
 	const Handle<Entity> target = EntityManager::FindByPath(state.owner, track.target);
 	if (!target.IsValid()) {
@@ -376,14 +441,9 @@ std::string FindTimelineBindingProblem(const TimelineEditorState& state, const T
 }
 
 void SetTimelineTarget(TimelineEditorState& state, TimelineTrack& track, Handle<Entity> entity) {
-	const std::optional<std::string> path = EntityManager::MakePath(state.owner, entity);
-	if (!path.has_value()) {
-		LogManager::Warning("Timeline の対象にできるのは、再生する Entity とその子孫だけです");
-		return;
-	}
 	auto* valueTrack = dynamic_cast<TimelineValueTrack*>(&track);
 	const std::string oldAutoName = (valueTrack != nullptr) ? MakeAutoName(*valueTrack) : std::string();
-	track.target = *path;
+	track.target = EntityManager::MakeBindingPath(state.owner, entity);
 	if (valueTrack != nullptr) {
 		UpdateAutoName(*valueTrack, oldAutoName);
 	}

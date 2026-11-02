@@ -112,6 +112,7 @@ void SyncRevision() {
 		state.committedText = TimelineManager::ToText(state.handle);
 		state.hasEdit = false;
 		state.ClampSelection();
+		state.curveEditor = CurveEditor{}; // カーブの中身も入れ替わったので、見ている範囲を合わせ直す（前の範囲のままだと、戻ったキーが絵の外に出て見えない）
 	}
 }
 

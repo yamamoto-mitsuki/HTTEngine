@@ -4,10 +4,10 @@
 #include <memory>
 #include <set>
 #include <span>
+#include <vector>
 #include <string>
 #include <string_view>
 #include <type_traits>
-#include <vector>
 
 #include <externals/nlohmann/json.hpp>
 
@@ -15,6 +15,7 @@
 #include "MyEngine/Curve/Curve.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/Entity.h"
+#include "MyEngine/Time/EngineTime.h"
 #include "MyEngine/Timeline/TimelineEvent.h"
 #include "MyEngine/Timeline/TimelinePlayhead.h"
 
@@ -42,6 +43,16 @@ struct TimelineFrame {
 	float time = 0.0f;                            // 今の時間（秒）
 	std::span<const TimelineRange> ranges;        // このフレームに通った時間の幅（シーク・停止で値を書き直すだけのときは空）
 	std::vector<TimelineEvent>* events = nullptr; // 呼ぶイベントを足す場所（全部の値を書いた後にまとめて呼ばれる）
+	TimeMode timeMode = TimeMode::Game;           // 再生に使っている時間（Timeline Component の Time Mode）
+	bool isPreview = false;                       // エディタの停止中のプレビュー
+};
+
+/// <summary>
+/// クリップの両端の補間の長さ（Timeline ウィンドウの列に斜めの線で見せる）
+/// </summary>
+struct TimelineClipFade {
+	float in = 0.0f;  // 始まりの補間の秒
+	float out = 0.0f; // 終わった後の補間の秒
 };
 
 
@@ -69,7 +80,7 @@ public:
 
 	std::string typeName;       // 種類の名前（TimelineTrackRegistry::Create が入れる。ファイルの "type"）
 	std::string name = "Track"; // トラックの名前（確認の画面・警告に出す）
-	std::string target;         // 対象。再生する Entity から子の名前を / でつないだパス（空なら再生する Entity 自身）
+	std::string target;         // 対象。再生する Entity から子の名前を / でつないだパス（空なら再生する Entity 自身。先頭が / ならシーンの一番上から）
 	bool isMuted = false;       // true の間は動かさない
 
 	// ===== 見せ方（Inspector とファイルの両方がこの並びを使う）=====
@@ -98,8 +109,18 @@ public:
 	// クリップの持つカーブ（カーブを持つ種類だけ書く）。書くと Timeline ウィンドウでキーを直せる
 	virtual std::span<Curve> GetClipCurves(size_t /*index*/) { return {}; }
 
-	// プレビューで Evaluate を呼んでよいか。true にするなら、値は ComponentSerializer::SetValue で書く（書いた値を元へ戻せるのは SetValue だけ）
+	// クリップの上に出す名前（無ければ空）
+	virtual std::string GetClipLabel(size_t /*index*/) const { return {}; }
+	// クリップの両端の補間（Timeline ウィンドウの見た目だけ）
+	virtual TimelineClipFade GetClipFade(size_t /*index*/) const { return {}; }
+	// 対象（Target の欄）を使うか。クリップごとに相手を持つ種類・相手の要らない種類は false にする
+	virtual bool UsesTarget() const { return true; }
+	// クリップの持つ相手の問題（無ければ空。Timeline ウィンドウの行に出す。UsesTarget が false の種類だけ呼ばれる）
+	virtual std::string FindClipProblem(Handle<Entity> /*owner*/) const { return {}; }
+	// プレビューで Evaluate を呼んでよいか。true にするなら、Component の値は ComponentSerializer::SetValue で書く（書いた値を元へ戻せるのは SetValue だけ）
 	virtual bool CanPreview() const { return false; }
+	// 時間が止まっている間も、毎フレーム Evaluate を呼ぶか（カメラの切り替えのように、毎フレーム頼む種類）。再生していない（Stopped）間は呼ばない
+	virtual bool EvaluatesEveryFrame() const { return false; }
 
 	// ===== 再生 =====
 	// Entity ごとの値を作る（再生を始めるときに1回）
@@ -253,10 +274,12 @@ public:
 	static void Register(const char* name, CreateFunction create, const char* description);
 	// 名前から作る（知らない名前なら nullptr）
 	static std::unique_ptr<TimelineTrack> Create(std::string_view name);
-	// 名前の一覧（名前の順）
+	// 名前の一覧（GetDisplayName の順）
 	static std::vector<std::string> GetNames();
 	// 説明（知らない名前・書いていなければ空）
 	static const std::string& GetDescription(std::string_view name);
+	// ウィンドウに出す名前（頭の "Timeline" を省く。"TimelineValueTrack" → "ValueTrack"。ファイルの "type" は元の名前のまま）
+	static std::string_view GetDisplayName(std::string_view name);
 };
 
 /// <summary>
