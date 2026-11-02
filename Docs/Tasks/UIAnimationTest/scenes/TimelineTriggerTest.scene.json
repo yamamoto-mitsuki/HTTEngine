@@ -1,0 +1,15 @@
+{
+"version": 1,
+"entities": [
+{"id": 1, "name": "Main Camera", "parent": 0, "active": true, "components": {"Transform": {"translation": [0.0, 4.0, -12.0], "rotation": [15.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]}, "Camera": {"fovY": 45.0, "nearZ": 0.1, "farZ": 1000.0, "priority": 0}}},
+{"id": 2, "name": "Directional Light", "parent": 0, "active": true, "components": {"Transform": {"translation": [0.0, 3.0, 0.0], "rotation": [50.0, -30.0, 0.0], "scale": [1.0, 1.0, 1.0]}, "Directional Light": {"color": [1.0, 1.0, 1.0]}}},
+{"id": 3, "name": "Ground", "parent": 0, "active": true, "components": {"Transform": {"translation": [0.0, -0.5, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [30.0, 1.0, 10.0]}, "Primitive Renderer": {"enabled": true, "shape": "Box", "color": [0.4, 0.42, 0.48, 1.0]}}},
+{"id": 4, "name": "Player", "parent": 0, "active": true, "components": {"Transform": {"translation": [-6.0, 0.5, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]}, "Primitive Renderer": {"enabled": true, "shape": "Box", "color": [0.2, 0.9, 0.3, 1.0]}, "Collider": {"shape": "Box"}, "TimelineTriggerTester": {"Enabled": true, "Move Speed": 5.0}}},
+{"id": 5, "name": "SignArea", "parent": 0, "active": true, "components": {"Transform": {"translation": [3.0, 1.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]}, "Collider": {"isTrigger": true, "shape": "Box", "size": [3.0, 2.0, 3.0]}, "Timeline Trigger": {"target": 0, "source": "Entity", "sourceEntity": 4, "enterTimeline": "resources/timelines/UIAnimationTest/SignEnter.timeline", "exitTimeline": "resources/timelines/UIAnimationTest/SignExit.timeline"}}},
+{"id": 6, "name": "Marker", "parent": 5, "active": true, "components": {"Transform": {"translation": [0.0, -0.97, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [3.0, 0.05, 3.0]}, "Primitive Renderer": {"enabled": true, "shape": "Box", "color": [1.0, 0.8, 0.3, 1.0]}}},
+{"id": 7, "name": "Door", "parent": 0, "active": true, "components": {"Transform": {"translation": [6.0, 1.5, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [0.5, 3.0, 3.0]}, "Primitive Renderer": {"enabled": true, "shape": "Box", "color": [0.95, 0.5, 0.25, 1.0]}}},
+{"id": 8, "name": "SignPanel", "parent": 0, "active": true, "components": {"Transform": {"translation": [0.0, 220.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]}, "Vector Shape": {"shape": "RoundedRectangle", "size": [420.0, 90.0], "cornerRadius": [20.0, 20.0, 20.0, 20.0], "style": "FillAndStroke", "color": [0.1, 0.12, 0.24, 0.95], "strokeWidth": 3.0, "strokeColor": [0.95, 0.35, 0.55, 1.0]}, "Alpha Group": {"alpha": 0.0}}},
+{"id": 9, "name": "SignText", "parent": 8, "active": true, "components": {"Transform": {"translation": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]}, "Text": {"text": "扉が開いた！", "fontSize": 32.0, "order": 1}}},
+{"id": 10, "name": "Hint", "parent": 0, "active": true, "components": {"Transform": {"translation": [0.0, -330.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]}, "Text": {"text": "←→：箱を動かす　黄色い範囲に入ると扉が上がってパネルが出る（出ると戻る）", "fontSize": 20.0, "color": [0.9, 0.92, 1.0, 1.0]}}}
+]
+}

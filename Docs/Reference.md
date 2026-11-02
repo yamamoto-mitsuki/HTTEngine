@@ -1272,6 +1272,10 @@ const TimelineStatus status = TimelineSystem::GetStatus(entity); // state・time
 - **値のトラック：** `component`（Inspector の見出し）と `property`（シーンファイルの項目の名前）で、Component の数の項目を `Curve` で動かす。Script の `Fields` も動かせる。
 - **イベントのトラック：** 指定の時間に、対象の Entity の Script の `OnTimelineEvent(const TimelineEvent&)` を呼ぶ。シークでは呼ばない。
 - **カメラのトラック・衝撃のトラック：** 写すカメラを時間で切り替える・カメラを揺らす。10章の「Timeline でカメラを動かす」。
+- **Tween のトラック：** Component の項目を From → To で動かす（Ease はカーブ）。端は Current（始まったときの今の値）・Value・Add（元の値 ＋）・Multiply（元の値 ×）・Parameter（`SetParameter` で渡す値）。対象を空にして Add・Multiply で書くと、どの要素にも使えるプリセットになる。
+- **Preset のトラック：** 別の `.timeline` を、トラックの対象を再生する Entity にして再生する。ずらして並べると順に動く。手順と決まりは [Tasks/UIAnimation.md](Tasks/UIAnimation.md)。
+- **Component を使わずに再生する：** `TimelineSystem::PlayLayer(entity, TimelineLayer::Script, {.timeline = 番号})`。層は Component → Script → Trigger → UIState → UIVisibility → UIScreen の順に書くので、同じ値は後の層が勝つ。実行中の値は `SetParameter(entity, "名前", 値)`、対象の差し替えは `SetTargetOverride(entity, "パス", 別の Entity)`。
+- **範囲に入ったら再生する：** **Timeline Trigger**（Add Component → Gameplay）。同じ Entity の Collider（Is Trigger）に Source（Trigger Activator と同じ）が入ったら On Enter、出たら On Exit の Timeline を Target（空なら自分）で再生する（層は Trigger）。[Tasks/UIAnimation.md](Tasks/UIAnimation.md) のパートJ。
 - **対象：** 再生する Entity から子の名前を `/` でつないだパス（`Panel/Title`。空なら自分）。先頭が `/` ならシーンの一番上からのパス（`/Cameras/Close`）。見つからなければ、そのトラックだけ飛ばして警告を1回出す。
 - **Time Mode：** Game はスロー・ヒットストップ・ポーズで止まる。Real はゲームの時間が止まっても動く。
 - **新しい種類：** `TimelineTrackOf<クリップ>` を継承して `Evaluate` を書き、ゲーム側の `.cpp` に `TIMELINE_TRACK(型, "説明");`。手順と決まりは [Tasks/Timeline.md](Tasks/Timeline.md)。
@@ -1527,15 +1531,27 @@ if (AlphaGroupComponent* group = GetComponent<AlphaGroupComponent>()) {
 
 1. **作る**：Project ウィンドウの右クリック → **Create → UI Screen**。名前を打つ。
 2. **直す**：ダブルクリック（Inspector の **Edit UI Screen**）で編集モード。Scene ビューに水色の枠（1280×720 の画面）、Hierarchy は画面の中身だけ。後ろのシーンは見えるが選べない。**Done** で保存して閉じる・**Cancel** で保存せずに閉じる。Save（Ctrl+S）はシーンと画面の両方。Play を押すと先に Done と同じことをする。
-3. **出し方・消し方**：一番上の Entity の **UI Screen** Component（Pause Game・Show／Hide の Motion：None / Fade / Slide / Scale、Side・Distance・With Fade・Duration・Ease・Stagger）。動くのは一番上の**直下の子**1つずつ（Hierarchy の上から順に Stagger 秒ずつ遅れる）。子に **UI Screen Element** を付けると、その子だけ動き方を変えられる。
+3. **出し方・消し方**：一番上の Entity の **UI Screen** Component（Pause Game・Time Mode・Show／Hide）。Show・Hide に **Timeline** を選ぶと、一番上の Entity を再生する Entity にしてそれを再生する（Timeline ウィンドウの `UI Screen / Show`・`Hide` の欄で作ってプレビューできる。[Tasks/UIAnimation.md](Tasks/UIAnimation.md)）。選ばなければ **Motion**（None / Fade / Slide / Scale、Side・Distance・With Fade・Duration・Ease・Stagger）で、一番上の**直下の子**が1つずつ動く（Hierarchy の上から順に Stagger 秒ずつ遅れる）。子に **UI Screen Element** を付けると、その子だけ Motion を変えられる。出している途中に閉じても、その時の形から消える（Timeline は Hide の Tween の From を Current にする）。
 4. **使う**：
 ```cpp
 UIScreen::Open("Pause");   // 出す（停止中・もう出ている・ファイルが無いときは false。見え始めるのは次のフレーム）
 UIScreen::Close("Pause");  // 消す（消す動きが終わったら Entity を消す。消し始めたらすぐゲームが動く）
 UIScreen::IsOpen("Pause"); // 出ているか（消している途中は false）
+UIScreen::GetRoot("Pause");// 一番上の Entity（TimelineSystem::SetParameter で出し方の値を変える）
+UIScreen::CloseContaining(entity); // entity が入っている画面を消す
 ```
 - Pause Game の画面を出している間は `Time::SetGamePaused(true)`。**ポーズ中も、開いている画面の中の Script は呼ばれる**（項目を選ぶ Script を画面の中に置く。AL4_01 の `PauseMenu`）。
 - シーンが変わると一緒に消える（開いたまま次のシーンへ持っていくのは、まだ無い）。
+
+### 要素の状態で動かす（UI State）
+
+要素に **UI State**（Add Component → UI）を付けると、状態が変わったときにその状態の Timeline を再生する（Timeline の対象を空にすると、その要素を動かす）。マウスの当たりは同じ Entity の Vector Shape か Image。
+
+- 状態：Disabled（Interactable を外す）＞ Pressed ＞ Hover ＞ Selected（`UIStateSystem::SetSelected`）＞ Normal。Timeline を選んでいない状態は Normal を再生する。
+- Show・Hide：`UIStateSystem::SetVisible(entity, false)` で Hide を再生し、消えている間はマウスに反応しない。
+- Click：Open Screen・Close Screen・Close Own Screen・Switch Screen をコード無しで。Script からは `UIStateSystem::IsClicked(entity)`（次のフレームに1回 true）。
+- ポーズ中は、開いている画面の中の要素だけが反応する。Time Mode が Real なら、ポーズ中も動く。
+- 同じ項目を UI Screen の Show・Hide と UI State の両方で動かすと、UI Screen が勝つ（後の層。終わった後は最後に書いた値が残る）。出し入れは位置と透明度、状態は大きさと色、のように分けるとよい。
 
 
 ## 15. パーティクル・軌跡

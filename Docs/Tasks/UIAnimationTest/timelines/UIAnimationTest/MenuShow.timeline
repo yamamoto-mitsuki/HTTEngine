@@ -1,0 +1,17 @@
+{
+	"settings": {"length": 0.62},
+	"tracks": [
+		{"type": "TimelinePresetTrack", "settings": {"name": "Dim In", "target": "Dim"},
+		 "clips": [{"start": 0.0, "duration": 0.25, "timeline": "resources/timelines/UIPresets/UIFadeIn.timeline"}]},
+		{"type": "TimelineTweenTrack", "settings": {"name": "Wipe", "target": "Wipe", "component": "Transform", "property": "translation"},
+		 "clips": [{"start": 0.0, "duration": 0.55, "from": {"mode": "Add", "value": [0.0, 0.0, 0.0, 0.0]}, "to": {"mode": "Add", "value": [2000.0, 0.0, 0.0, 0.0]}, "ease": {"keys":[{"time":0.0,"value":0.0,"interp":"Bezier","handleMode":"Free","inHandle":[0.0,0.0],"outHandle":[0.16666667,-2.7974447e-05]},{"time":0.5,"value":0.5,"interp":"Bezier","handleMode":"Free","inHandle":[-0.16666667,-0.49996948],"outHandle":[0.16666667,0.49997458]},{"time":1.0,"value":1.0,"interp":"Bezier","handleMode":"Free","inHandle":[-0.16666667,2.0345053e-05],"outHandle":[0.0,0.0]}]}}]},
+		{"type": "TimelinePresetTrack", "settings": {"name": "Panel In", "target": "Panel"},
+		 "clips": [{"start": 0.1, "duration": 0.35, "timeline": "resources/timelines/UIPresets/UIPopIn.timeline"}]},
+		{"type": "TimelinePresetTrack", "settings": {"name": "Resume In", "target": "Panel/Resume"},
+		 "clips": [{"start": 0.2, "duration": 0.3, "timeline": "resources/timelines/UIPresets/UISlideInLeft.timeline"}]},
+		{"type": "TimelinePresetTrack", "settings": {"name": "Settings In", "target": "Panel/Settings"},
+		 "clips": [{"start": 0.26, "duration": 0.3, "timeline": "resources/timelines/UIPresets/UISlideInLeft.timeline"}]},
+		{"type": "TimelinePresetTrack", "settings": {"name": "Locked In", "target": "Panel/Locked"},
+		 "clips": [{"start": 0.32, "duration": 0.3, "timeline": "resources/timelines/UIPresets/UISlideInLeft.timeline"}]}
+	]
+}
