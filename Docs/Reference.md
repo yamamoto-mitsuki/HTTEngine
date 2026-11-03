@@ -1392,6 +1392,35 @@ if (VectorShapeComponent* shape = GetComponent<VectorShapeComponent>()) {
 
 - ボタンは `VectorShapeSystem::IsMouseOver(entity)`（Size の四角で調べる）。
 
+### 点をつないだ UI の線・形（Polyline）
+
+Hierarchy の ＋ → Polyline（Add Component → UI → Polyline）。点（最大 32）をつないだ線で、点ごとの Radius で角を円弧に曲げる（Polyline.md）。置き方は Image と同じ（点は Entity の位置を原点にしたピクセルで Y は上が＋・Anchor・Order・Blend。Image・Vector Shape・Text と Order で重なり、Alpha Group も効く）。
+
+- **Closed** で閉じた形。**Style** が `Fill`・`FillAndStroke` なら中を塗る（閉じた形だけ）。
+- **Stroke Width**・**Stroke Color**・**Cap**（`Butt`・`Round`・`Square`。開いた線の端）。半径 0 の角は、外が丸く内がとがる。半径はとなりの辺に収まるように縮む。
+- **Edit Points** で、Scene ビューの点を動かす（■ をドラッグ・辺の真ん中の ＋ で足す・選んで Delete で消す・Esc で終わる）。
+- Timeline の Value トラックで点を動かせる（Property は `point0`・`point1`…、半径は `radius0`…）。
+- 点・半径・太さ・Scale を変えた時だけ、形（メッシュ）を作り直す。位置・回転・色・透明度は変えても作り直さない：
+
+```cpp
+if (PolylineComponent* polyline = GetComponent<PolylineComponent>()) {
+	polyline->points[2].y = std::sin(time) * 40.0f;
+}
+```
+
+### UI を図形の形で切り抜く（UI Mask）
+
+Vector Shape か Polyline のある Entity に Add Component → UI → **UI Mask**。子（孫も）の UI を、その形で切り抜く（UIMask.md）。
+
+- 入れ子にすると、外と内のマスクの重なった所だけになる（8 段まで）。
+- マスクの子は、マスクの図形の Order の所にまとめて描く（子どうしは子の Order）。
+- 切り口はなめらかにならない。図形の縁取り（Stroke）は子の上に描くので、切り口を隠せる。
+- **Show Graphic** を外すと、図形は見えずに切り抜くだけ。
+
+### 模様を並べる（Image の Tiled）
+
+Image の **Tiled** をオンにすると、画像全体を **Tile Size**（ピクセル。0 は画像の大きさ）ごとに並べる。Size を変えても模様は伸びず、並ぶ数が変わる。**Tile Offset**（1 で1枚分）を Timeline で動かすと、模様が流れる。
+
 ### ゲームの画面の比率と黒帯（GameScreen）
 
 `main.cpp` の `WindowConfig` で決める。書かなければ 1280×720（GameScreen.md）。
@@ -1699,8 +1728,8 @@ void GameScene::ApplyGV() {
 | **Hierarchy のフォルダ** | ＋ → **Folder**。整理するための入れ物（印の `FolderComponent` を付けた Entity）。中へはドラッグで入れる。Transform は原点のまま使う（Inspector に出さない・ギズモも出ない）。フォルダを入れられるのは一番上か、ほかのフォルダの中だけ。無効にすると中身ごと無効。フォルダの右クリック → Create Folder で中にフォルダ |
 | **Inspector** | 選んだEntityのComponentを編集。下の **+ Add Component** で足す、見出しの右クリックで外す |
 | **Transform の XYZ ボタン** | Position・Rotation・Scale の左。押すと X・Y・Z を一緒に変える（Position・Rotation は同じだけ足す、Scale は同じ倍＝形を保つ。0 からは同じだけ足す）。押している間は黄色。保存しない（エディタを閉じると外れる） |
-| **Scene / Game** | Sceneは編集用（デバッグカメラ・ギズモ）、Gameは製品の絵。Polygon Shape の **Edit Shape**・Arrow Strip の **Edit Path** の間は、Scene ビューで点を動かす（移動のギズモは出ない） |
-| **Scene ビューの UI** | Image・Vector Shape・Text をクリックで選び、**ドラッグで動かす**（1 ピクセルずつ。1回のドラッグで1件の履歴）。Vector Shape は枠の白い印をドラッグすると **Size が変わる**（反対の辺は動かない）。UI は 3D の物より先に選ぶ（重なっていたら手前に描いてある物）。UI には3D の移動のギズモは出ない。UI の後ろの物を選ぶときは **View → Scene View → Pick UI** を外す |
+| **Scene / Game** | Sceneは編集用（デバッグカメラ・ギズモ）、Gameは製品の絵。Polygon Shape の **Edit Shape**・Arrow Strip の **Edit Path**・Polyline の **Edit Points** の間は、Scene ビューで点を動かす（移動のギズモは出ない） |
+| **Scene ビューの UI** | Image・Vector Shape・Polyline・Text をクリックで選び、**ドラッグで動かす**（1 ピクセルずつ。1回のドラッグで1件の履歴）。Vector Shape は枠の白い印をドラッグすると **Size が変わる**（反対の辺は動かない）。UI は 3D の物より先に選ぶ（重なっていたら手前に描いてある物）。UI には3D の移動のギズモは出ない。UI の後ろの物を選ぶときは **View → Scene View → Pick UI** を外す |
 | **Play / Pause / Stop** | Playで `Update` が回り出す（**停止中に編集した状態のまま始まる**）。**Stopで Play を押した瞬間の状態へ戻る**（Play 中に動いた・作った・消した物は全部戻る。選んでいた Entity もそのまま） |
 | **Restart** | 再生中だけ押せる。Play を押した瞬間からやり直す |
 | **Save（Ctrl+S）** | Control ウィンドウ。停止中だけ。シーンファイル（`resources/scenes/〇〇.scene.json`）に書く。1つ前は `.bak` に残る |
