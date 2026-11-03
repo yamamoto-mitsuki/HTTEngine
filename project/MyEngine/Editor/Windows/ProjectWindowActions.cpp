@@ -78,12 +78,13 @@ void ProjectWindow::DrawItemMenu(const Item& item) {
 		}
 	} else if (IsAssetFile(ToUtf8(item.path), AssetType::Prefab)) {
 		// Prefab はシーンに置ける（原点に。次のフレームの頭にできる。Undo には入らないので、要らなければ Hierarchy で消す）
+		// 置いた物は Prefab とつながっていて、シーンファイルには参照だけが書かれる
 		if (ImGui::MenuItem("Place in Scene")) {
 			if (const uint32_t prefab = LoadAsset(AssetType::Prefab, ToUtf8(item.path)); prefab != 0) {
 				PrefabManager::RequestPlace(prefab);
 			}
 		}
-		ImGui::SetItemTooltip("原点に置く。直して Hierarchy の右クリック → Save As Prefab で、Prefab を上書きできる");
+		ImGui::SetItemTooltip("原点に置く。直したら Inspector の Apply で、Prefab に書ける");
 	} else if (ToUtf8(item.path).ends_with(kUIScreenFileExtension)) {
 		// 画面は編集モードで開く（ダブルクリックと同じ。停止中だけ）
 		const SceneManager* sceneManager = SceneManager::GetMain();

@@ -4,7 +4,7 @@
 
 #include "MyEngine/Core/Handle.h"
 
-using EntityId = uint64_t; // Undoで復元する番号。0は無し。実行中Handleとは別物。
+using EntityId = uint64_t; // 保存・Undoで使う番号。0は無し。実行中Handleとは別物。でたらめな数で配る（EntityManager::NewId）
 
 
 /// <summary>

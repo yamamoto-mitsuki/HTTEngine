@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <utility>
 #include <optional>
+#include <random>
 #include <typeindex>
 #include <type_traits>
 #include <unordered_map>
@@ -40,9 +41,9 @@ public:
 	// ===== 生成・破棄 =====
 	// Entityを作る。TransformComponentはその場で付く（作った直後から Get<TransformComponent> で取れる）
 	static Handle<Entity> Create(const std::string& name = "Entity", Handle<Entity> parent = {});
-	// 番号（EntityId）を指定して作る。Undoで消したEntityを戻すとき・将来のシーン読み込み用
+	// 番号（EntityId）を指定して作る。Undoで消したEntityを戻すとき・シーンや Prefab を読むとき
 	static Handle<Entity> CreateWithId(EntityId id, const std::string& name, Handle<Entity> parent);
-	// まだ誰も使っていない番号を1つもらう
+	// まだ誰も使っていない番号を1つもらう（でたらめな 64 ビットの数。チームの2人が別々に作っても、まずぶつからない）
 	static EntityId NewId();
 	// 破棄を予約する。実際に消えるのはフレームの最後（子も一緒に消える）
 	static void Destroy(Handle<Entity> handle);
@@ -181,6 +182,9 @@ private:
 	static std::unique_ptr<EntityManager> instance_;
 
 	static void EnsureInitialized();
+	// 番号を配る乱数を作る（種は random_device から4回分。32 ビット1回分だけだと、別の PC と同じ並びになることがある）
+	// ゲームの乱数（RandomEngine）とは分ける。ゲームの乱数の種を固定したときに番号まで毎回同じにならないように・Entity を作るたびにゲームの乱数の並びがずれないように
+	static std::mt19937_64 MakeIdRandom();
 
 	template<class T> static ComponentStorage<T>* FindStorage() {
 		// const T等で同じtypeidから異なるStorageへキャストしない。
@@ -203,7 +207,7 @@ private:
 	SlotMap<Entity> entities_;
 	std::unordered_map<std::type_index, std::unique_ptr<IComponentStorage>> components_; // 型 → その型の置き場所
 	std::unordered_map<EntityId, Handle<Entity>> idToHandle_; // 番号 → Handle（生きているEntityだけ）
-	EntityId nextId_ = 1; // 次に配る番号（0は「無し」なので1から）
+	std::mt19937_64 idRandom_ = MakeIdRandom(); // 番号を配る乱数（起動するたびに違う並びになる）
 	std::vector<Handle<Entity>> pendingDestroy_;    // 破棄予約
 	std::vector<DestroyListener> destroyListeners_; // 消える直前に呼ぶ関数（AddDestroyListener）
 	// 毎フレーム使う作業用の配列（確保し直さないようにメンバで持つ）

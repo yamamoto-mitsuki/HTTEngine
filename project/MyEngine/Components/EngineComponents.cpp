@@ -4,9 +4,12 @@
 #include <cstdint>
 
 #include "MyEngine/Components/Core/FolderComponent.h"
+#include "MyEngine/Components/Core/PrefabInstanceComponent.h"
 #include "MyEngine/Components/Rendering3D/ModelRendererComponent.h"
 #include "MyEngine/Components/Core/TransformComponent.h"
 #include "MyEngine/Components/Lighting/LightComponent.h"
+#include "MyEngine/Scene/PrefabManager.h"
+#include "MyEngine/String/ConvertString.h"
 
 // エンジンのComponentの「保存する項目」。書き方は COMPONENT(...) の中身と同じ
 // Inspectorは Editor/Inspector の手書きのEditorのまま（度で見せる・Resetボタンなど、細かく作り込んでいるため）
@@ -36,6 +39,19 @@ void DescribeTransform(ComponentUI& ui, TransformComponent& value) {
 //=============================================================================
 // 項目は無い（"Folder": {} と書かれているだけで、フォルダだと分かる）
 void DescribeFolder(ComponentUI& /*ui*/, FolderComponent& /*value*/) {}
+
+//=============================================================================
+// Prefab から置いた物の印
+//=============================================================================
+void DescribePrefabInstance(ComponentUI& ui, PrefabInstanceComponent& value) {
+	const FixedString<256> before = value.path;
+	ui.Field("path", value.path);
+	// 読んだときだけ（path が変わったとき）番号を引く。書くときは何も変えない（Transform の回転と同じやり方）
+	// Play の退避から戻すときもここを通るので、番号はいつも path に合う
+	if (value.path != before) {
+		value.prefab = value.path.Empty() ? 0 : PrefabManager::Load(ToPath(value.path.ToString()));
+	}
+}
 
 //=============================================================================
 // ModelRenderer
@@ -111,6 +127,7 @@ void DescribeSpotLight(ComponentUI& ui, SpotLightComponent& value) {
 void ComponentSerializer::RegisterEngineComponents() {
 	Register<TransformComponent>("Transform", &DescribeTransform);
 	Register<FolderComponent>("Folder", &DescribeFolder);
+	Register<PrefabInstanceComponent>("Prefab Instance", &DescribePrefabInstance);
 	Register<ModelRendererComponent>("Model Renderer", &DescribeModelRenderer);
 	Register<DirectionalLightComponent>("Directional Light", &DescribeDirectionalLight);
 	Register<PointLightComponent>("Point Light", &DescribePointLight);

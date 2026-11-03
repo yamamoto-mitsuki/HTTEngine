@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <format>
 #include <span>
 #include <functional>
 #include <unordered_map>
@@ -12,6 +13,7 @@
 #include "MyEngine/Editor/Inspector/ComponentEditor.h"
 #include "MyEngine/Editor/Windows/HierarchyWindow.h"
 #include "MyEngine/ECS/EntityManager.h"
+#include "MyEngine/Scene/PrefabManager.h"
 #include "MyEngine/Systems/Gameplay/ScriptSystem.h"
 
 namespace {
@@ -230,20 +232,33 @@ std::string MakeCopyName(const std::string& name, EntityId parent) {
 	}
 }
 
+// 貼る物の番号を全部 XOR で変える数（変えた後の番号が、どれも0でなく、まだ誰も使っていない数を選ぶ）
+EntityId MakeIdShift(const EntityTree& tree) {
+	for (;;) {
+		const EntityId shift = EntityManager::NewId(); // でたらめな数がほしいだけ（番号としては使わない）
+		const bool canUse = std::ranges::all_of(tree, [shift](const EntityData& data) {
+			const EntityId newId = data.id ^ shift;
+			return newId != 0 && !EntityManager::FindById(newId).IsValid();
+		});
+		if (canUse) {
+			return shift;
+		}
+	}
+}
+
 // 写しに新しい番号を振り直して、parentの子として作る
 void Paste(EntityTree tree, EntityId parent) {
 	if (tree.empty() || (parent != 0 && !EntityManager::FindById(parent).IsValid())) {
 		return;
 	}
-	// 番号を振り直す。子が覚えている親の番号も、古い番号→新しい番号の表で付け替える
-	std::unordered_map<EntityId, EntityId> newIds;
+	// 番号を振り直す。全員を同じ数（shift）で XOR する（子が覚えている親の番号も同じ数で XOR すれば、そのまま新しい親を指す）
+	// 1つずつ別の番号にしないのは、貼った物に Prefab から置いた物が入っていても、Prefab の中の番号の並び（PrefabManager.h）が崩れないように
+	const EntityId shift = MakeIdShift(tree);
 	for (EntityData& data : tree) {
-		const EntityId newId = EntityManager::NewId();
-		newIds[data.id] = newId;
-		data.id = newId;
+		data.id ^= shift;
 	}
 	for (size_t i = 1; i < tree.size(); ++i) {
-		tree[i].parent = newIds.at(tree[i].parent);
+		tree[i].parent ^= shift;
 	}
 	tree.front().parent = parent;
 	tree.front().name = MakeCopyName(tree.front().name, parent);
@@ -444,6 +459,13 @@ void EditorHistory::RequestReparent(Handle<Entity> child, Handle<Entity> parent)
 		}
 		const EntityId oldParentId = IdOf(entity->parent);
 		if (oldParentId == parentId) {
+			return;
+		}
+		// Prefab の中身は、置いた物の外へは出せない（シーンを開き直すと、Prefab から同じ番号でもう1つ作られてしまうので）
+		const Handle<Entity> owner = PrefabManager::FindOwner(childHandle);
+		const Handle<Entity> newParent = EntityManager::FindById(parentId);
+		if (owner.IsValid() && newParent != owner && !EntityManager::IsDescendantOf(newParent, owner)) {
+			LogManager::Warning(std::format("「{}」は Prefab の中身なので、外へは出せません（出すときは、先に Inspector の Unpack）", entity->name));
 			return;
 		}
 		// 見た目の位置を変えずに付け替える。Transform の値（親から見た位置）が変わるので、前と後の両方を覚えておく

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cfloat>
+#include <string>
 
 #include <externals/imgui/imgui.h>
 
@@ -39,6 +40,10 @@ bool HierarchyWindow::revealRequest_ = false;
 float HierarchyWindow::eyeColumnX_ = 0.0f;
 
 namespace {
+// Prefab から置いた物の名前の色（Unity と同じく青。一番上は濃く、中身は薄く）
+const ImVec4 kPrefabRootColor = ImVec4(0.45f, 0.70f, 1.0f, 1.0f);
+const ImVec4 kPrefabContentColor = ImVec4(0.65f, 0.80f, 0.95f, 1.0f);
+
 // 一番上の親（ふだんは無効なHandle＝root。画面（UI Screen）の編集中は、画面の一番上の Entity。作る・貼る・ドロップする物を、この外へ出さない）
 Handle<Entity> TopParent() { return UIScreenEditor::GetRoot(); }
 
@@ -207,15 +212,24 @@ void HierarchyWindow::DrawEntityNode(Handle<Entity> handle) {
 
 	// EntityIdをIDにする（名前が同じEntityがあってもぶつからない）
 	// Handleの番号だと、Play / Stop で作り直したときに振り直されて、開いた・閉じた状態が別のEntityに移ってしまう
-	ImGui::PushID(static_cast<int>(entity->id));
+	// 番号は 64 ビットなので、int にすると上の半分が消えてぶつかることがある。文字にして全部使う
+	ImGui::PushID(std::to_string(entity->id).c_str());
 	// 目（SetNextItemOpen より先に描く。後に描くと、開く指示を目のボタンが受け取ってしまう）
 	DrawVisibilityToggle(handle);
 	// Scene ビューで子を選んだとき、閉じている親を開いて見えるようにする
 	if (revealRequest_ && EntityManager::IsDescendantOf(selected_, handle)) {
 		ImGui::SetNextItemOpen(true);
 	}
+	// Prefab から置いた物は、名前を青で描く（どこまでが Prefab の中身か＝シーンで直しても保存されない所か、分かるように）
+	const Handle<Entity> prefabRoot = PrefabManager::FindInstanceRoot(handle);
+	if (prefabRoot.IsValid()) {
+		ImGui::PushStyleColor(ImGuiCol_Text, (prefabRoot == handle) ? kPrefabRootColor : kPrefabContentColor);
+	}
 	// フォルダの名前は、フォルダの絵の後ろに自分で描く（DrawFolderLabel）ので、ツリーには名前を出さない
 	const bool isOpen = ImGui::TreeNodeEx("##node", flags, "%s", (isRenaming || isFolder) ? "" : entity->name.c_str());
+	if (prefabRoot.IsValid()) {
+		ImGui::PopStyleColor();
+	}
 	if (revealRequest_ && handle == selected_) {
 		ImGui::SetScrollHereY(); // 一覧が長くても、選んだ物まで送る
 	}
@@ -328,14 +342,33 @@ void HierarchyWindow::DrawEntityMenu(Handle<Entity> handle) {
 		EditorHistory::RequestDuplicate(handle);
 	}
 	ImGui::Separator();
-	// --- Prefab にする（resources/prefabs/<名前>.prefab。同じ名前のファイルがあれば上書き。前の中身は .bak に残る）---
+	// --- Prefab にする（resources/prefabs/<名前>.prefab。前の中身は .bak に残る）---
 	// ファイルの名前になるので、名前が英数字と _ - だけのときに押せる
+	// 同じ名前の別の Prefab がもうあるときは押せない（上書きすると、それを置いたシーンがみな変わる。チームでほかの人の Prefab を書き換えないように）
 	const Entity* entity = EntityManager::Get(handle);
-	const bool canSavePrefab = (entity != nullptr) && IsValidFileName(entity->name);
-	if (ImGui::MenuItem("Save As Prefab", nullptr, false, canSavePrefab)) {
+	const bool isValidName = (entity != nullptr) && IsValidFileName(entity->name);
+	const bool isOtherPrefab = isValidName && PrefabManager::IsOtherPrefabFile(handle, MakePrefabFilePath(entity->name));
+	if (ImGui::MenuItem("Save As Prefab", nullptr, false, isValidName && !isOtherPrefab)) {
 		PrefabManager::Save(handle, MakePrefabFilePath(entity->name));
 	}
-	ImGui::SetItemTooltip(canSavePrefab ? "子も一緒に resources/prefabs/ に保存する（同じ名前があれば上書き）" : "名前を英数字と _ - だけにすると保存できる（ファイルの名前になるので）");
+	if (!isValidName) {
+		ImGui::SetItemTooltip("名前を英数字と _ - だけにすると保存できる（ファイルの名前になるので）");
+	} else if (isOtherPrefab) {
+		ImGui::SetItemTooltip("同じ名前の Prefab がもうある（上書きすると、それを置いたシーンがみな変わる）。その Prefab を直すなら、置いて Apply。別の Prefab にするなら名前を変える");
+	} else {
+		ImGui::SetItemTooltip("子も一緒に resources/prefabs/ に保存する。これからは Prefab から置いた物になる");
+	}
+	// --- Prefab から置いた物の一番上：元の Prefab に書く・つながりを切る（Inspector のボタンと同じ）---
+	if (PrefabManager::FindInstanceRoot(handle) == handle) {
+		if (ImGui::MenuItem("Apply to Prefab")) {
+			PrefabManager::Apply(handle);
+		}
+		ImGui::SetItemTooltip("シーンで直した中身を、元の Prefab のファイルに書く（ほかのシーンの物も、次に開いたときから同じになる）");
+		if (ImGui::MenuItem("Unpack Prefab")) {
+			PrefabManager::Unpack(handle);
+		}
+		ImGui::SetItemTooltip("Prefab とのつながりを切る（中身もシーンファイルに書かれるようになる。Prefab を直しても変わらなくなる）");
+	}
 	ImGui::Separator();
 	if (ImGui::MenuItem("Create Child")) {
 		EditorHistory::RequestCreate("Child", handle);

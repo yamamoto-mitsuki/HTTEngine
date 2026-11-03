@@ -64,7 +64,8 @@ std::string KeyOf(const char* label) { return std::string(KeyViewOf(label)); }
 //=============================================================================
 class JsonWriterUI final : public ComponentUI {
 public:
-	JsonWriterUI(SceneJson& out, std::string_view typeName, std::set<std::string>& warnings) : out_(out), typeName_(typeName), warnings_(warnings) {}
+	JsonWriterUI(SceneJson& out, std::string_view typeName, std::set<std::string>& warnings, const EntityIdMap* idMap = nullptr)
+	    : out_(out), typeName_(typeName), warnings_(warnings), idMap_(idMap) {}
 
 	void Field(const char* label, float& value, FieldStyle) override { Put(label, value); }
 	void Field(const char* label, int& value, FieldStyle) override { Put(label, value); }
@@ -76,7 +77,14 @@ public:
 	// 相手の EntityId を書く。相手がもう居なければ0（次に起動したとき、同じ番号が別のEntityに配られることがあるので）
 	void Field(const char* label, EntityRef& value, FieldStyle) override {
 		const bool isAlive = EntityManager::Find(value).IsValid();
-		Put(label, isAlive ? value.id : EntityId{0});
+		EntityId id = isAlive ? value.id : EntityId{0};
+		// Prefab に書くときは、表にある番号（Prefab の中の相手）を、ファイルの番号に直す。表に無い相手はそのまま（作るときに外れる）
+		if (idMap_ != nullptr) {
+			if (const auto found = idMap_->find(id); found != idMap_->end()) {
+				id = found->second;
+			}
+		}
+		Put(label, id);
 	}
 
 	void Field(const char* label, std::string& value, FieldStyle) override { Put(label, value); }
@@ -119,6 +127,7 @@ private:
 	SceneJson& out_;
 	std::string_view typeName_;       // 警告に出す型の名前
 	std::set<std::string>& warnings_; // 警告（同じ文は1回だけ出すように、集めてから出す）
+	const EntityIdMap* idMap_;        // EntityId の付け替え表（Prefab に書くとき。シーンに書くときは nullptr）
 };
 
 //=============================================================================
@@ -467,11 +476,11 @@ void ComponentSerializer::RegisterErased(const char* name, SaveFunction save, Lo
 //=============================================================================
 // 書く・読む
 //=============================================================================
-void ComponentSerializer::Save(Handle<Entity> entity, SceneJson& out, std::set<std::string>& warnings) {
+void ComponentSerializer::Save(Handle<Entity> entity, SceneJson& out, std::set<std::string>& warnings, const EntityIdMap* idMap) {
 	for (const Entry& entry : Entries()) {
 		// 中身は手元で作ってから入れる（ordered_map は中身が vector なので、out[...] の参照を持ったまま別の項目を足すと参照が壊れる）
 		SceneJson fields = SceneJson::object();
-		JsonWriterUI writer(fields, entry.name, warnings);
+		JsonWriterUI writer(fields, entry.name, warnings, idMap);
 		if (entry.save(entity, writer)) {
 			out[entry.name] = std::move(fields);
 		}

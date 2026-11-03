@@ -26,10 +26,25 @@
 #include "MyEngine/Editor/Widgets/EditorWidgets.h"
 #include "MyEngine/Editor/Windows/CodeWindow.h"
 #include "MyEngine/Components/Core/FolderComponent.h"
+#include "MyEngine/Components/Core/PrefabInstanceComponent.h"
 #include "MyEngine/Editor/Windows/HierarchyWindow.h"
+#include "MyEngine/Scene/PrefabManager.h"
 #include "MyEngine/String/ConvertString.h"
 
 namespace {
+const ImVec4 kPrefabWarningColor = ImVec4(1.0f, 0.55f, 0.4f, 1.0f); // Prefab と違う・読めないときの文字の色
+
+/// <summary>
+/// 置いた物が Prefab と違うか、の覚え（調べるたびに中身を全部 JSON に書くので、毎フレームはしない。履歴が動いたか、選ぶ物が変わったときだけ調べ直す）
+/// </summary>
+struct PrefabModifiedCache {
+	EntityId rootId = 0;      // 調べた置いた物
+	uint64_t changeCount = 0; // 調べたときの EditorHistory::GetChangeCount
+	bool isValid = false;     // false なら、次は必ず調べ直す（Apply した直後など）
+	bool isModified = false;  // 調べた結果
+};
+PrefabModifiedCache prefabModifiedCache;
+
 constexpr float kAddComponentWidth = 560.0f;     // Add Componentのポップアップの幅（左にカテゴリ、右にその中身を並べる）
 constexpr float kAddComponentMaxHeight = 420.0f; // Add Componentのポップアップの高さの上限（超えたら、左右それぞれでスクロール）
 constexpr float kCategoryColumnWidth = 160.0f;   // 左のカテゴリの列の幅
@@ -68,6 +83,55 @@ void DrawComponentSeparator() {
 	ImGui::Spacing();
 	ImGui::Separator();
 	ImGui::Spacing();
+}
+
+// 置いた物が Prefab と違うか（覚えた結果が使えれば、それを返す）
+bool IsPrefabModified(Handle<Entity> root) {
+	const EntityId rootId = EntityManager::Get(root)->id;
+	const uint64_t changeCount = EditorHistory::GetChangeCount();
+	PrefabModifiedCache& cache = prefabModifiedCache;
+	if (!cache.isValid || cache.rootId != rootId || cache.changeCount != changeCount) {
+		cache = {rootId, changeCount, true, PrefabManager::IsModified(root)};
+	}
+	return cache.isModified;
+}
+
+// Prefab から置いた物なら、元の Prefab・違うか・ボタン（Apply・Unpack）を出す
+void DrawPrefabInfo(Handle<Entity> handle) {
+	const Handle<Entity> root = PrefabManager::FindInstanceRoot(handle);
+	const PrefabInstanceComponent* link = EntityManager::Get<PrefabInstanceComponent>(root);
+	if (link == nullptr) {
+		return;
+	}
+	const std::string path = link->path.ToString();
+	ImGui::TextDisabled("Prefab: %s%s", path.c_str(), (root == handle) ? "" : "（の中身）");
+	if (link->prefab == 0) {
+		ImGui::TextColored(kPrefabWarningColor, "Prefab のファイルが読めません（届いたら、シーンを開き直す）");
+		return;
+	}
+	// --- Prefab と違うか（シーンに書くのは参照だけなので、違う所は保存されない）---
+	if (IsPrefabModified(root)) {
+		ImGui::TextColored(kPrefabWarningColor, "Prefab と違う所があります。このままシーンを保存すると、Prefab のとおりに戻ります");
+	} else {
+		ImGui::TextDisabled("Prefab と同じ（直したいときは Prefab を直すか、ここで直して Apply）");
+	}
+	// --- ボタン ---
+	if (root != handle) {
+		if (ImGui::SmallButton("Select Root")) {
+			HierarchyWindow::SetSelected(root);
+		}
+		ImGui::SameLine();
+	}
+	if (ImGui::SmallButton("Apply")) {
+		PrefabManager::Apply(root);
+		prefabModifiedCache.isValid = false; // ファイルが変わったので調べ直す
+	}
+	ImGui::SetItemTooltip("シーンで直した中身を、元の Prefab のファイルに書く（ほかのシーンの物も、次に開いたときから同じになる）");
+	ImGui::SameLine();
+	if (ImGui::SmallButton("Unpack")) {
+		PrefabManager::Unpack(root);
+	}
+	ImGui::SetItemTooltip("Prefab とのつながりを切る（中身もシーンファイルに書かれるようになる。Prefab を直しても変わらなくなる）");
 }
 
 // Componentを1つ、押せる項目として出す
@@ -325,6 +389,7 @@ void InspectorWindow::DrawHeader(Handle<Entity> handle) {
 	} else {
 		ImGui::TextDisabled("Parent: (root)");
 	}
+	DrawPrefabInfo(handle);
 	DrawComponentSeparator();
 }
 

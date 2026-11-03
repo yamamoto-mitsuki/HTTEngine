@@ -102,7 +102,8 @@ public:
 	}
 
 	// Entityが持っているComponentを全部 out に書く（{"型の名前": {"項目": 値, ...}, ...}）。警告は warnings に集める（同じ文を何度も出さないため）
-	static void Save(Handle<Entity> entity, SceneJson& out, std::set<std::string>& warnings);
+	// idMap を渡すと、Component の中の Entity への参照を表で付け替えて書く（Prefab に書くとき。表に無い番号はそのまま）
+	static void Save(Handle<Entity> entity, SceneJson& out, std::set<std::string>& warnings, const EntityIdMap* idMap = nullptr);
 	// idMap を渡すと、Component の中の Entity への参照（EntityRef・GameObject）を表で付け替える（Prefab から作るとき。表に無い番号は外す）
 	static void Load(Handle<Entity> entity, const SceneJson& in, std::set<std::string>& warnings, const EntityIdMap* idMap = nullptr);
 

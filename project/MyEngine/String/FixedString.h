@@ -38,7 +38,7 @@ public:
 	void Assign(std::string_view text) { 
 		size_t length = (std::min)(text.size(), Capacity());
 		// UTF-8の続きのバイト（10xxxxxx）の所で切ると、1文字で途中で切れて化ける。その文字まで時を戻して、文字ごと切る
-		while (length > 0 && length < text.size() && (static_cast<uint8_t>(text[length]) & 0xC00) == 0x80) {
+		while (length > 0 && length < text.size() && (static_cast<uint8_t>(text[length]) & 0xC0) == 0x80) {
 			--length;
 		}
 		std::copy_n(text.begin(), length, data_.begin());

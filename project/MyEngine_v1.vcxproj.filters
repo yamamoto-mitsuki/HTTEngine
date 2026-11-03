@@ -768,6 +768,9 @@
     <ClInclude Include="MyEngine\Components\Core\FolderComponent.h">
       <Filter>MyEngine\Components\Core</Filter>
     </ClInclude>
+    <ClInclude Include="MyEngine\Components\Core\PrefabInstanceComponent.h">
+      <Filter>MyEngine\Components\Core</Filter>
+    </ClInclude>
     <ClInclude Include="MyEngine\Components\Core\TransformComponent.h">
       <Filter>MyEngine\Components\Core</Filter>
     </ClInclude>

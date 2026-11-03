@@ -10,12 +10,18 @@
 
 #include <externals/nlohmann/json.hpp>
 
+#include "MyEngine/Components/Core/PrefabInstanceComponent.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/Diagnostics/LogManager.h"
+#include "MyEngine/Scene/PrefabManager.h"
 #include "MyEngine/String/ConvertString.h"
 
 namespace {
+constexpr const char* kTransformName = "Transform";            // Transform の保存の名前（Prefab から置いた物は、これだけシーンに書く）
+constexpr const char* kPrefabInstanceName = "Prefab Instance"; // 置いた物の印の保存の名前（EngineComponents.cpp）
+constexpr const char* kPrefabKey = "prefab";                   // シーンファイルの、Prefab から置いた物の印（値は Prefab のパス）
+
 // 集めた警告を1回ずつ出す（同じComponentを100個持っていても、同じ文は1回だけ）
 void FlushWarnings(const std::set<std::string>& warnings) {
 	for (const std::string& warning : warnings) {
@@ -26,14 +32,15 @@ void FlushWarnings(const std::set<std::string>& warnings) {
 //=============================================================================
 // Entity → JSON
 //=============================================================================
-// ===== Entity 1つ分（{"id", "name", "parent", "active", "components"}）。parentId は書く親の番号（0は親なし）=====
-SceneJson SaveEntity(const Entity& entity, EntityId parentId, std::set<std::string>& warnings) {
+// ===== Entity 1つ分（{"id", "name", "parent", "active", "components"}）。id・parentId は書く番号（0は親なし）=====
+// idMap を渡すと、Component の中の Entity への参照を表で付け替えて書く（Prefab に書くとき）
+SceneJson SaveEntity(const Entity& entity, EntityId id, EntityId parentId, std::set<std::string>& warnings, const EntityIdMap* idMap = nullptr) {
 	SceneJson components = SceneJson::object();
-	ComponentSerializer::Save(entity.self, components, warnings);
+	ComponentSerializer::Save(entity.self, components, warnings, idMap);
 
 	// 1つのEntityの中身は手元で組み立ててから入れる（ordered_map は途中で参照を持つと壊れるため）
 	SceneJson item = SceneJson::object();
-	item["id"] = entity.id;
+	item["id"] = id;
 	item["name"] = entity.name;
 	item["parent"] = parentId; // 親は EntityId で書く（0は親なし）
 	item["active"] = entity.isActive;
@@ -59,8 +66,28 @@ bool IsDontSave(const Entity& entity) {
 	return false;
 }
 
-// ===== 全Entity =====
-SceneJson SaveAll() {
+// ===== Prefab から置いた物 1つ分（{"id", "name", "parent", "active", "prefab", "components": {"Transform"}}）=====
+// 中身は書かない（読むときに Prefab のファイルから作り直す）。Prefab を直しても、シーンファイルは変わらない
+SceneJson SaveInstance(const Entity& entity, EntityId parentId, const PrefabInstanceComponent& link, std::set<std::string>& warnings) {
+	SceneJson item = SaveEntity(entity, entity.id, parentId, warnings);
+	// --- Component は Transform だけ残す（置いた所ごとに違う物。ほかは Prefab と同じ）---
+	SceneJson components = SceneJson::object();
+	if (const auto transform = item["components"].find(kTransformName); transform != item["components"].end()) {
+		components[kTransformName] = *transform;
+	}
+	item.erase("components");
+	item[kPrefabKey] = link.path.ToString();
+	item["components"] = std::move(components); // 並びを id, name, parent, active, prefab, components にする
+	// --- シーンで Prefab の中身を直していたら、保存されないことを知らせる ---
+	if (PrefabManager::IsModified(entity.self)) {
+		warnings.insert(std::format("「{}」は Prefab（{}）と違う所がありますが、シーンには Prefab の参照だけを書きました。次に開くと Prefab のとおりに戻ります（残すなら Inspector の Apply）",
+		                            entity.name, link.path.View()));
+	}
+	return item;
+}
+
+// ===== 全Entity。isFile なら、Prefab から置いた物は参照だけを書く（Play の退避は、シーンで直した所も戻せるよう中身も全部書く）=====
+SceneJson SaveAll(bool isFile) {
 	std::set<std::string> warnings;
 	SceneJson entities = SceneJson::array();
 	// 並んでいる順（Hierarchyに出る順）のまま書く。読むときも同じ順に作るので、並びが変わらない
@@ -69,7 +96,17 @@ SceneJson SaveAll() {
 			continue; // エディタで編集中の画面の中身（画面のファイルに書く）
 		}
 		const Entity* parent = EntityManager::Get(entity.parent);
-		entities.push_back(SaveEntity(entity, parent ? parent->id : EntityId{0}, warnings));
+		const EntityId parentId = parent ? parent->id : EntityId{0};
+		if (isFile) {
+			if (PrefabManager::FindOwner(entity.self).IsValid()) {
+				continue; // Prefab の中身（読むときに Prefab から作られる）
+			}
+			if (const PrefabInstanceComponent* link = EntityManager::Get<PrefabInstanceComponent>(entity.self)) {
+				entities.push_back(SaveInstance(entity, parentId, *link, warnings));
+				continue;
+			}
+		}
+		entities.push_back(SaveEntity(entity, entity.id, parentId, warnings));
 	}
 	FlushWarnings(warnings);
 	return MakeRoot(std::move(entities));
@@ -78,6 +115,22 @@ SceneJson SaveAll() {
 //=============================================================================
 // JSON → Entity（型が違う値を value() で読むと例外が出るので、呼ぶ側で受ける）
 //=============================================================================
+// ===== Prefab から置いた物を作る（中身は Prefab のファイルから。Prefab が読めなければ、印だけ付けた空の Entity）=====
+Handle<Entity> LoadInstance(EntityId id, const std::string& name, const std::string& path, std::set<std::string>& warnings) {
+	const uint32_t prefab = PrefabManager::Load(ToPath(path));
+	Handle<Entity> root = PrefabManager::InstantiateNow(prefab, id, warnings);
+	if (!root.IsValid()) {
+		// ファイルが無い（まだ pull していない など）。印は残すので、このまま保存しても参照は消えない
+		warnings.insert(std::format("Prefab が読めないので、空の Entity にしました（ファイルが届いてからシーンを開き直すと、中身ができます）: {}", path));
+		root = EntityManager::CreateWithId(id, name, {});
+		PrefabInstanceComponent link;
+		link.path = path;
+		EntityManager::RestoreComponents(root, {ComponentSnapshot::Make(link)});
+	}
+	EntityManager::Get(root)->name = name; // 名前は置いた所ごとに変えてよい
+	return root;
+}
+
 bool LoadAll(const SceneJson& root) {
 	const SceneJson* found = SceneSerializer::FindEntities(root);
 	if (found == nullptr) {
@@ -96,7 +149,10 @@ bool LoadAll(const SceneJson& root) {
 			warnings.insert(std::format("EntityIdが0か、2つ目の同じ番号なので飛ばしました: {}", name));
 			continue;
 		}
-		created[i] = EntityManager::CreateWithId(id, name, {});
+		// "prefab" があれば Prefab から置いた物（中身も一緒にできる。一番上の Transform は3周目でファイルの値になる）
+		const auto prefab = item.find(kPrefabKey);
+		const bool isInstance = (prefab != item.end() && prefab->is_string());
+		created[i] = isInstance ? LoadInstance(id, name, prefab->get<std::string>(), warnings) : EntityManager::CreateWithId(id, name, {});
 		EntityManager::Get(created[i])->isActive = item.value("active", true);
 	}
 
@@ -186,7 +242,7 @@ void WriteReadable(const SceneJson& json, int depth, std::string& out) {
 // ファイル
 //=============================================================================
 bool SceneSerializer::SaveFile(const std::string& path) {
-	if (!WriteFile(path, SaveAll())) {
+	if (!WriteFile(path, SaveAll(true))) {
 		return false;
 	}
 	LogManager::Log(std::format("シーンを保存しました: {}", path));
@@ -225,6 +281,8 @@ SceneLoadResult SceneSerializer::LoadFile(const std::string& path) {
 	if (!std::filesystem::exists(path, error) || std::filesystem::file_size(path, error) == 0) {
 		return SceneLoadResult::NotFound;
 	}
+	// git pull で Prefab が届いていたら、新しい中身から作る
+	PrefabManager::ReloadChangedFiles();
 	std::ifstream stream(path);
 	const SceneJson root = SceneJson::parse(stream, nullptr, false); // false: 壊れていても例外を投げず、discarded を返す
 	stream.close();
@@ -242,7 +300,7 @@ SceneLoadResult SceneSerializer::LoadFile(const std::string& path) {
 //=============================================================================
 // 文字列
 //=============================================================================
-std::string SceneSerializer::SaveToText() { return ToLine(SaveAll()); } // 1行に詰める（人が読まないので）
+std::string SceneSerializer::SaveToText() { return ToLine(SaveAll(false)); } // 1行に詰める（人が読まないので）
 
 bool SceneSerializer::LoadFromText(const std::string& text) {
 	const SceneJson root = SceneJson::parse(text, nullptr, false);
@@ -256,12 +314,24 @@ bool SceneSerializer::LoadFromText(const std::string& text) {
 //=============================================================================
 // Entity の一部分（Prefab）
 //=============================================================================
-SceneJson SceneSerializer::SaveTree(Handle<Entity> root) {
-	std::set<std::string> warnings;
-	SceneJson entities = SceneJson::array();
-	// root から幅優先でたどる（先に見つけた物から並べるので、親が必ず子より前になる。EditorHistory の写しと同じ）
+SceneJson SceneSerializer::SaveTree(Handle<Entity> root, EntityId shift) {
+	// ===== root から幅優先でたどる（先に見つけた物から並べるので、親が必ず子より前になる。EditorHistory の写しと同じ）=====
 	std::vector<Handle<Entity>> queue = {root};
 	std::vector<Handle<Entity>> children;
+	for (size_t i = 0; i < queue.size(); ++i) {
+		EntityManager::GetChildren(queue[i], children);
+		queue.insert(queue.end(), children.begin(), children.end());
+	}
+	// ===== 番号の付け替え表（中の Entity の番号 → 書く番号）。中の相手への参照も、同じ番号に直して書く =====
+	EntityIdMap idMap;
+	for (const Handle<Entity> handle : queue) {
+		if (const Entity* entity = EntityManager::Get(handle)) {
+			idMap[entity->id] = entity->id ^ shift;
+		}
+	}
+	// ===== 書く =====
+	std::set<std::string> warnings;
+	SceneJson entities = SceneJson::array();
 	for (size_t i = 0; i < queue.size(); ++i) {
 		const Entity* entity = EntityManager::Get(queue[i]);
 		if (entity == nullptr) {
@@ -269,10 +339,12 @@ SceneJson SceneSerializer::SaveTree(Handle<Entity> root) {
 		}
 		// root の親は書かない（Prefab の外なので。作るときに Instantiate の parent を付ける）
 		const Entity* parent = EntityManager::Get(entity->parent);
-		const EntityId parentId = (i == 0 || parent == nullptr) ? EntityId{0} : parent->id;
-		entities.push_back(SaveEntity(*entity, parentId, warnings));
-		EntityManager::GetChildren(queue[i], children);
-		queue.insert(queue.end(), children.begin(), children.end());
+		const EntityId parentId = (i == 0 || parent == nullptr) ? EntityId{0} : (parent->id ^ shift);
+		SceneJson item = SaveEntity(*entity, entity->id ^ shift, parentId, warnings, &idMap);
+		if (i == 0) {
+			item["components"].erase(kPrefabInstanceName); // root の「置いた物の印」は書かない（Prefab の中に、自分を指す印が入ってしまう）
+		}
+		entities.push_back(std::move(item));
 	}
 	FlushWarnings(warnings);
 	return MakeRoot(std::move(entities));

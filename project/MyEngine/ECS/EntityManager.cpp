@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "MyEngine/Components/Core/FolderComponent.h"
+#include "MyEngine/Components/Core/PrefabInstanceComponent.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 
@@ -21,6 +22,7 @@ void EntityManager::Initialize() {
 	RegisterComponent<TransformComponent>();
 	RegisterComponent<ModelRendererComponent>();
 	RegisterComponent<FolderComponent>();
+	RegisterComponent<PrefabInstanceComponent>();
 	LogManager::Log("Initialized");
 }
 
@@ -47,8 +49,6 @@ Handle<Entity> EntityManager::CreateWithId(EntityId id, const std::string& name,
 	entity->id = id;
 	entity->self = handle;
 	instance_->idToHandle_[id] = handle;
-	// 番号を指定して作ったときも、この先配る番号とぶつからないようにする
-	instance_->nextId_ = (std::max)(instance_->nextId_, id + 1);
 	// 全Entityの必須データ。作った直後から取れるように、予約せずその場で作る
 	// （ForEach<TransformComponent> の途中ならここでアサートが出る）
 	RequireStorage<TransformComponent>().SetNow(handle, TransformComponent{});
@@ -59,7 +59,24 @@ Handle<Entity> EntityManager::CreateWithId(EntityId id, const std::string& name,
 	return handle;
 }
 
-EntityId EntityManager::NewId() { return instance_->nextId_++; }
+EntityId EntityManager::NewId() {
+	EnsureInitialized();
+	// 連番だと、2人が別々に足した Entity が同じ番号になり、シーンファイルをマージしたときに参照が別の物を指してしまう
+	// でたらめな数なら、ぶつかるのは 2^64 回に1回くらい。もう使っている番号・0 が出たら引き直す
+	for (;;) {
+		const EntityId id = instance_->idRandom_();
+		if (id != 0 && !instance_->idToHandle_.contains(id)) {
+			return id;
+		}
+	}
+}
+
+std::mt19937_64 EntityManager::MakeIdRandom() {
+	std::random_device device;
+	// seed_seq：いくつかの数を混ぜて、乱数の種にする（mt19937_64 は中に持つ値が大きいので、種も多めに渡す）
+	std::seed_seq seed{device(), device(), device(), device()};
+	return std::mt19937_64(seed);
+}
 
 void EntityManager::Destroy(Handle<Entity> handle) { instance_->pendingDestroy_.push_back(handle); }
 

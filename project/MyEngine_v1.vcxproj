@@ -333,6 +333,7 @@
     <ClInclude Include="MyEngine\Components\Physics\ElasticSurfaceComponent.h" />
     <ClInclude Include="MyEngine\Components\Rendering3D\FogComponent.h" />
     <ClInclude Include="MyEngine\Components\Core\FolderComponent.h" />
+    <ClInclude Include="MyEngine\Components\Core\PrefabInstanceComponent.h" />
     <ClInclude Include="MyEngine\Components\UI\ImageComponent.h" />
     <ClInclude Include="MyEngine\Components\Effects\ParticleSystemComponent.h" />
     <ClInclude Include="MyEngine\Components\Rendering3D\PolygonRendererComponent.h" />
