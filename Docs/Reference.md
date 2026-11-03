@@ -291,9 +291,10 @@ private:
 
 Entity（子・Component・Script も一緒に）をファイルに取っておき、ゲームから何個でも作れる（Unity の Prefab）。中身はシーンファイルと同じ形の `resources/prefabs/<名前>.prefab`。
 
-1. **作る**：Hierarchy で Entity を組み立てる（名前は英数字と `_` `-` だけ）→ 右クリック → **Save As Prefab**。同じ名前があれば上書き（前の中身は `.bak`）。
-2. **直す**：Project ウィンドウで `.prefab` を右クリック → **Place in Scene**（原点に出る。Undo には入らない）→ 直して Save As Prefab → Hierarchy から消す。
-3. **使う**：Script に Prefab の欄を作り、Inspector で選ぶ。
+1. **作る**：Hierarchy で Entity を組み立てる（名前は英数字と `_` `-` だけ）→ 右クリック → **Save As Prefab**。同じ名前の Prefab がもうあるときは、その Prefab から置いた物でなければ押せない（ほかの人の Prefab を上書きしないように。置き換えるなら古い方を消してから）。前の中身は `.bak` に残る。保存した物は、そのまま「Prefab から置いた物」になる（名前が青くなる）。
+2. **置く**：Project ウィンドウで `.prefab` を右クリック → **Place in Scene**（原点に出る。Undo には入らない）。
+3. **直す**：置いた物の中身を直して、Inspector の **Apply**（か Hierarchy の右クリック → **Apply to Prefab**）。Inspector に「Prefab と違うか」が出る。
+4. **使う**：Script に Prefab の欄を作り、Inspector で選ぶ。
 
 ```cpp
 // Script の Fields で、Prefab を選ぶ欄（保存はパスで）
@@ -306,8 +307,13 @@ shape.transform.rotation = ...; // Transform はすぐ使える
 ```
 
 - 作るたびに新しい EntityId になり、Component・Script の中の「Prefab の中の Entity への参照」（`EntityRef`・`GameObject`）は、作った方を指すように付け替わる。Prefab の外の Entity を指していた項目は外れる（警告が出る）。
-- 作った Entity は Prefab とつながっていない。Prefab を保存し直しても、もう作った物は変わらない（そのあと作る物から変わる）。
+- 置いた物は Prefab とつながっている（一番上に `Prefab Instance` の印）。**シーンファイルには「どの Prefab を、どこに置いたか」だけを書く**（一番上の名前・有効・親・Transform と、あとから足した子）。中身は開くたびに Prefab から作るので、Prefab を直すと、次に開いたシーンから新しい中身になる（シーンファイルは変わらない。チームでぶつかりにくい）。
+- 中の子の番号は「Prefab のファイルの番号 XOR ずれ」（ずれは置いた物ごとに1つ）なので、開き直しても同じ。シーンのほかの物から、置いた物の中の子を指してよい。
+- シーンで中身を直しても保存されない（次に開くと Prefab のとおり。Inspector と保存の警告で分かる）。残すなら Apply。中身を置いた物の外へは出せない。つながりを切るなら **Unpack**。
+- Play / Stop の退避は中身も全部写すので、Play 中・前に中身を試しに直しても Stop で戻る。
+- 書き換わった Prefab（git pull など）は、シーンを開くときに読み直す。
 - コードで読むなら `PrefabManager::Load(ToPath("resources/prefabs/Box.prefab"))`（同じファイルは1回だけ読む）。
+- 仕組みの解説は `Docs/Tasks/PrefabInstance.md`。
 
 ---
 
