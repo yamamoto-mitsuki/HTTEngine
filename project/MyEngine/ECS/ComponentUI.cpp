@@ -21,7 +21,7 @@
 #include "MyEngine/String/ConvertString.h"
 #include "MyEngine/String/FileNameRule.h"
 #include "MyEngine/Timeline/TimelineManager.h"
-#include "MyEngine/Scene/PrefabManager.h"
+#include "MyEngine/Scene/Prefab/PrefabManager.h"
 
 //=============================================================================
 // アセットの番号 ↔ パス（Inspector・保存・読み込みで共通）

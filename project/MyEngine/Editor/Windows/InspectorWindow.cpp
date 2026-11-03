@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <format>
 #include <memory>
+#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -15,7 +16,9 @@
 
 #include <externals/imgui/imgui.h>
 #include <externals/magic_enum/magic_enum.hpp>
+#include <externals/nlohmann/json.hpp>
 
+#include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/Editor/Inspector/AssetInspector.h"
 #include "MyEngine/Editor/History/EditorHistory.h"
@@ -28,22 +31,25 @@
 #include "MyEngine/Components/Core/FolderComponent.h"
 #include "MyEngine/Components/Core/PrefabInstanceComponent.h"
 #include "MyEngine/Editor/Windows/HierarchyWindow.h"
-#include "MyEngine/Scene/PrefabManager.h"
+#include "MyEngine/Scene/Prefab/PrefabManager.h"
+#include "MyEngine/Scene/Prefab/PrefabOverrides.h"
 #include "MyEngine/String/ConvertString.h"
 
 namespace {
-const ImVec4 kPrefabWarningColor = ImVec4(1.0f, 0.55f, 0.4f, 1.0f); // Prefab と違う・読めないときの文字の色
+const ImVec4 kPrefabWarningColor = ImVec4(1.0f, 0.55f, 0.4f, 1.0f);  // Prefab が読めないときの文字の色
+const ImVec4 kPrefabOverrideColor = ImVec4(1.0f, 0.80f, 0.35f, 1.0f); // 置いた所ごとの上書きがあるときの文字の色
 
 /// <summary>
-/// 置いた物が Prefab と違うか、の覚え（調べるたびに中身を全部 JSON に書くので、毎フレームはしない。履歴が動いたか、選ぶ物が変わったときだけ調べ直す）
+/// 置いた物の上書き（PrefabOverrides::MakeInstanceEntry）の覚え
+/// <para>調べるたびに中身を全部 JSON に書くので、毎フレームはしない。履歴が動いたか、選ぶ物が変わったときだけ調べ直す</para>
 /// </summary>
-struct PrefabModifiedCache {
+struct PrefabEntryCache {
 	EntityId rootId = 0;      // 調べた置いた物
 	uint64_t changeCount = 0; // 調べたときの EditorHistory::GetChangeCount
 	bool isValid = false;     // false なら、次は必ず調べ直す（Apply した直後など）
-	bool isModified = false;  // 調べた結果
+	SceneJson entry;          // 調べた結果（シーンファイルに書く項目と同じ形）
 };
-PrefabModifiedCache prefabModifiedCache;
+PrefabEntryCache prefabEntryCache;
 
 constexpr float kAddComponentWidth = 560.0f;     // Add Componentのポップアップの幅（左にカテゴリ、右にその中身を並べる）
 constexpr float kAddComponentMaxHeight = 420.0f; // Add Componentのポップアップの高さの上限（超えたら、左右それぞれでスクロール）
@@ -85,18 +91,51 @@ void DrawComponentSeparator() {
 	ImGui::Spacing();
 }
 
-// 置いた物が Prefab と違うか（覚えた結果が使えれば、それを返す）
-bool IsPrefabModified(Handle<Entity> root) {
+// 置いた物の上書き（覚えた結果が使えれば、それを返す）
+const SceneJson& GetPrefabEntry(Handle<Entity> root) {
 	const EntityId rootId = EntityManager::Get(root)->id;
 	const uint64_t changeCount = EditorHistory::GetChangeCount();
-	PrefabModifiedCache& cache = prefabModifiedCache;
+	PrefabEntryCache& cache = prefabEntryCache;
 	if (!cache.isValid || cache.rootId != rootId || cache.changeCount != changeCount) {
-		cache = {rootId, changeCount, true, PrefabManager::IsModified(root)};
+		std::set<std::string> warnings; // 調べるだけなので出さない（保存するときに出る）
+		cache = {rootId, changeCount, true, PrefabOverrides::MakeInstanceEntry(root, warnings)};
 	}
-	return cache.isModified;
+	return cache.entry;
 }
 
-// Prefab から置いた物なら、元の Prefab・違うか・ボタン（Apply・Unpack）を出す
+// ===== 1つの Entity の上書きを、短い文にする（"名前・Collider・外した: Script"。無ければ空）=====
+// isRoot なら Transform は数えない（一番上の Transform は、置いた所ごとにいつも書くので）
+std::string DescribeOverride(const SceneJson& item, bool isRoot) {
+	std::vector<std::string> parts;
+	if (item.contains("name") && !isRoot) {
+		parts.emplace_back("名前");
+	}
+	if (item.contains("active") && !isRoot) {
+		parts.emplace_back("有効");
+	}
+	if (item.contains("parent") && !isRoot) {
+		parts.emplace_back("親");
+	}
+	if (const auto components = item.find("components"); components != item.end() && components->is_object()) {
+		for (auto it = components->begin(); it != components->end(); ++it) {
+			if (!isRoot || it.key() != "Transform") {
+				parts.push_back(it.key());
+			}
+		}
+	}
+	if (const auto removed = item.find("removedComponents"); removed != item.end() && removed->is_array()) {
+		for (const SceneJson& name : *removed) {
+			parts.push_back(std::format("外した: {}", name.is_string() ? name.get<std::string>() : std::string()));
+		}
+	}
+	std::string text;
+	for (const std::string& part : parts) {
+		text += text.empty() ? part : "・" + part;
+	}
+	return text;
+}
+
+// Prefab から置いた物なら、元の Prefab・置いた所ごとの上書き・ボタン（Apply・Revert・Unpack）を出す
 void DrawPrefabInfo(Handle<Entity> handle) {
 	const Handle<Entity> root = PrefabManager::FindInstanceRoot(handle);
 	const PrefabInstanceComponent* link = EntityManager::Get<PrefabInstanceComponent>(root);
@@ -109,12 +148,32 @@ void DrawPrefabInfo(Handle<Entity> handle) {
 		ImGui::TextColored(kPrefabWarningColor, "Prefab のファイルが読めません（届いたら、シーンを開き直す）");
 		return;
 	}
-	// --- Prefab と違うか（シーンに書くのは参照だけなので、違う所は保存されない）---
-	if (IsPrefabModified(root)) {
-		ImGui::TextColored(kPrefabWarningColor, "Prefab と違う所があります。このままシーンを保存すると、Prefab のとおりに戻ります");
+	// --- 置いた所ごとの上書き（シーンに保存される。Prefab のほかの所を直すと、上書きしていない所は変わる）---
+	const SceneJson& entry = GetPrefabEntry(root);
+	const std::string rootText = DescribeOverride(entry, true);
+	const size_t overrideCount = entry.contains("overrides") ? entry["overrides"].size() : 0;
+	const size_t removedCount = entry.contains("removed") ? entry["removed"].size() : 0;
+	const size_t entityCount = overrideCount + (rootText.empty() ? 0 : 1);
+	if (entityCount == 0 && removedCount == 0) {
+		ImGui::TextDisabled("上書き：なし（Prefab と同じ）");
 	} else {
-		ImGui::TextDisabled("Prefab と同じ（直したいときは Prefab を直すか、ここで直して Apply）");
+		ImGui::TextColored(kPrefabOverrideColor, "上書き：%zu 個の Entity・消した中身 %zu 個（シーンに保存される）", entityCount, removedCount);
 	}
+	// この Entity の上書き
+	std::string selectedText;
+	if (handle == root) {
+		selectedText = rootText;
+	} else if (const Entity* entity = EntityManager::Get(handle); entity != nullptr && entry.contains("overrides")) {
+		for (const SceneJson& item : entry["overrides"]) {
+			if (item.value("id", EntityId{0}) == entity->id) {
+				selectedText = DescribeOverride(item, false);
+			}
+		}
+	}
+	if (!selectedText.empty()) {
+		ImGui::TextColored(kPrefabOverrideColor, "この Entity：%s", selectedText.c_str());
+	}
+
 	// --- ボタン ---
 	if (root != handle) {
 		if (ImGui::SmallButton("Select Root")) {
@@ -124,9 +183,18 @@ void DrawPrefabInfo(Handle<Entity> handle) {
 	}
 	if (ImGui::SmallButton("Apply")) {
 		PrefabManager::Apply(root);
-		prefabModifiedCache.isValid = false; // ファイルが変わったので調べ直す
+		prefabEntryCache.isValid = false; // ファイルが変わったので調べ直す
 	}
-	ImGui::SetItemTooltip("シーンで直した中身を、元の Prefab のファイルに書く（ほかのシーンの物も、次に開いたときから同じになる）");
+	ImGui::SetItemTooltip("上書きを全部、元の Prefab のファイルに書く（ほかのシーンの物も、次に開いたときから同じになる）");
+	ImGui::SameLine();
+	// Revert は一番外側の置いた物だけ（入れ子の中は、外側の Prefab の値に戻すのか、内側の値に戻すのかが分かりにくいので）
+	const bool isOutermost = !PrefabManager::FindOwner(root).IsValid();
+	ImGui::BeginDisabled(!isOutermost);
+	if (ImGui::SmallButton("Revert")) {
+		EditorHistory::RequestRevertPrefab(root);
+	}
+	ImGui::EndDisabled();
+	ImGui::SetItemTooltip(isOutermost ? "上書きを全部捨てて、Prefab のとおりに戻す（あとから足した子も消える。Ctrl+Z で戻せる）" : "入れ子の中は、一番外側の置いた物の Revert で戻す");
 	ImGui::SameLine();
 	if (ImGui::SmallButton("Unpack")) {
 		PrefabManager::Unpack(root);

@@ -3,17 +3,24 @@
 #include <algorithm>
 #include <cstddef>
 #include <format>
+#include <set>
 #include <span>
+#include <string>
 #include <functional>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include <externals/nlohmann/json.hpp>
+
+#include "MyEngine/Components/Core/PrefabInstanceComponent.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Editor/Inspector/ComponentEditor.h"
 #include "MyEngine/Editor/Windows/HierarchyWindow.h"
+#include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Scene/PrefabManager.h"
+#include "MyEngine/Scene/Prefab/PrefabManager.h"
+#include "MyEngine/Scene/Prefab/PrefabOverrides.h"
 #include "MyEngine/Systems/Gameplay/ScriptSystem.h"
 
 namespace {
@@ -145,9 +152,13 @@ bool Restore(const EntityTree& tree) {
 		}
 	}
 
+	// 先に全員を作ってから、Component・Script を戻す（Script の中の参照は、相手が居ないと外れるので。親が子より前に並ぶので、親は先にできている）
 	for (const EntityData& data : tree) {
 		Handle<Entity> handle = EntityManager::CreateWithId(data.id, data.name, EntityManager::FindById(data.parent));
 		EntityManager::Get(handle)->isActive = data.isActive;
+	}
+	for (const EntityData& data : tree) {
+		const Handle<Entity> handle = EntityManager::FindById(data.id);
 		// 予約せずその場で付ける（Flushの中＝フレームの境目なので安全）。Transformのように作った時点で持っている物は上書き
 		EntityManager::RestoreComponents(handle, data.components);
 		ScriptSystem::Restore(handle, data.scripts);
@@ -254,7 +265,9 @@ void Paste(EntityTree tree, EntityId parent) {
 	// 番号を振り直す。全員を同じ数（shift）で XOR する（子が覚えている親の番号も同じ数で XOR すれば、そのまま新しい親を指す）
 	// 1つずつ別の番号にしないのは、貼った物に Prefab から置いた物が入っていても、Prefab の中の番号の並び（PrefabManager.h）が崩れないように
 	const EntityId shift = MakeIdShift(tree);
+	EntityIdMap idMap; // 元の番号 → 貼った番号（貼った物の中どうしの参照を、貼った物に向け直すため）
 	for (EntityData& data : tree) {
+		idMap[data.id] = data.id ^ shift;
 		data.id ^= shift;
 	}
 	for (size_t i = 1; i < tree.size(); ++i) {
@@ -262,7 +275,41 @@ void Paste(EntityTree tree, EntityId parent) {
 	}
 	tree.front().parent = parent;
 	tree.front().name = MakeCopyName(tree.front().name, parent);
-	AddTree(std::move(tree));
+
+	// --- 中の参照を、貼った物に向け直す（写しの Component はバイトのままなので番号を直せない。一度作って JSON で直し、写し直す）---
+	if (!Restore(tree)) {
+		return;
+	}
+	std::set<std::string> warnings;
+	for (const EntityData& data : tree) {
+		const Handle<Entity> handle = EntityManager::FindById(data.id);
+		SceneJson components = SceneJson::object();
+		ComponentSerializer::Save(handle, components, warnings);
+		SceneJson remapped = components;
+		ComponentSerializer::RemapRefs(remapped, idMap);
+		// 番号が変わった Component だけ読み直す（読み直すと Transform の回転がわずかにずれるので、変わらない物は触らない）
+		SceneJson changed = SceneJson::object();
+		for (auto it = remapped.begin(); it != remapped.end(); ++it) {
+			if (*it != components[it.key()]) {
+				changed[it.key()] = *it;
+			}
+		}
+		if (!changed.empty()) {
+			ComponentSerializer::Load(handle, changed, warnings);
+		}
+	}
+	EntityTree fixed = Capture(EntityManager::FindById(tree.front().id));
+	Remove(fixed);
+	AddTree(std::move(fixed));
+}
+
+// ===== entity を中身として持つ、一番外側の置いた物（どの置いた物の中身でもなければ entity 自身）=====
+Handle<Entity> TopOwnerOf(Handle<Entity> entity) {
+	Handle<Entity> current = entity;
+	for (Handle<Entity> owner = PrefabManager::FindOwner(current); owner.IsValid(); owner = PrefabManager::FindOwner(current)) {
+		current = owner;
+	}
+	return current;
 }
 
 //=============================================================================
@@ -461,11 +508,13 @@ void EditorHistory::RequestReparent(Handle<Entity> child, Handle<Entity> parent)
 		if (oldParentId == parentId) {
 			return;
 		}
-		// Prefab の中身は、置いた物の外へは出せない（シーンを開き直すと、Prefab から同じ番号でもう1つ作られてしまうので）
+		// Prefab の中身は、同じ置いた物の中身の間でだけ動かせる（親を変えたことは、置いた所ごとの上書きとして保存される）
+		// 外へ出すと、開き直したときに Prefab から同じ番号でもう1つ作られてしまう。
+		// あとから足した子の下にも入れない（開き直すと、中身は足した子より先に作られるので、親が見つからない）
 		const Handle<Entity> owner = PrefabManager::FindOwner(childHandle);
 		const Handle<Entity> newParent = EntityManager::FindById(parentId);
-		if (owner.IsValid() && newParent != owner && !EntityManager::IsDescendantOf(newParent, owner)) {
-			LogManager::Warning(std::format("「{}」は Prefab の中身なので、外へは出せません（出すときは、先に Inspector の Unpack）", entity->name));
+		if (owner.IsValid() && newParent != owner && TopOwnerOf(newParent) != TopOwnerOf(childHandle)) {
+			LogManager::Warning(std::format("「{}」は Prefab の中身なので、同じ置いた物の中身の間でだけ動かせます（外へ出すときは、先に Inspector の Unpack）", entity->name));
 			return;
 		}
 		// 見た目の位置を変えずに付け替える。Transform の値（親から見た位置）が変わるので、前と後の両方を覚えておく
@@ -523,6 +572,48 @@ void EditorHistory::RequestDuplicate(Handle<Entity> handle) {
 		EntityTree tree = Capture(entity->self);
 		const EntityId parent = IdOf(entity->parent);
 		Paste(std::move(tree), parent);
+	});
+}
+
+//=============================================================================
+// Prefab
+//=============================================================================
+void EditorHistory::RequestRevertPrefab(Handle<Entity> root) {
+	requests.push_back([id = IdOf(root)] {
+		const Handle<Entity> handle = EntityManager::FindById(id);
+		const PrefabInstanceComponent* link = EntityManager::Get<PrefabInstanceComponent>(handle);
+		if (link == nullptr || link->prefab == 0) {
+			return; // 置いた物でない・Prefab が読めていない
+		}
+		const uint32_t prefab = link->prefab;
+		// --- 戻した後の項目：一番上の番号・名前・親・有効・Transform だけ（上書きは書かない）---
+		std::set<std::string> warnings;
+		SceneJson entry = PrefabOverrides::MakeInstanceEntry(handle, warnings);
+		SceneJson components = SceneJson::object();
+		if (entry["components"].contains("Transform")) {
+			components["Transform"] = entry["components"]["Transform"];
+		}
+		entry["components"] = std::move(components);
+		for (const char* key : {"removedComponents", "overrides", "removed"}) {
+			entry.erase(key);
+		}
+		// --- 今の物を写してから消し、Prefab から作り直す（同じ番号でできるので、ほかの物からの参照もそのまま）---
+		const EntityTree before = Capture(handle);
+		EntityManager::Destroy(handle);
+		EntityManager::FlushDestroy(); // Flushの中＝フレームの境目なので、すぐ消してよい
+		const Handle<Entity> created = PrefabManager::InstantiateNow(prefab, entry, warnings);
+		if (!created.IsValid()) {
+			Restore(before);
+			return;
+		}
+		if (const Handle<Entity> parent = EntityManager::FindById(entry.value("parent", EntityId{0})); parent.IsValid()) {
+			EntityManager::SetParent(created, parent);
+		}
+		const EntityTree after = Capture(created);
+		// Undo は作り直した物を消して前の写しを戻す。Redo はその逆
+		Append({[before, after] { return Remove(after) && Restore(before); }, [before, after] { return Remove(before) && Restore(after); }});
+		HierarchyWindow::SetSelected(created);
+		LogManager::Log(std::format("「{}」を Prefab のとおりに戻しました: {}", entry.value("name", std::string()), PrefabManager::GetPath(prefab)));
 	});
 }
 

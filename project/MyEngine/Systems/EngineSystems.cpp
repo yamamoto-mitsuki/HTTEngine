@@ -8,7 +8,7 @@
 #include "MyEngine/ECS/GameComponent.h"
 #include "MyEngine/Particle/ParticleManager.h"
 #include "MyEngine/Physics/PhysicMaterialManager.h"
-#include "MyEngine/Scene/PrefabManager.h"
+#include "MyEngine/Scene/Prefab/PrefabManager.h"
 #include "MyEngine/Scene/SceneTransition.h"
 // --- Systems ---
 // Animation

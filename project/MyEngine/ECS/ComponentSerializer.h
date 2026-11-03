@@ -98,6 +98,11 @@ public:
 					    *now = copy;
 				    }
 			    };
+		    },
+		    // --- 参照を付け替える：初期値の写しに見せ方の関数を呼び、Entity への参照の項目だけ JSON の番号を書き換える（Entity は作らない）---
+		    [describe](SceneJson& fields, const EntityIdMap& map) {
+			    T value{};
+			    RemapFields([&value, describe](ComponentUI& ui) { describe(ui, value); }, fields, map);
 		    });
 	}
 
@@ -106,6 +111,9 @@ public:
 	static void Save(Handle<Entity> entity, SceneJson& out, std::set<std::string>& warnings, const EntityIdMap* idMap = nullptr);
 	// idMap を渡すと、Component の中の Entity への参照（EntityRef・GameObject）を表で付け替える（Prefab から作るとき。表に無い番号は外す）
 	static void Load(Handle<Entity> entity, const SceneJson& in, std::set<std::string>& warnings, const EntityIdMap* idMap = nullptr);
+	// Component の JSON（{"型の名前": {...}, ...}。Save と同じ形）の中の、Entity への参照の番号だけを表で付け替える。表に無い番号はそのまま
+	// Entity を作らずに JSON のまま番号をずらす（Prefab の入れ子を開くとき・置いた所ごとの上書きを Prefab に書くとき）。アセットは読まない
+	static void RemapRefs(SceneJson& components, const EntityIdMap& map);
 
 	/// <summary>
 	/// Component の1つの項目へ値を書く（Timeline）。見せ方の関数を本物に呼ぶことで、Inspector に出せる項目なら Component の種類を問わず書ける
@@ -138,10 +146,14 @@ public:
 	using LoadFunction = std::function<void(Handle<Entity>, ComponentUI&)>;
 	using RestoreFunction = std::function<void()>; // 写した値へ戻す関数
 	using CaptureFunction = std::function<RestoreFunction(Handle<Entity>)>; // 持っていなければ空の関数を返す
+	using RemapFunction = std::function<void(SceneJson&, const EntityIdMap&)>; // 1つの型の項目（{...}）の中の、Entity への参照を付け替える
 
 	// visit は本物に見せ方の関数を呼ぶ（持っていなければ false。save と違い、写しに呼んではいけない）
 	// capture は値を写す関数（空なら、JSON に書いて読み戻す）
-	static void RegisterErased(const char* name, SaveFunction save, LoadFunction load, SaveFunction visit, CaptureFunction capture = {});
+	// remap は JSON の中の参照を付け替える関数（空なら付け替えない。RemapRefs で使う）
+	static void RegisterErased(const char* name, SaveFunction save, LoadFunction load, SaveFunction visit, CaptureFunction capture = {}, RemapFunction remap = {});
+	// 見せ方の関数1つ分の JSON（fields）の中の、Entity への参照の番号を付け替える（Register・Script の remap から呼ぶ）
+	static void RemapFields(const std::function<void(ComponentUI&)>& describe, SceneJson& fields, const EntityIdMap& map);
 
 	// ===== 見せ方の関数1つ分を JSON に書く・読む（Script の写し。Undo・コピーで使う）=====
 	// typeName は警告に出す名前。読むときは、ファイルに無い項目は今の値のまま

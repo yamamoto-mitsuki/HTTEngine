@@ -15,7 +15,7 @@
 #include "MyEngine/Editor/Viewport/SceneVisibility.h"
 #include "MyEngine/Editor/Windows/HierarchyWindow.h"
 #include "MyEngine/Graphics/Renderer/GameScreen.h"
-#include "MyEngine/Scene/PrefabManager.h"
+#include "MyEngine/Scene/Prefab/PrefabManager.h"
 #include "MyEngine/Scene/SceneManager.h"
 #include "MyEngine/String/ConvertString.h"
 #include "MyEngine/UI/UIScreen.h"

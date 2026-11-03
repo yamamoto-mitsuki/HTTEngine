@@ -22,6 +22,7 @@ struct Entry {
 	std::function<void(Handle<Entity>, ComponentUI&)> load;  // 読んでその場で付ける
 	std::function<bool(Handle<Entity>, ComponentUI&)> visit; // 持っていれば本物に見せ方の関数を呼んで true
 	ComponentSerializer::CaptureFunction capture; // 本物の値を写して、戻す関数を返す（空なら JSON で写す）
+	ComponentSerializer::RemapFunction remap;     // JSON の中の Entity への参照を付け替える（空なら付け替えない）
 };
 
 // 名前順に並べて持つ。関数の中のstaticなので、ゲームのCOMPONENT（mainより前に作られる）との初期化の順番に左右されない
@@ -281,6 +282,84 @@ private:
 };
 
 //=============================================================================
+// 参照を付け替える係（ui.Field の Entity への参照の行だけ、JSON の番号を表で書き換える）
+//=============================================================================
+// ほかの項目は JSON から値を読むだけ（見せ方の関数が「この bool が true なら次の項目を出す」のように分けていても、ファイルと同じ行を通るように）
+// アセットは読まない（ファイルを開くと重い。参照の行の通り方は変わらない）。Entity が居るかも見ない（まだ作っていない番号を扱うので）
+class RefRemapUI final : public ComponentUI {
+public:
+	RefRemapUI(SceneJson& fields, const EntityIdMap& map) : fields_(fields), map_(map) {}
+
+	void Field(const char* label, float& value, FieldStyle) override {
+		if (const SceneJson* item = Find(label); item != nullptr && item->is_number()) {
+			value = item->get<float>();
+		}
+	}
+	void Field(const char* label, int& value, FieldStyle) override {
+		if (const SceneJson* item = Find(label); item != nullptr && item->is_number_integer()) {
+			value = item->get<int>();
+		}
+	}
+	void Field(const char* label, bool& value, FieldStyle) override {
+		if (const SceneJson* item = Find(label); item != nullptr && item->is_boolean()) {
+			value = item->get<bool>();
+		}
+	}
+	// 数の並びは、行の分かれ方に使われないので読まない
+	void Field(const char*, Vector2&, FieldStyle) override {}
+	void Field(const char*, Vector3&, FieldStyle) override {}
+	void Field(const char*, Vector4&, FieldStyle) override {}
+
+	// 相手の番号を表で付け替えて、JSON に書き戻す（表に無い番号はそのまま）
+	void Field(const char* label, EntityRef& value, FieldStyle) override {
+		const auto it = fields_.find(KeyOf(label));
+		if (it == fields_.end() || !it->is_number_unsigned()) {
+			return;
+		}
+		const EntityId id = it->get<EntityId>();
+		const auto found = map_.find(id);
+		value.id = (found != map_.end()) ? found->second : id;
+		it.value() = value.id;
+	}
+
+	void Field(const char* label, std::string& value, FieldStyle) override {
+		if (const SceneJson* item = Find(label); item != nullptr && item->is_string()) {
+			value = item->get<std::string>();
+		}
+	}
+
+	void AssetField(const char*, uint32_t&, AssetType, FieldStyle) override {}
+	void ColorField(const char*, Vector3&) override {}
+	void ColorField(const char*, Vector4&) override {}
+	void Label(const char*) override {}
+	void Separator(const char*) override {}
+	void Space() override {}
+	bool Button(const char*) override { return false; }
+
+protected:
+	void EnumField(const char* label, size_t& index, std::span<const std::string_view> names, FieldStyle) override {
+		const SceneJson* item = Find(label);
+		if (item == nullptr || !item->is_string()) {
+			return;
+		}
+		const auto found = std::find(names.begin(), names.end(), item->get_ref<const std::string&>());
+		if (found != names.end()) {
+			index = static_cast<size_t>(found - names.begin());
+		}
+	}
+
+private:
+	// 項目を探す（無ければ nullptr）
+	const SceneJson* Find(const char* label) const {
+		const auto it = fields_.find(KeyOf(label));
+		return (it != fields_.end()) ? &*it : nullptr;
+	}
+
+	SceneJson& fields_;       // 書き換える JSON（1つの型の項目）
+	const EntityIdMap& map_;  // 番号の付け替え表
+};
+
+//=============================================================================
 // 値を書く係（見せ方の関数に渡すと、名前の合う項目にだけ値を書く）
 //=============================================================================
 class ValueWriterUI final : public ComponentUI {
@@ -462,7 +541,7 @@ std::vector<ValueListUI::Item> ListValues(Handle<Entity> entity, std::string_vie
 //=============================================================================
 // 登録
 //=============================================================================
-void ComponentSerializer::RegisterErased(const char* name, SaveFunction save, LoadFunction load, SaveFunction visit, CaptureFunction capture) {
+void ComponentSerializer::RegisterErased(const char* name, SaveFunction save, LoadFunction load, SaveFunction visit, CaptureFunction capture, RemapFunction remap) {
 	std::vector<Entry>& entries = Entries();
 	// 決まった順番の場所に入れる（IsBefore）
 	const auto position = std::lower_bound(entries.begin(), entries.end(), std::string_view(name), [](const Entry& entry, std::string_view key) { return IsBefore(entry.name, key); });
@@ -470,7 +549,7 @@ void ComponentSerializer::RegisterErased(const char* name, SaveFunction save, Lo
 		LogManager::Error(std::format("Componentの名前 \"{}\" が2つ登録されました。後の方は保存されません", name));
 		return;
 	}
-	entries.insert(position, Entry{name, std::move(save), std::move(load), std::move(visit), std::move(capture)});
+	entries.insert(position, Entry{name, std::move(save), std::move(load), std::move(visit), std::move(capture), std::move(remap)});
 }
 
 //=============================================================================
@@ -502,6 +581,27 @@ void ComponentSerializer::Load(Handle<Entity> entity, const SceneJson& in, std::
 		entry->load(entity, reader);
 		reader.WarnUnused();
 	}
+}
+
+void ComponentSerializer::RemapRefs(SceneJson& components, const EntityIdMap& map) {
+	if (!components.is_object() || map.empty()) {
+		return;
+	}
+	for (auto it = components.begin(); it != components.end(); ++it) {
+		const Entry* entry = FindEntry(it.key());
+		// 知らない型・付け替え方の無い型はそのまま（知らない型は、読むときに警告が出る）
+		if (entry != nullptr && entry->remap && it->is_object()) {
+			entry->remap(it.value(), map);
+		}
+	}
+}
+
+void ComponentSerializer::RemapFields(const std::function<void(ComponentUI&)>& describe, SceneJson& fields, const EntityIdMap& map) {
+	if (!fields.is_object() || map.empty()) {
+		return;
+	}
+	RefRemapUI remapper(fields, map);
+	describe(remapper);
 }
 
 

@@ -19,7 +19,7 @@
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/ECS/GameComponent.h"
 #include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Scene/PrefabManager.h"
+#include "MyEngine/Scene/Prefab/PrefabManager.h"
 #include "MyEngine/Scene/SceneManager.h"
 #include "MyEngine/Scene/SceneSerializer.h"
 #include "MyEngine/String/ConvertString.h"

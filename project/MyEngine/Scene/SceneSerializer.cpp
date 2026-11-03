@@ -14,13 +14,13 @@
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Scene/PrefabManager.h"
+#include "MyEngine/Scene/Prefab/PrefabManager.h"
+#include "MyEngine/Scene/Prefab/PrefabOverrides.h"
+#include "MyEngine/Scene/Prefab/PrefabRecords.h"
 #include "MyEngine/String/ConvertString.h"
 
 namespace {
-constexpr const char* kTransformName = "Transform";            // Transform の保存の名前（Prefab から置いた物は、これだけシーンに書く）
-constexpr const char* kPrefabInstanceName = "Prefab Instance"; // 置いた物の印の保存の名前（EngineComponents.cpp）
-constexpr const char* kPrefabKey = "prefab";                   // シーンファイルの、Prefab から置いた物の印（値は Prefab のパス）
+constexpr const char* kTransformName = "Transform"; // Transform の保存の名前（読めない Prefab から置いた物は、これだけ読む）
 
 // 集めた警告を1回ずつ出す（同じComponentを100個持っていても、同じ文は1回だけ）
 void FlushWarnings(const std::set<std::string>& warnings) {
@@ -66,24 +66,12 @@ bool IsDontSave(const Entity& entity) {
 	return false;
 }
 
-// ===== Prefab から置いた物 1つ分（{"id", "name", "parent", "active", "prefab", "components": {"Transform"}}）=====
-// 中身は書かない（読むときに Prefab のファイルから作り直す）。Prefab を直しても、シーンファイルは変わらない
-SceneJson SaveInstance(const Entity& entity, EntityId parentId, const PrefabInstanceComponent& link, std::set<std::string>& warnings) {
-	SceneJson item = SaveEntity(entity, entity.id, parentId, warnings);
-	// --- Component は Transform だけ残す（置いた所ごとに違う物。ほかは Prefab と同じ）---
-	SceneJson components = SceneJson::object();
-	if (const auto transform = item["components"].find(kTransformName); transform != item["components"].end()) {
-		components[kTransformName] = *transform;
-	}
-	item.erase("components");
-	item[kPrefabKey] = link.path.ToString();
-	item["components"] = std::move(components); // 並びを id, name, parent, active, prefab, components にする
-	// --- シーンで Prefab の中身を直していたら、保存されないことを知らせる ---
-	if (PrefabManager::IsModified(entity.self)) {
-		warnings.insert(std::format("「{}」は Prefab（{}）と違う所がありますが、シーンには Prefab の参照だけを書きました。次に開くと Prefab のとおりに戻ります（残すなら Inspector の Apply）",
-		                            entity.name, link.path.View()));
-	}
-	return item;
+// ===== Prefab から置いた物 1つ分（{"id", "name", "parent", "active", "prefab", "components", "overrides", "removed"}）=====
+// 中身は書かない（読むときに Prefab のファイルから作り直す）。置いた所ごとに変えた所（上書き）だけを書く（PrefabOverrides::MakeInstanceEntry）
+// shift・idMap を渡すと、番号を Prefab のファイルの番号にして書く（Prefab の中の入れ子。シーンなら 0 と nullptr）
+SceneJson SaveInstance(const Entity& entity, EntityId shift, const EntityIdMap* idMap, std::set<std::string>& warnings) {
+	SceneJson item = PrefabOverrides::MakeInstanceEntry(entity.self, warnings);
+	return (idMap != nullptr) ? PrefabRecords::ShiftEntry(std::move(item), shift, *idMap) : item;
 }
 
 // ===== 全Entity。isFile なら、Prefab から置いた物は参照だけを書く（Play の退避は、シーンで直した所も戻せるよう中身も全部書く）=====
@@ -101,8 +89,8 @@ SceneJson SaveAll(bool isFile) {
 			if (PrefabManager::FindOwner(entity.self).IsValid()) {
 				continue; // Prefab の中身（読むときに Prefab から作られる）
 			}
-			if (const PrefabInstanceComponent* link = EntityManager::Get<PrefabInstanceComponent>(entity.self)) {
-				entities.push_back(SaveInstance(entity, parentId, *link, warnings));
+			if (EntityManager::Get<PrefabInstanceComponent>(entity.self) != nullptr) {
+				entities.push_back(SaveInstance(entity, 0, nullptr, warnings));
 				continue;
 			}
 		}
@@ -116,19 +104,27 @@ SceneJson SaveAll(bool isFile) {
 // JSON → Entity（型が違う値を value() で読むと例外が出るので、呼ぶ側で受ける）
 //=============================================================================
 // ===== Prefab から置いた物を作る（中身は Prefab のファイルから。Prefab が読めなければ、印だけ付けた空の Entity）=====
-Handle<Entity> LoadInstance(EntityId id, const std::string& name, const std::string& path, std::set<std::string>& warnings) {
+// 一番上の名前・有効・Transform は、item（シーンファイルの1項目）のとおりになる
+Handle<Entity> LoadInstance(const SceneJson& item, const std::string& path, std::set<std::string>& warnings) {
 	const uint32_t prefab = PrefabManager::Load(ToPath(path));
-	Handle<Entity> root = PrefabManager::InstantiateNow(prefab, id, warnings);
-	if (!root.IsValid()) {
-		// ファイルが無い（まだ pull していない など）。印は残すので、このまま保存しても参照は消えない
-		warnings.insert(std::format("Prefab が読めないので、空の Entity にしました（ファイルが届いてからシーンを開き直すと、中身ができます）: {}", path));
-		root = EntityManager::CreateWithId(id, name, {});
-		PrefabInstanceComponent link;
-		link.path = path;
-		EntityManager::RestoreComponents(root, {ComponentSnapshot::Make(link)});
+	const Handle<Entity> root = PrefabManager::InstantiateNow(prefab, item, warnings);
+	if (root.IsValid()) {
+		return root;
 	}
-	EntityManager::Get(root)->name = name; // 名前は置いた所ごとに変えてよい
-	return root;
+	// --- ファイルが無い（まだ pull していない など）。印と上書きは残すので、このまま保存しても参照・上書きは消えない ---
+	warnings.insert(std::format("Prefab が読めないので、空の Entity にしました（ファイルが届いてからシーンを開き直すと、中身ができます）: {}", path));
+	PrefabOverrides::KeepUnreadEntry(item);
+	const Handle<Entity> empty = EntityManager::CreateWithId(item.value("id", EntityId{0}), item.value("name", std::string("Entity")), {});
+	PrefabInstanceComponent link;
+	link.path = path;
+	EntityManager::RestoreComponents(empty, {ComponentSnapshot::Make(link)});
+	// 置いた位置は残す（Transform だけ読む。ほかの Component は Prefab の中身なので、ここには無い）
+	if (const auto components = item.find("components"); components != item.end() && components->is_object() && components->contains(kTransformName)) {
+		SceneJson transform = SceneJson::object();
+		transform[kTransformName] = components->at(kTransformName);
+		ComponentSerializer::Load(empty, transform, warnings);
+	}
+	return empty;
 }
 
 bool LoadAll(const SceneJson& root) {
@@ -141,6 +137,7 @@ bool LoadAll(const SceneJson& root) {
 
 	// ===== 1周目：Entityを作る（親はまだ付けない。ファイルの並びが崩れていても困らないように、全部そろってから付ける）=====
 	std::vector<Handle<Entity>> created(entities.size()); // 作れなかった所は無効なHandleのまま
+	std::vector<bool> isInstance(entities.size());        // Prefab から置いた物か（Component はもう付いているので、3周目で読まない）
 	for (size_t i = 0; i < entities.size(); ++i) {
 		const SceneJson& item = entities[i];
 		const EntityId id = item.value("id", EntityId{0});
@@ -149,10 +146,10 @@ bool LoadAll(const SceneJson& root) {
 			warnings.insert(std::format("EntityIdが0か、2つ目の同じ番号なので飛ばしました: {}", name));
 			continue;
 		}
-		// "prefab" があれば Prefab から置いた物（中身も一緒にできる。一番上の Transform は3周目でファイルの値になる）
-		const auto prefab = item.find(kPrefabKey);
-		const bool isInstance = (prefab != item.end() && prefab->is_string());
-		created[i] = isInstance ? LoadInstance(id, name, prefab->get<std::string>(), warnings) : EntityManager::CreateWithId(id, name, {});
+		// "prefab" があれば Prefab から置いた物（中身も一緒にできる。一番上の Transform などもファイルの値になる）
+		const auto prefab = item.find(kPrefabEntryKey);
+		isInstance[i] = (prefab != item.end() && prefab->is_string());
+		created[i] = isInstance[i] ? LoadInstance(item, prefab->get<std::string>(), warnings) : EntityManager::CreateWithId(id, name, {});
 		EntityManager::Get(created[i])->isActive = item.value("active", true);
 	}
 
@@ -173,7 +170,7 @@ bool LoadAll(const SceneJson& root) {
 	// ===== 3周目：Componentを付ける（全Entityがそろった後なので、Componentの中のEntityへの参照も引ける）=====
 	for (size_t i = 0; i < entities.size(); ++i) {
 		const auto componentsIt = entities[i].find("components");
-		if (!created[i].IsValid() || componentsIt == entities[i].end() || !componentsIt->is_object()) {
+		if (!created[i].IsValid() || isInstance[i] || componentsIt == entities[i].end() || !componentsIt->is_object()) {
 			continue;
 		}
 		ComponentSerializer::Load(created[i], *componentsIt, warnings);
@@ -340,9 +337,22 @@ SceneJson SceneSerializer::SaveTree(Handle<Entity> root, EntityId shift) {
 		// root の親は書かない（Prefab の外なので。作るときに Instantiate の parent を付ける）
 		const Entity* parent = EntityManager::Get(entity->parent);
 		const EntityId parentId = (i == 0 || parent == nullptr) ? EntityId{0} : (parent->id ^ shift);
+		// --- 中の入れ子（別の Prefab から置いた物）は、シーンファイルと同じく参照だけを書く ---
+		if (i > 0) {
+			// 入れ子の中身は書かない（作るときに、その Prefab から作られる）。持ち主が root なら root の中身なので書く。
+			// 持ち主が root より上（root 自身が入れ子のときの外側）なら、この Prefab の中身として書く
+			const Entity* owner = EntityManager::Get(PrefabManager::FindOwner(queue[i]));
+			if (owner != nullptr && owner->self != root && idMap.contains(owner->id)) {
+				continue;
+			}
+			if (EntityManager::Get<PrefabInstanceComponent>(queue[i]) != nullptr) {
+				entities.push_back(SaveInstance(*entity, shift, &idMap, warnings));
+				continue;
+			}
+		}
 		SceneJson item = SaveEntity(*entity, entity->id ^ shift, parentId, warnings, &idMap);
 		if (i == 0) {
-			item["components"].erase(kPrefabInstanceName); // root の「置いた物の印」は書かない（Prefab の中に、自分を指す印が入ってしまう）
+			item["components"].erase(kPrefabInstanceComponentName); // root の「置いた物の印」は書かない（Prefab の中に、自分を指す印が入ってしまう）
 		}
 		entities.push_back(std::move(item));
 	}

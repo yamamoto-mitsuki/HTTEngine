@@ -6,7 +6,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -19,6 +18,7 @@
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/EntityManager.h"
+#include "MyEngine/Scene/Prefab/PrefabRecords.h"
 #include "MyEngine/Scene/SceneSerializer.h"
 #include "MyEngine/String/ConvertString.h"
 
@@ -32,18 +32,20 @@ constexpr const char* kTransformName = "Transform"; // Transform の保存の名
 struct PrefabAsset {
 	std::string path;                          // パス（UTF-8。ToPathKey の形。読み込み済みかを調べるキーにもなる）
 	std::shared_ptr<const SceneJson> entities; // Entity の並び（ファイルの "entities"）。保存し直すと、新しい物に差し替わる
-	std::unordered_set<EntityId> ids;          // ファイルに書いてある番号全部（置いた物の中身かを調べる。entities と一緒に差し替える）
 	std::filesystem::file_time_type writeTime; // 読んだ・書いたときのファイルの時刻（ReloadChangedFiles で比べる）
+	// 中身の番号（この Prefab のファイルの番号。入れ子の Prefab の中身も、この Prefab の番号にして入れる）。置いた物の中身かを調べる
+	// 入れ子の Prefab が書き換わると変わるので、使うときに作る（contentGeneration が PrefabState::generation と違えば作り直す）
+	std::unordered_set<EntityId> contentIds;
+	uint64_t contentGeneration = 0;
 };
 
 /// <summary>
 /// 作ったけれど、まだ Transform 以外の Component を付けていない物（次のフレームの頭の Flush で付ける）
 /// </summary>
 struct PendingLoad {
-	uint32_t prefab = 0;                       // どの Prefab から作ったか（印に書く）
-	std::shared_ptr<const SceneJson> entities; // 作ったときの中身（途中で Prefab を保存し直しても、作ったときの中身で付ける）
-	std::vector<Handle<Entity>> created;       // entities の i 番目から作った Entity
-	EntityIdMap idMap;                         // ファイルの番号 → 作った Entity の番号
+	uint32_t prefab = 0;                          // どの Prefab から作ったか（印に書く）
+	std::shared_ptr<const EntityRecords> records; // 作ったときの中身（置いた番号。途中で Prefab を保存し直しても、作ったときの中身で付ける）
+	std::vector<Handle<Entity>> created;          // records の i 番目から作った Entity
 };
 
 /// <summary>
@@ -53,6 +55,7 @@ struct PrefabState {
 	std::vector<PrefabAsset> assets;       // 読み込んだ Prefab（番号 - 1 が添字。番号は1から、0は未選択）
 	std::vector<PendingLoad> pendingLoads; // Component を付ける予約
 	std::vector<uint32_t> placeRequests;   // エディタから置く予約
+	uint64_t generation = 1;               // どれかの Prefab の中身が変わるたびに増える（PrefabAsset::contentIds を作り直す合図）
 };
 std::unique_ptr<PrefabState> state;
 
@@ -75,12 +78,6 @@ void FlushWarnings(const std::set<std::string>& warnings) {
 	}
 }
 
-// Entity 1つ分の "components"（無ければ nullptr）
-const SceneJson* FindComponents(const SceneJson& item) {
-	const auto it = item.find("components");
-	return (it != item.end() && it->is_object()) ? &*it : nullptr;
-}
-
 // Entity 1つ分の形が正しいか（読むときに1回だけ確かめる。作るたびに value() で形の違う値を読むと例外が出るので）
 bool IsValidItem(const SceneJson& item) {
 	if (!item.is_object()) {
@@ -97,7 +94,7 @@ bool IsValidItem(const SceneJson& item) {
 		return it == item.end() || ((*it).*isExpected)();
 	};
 	return isOptional("name", &SceneJson::is_string) && isOptional("parent", &SceneJson::is_number_unsigned) && isOptional("active", &SceneJson::is_boolean) &&
-	       isOptional("components", &SceneJson::is_object);
+	       isOptional("components", &SceneJson::is_object) && isOptional(kPrefabEntryKey, &SceneJson::is_string);
 }
 
 // ファイルを読んで、Entity の並びを取り出す（読めなければ nullptr）
@@ -131,70 +128,101 @@ std::filesystem::file_time_type WriteTimeOf(const std::string& path) {
 	return error ? std::filesystem::file_time_type{} : time;
 }
 
-// 中身を差し替える（番号の一覧も一緒に作り直す）
+// 中身を差し替える（入れ子にしている Prefab の中身の番号も変わるので、全部の Prefab の contentIds を作り直させる）
 void SetEntities(PrefabAsset& asset, std::shared_ptr<const SceneJson> entities) {
-	asset.ids.clear();
-	for (const SceneJson& item : *entities) {
-		asset.ids.insert(item.at("id").get<EntityId>());
-	}
 	asset.entities = std::move(entities);
+	++state->generation;
 }
 
 //=============================================================================
 // 番号のずれ（置いた物の番号 = ファイルの番号 XOR ずれ）
 //=============================================================================
 // ファイルの一番上の Entity の番号
-EntityId RootFileId(const PrefabAsset& asset) { return asset.entities->front().at("id").get<EntityId>(); }
+EntityId RootFileId(const SceneJson& entities) { return entities.front().at("id").get<EntityId>(); }
 
 // 一番上を rootId の番号で置いたときの、ずれ（一番上は ファイルの番号 XOR ずれ = rootId になる）
-EntityId ShiftOf(const PrefabAsset& asset, EntityId rootId) { return rootId ^ RootFileId(asset); }
+EntityId ShiftOf(const PrefabAsset& asset, EntityId rootId) { return rootId ^ RootFileId(*asset.entities); }
 
-// そのずれで作ると、全員の番号が 0 でなく、まだ誰も使っていないか
-bool CanUseShift(const PrefabAsset& asset, EntityId shift) {
-	return std::ranges::all_of(asset.ids, [shift](EntityId fileId) {
-		const EntityId id = fileId ^ shift;
-		return id != 0 && !EntityManager::FindById(id).IsValid();
-	});
-}
+//=============================================================================
+// 中身の番号（置いた物の中身かを調べる）
+//=============================================================================
+const std::unordered_set<EntityId>& ContentIdsOf(uint32_t handle, std::vector<uint32_t>& stack);
 
-// 新しく置くときの、ずれ（一番上の番号を新しくもらい、中の全員がぶつからなければ使う）
-EntityId PickShift(const PrefabAsset& asset) {
-	for (;;) {
-		const EntityId shift = ShiftOf(asset, EntityManager::NewId());
-		if (CanUseShift(asset, shift)) {
-			return shift;
+// ===== Prefab の中身の番号（ファイルの番号）を集める。入れ子の Prefab は、その中身をこの Prefab の番号にして入れる =====
+// stack は集めている途中の Prefab（自分の中に自分が入っていたら、そこで止める）
+std::unordered_set<EntityId> CollectContentIds(uint32_t handle, std::vector<uint32_t>& stack) {
+	std::unordered_set<EntityId> ids;
+	const PrefabAsset* asset = Find(handle);
+	if (asset == nullptr || asset->entities == nullptr || std::ranges::find(stack, handle) != stack.end() || stack.size() >= kMaxPrefabNestDepth) {
+		return ids;
+	}
+	const std::shared_ptr<const SceneJson> entities = asset->entities; // 入れ子の Load で asset の場所が変わるので、中身を持っておく
+	stack.push_back(handle);
+	for (const SceneJson& item : *entities) {
+		const EntityId id = item.at("id").get<EntityId>();
+		ids.insert(id);
+		const auto prefab = item.find(kPrefabEntryKey);
+		if (prefab == item.end()) {
+			continue;
+		}
+		// --- 入れ子：中身の番号 = 入れ子のファイルの番号 XOR（この項目の番号 XOR 入れ子のファイルの一番上の番号）---
+		const uint32_t child = PrefabManager::Load(ToPath(prefab->get<std::string>()));
+		const PrefabAsset* childAsset = Find(child);
+		if (childAsset == nullptr || childAsset->entities == nullptr) {
+			continue; // 読めない（ファイルがまだ無い）。一番上だけが中身
+		}
+		const EntityId shift = id ^ RootFileId(*childAsset->entities);
+		for (const EntityId childId : ContentIdsOf(child, stack)) {
+			ids.insert(childId ^ shift);
 		}
 	}
+	stack.pop_back();
+	return ids;
+}
+
+// ===== 中身の番号（前に集めた物があれば、それを使う）=====
+// 返した参照は、次に Load するまでに使い終える
+const std::unordered_set<EntityId>& ContentIdsOf(uint32_t handle, std::vector<uint32_t>& stack) {
+	static const std::unordered_set<EntityId> kEmpty; // 知らない番号のときに返す空の集まり（参照で返すので static にする）
+	PrefabAsset* asset = Find(handle);
+	if (asset == nullptr) {
+		return kEmpty;
+	}
+	if (asset->contentGeneration != state->generation) {
+		std::unordered_set<EntityId> ids = CollectContentIds(handle, stack);
+		asset = Find(handle); // 入れ子の Load で場所が変わったかもしれないので、引き直す
+		asset->contentIds = std::move(ids);
+		asset->contentGeneration = state->generation;
+	}
+	return asset->contentIds;
 }
 
 //=============================================================================
 // 作る
 //=============================================================================
-// ===== Entity を作り、親子をつなぐ（Component はまだ。Transform は Entity と一緒にできている）=====
-PendingLoad CreateEntities(uint32_t prefab, const PrefabAsset& asset, EntityId shift, Handle<Entity> parent) {
+// ===== 並べた中身（PrefabRecords::Expand）から Entity を作り、親子をつなぐ（Component はまだ。Transform は Entity と一緒にできている）=====
+PendingLoad CreateEntities(uint32_t prefab, std::shared_ptr<const EntityRecords> records, Handle<Entity> parent) {
 	PendingLoad pending;
 	pending.prefab = prefab;
-	pending.entities = asset.entities; // 中身を共有する（写さない）
-	const SceneJson& entities = *pending.entities;
-	pending.created.reserve(entities.size());
+	pending.records = std::move(records);
+	const EntityRecords& items = *pending.records;
+	pending.created.reserve(items.size());
 
-	// --- 1周目：Entity を作る（番号はファイルの番号 XOR ずれ。ファイルの番号 → 作った番号を表に入れる）---
-	for (const SceneJson& item : entities) {
-		const EntityId fileId = item.at("id").get<EntityId>();
-		const Handle<Entity> created = EntityManager::CreateWithId(fileId ^ shift, item.value("name", std::string("Entity")), {});
+	// --- 1周目：Entity を作る（番号はもう置いた番号になっている）---
+	for (const SceneJson& item : items) {
+		const Handle<Entity> created = EntityManager::CreateWithId(item.at("id").get<EntityId>(), item.value("name", std::string("Entity")), {});
 		EntityManager::Get(created)->isActive = item.value("active", true);
-		pending.idMap[fileId] = fileId ^ shift;
 		pending.created.push_back(created);
 	}
 
 	// --- 2周目：親子をつなぐ ---
-	// 先頭（一番上）は parent の子に。それ以外は、ファイルに書いてある親（見つからなければ一番上）の子にする
+	// 先頭（一番上）は parent の子に。それ以外は、書いてある親（見つからなければ一番上）の子にする
 	const Handle<Entity> root = pending.created.front();
-	for (size_t i = 0; i < entities.size(); ++i) {
+	for (size_t i = 0; i < items.size(); ++i) {
 		Handle<Entity> newParent = parent;
 		if (i > 0) {
-			const auto found = pending.idMap.find(entities[i].value("parent", EntityId{0}));
-			newParent = (found != pending.idMap.end()) ? EntityManager::FindById(found->second) : root;
+			const Handle<Entity> found = EntityManager::FindById(items[i].value("parent", EntityId{0}));
+			newParent = found.IsValid() ? found : root;
 		}
 		if (newParent.IsValid()) {
 			EntityManager::SetParent(pending.created[i], newParent);
@@ -211,7 +239,7 @@ void LoadComponents(const PendingLoad& pending, bool isTransform, std::set<std::
 		if (!EntityManager::IsAlive(pending.created[i])) {
 			continue; // 作ってから今までに消された（Destroy・Stop）
 		}
-		const SceneJson* components = FindComponents((*pending.entities)[i]);
+		const SceneJson* components = PrefabRecords::FindComponents((*pending.records)[i]);
 		if (components == nullptr) {
 			continue;
 		}
@@ -224,7 +252,8 @@ void LoadComponents(const PendingLoad& pending, bool isTransform, std::set<std::
 			part = *components;
 			part.erase(kTransformName);
 		}
-		ComponentSerializer::Load(pending.created[i], part, warnings, &pending.idMap);
+		// 番号はもう置いた番号なので、付け替えずに読む（中身どうしの参照も、相手はもう作ってある）
+		ComponentSerializer::Load(pending.created[i], part, warnings);
 	}
 }
 
@@ -245,14 +274,6 @@ const PrefabAsset* FindAssetOf(Handle<Entity> root) {
 	const PrefabInstanceComponent* link = EntityManager::Get<PrefabInstanceComponent>(root);
 	const PrefabAsset* asset = (link != nullptr) ? Find(link->prefab) : nullptr;
 	return (asset != nullptr && asset->entities != nullptr) ? asset : nullptr;
-}
-
-// ===== Entity 1つ分の Component から、Transform を除いた物（一番上は、置いた所ごとに Transform を変えてよいので比べない）=====
-SceneJson ComponentsWithoutTransform(const SceneJson& item) {
-	const SceneJson* components = FindComponents(item);
-	SceneJson result = (components != nullptr) ? *components : SceneJson::object();
-	result.erase(kTransformName);
-	return result;
 }
 } // namespace
 
@@ -298,6 +319,11 @@ const std::string& PrefabManager::GetPath(uint32_t handle) {
 	static const std::string kEmpty; // 見つからないときに返す空文字（参照で返すので static にする）
 	const PrefabAsset* asset = Find(handle);
 	return (asset != nullptr) ? asset->path : kEmpty;
+}
+
+std::shared_ptr<const SceneJson> PrefabManager::GetEntities(uint32_t handle) {
+	const PrefabAsset* asset = Find(handle);
+	return (asset != nullptr) ? asset->entities : nullptr;
 }
 
 void PrefabManager::ReloadChangedFiles() {
@@ -375,16 +401,23 @@ bool PrefabManager::IsOtherPrefabFile(Handle<Entity> root, const std::string& pa
 //=============================================================================
 Handle<Entity> PrefabManager::Instantiate(uint32_t prefab, const Vector3& position, Handle<Entity> parent) {
 	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
-	const PrefabAsset* asset = Find(prefab);
-	if (asset == nullptr) {
+	if (Find(prefab) == nullptr) {
 		LogManager::Warning(std::format("読み込んでいない Prefab の番号 {} から作ろうとしました（Inspector で Prefab を選んでいるか確かめてください）", prefab));
 		return {};
 	}
-	// ===== Entity を作る（一番上の番号は新しくもらう）=====
-	PendingLoad pending = CreateEntities(prefab, *asset, PickShift(*asset), parent);
-
-	// ===== Transform だけ今すぐ付ける =====
+	// ===== 中身を並べる（一番上の番号は新しくもらう。中の誰かがほかの Entity とぶつかったら、もらい直す）=====
 	std::set<std::string> warnings;
+	EntityRecords records;
+	do {
+		records = PrefabRecords::Expand(prefab, EntityManager::NewId(), warnings);
+	} while (!records.empty() && !PrefabRecords::AreIdsFree(records));
+	if (records.empty()) {
+		FlushWarnings(warnings);
+		return {};
+	}
+
+	// ===== Entity を作り、Transform だけ今すぐ付ける =====
+	PendingLoad pending = CreateEntities(prefab, std::make_shared<const EntityRecords>(std::move(records)), parent);
 	LoadComponents(pending, true, warnings);
 	FlushWarnings(warnings);
 	// 一番上の位置を、渡された位置にする（回転・大きさは Prefab のまま）
@@ -398,21 +431,27 @@ Handle<Entity> PrefabManager::Instantiate(uint32_t prefab, const Vector3& positi
 	return root;
 }
 
-Handle<Entity> PrefabManager::InstantiateNow(uint32_t prefab, EntityId rootId, std::set<std::string>& warnings) {
+Handle<Entity> PrefabManager::InstantiateNow(uint32_t prefab, const SceneJson& entry, std::set<std::string>& warnings) {
 	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
-	const PrefabAsset* asset = Find(prefab);
-	if (asset == nullptr) {
+	// --- 中身を並べ、ファイルの項目（一番上の名前・有効・Transform・上書きなど）を当てる ---
+	EntityRecords records = PrefabRecords::Expand(prefab, entry.value("id", EntityId{0}), warnings);
+	if (records.empty()) {
 		return {};
 	}
-	// --- 一番上を rootId にするずれ。中の誰かがぶつかるなら、新しい番号で作る（シーンのほかの物からの参照は外れる）---
-	EntityId shift = ShiftOf(*asset, rootId);
-	if (!CanUseShift(*asset, shift)) {
-		warnings.insert(std::format("Prefab の中の番号がほかの Entity とぶつかったので、新しい番号で作りました（この物への参照は外れます）: {}", asset->path));
-		shift = PickShift(*asset);
+	PrefabRecords::ApplyEntry(records, 0, records.size(), entry, warnings);
+	// --- 中の誰かがほかの Entity とぶつかるなら、全員を新しい番号にずらす（シーンのほかの物からの参照は外れる）---
+	if (!PrefabRecords::AreIdsFree(records)) {
+		warnings.insert(std::format("Prefab の中の番号がほかの Entity とぶつかったので、新しい番号で作りました（この物への参照は外れます）: {}", GetPath(prefab)));
+		const EntityId rootId = records.front().at("id").get<EntityId>();
+		EntityRecords moved;
+		do {
+			moved = records;
+			PrefabRecords::Relabel(moved, EntityManager::NewId() ^ rootId);
+		} while (!PrefabRecords::AreIdsFree(moved));
+		records = std::move(moved);
 	}
 	// --- 作って、Component・印までその場で付ける（フレームの境目なので安全）---
-	// asset は、この先の Load（中に入れ子の Prefab があるとき）で場所が変わることがあるので、ここから先は使わない
-	const PendingLoad pending = CreateEntities(prefab, *asset, shift, {});
+	const PendingLoad pending = CreateEntities(prefab, std::make_shared<const EntityRecords>(std::move(records)), {});
 	LoadComponents(pending, true, warnings);
 	LoadComponents(pending, false, warnings);
 	Link(pending);
@@ -455,12 +494,16 @@ Handle<Entity> PrefabManager::FindOwner(Handle<Entity> entity) {
 	if (target == nullptr) {
 		return {};
 	}
-	// 親の方へたどり、印のある物の中身か（自分の番号 XOR ずれが、ファイルの番号にあるか）を調べる
+	// 親の方へたどり、印のある物の中身か（自分の番号 XOR ずれが、中身の番号にあるか）を調べる。入れ子なら、一番近い置いた物が持ち主
+	std::vector<uint32_t> stack;
 	Handle<Entity> current = target->parent;
 	while (const Entity* ancestor = EntityManager::Get(current)) {
-		const PrefabAsset* asset = FindAssetOf(current);
-		if (asset != nullptr && asset->ids.contains(target->id ^ ShiftOf(*asset, ancestor->id))) {
-			return current;
+		const PrefabInstanceComponent* link = EntityManager::Get<PrefabInstanceComponent>(current);
+		if (const PrefabAsset* asset = (link != nullptr) ? Find(link->prefab) : nullptr; asset != nullptr && asset->entities != nullptr) {
+			const EntityId fileId = target->id ^ ShiftOf(*asset, ancestor->id); // asset は ContentIdsOf の中の Load で場所が変わるので、先に使う
+			if (ContentIdsOf(link->prefab, stack).contains(fileId)) {
+				return current;
+			}
 		}
 		current = ancestor->parent;
 	}
@@ -471,37 +514,6 @@ Handle<Entity> PrefabManager::FindInstanceRoot(Handle<Entity> entity) {
 	const Handle<Entity> root = (EntityManager::Get<PrefabInstanceComponent>(entity) != nullptr) ? entity : FindOwner(entity);
 	const PrefabInstanceComponent* link = EntityManager::Get<PrefabInstanceComponent>(root);
 	return (link != nullptr && IsAssetFile(link->path.View(), AssetType::Prefab)) ? root : Handle<Entity>{};
-}
-
-bool PrefabManager::IsModified(Handle<Entity> root) {
-	const Entity* rootEntity = EntityManager::Get(root);
-	const PrefabAsset* asset = (rootEntity != nullptr) ? FindAssetOf(root) : nullptr;
-	if (asset == nullptr) {
-		return false;
-	}
-	// --- 今の物を、ファイルと同じ番号で書いてみる ---
-	const SceneJson saved = SceneSerializer::SaveTree(root, ShiftOf(*asset, rootEntity->id));
-	const SceneJson& now = saved.at("entities");
-	// --- ファイルの番号 → ファイルの1項目 ---
-	std::unordered_map<EntityId, const SceneJson*> original;
-	for (const SceneJson& item : *asset->entities) {
-		original[item.at("id").get<EntityId>()] = &item;
-	}
-	// --- 同じ番号どうしを比べる（あとから足した子は、ファイルに無い番号なので飛ばす）---
-	size_t matched = 0;
-	for (size_t i = 0; i < now.size(); ++i) {
-		const auto found = original.find(now[i].at("id").get<EntityId>());
-		if (found == original.end()) {
-			continue;
-		}
-		++matched;
-		// 一番上は、置いた所ごとに変えてよい物（名前・有効・Transform）を除いて比べる
-		const bool isSame = (i == 0) ? (ComponentsWithoutTransform(now[i]) == ComponentsWithoutTransform(*found->second)) : (now[i] == *found->second);
-		if (!isSame) {
-			return true;
-		}
-	}
-	return matched != original.size(); // 足りない＝Prefab の中の物を消した
 }
 
 bool PrefabManager::Apply(Handle<Entity> root) {

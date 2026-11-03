@@ -3,7 +3,7 @@
 #include <vector>
 
 #include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/Scene/PrefabManager.h"
+#include "MyEngine/Scene/Prefab/PrefabManager.h"
 
 //=============================================================================
 // 作る・探す

@@ -147,7 +147,12 @@ void ScriptSystem::RegisterType(const char* name, std::type_index type, CreateFu
 			    Describe(*script, reader);
 		    }
 	    },
-	    visit);
+	    visit, {},
+	    // 参照を付け替える（Prefab の入れ子・置いた所ごとの上書き）：作りたての写しに見せ方の関数を呼ぶ（Entity には付けないので、Awake なども呼ばれない）
+	    [create](SceneJson& fields, const EntityIdMap& map) {
+		    const std::unique_ptr<Script> temporary = create();
+		    ComponentSerializer::RemapFields([&temporary](ComponentUI& ui) { Describe(*temporary, ui); }, fields, map);
+	    });
 
 	// --- Inspector の区画・Add Component のメニュー（COMPONENT(...) と同じ Gameplay に並ぶ）---
 	ComponentEditorRegistry::Register(std::make_unique<ScriptEditor>(name, type, sourceFile, std::move(category)));

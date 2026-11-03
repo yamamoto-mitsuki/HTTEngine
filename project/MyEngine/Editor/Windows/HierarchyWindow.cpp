@@ -28,7 +28,7 @@
 #include "MyEngine/Components/Rendering2D/SpriteRendererComponent.h"
 #include "MyEngine/Components/Physics/WindZoneComponent.h"
 #include "MyEngine/Components/Gameplay/TriggerActivatorComponent.h"
-#include "MyEngine/Scene/PrefabManager.h"
+#include "MyEngine/Scene/Prefab/PrefabManager.h"
 #include "MyEngine/String/FileNameRule.h"
 
 // 静的メンバ変数
@@ -358,12 +358,17 @@ void HierarchyWindow::DrawEntityMenu(Handle<Entity> handle) {
 	} else {
 		ImGui::SetItemTooltip("子も一緒に resources/prefabs/ に保存する。これからは Prefab から置いた物になる");
 	}
-	// --- Prefab から置いた物の一番上：元の Prefab に書く・つながりを切る（Inspector のボタンと同じ）---
+	// --- Prefab から置いた物の一番上：元の Prefab に書く・Prefab のとおりに戻す・つながりを切る（Inspector のボタンと同じ）---
 	if (PrefabManager::FindInstanceRoot(handle) == handle) {
 		if (ImGui::MenuItem("Apply to Prefab")) {
 			PrefabManager::Apply(handle);
 		}
-		ImGui::SetItemTooltip("シーンで直した中身を、元の Prefab のファイルに書く（ほかのシーンの物も、次に開いたときから同じになる）");
+		ImGui::SetItemTooltip("上書きを全部、元の Prefab のファイルに書く（ほかのシーンの物も、次に開いたときから同じになる）");
+		// 戻せるのは一番外側の置いた物だけ（入れ子の中は、外側の Revert で戻す）
+		if (ImGui::MenuItem("Revert Prefab", nullptr, false, !PrefabManager::FindOwner(handle).IsValid())) {
+			EditorHistory::RequestRevertPrefab(handle);
+		}
+		ImGui::SetItemTooltip("上書きを全部捨てて、Prefab のとおりに戻す（あとから足した子も消える。Ctrl+Z で戻せる）");
 		if (ImGui::MenuItem("Unpack Prefab")) {
 			PrefabManager::Unpack(handle);
 		}

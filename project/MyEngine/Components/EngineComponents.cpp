@@ -8,7 +8,7 @@
 #include "MyEngine/Components/Rendering3D/ModelRendererComponent.h"
 #include "MyEngine/Components/Core/TransformComponent.h"
 #include "MyEngine/Components/Lighting/LightComponent.h"
-#include "MyEngine/Scene/PrefabManager.h"
+#include "MyEngine/Scene/Prefab/PrefabManager.h"
 #include "MyEngine/String/ConvertString.h"
 
 // エンジンのComponentの「保存する項目」。書き方は COMPONENT(...) の中身と同じ

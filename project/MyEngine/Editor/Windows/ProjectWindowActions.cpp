@@ -17,7 +17,7 @@
 #include "MyEngine/Curve/CurveManager.h"
 #include "MyEngine/Physics/PhysicMaterialManager.h"
 #include "MyEngine/Timeline/TimelineManager.h"
-#include "MyEngine/Scene/PrefabManager.h"
+#include "MyEngine/Scene/Prefab/PrefabManager.h"
 #include "MyEngine/Scene/SceneManager.h"
 #include "MyEngine/String/ConvertString.h"
 #include "MyEngine/String/FileNameRule.h"
@@ -84,7 +84,7 @@ void ProjectWindow::DrawItemMenu(const Item& item) {
 				PrefabManager::RequestPlace(prefab);
 			}
 		}
-		ImGui::SetItemTooltip("原点に置く。直したら Inspector の Apply で、Prefab に書ける");
+		ImGui::SetItemTooltip("原点に置く。直した所は、置いた所ごとの上書きとしてシーンに残る（Inspector の Apply で Prefab に書ける）");
 	} else if (ToUtf8(item.path).ends_with(kUIScreenFileExtension)) {
 		// 画面は編集モードで開く（ダブルクリックと同じ。停止中だけ）
 		const SceneManager* sceneManager = SceneManager::GetMain();

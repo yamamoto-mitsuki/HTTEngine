@@ -54,6 +54,10 @@ public:
 	static void RequestPaste(Handle<Entity> parent);     // parentの子として貼る（無効ならroot）
 	static void RequestDuplicate(Handle<Entity> handle); // 同じ親の下に複製する
 
+	// ===== Prefab =====
+	// Prefab から置いた物を、Prefab のとおりに作り直す（置いた所ごとの上書きと、あとから足した子が消える。一番上の名前・有効・親・Transform は残す）
+	static void RequestRevertPrefab(Handle<Entity> root);
+
 	// ===== Component =====
 	static void RequestAddComponent(Handle<Entity> handle, const ComponentEditor& editor);
 	static void RequestRemoveComponent(Handle<Entity> handle, const ComponentEditor& editor);

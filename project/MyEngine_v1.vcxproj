@@ -184,7 +184,10 @@
     <ClCompile Include="MyEngine\Physics\ElasticSurfaceSimulation.cpp" />
     <ClCompile Include="MyEngine\Physics\PhysicMaterialManager.cpp" />
     <ClCompile Include="MyEngine\Scene\DefaultScene.cpp" />
-    <ClCompile Include="MyEngine\Scene\PrefabManager.cpp" />
+    <ClCompile Include="MyEngine\Scene\Prefab\PrefabDiff.cpp" />
+    <ClCompile Include="MyEngine\Scene\Prefab\PrefabManager.cpp" />
+    <ClCompile Include="MyEngine\Scene\Prefab\PrefabOverrides.cpp" />
+    <ClCompile Include="MyEngine\Scene\Prefab\PrefabRecords.cpp" />
     <ClCompile Include="MyEngine\Scene\SceneTransition.cpp" />
     <ClCompile Include="MyEngine\Systems\Animation\AnimationSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Animation\TimelineSystem.cpp" />
@@ -405,7 +408,10 @@
     <ClInclude Include="MyEngine\Physics\PhysicMaterialManager.h" />
     <ClInclude Include="MyEngine\Scene\DefaultScene.h" />
     <ClInclude Include="MyEngine\Components\Camera\CameraComponent.h" />
-    <ClInclude Include="MyEngine\Scene\PrefabManager.h" />
+    <ClInclude Include="MyEngine\Scene\Prefab\PrefabDiff.h" />
+    <ClInclude Include="MyEngine\Scene\Prefab\PrefabManager.h" />
+    <ClInclude Include="MyEngine\Scene\Prefab\PrefabOverrides.h" />
+    <ClInclude Include="MyEngine\Scene\Prefab\PrefabRecords.h" />
     <ClInclude Include="MyEngine\Scene\SceneTransition.h" />
     <ClInclude Include="MyEngine\Sound\AudioBus.h" />
     <ClInclude Include="MyEngine\String\FileNameRule.h" />

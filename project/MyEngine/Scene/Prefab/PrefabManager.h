@@ -1,10 +1,12 @@
 #pragma once
+#include <memory>
 #include <cstdint>
 #include <set>
 #include <string>
 #include <filesystem>
 
 #include "MyEngine/Core/Handle.h"
+#include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/Entity.h"
 #include "MyEngine/Math/Vector3.h"
 
@@ -24,6 +26,12 @@ inline std::string MakePrefabFilePath(const std::string& name) { return std::str
 /// Prefab を保存し直すと、次にシーンを開いたときから新しい中身になる（開いている今のシーンの物は変わらない）</para>
 /// <para>番号のずれ：置いた物の番号は「ファイルの番号 XOR ずれ」。ずれは「置いた物の一番上の番号 XOR ファイルの一番上の番号」で、
 /// 中の全員で同じ。一番上の番号さえシーンに書けば、中の子の番号も毎回同じになる（シーンのほかの Entity から、中の子を指せる）</para>
+/// <para>上書き：置いた物の中身（子も含む全部の Component・名前・有効・親）を、置いた所ごとに変えてよい。シーンファイルには違う所だけが書かれ、
+/// Prefab のほかの所を直すと、上書きしていない所は Prefab のとおりに変わる（Unity の Override。作るのは PrefabOverrides）</para>
+/// <para>入れ子：Prefab の中に、別の Prefab から置いた物を入れてよい。Prefab のファイルにも参照だけが書かれ、作るときにその Prefab から作る
+/// （内側の Prefab を直すと、外側の Prefab から作った物も変わる）。中の番号は、入れ子の一番上を基準に同じ XOR で決まる</para>
+/// <para>分け方：中身を JSON のまま並べる・上書きを当てるのは PrefabRecords、JSON の違いは PrefabDiff、上書きを作るのは PrefabOverrides。
+/// このクラスは、読み込み・保存・Entity を作る・持ち主を調べる</para>
 /// </summary>
 class PrefabManager {
 public:
@@ -35,6 +43,9 @@ public:
 	static uint32_t Load(const std::filesystem::path& filePath);
 	// 番号からパス（UTF-8。保存・Inspector の表示に使う）。知らない番号なら空
 	static const std::string& GetPath(uint32_t handle);
+	// 番号から中身（ファイルの "entities"。読めていない・知らない番号なら nullptr）
+	// shared_ptr で渡すので、このあと Prefab が保存し直されても、受け取った中身はそのまま使える
+	static std::shared_ptr<const SceneJson> GetEntities(uint32_t handle);
 	// 読み込んだ後にファイルが書き換わった Prefab を読み直す（git pull で届いた Prefab を使うため）。シーンファイルを読む前に呼ぶ
 	static void ReloadChangedFiles();
 
@@ -57,10 +68,11 @@ public:
 	/// <param name="parent">親（無効な Handle なら一番上に置く）</param>
 	static Handle<Entity> Instantiate(uint32_t prefab, const Vector3& position, Handle<Entity> parent = {});
 	/// <summary>
-	/// シーンファイルを読むとき用。一番上を rootId の番号で作り、Component・印まで今すぐ付ける（フレームの境目でだけ呼ぶ）。親は付けない
+	/// シーンファイルを読むとき用。entry（シーンファイルの "prefab" の付いた1項目）のとおりに作り、Component・印まで今すぐ付ける（フレームの境目でだけ呼ぶ）
+	/// <para>一番上の番号・名前・有効・Component（Transform など）は entry のとおり。親は付けない（呼ぶ側が付ける）</para>
 	/// <para>中の番号がほかの Entity とぶつかったら、新しい番号で作って warnings に書く。読めていない番号なら無効な Handle</para>
 	/// </summary>
-	static Handle<Entity> InstantiateNow(uint32_t prefab, EntityId rootId, std::set<std::string>& warnings);
+	static Handle<Entity> InstantiateNow(uint32_t prefab, const SceneJson& entry, std::set<std::string>& warnings);
 	// エディタから置く（ImGui を描いている途中で Entity を増やさないように、次のフレームの頭に作る。原点に置く）
 	static void RequestPlace(uint32_t prefab);
 	// 予約した物を作る・Component を付ける。フレームの頭（WindowManager::UpdateAll の EntityManager::FlushComponentChanges の後）に呼ぶ
@@ -68,13 +80,11 @@ public:
 
 	// ===== 置いた物（Prefab のインスタンス）=====
 	// entity を「Prefab の中身」として持つ、一番近い置いた物（親の方へたどる。entity 自身は見ない）。無ければ無効な Handle
-	// あとから足した子は中身ではない（シーンファイルにそのまま書かれる）
+	// あとから足した子は中身ではない（シーンファイルにそのまま書かれる）。入れ子の中身なら、入れ子の一番上が持ち主（その一番上の持ち主は外側）
 	static Handle<Entity> FindOwner(Handle<Entity> entity);
 	// エディタで「Prefab から置いた物」として見せる一番上（entity が置いた物なら entity、中身なら持ち主）。無ければ無効な Handle
 	// .prefab から置いた物だけ（UI Screen の .uiscreen から作った画面は、同じ仕組みで作るが Prefab としては見せない）
 	static Handle<Entity> FindInstanceRoot(Handle<Entity> entity);
-	// 置いた物の中身が、Prefab のファイルと違うか（一番上の名前・有効・Transform と、あとから足した子は見ない）
-	static bool IsModified(Handle<Entity> root);
 	// 置いた物を、元の Prefab のファイルに書く（Unity の Apply）
 	static bool Apply(Handle<Entity> root);
 	// Prefab とのつながりを切る（印を外す。次のフレームの頭に外れ、それからは中身もシーンファイルに書かれる）
