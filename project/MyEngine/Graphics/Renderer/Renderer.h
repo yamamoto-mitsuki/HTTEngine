@@ -22,6 +22,7 @@
 
 // 前方宣言
 struct Entity;
+struct PolylineMeshData;
 class RenderContext;
 class RenderWindow;
 class Camera;
@@ -246,7 +247,7 @@ public:
 	// --- スプライトの描画設定 ---
 	// 座標系は正規化座標。画面中央が原点、右がX+、上がY+、画面端が±1。
 	// 例: position={0,0}で画面中央、{-1,1}で左上、{1,-1}で右下
-	struct SpriteConfig : DrawTarget {
+	struct SpriteConfig : Draw2dTarget {
 	public:
 		Vector2 position = {0.0f, 0.0f};                           // 中心座標（画面中央が原点、端が±1）
 		Vector2 scale = {1.0f, 1.0f};                              // 拡大率（1.0でテクスチャ原寸）
@@ -257,11 +258,10 @@ public:
 		BlendMode blendMode = BlendMode::None;                     // ブレンド設定
 		RasterizerType rasterizerType = RasterizerType::SolidBack; // ラスタライザ設定
 		Vector2 pivot = {0.5f, 0.5f};                              // 矩形のどこをpositionに合わせるか。基本触らない！（0,0=左上 1,1=右下）
-		int order = 0;                                             // 重ねる順（大きいほど手前。同じなら積んだ順。文字とも比べる）
 	};
 
 	// --- 頂点を調整できるスプライト ---
-	struct Quad2dConfig : DrawTarget {
+	struct Quad2dConfig : Draw2dTarget {
 		Vector2 lb = {-0.1f, -0.1f};                               // 左下の座標
 		Vector2 lt = {-0.1f, +0.1f};                               // 左上の座標
 		Vector2 rb = {+0.1f, -0.1f};                               // 右下の座標
@@ -276,14 +276,13 @@ public:
 		uint32_t textureHandle = 0;                                // テクスチャハンドル
 		BlendMode blendMode = BlendMode::None;                     // ブレンド設定
 		RasterizerType rasterizerType = RasterizerType::SolidBack; // ラスタライザ設定
-		int order = 0;                                             // 重ねる順（大きいほど手前。同じなら積んだ順。文字とも比べる）
 	};
 
 	//=============================================================================
 	// Text
 	//=============================================================================
 	// --- 画面に重ねる文字（文字の並べ方は TextRenderSystem が決めて、頂点で渡す）---
-	struct Text2dConfig : DrawTarget {
+	struct Text2dConfig : Draw2dTarget {
 		Vector4 color = {1.0f, 1.0f, 1.0f, 1.0f};        // 文字の色
 		Vector4 outlineColor = {0.0f, 0.0f, 0.0f, 1.0f}; // 縁取りの色
 		float outlineWidth = 0.0f;                       // 縁取りの太さ（SDF の値で 0〜0.5。0 なら縁取りなし）
@@ -294,14 +293,13 @@ public:
 		float shineWidth = 0.0f;                         // 帯の半分の幅（かたまりの幅に対して。0 なら無し）
 		uint32_t fontTextureIndex = 0;                   // フォントのアトラス（FontManager::GetAtlasTextureIndex）
 		BlendMode blendMode = BlendMode::Normal;         // ブレンド設定
-		int order = 0;                                   // 重ねる順（スプライトの order と同じ）
 	};
 
 	//=============================================================================
 	// VectorShape
 	//=============================================================================
 	// --- 画像を使わない UI の図形（値を決めるのは VectorShapeSystem。形はシェーダーが計算する）---
-	struct VectorShapeConfig : DrawTarget {
+	struct VectorShapeConfig : Draw2dTarget {
 		Vector2 lb;                              // 板の左下の座標（正規化座標）
 		Vector2 lt;                              // 板の左上の座標
 		Vector2 rb;                              // 板の右下の座標
@@ -309,7 +307,18 @@ public:
 		Vector2 localHalf;                       // 板の半分の大きさ（描かれるピクセル。シェーダーが読む位置の範囲）
 		VectorShapeMaterialData material;        // 図形の値（色は sRGB。中でリニアに直す）
 		BlendMode blendMode = BlendMode::Normal; // ブレンド設定
-		int order = 0;                           // 重ねる順（スプライトの order と同じ）
+	};
+
+	//=============================================================================
+	// Polyline
+	//=============================================================================
+	// --- UI の折れ線（メッシュを作って持つのは PolylineSystem。ここでは共有して受け取るだけで、写さない）---
+	struct PolylineConfig : Draw2dTarget {
+		std::shared_ptr<const PolylineMeshData> mesh; // メッシュ（位置は折れ線の Entity から見たピクセル）
+		uint32_t indexStart = 0;                      // 描く三角形の番号の始まり
+		uint32_t indexCount = 0;                      // 描く三角形の番号の数
+		PolylineMaterialData material;                // 色・太さ・画面へ写す行列（色は sRGB。中でリニアに直す）
+		BlendMode blendMode = BlendMode::Normal;      // ブレンド設定
 	};
 
 	//=============================================================================
@@ -397,6 +406,11 @@ public:
 	/// 画像を使わない UI の図形の描画リクエストを追加する
 	/// </summary>
 	static void DrawVectorShape(const VectorShapeConfig& config);
+
+	/// <summary>
+	/// UI の折れ線の描画リクエストを追加する
+	/// </summary>
+	static void DrawPolyline(const PolylineConfig& config);
 
 	/// <summary>
 	/// 3d矩形の描画リクエストを追加する

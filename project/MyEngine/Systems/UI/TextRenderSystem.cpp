@@ -19,6 +19,7 @@
 #include "MyEngine/Graphics/Text/FontManager.h"
 #include "MyEngine/Math/Color.h"
 #include "MyEngine/Systems/Rendering2D/SpriteRenderSystem.h"
+#include "MyEngine/Systems/UI/UIMaskSystem.h"
 #include "MyEngine/Time/EngineTime.h"
 #include "MyEngine/Math/MathUtility.h"
 
@@ -365,7 +366,7 @@ void TextRenderSystem::Draw() {
 		config.fontTextureIndex = FontManager::GetAtlasTextureIndex(font);
 		config.outlineWidth = ToSdfWidth(text.outlineWidth, text.fontSize);
 		config.blendMode = text.blend;
-		config.order = text.order;
+		UIMaskSystem::MakeStep(entity, text.order, UIDrawKind::Text).ApplyTo(config); // Image・図形とも Order の順に重なる。マスクの中なら切り抜く
 		config.isSceneHidden = SceneVisibility::IsHidden(entity); // Hierarchy の目で隠した物は、Scene ビューだけ描かない（影も一緒）
 		// --- 影：同じ文字を、ずらして影の色で先に描く（縁取りの所も影にする。同じ Order なので、積んだ順＝影が奥）---
 		if (text.shadow) {

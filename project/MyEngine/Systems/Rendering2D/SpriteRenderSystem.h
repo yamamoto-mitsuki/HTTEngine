@@ -60,6 +60,9 @@ public:
 	/// </summary>
 	static ScreenQuad CalcScreenQuad(const Matrix4x4& worldMatrix, ScreenAnchor anchor, const Vector2& pivot, const Vector2& size, float fill = 1.0f);
 
+	// 画面に重ねる物の、横・縦の大きさの倍率（ワールド行列の x 軸・y 軸の長さ。Transform の scale に親の scale も掛かった値。回っていても測れる）
+	static Vector2 CalcScreenScale(const Matrix4x4& worldMatrix);
+
 	// 点が四角の中か（point も正規化座標。4つの辺をぐるっと回って、どの辺から見ても同じ側なら中。回っていても・裏返っていても使える）
 	static bool IsInsideQuad(const Vector2& point, const ScreenQuad& quad);
 

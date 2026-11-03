@@ -25,14 +25,16 @@ struct PSOKey {
 	BlendMode blendMode;
 	RasterizerType rasterizerType;
 	DepthMode depthMode;
+	StencilMode stencilMode = StencilMode::None;
 	bool operator==(const PSOKey&) const = default;
 };
 struct PSOHash {
-	size_t operator()(const PSOKey& k) const { 
+	size_t operator()(const PSOKey& k) const {
 		size_t h = static_cast<size_t>(k.shaderProgramID);
 		h = h * 31 + static_cast<size_t>(k.blendMode);
 		h = h * 31 + static_cast<size_t>(k.rasterizerType);
 		h = h * 31 + static_cast<size_t>(k.depthMode);
+		h = h * 31 + static_cast<size_t>(k.stencilMode);
 		return h;
 	}
 };
@@ -86,8 +88,9 @@ public:
 	/// <param name="blendMode">ブレンド設定</param>
 	/// <param name="rasterizerType">ラスタライザ設定</param>
 	/// <param name="depthMode">深度設定</param>
-	static PSOKey GetPSOKey(DrawCategory drawCategory, ShadingType shadingType, BlendMode blendMode = BlendMode::Normal, 
-		RasterizerType rasterizerType = RasterizerType::SolidBack, DepthMode depthMode = DepthMode::TestWrite);
+	/// <param name="stencilMode">ステンシル設定（UI のマスク）</param>
+	static PSOKey GetPSOKey(DrawCategory drawCategory, ShadingType shadingType, BlendMode blendMode = BlendMode::Normal, RasterizerType rasterizerType = RasterizerType::SolidBack,
+	    DepthMode depthMode = DepthMode::TestWrite, StencilMode stencilMode = StencilMode::None);
 
 	/// <summary>
 	/// PipelineStateの状態名を取得

@@ -12,14 +12,15 @@
 #include "MyEngine/Collision/Collision.h"
 #include "MyEngine/Editor/History/EditorHistory.h"
 #include "MyEngine/Editor/Inspector/ComponentEditor.h"
+#include "MyEngine/Systems/Rendering2D/SpriteRenderSystem.h"
 
 namespace {
-constexpr float kGridSize = 0.25f;                          // 点が吸い付く間隔（m。Entity から見た位置で）
 constexpr float kHandleHalfSize = 5.0f;                     // 点の印（■）の大きさの半分（ピクセル）
 constexpr float kPlusHalfSize = 4.0f;                       // 辺の真ん中の印（＋）の大きさの半分（ピクセル）
 constexpr float kPickRadius = 9.0f;                         // マウスがこれより近ければ、点・＋を掴める（ピクセル）
 constexpr float kLineThickness = 2.0f;                      // 辺・線の太さ（ピクセル）
 constexpr float kGuideThickness = 1.0f;                     // 線があるときの、辺（点と点を結ぶ補助線）の太さ（ピクセル）
+constexpr float kMinDeterminant = 1.0e-12f;                 // 画面の軸が潰れている（大きさ 0）と見なす行列式の大きさ
 constexpr ImU32 kEdgeColor = IM_COL32(80, 220, 255, 255);   // 辺・線（水色）
 constexpr ImU32 kGuideColor = IM_COL32(80, 220, 255, 110);  // 線があるときの辺（薄い水色）
 constexpr ImU32 kInvalidColor = IM_COL32(255, 70, 70, 255); // 形がおかしい（辺が交差している）ときの辺（赤）
@@ -94,60 +95,24 @@ void Commit(const PointList& list) {
 //=============================================================================
 // 位置の変換
 //=============================================================================
-// ===== Entity から見た点を、点を動かす面の上でワールドへ =====
-Vector3 ToWorld(const Vector2& point, const PointList& list, const Matrix4x4& world) { return TransformPoint({point.x, point.y, list.planeZ}, world); }
-
-// ===== ワールドの位置の、絵の上のピクセル（写っていなければ false）=====
-bool WorldToPixel(const Vector3& position, const Camera& camera, const ImVec2& imageMin, const ImVec2& imageSize, ImVec2* pixel) {
-	Vector2 ndc;
-	if (!camera.WorldToScreenPoint(position, &ndc)) {
-		return false;
-	}
-	*pixel = ToPixel(ndc, imageMin, imageSize);
-	return true;
-}
-
 // ===== 点の、絵の上の位置 =====
-ScreenPoints CalcScreenPoints(const PointList& list, const Matrix4x4& world, const Camera& camera, const ImVec2& imageMin, const ImVec2& imageSize) {
+ScreenPoints CalcScreenPoints(const PointList& list, const PointMapping& mapping) {
 	ScreenPoints result;
 	result.count = *list.count;
 	result.pixels.resize(result.count);
 	result.isVisible.resize(result.count);
 	for (int i = 0; i < result.count; ++i) {
-		result.isVisible[i] = WorldToPixel(ToWorld(list.storage[i], list, world), camera, imageMin, imageSize, &result.pixels[i]);
+		result.isVisible[i] = mapping.toPixel(list.storage[i], result.pixels[i]);
 	}
 	return result;
 }
 
-// ===== マウスの位置 → Entity から見た X・Y（点を動かす面の上）。面と交わらなければ false =====
-bool MouseToLocal(const PointList& list, const Matrix4x4& world, const Camera& camera, const ImVec2& imageMin, const ImVec2& imageSize, Vector2* local) {
-	// マウスの所から奥へ向かうレイ（Scene ビューのクリックで選ぶときと同じ）
-	const Ray ray = camera.ScreenPointToRay(ToNdc(ImGui::GetMousePos(), imageMin, imageSize));
-	// 点を動かす面（向きは Entity の Z 軸。Plane は「法線 · 点 ＝ distance」で表す）
-	const Vector3 normal = Normalize(TransformNormal({0.0f, 0.0f, 1.0f}, world));
-	if (LengthSq(normal) == 0.0f) {
-		return false; // Z の大きさが 0（面の向きが決まらない）
-	}
-	const Vector3 onPlane = ToWorld({0.0f, 0.0f}, list, world);
-	float t = 0.0f;
-	if (!Collision::RayPlane(ray, {normal, Dot(normal, onPlane)}, &t)) {
-		return false; // 面と平行・面がカメラの後ろ
-	}
-	// 交わった所を、Entity から見た位置に戻す
-	const Vector3 hit = TransformPoint(Collision::RayPoint(ray, t), Inverse(world));
-	if (!std::isfinite(hit.x) || !std::isfinite(hit.y)) {
-		return false; // 大きさが 0 の物（逆行列が作れない）
-	}
-	*local = {hit.x, hit.y};
-	return true;
-}
-
 // ===== グリッドに吸い付ける（Ctrl を押している間はしない）=====
-Vector2 Snap(const Vector2& point) {
-	if (ImGui::GetIO().KeyCtrl) {
+Vector2 Snap(const Vector2& point, float gridSize) {
+	if (ImGui::GetIO().KeyCtrl || gridSize <= 0.0f) {
 		return point;
 	}
-	return {std::round(point.x / kGridSize) * kGridSize, std::round(point.y / kGridSize) * kGridSize};
+	return {std::round(point.x / gridSize) * gridSize, std::round(point.y / gridSize) * gridSize};
 }
 
 //=============================================================================
@@ -189,10 +154,17 @@ int FindHoveredPlus(const PointList& list, const ScreenPoints& screen, const ImV
 int InsertPoint(const PointList& list, int edge) {
 	const int count = *list.count;
 	const int insert = edge + 1;
-	const Vector2 middle = (list.storage[edge] + list.storage[(edge + 1) % count]) * 0.5f;
+	const int next = (edge + 1) % count;
+	const Vector2 middle = (list.storage[edge] + list.storage[next]) * 0.5f;
 	// insert 番から後ろを1つずつ後ろへずらして、空いた所に入れる（copy_backward：後ろから写すので、重なっていても壊れない）
 	std::copy_backward(list.storage.begin() + insert, list.storage.begin() + count, list.storage.begin() + count + 1);
 	list.storage[insert] = middle;
+	// 点と一緒の値（角の半径）も同じようにずらす。足した点は、となりの2つの真ん中の値
+	if (!list.values.empty()) {
+		const float middleValue = (list.values[edge] + list.values[next]) * 0.5f;
+		std::copy_backward(list.values.begin() + insert, list.values.begin() + count, list.values.begin() + count + 1);
+		list.values[insert] = middleValue;
+	}
 	*list.count = count + 1;
 	return insert;
 }
@@ -200,11 +172,14 @@ int InsertPoint(const PointList& list, int edge) {
 // ===== 点 index を消す（後ろの点を1つずつ前へ詰める）=====
 void ErasePoint(const PointList& list, int index) {
 	std::copy(list.storage.begin() + index + 1, list.storage.begin() + *list.count, list.storage.begin() + index);
+	if (!list.values.empty()) {
+		std::copy(list.values.begin() + index + 1, list.values.begin() + *list.count, list.values.begin() + index);
+	}
 	--*list.count;
 }
 
 // ===== マウス：押す（点を掴む・＋で足す・何も無い所で選ぶのをやめる）・ドラッグ・離す =====
-void HandleMouse(const PointList& list, const Matrix4x4& world, const Camera& camera, const ScreenPoints& screen, const ImVec2& imageMin, const ImVec2& imageSize, bool isHovered) {
+void HandleMouse(const PointList& list, const PointMapping& mapping, const ScreenPoints& screen, bool isHovered) {
 	// --- 押した（右上の軸の上は、そちらの操作）---
 	const bool canGrab = isHovered && edit.dragPoint < 0 && !ImGuizmo::IsViewManipulateHovered();
 	if (canGrab && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
@@ -228,8 +203,8 @@ void HandleMouse(const PointList& list, const Matrix4x4& world, const Camera& ca
 	// 少し動かすまで（IsMouseDragging：押した所から数ピクセル）は点を動かさない。押しただけで、グリッドに吸い付いて位置が変わらないように
 	if (ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
 		Vector2 local;
-		if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && MouseToLocal(list, world, camera, imageMin, imageSize, &local)) {
-			list.storage[edit.dragPoint] = Snap(local);
+		if (ImGui::IsMouseDragging(ImGuiMouseButton_Left) && mapping.toLocal(ImGui::GetMousePos(), local)) {
+			list.storage[edit.dragPoint] = Snap(local, list.gridSize);
 		}
 	} else {
 		Commit(list);
@@ -255,12 +230,12 @@ void HandleDelete(const PointList& list) {
 // 描く
 //=============================================================================
 // ===== 点の間を通る線（Entity から見た座標の折れ線を、絵の上へ）=====
-void DrawCurve(ImDrawList* drawList, const PointList& list, const Matrix4x4& world, const Camera& camera, const ImVec2& imageMin, const ImVec2& imageSize) {
+void DrawCurve(ImDrawList* drawList, const PointList& list, const PointMapping& mapping) {
 	ImVec2 previous;
 	bool hasPrevious = false;
 	for (const Vector3& point : list.curve) {
 		ImVec2 pixel;
-		const bool isVisible = WorldToPixel(TransformPoint({point.x, point.y, list.planeZ}, world), camera, imageMin, imageSize, &pixel);
+		const bool isVisible = mapping.toPixel({point.x, point.y}, pixel);
 		if (isVisible && hasPrevious) {
 			drawList->AddLine(previous, pixel, kEdgeColor, kLineThickness);
 		}
@@ -269,7 +244,7 @@ void DrawCurve(ImDrawList* drawList, const PointList& list, const Matrix4x4& wor
 	}
 }
 
-void DrawPoints(const PointList& list, const Matrix4x4& world, const Camera& camera, const ScreenPoints& screen, const ImVec2& imageMin, const ImVec2& imageSize, bool isHovered) {
+void DrawPoints(const PointList& list, const PointMapping& mapping, const ScreenPoints& screen, const ImVec2& imageMin, const ImVec2& imageSize, bool isHovered) {
 	ImDrawList* drawList = ImGui::GetWindowDrawList();
 	drawList->PushClipRect(imageMin, ImVec2(imageMin.x + imageSize.x, imageMin.y + imageSize.y), true); // 絵の外（黒い余白）には描かない
 	const ImVec2 mouse = ImGui::GetMousePos();
@@ -286,7 +261,7 @@ void DrawPoints(const PointList& list, const Matrix4x4& world, const Camera& cam
 		}
 	}
 	if (hasCurve) {
-		DrawCurve(drawList, list, world, camera, imageMin, imageSize);
+		DrawCurve(drawList, list, mapping);
 	}
 	// --- 辺の真ん中の ＋（点を足せる間だけ。ドラッグ中は出さない）---
 	if (CanInsert(list) && edit.dragPoint < 0) {
@@ -319,7 +294,7 @@ void DrawPoints(const PointList& list, const Matrix4x4& world, const Camera& cam
 //=============================================================================
 // 毎フレーム
 //=============================================================================
-bool PointListGizmo::Draw(Handle<Entity> entity, const PointList& list, const Matrix4x4& world, const Camera& camera, const ImVec2& imageMin, const ImVec2& imageSize, bool isHovered) {
+bool PointListGizmo::Draw(Handle<Entity> entity, const PointList& list, const PointMapping& mapping, const ImVec2& imageMin, const ImVec2& imageSize, bool isHovered) {
 	// --- 別の物を渡された・前のフレームに呼ばれなかった（編集をやめていた）：選んだ点などは捨てる ---
 	const int frame = ImGui::GetFrameCount();
 	if (edit.entity != entity || edit.component != list.component || edit.lastFrame != frame - 1) {
@@ -341,8 +316,70 @@ bool PointListGizmo::Draw(Handle<Entity> entity, const PointList& list, const Ma
 		HandleDelete(list);
 	}
 	// --- マウス（変えた後の点で描くように、描くための位置は後でもう一度出す）---
-	HandleMouse(list, world, camera, CalcScreenPoints(list, world, camera, imageMin, imageSize), imageMin, imageSize, isHovered);
-	DrawPoints(list, world, camera, CalcScreenPoints(list, world, camera, imageMin, imageSize), imageMin, imageSize, isHovered);
+	HandleMouse(list, mapping, CalcScreenPoints(list, mapping), isHovered);
+	DrawPoints(list, mapping, CalcScreenPoints(list, mapping), imageMin, imageSize, isHovered);
 	return true;
+}
+
+//=============================================================================
+// 点の写し方
+//=============================================================================
+// ===== 3D の物：Entity の面の上の点を、カメラで写す =====
+PointMapping PointListGizmo::MakeCameraMapping(const Matrix4x4& world, const Camera& camera, float planeZ, const ImVec2& imageMin, const ImVec2& imageSize) {
+	PointMapping mapping;
+	// --- 点 → ワールド（点を動かす面の上）→ カメラで正規化座標 → 絵の上のピクセル ---
+	mapping.toPixel = [world, &camera, planeZ, imageMin, imageSize](const Vector2& local, ImVec2& pixel) {
+		Vector2 ndc;
+		if (!camera.WorldToScreenPoint(TransformPoint({local.x, local.y, planeZ}, world), &ndc)) {
+			return false;
+		}
+		pixel = ToPixel(ndc, imageMin, imageSize);
+		return true;
+	};
+	// --- ピクセルの所から奥へ向かうレイと、点を動かす面が交わる所 → Entity から見た位置 ---
+	mapping.toLocal = [world, &camera, planeZ, imageMin, imageSize](const ImVec2& pixel, Vector2& local) {
+		const Ray ray = camera.ScreenPointToRay(ToNdc(pixel, imageMin, imageSize));
+		// 点を動かす面（向きは Entity の Z 軸。Plane は「法線 · 点 ＝ distance」で表す）
+		const Vector3 normal = Normalize(TransformNormal({0.0f, 0.0f, 1.0f}, world));
+		if (LengthSq(normal) == 0.0f) {
+			return false; // Z の大きさが 0（面の向きが決まらない）
+		}
+		const Vector3 onPlane = TransformPoint({0.0f, 0.0f, planeZ}, world);
+		float t = 0.0f;
+		if (!Collision::RayPlane(ray, {normal, Dot(normal, onPlane)}, &t)) {
+			return false; // 面と平行・面がカメラの後ろ
+		}
+		const Vector3 hit = TransformPoint(Collision::RayPoint(ray, t), Inverse(world));
+		if (!std::isfinite(hit.x) || !std::isfinite(hit.y)) {
+			return false; // 大きさが 0 の物（逆行列が作れない）
+		}
+		local = {hit.x, hit.y};
+		return true;
+	};
+	return mapping;
+}
+
+// ===== 画面に重ねる UI：Image と同じ置き方（SpriteRenderSystem::CalcScreenPoint）で写す =====
+PointMapping PointListGizmo::MakeScreenMapping(const Matrix4x4& world, ScreenAnchor anchor, const ImVec2& imageMin, const ImVec2& imageSize) {
+	PointMapping mapping;
+	mapping.toPixel = [world, anchor, imageMin, imageSize](const Vector2& local, ImVec2& pixel) {
+		pixel = ToPixel(SpriteRenderSystem::CalcScreenPoint(world, anchor, local), imageMin, imageSize);
+		return true;
+	};
+	// --- 逆向き：点 (1,0)・(0,1) が画面のどこへ動くか（軸）から、2×2 の連立方程式を解く ---
+	// 画面の位置 = 原点 + x × 横の軸 + y × 縦の軸 なので、外積（Cros）で x・y を取り出す（クラメルの公式）
+	mapping.toLocal = [world, anchor, imageMin, imageSize](const ImVec2& pixel, Vector2& local) {
+		const Vector2 origin = SpriteRenderSystem::CalcScreenPoint(world, anchor, {0.0f, 0.0f});
+		const Vector2 axisX = SpriteRenderSystem::CalcScreenPoint(world, anchor, {1.0f, 0.0f}) - origin;
+		const Vector2 axisY = SpriteRenderSystem::CalcScreenPoint(world, anchor, {0.0f, 1.0f}) - origin;
+		const float determinant = Cros(axisX, axisY);
+		if (std::abs(determinant) < kMinDeterminant) {
+			return false; // 大きさが 0（向きが潰れている）
+		}
+		const Vector2 offset = ToNdc(pixel, imageMin, imageSize) - origin;
+		local = {Cros(offset, axisY) / determinant, Cros(axisX, offset) / determinant};
+		return true;
+	};
+	return mapping;
 }
 #endif

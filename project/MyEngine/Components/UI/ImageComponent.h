@@ -47,6 +47,10 @@ struct ImageComponent {
 	float fill = 1.0f;                          // 左から何割まで出すか（0〜1。体力・インクのゲージに）
 	int order = 0;                              // 重ねる順（大きいほど手前。同じなら先に作った物が奥）
 	BlendMode blend = BlendMode::Normal;        // 重ね方（Normal：透明な所が透ける / Add：足して光る）
+	// --- 繰り返し（模様）---
+	bool tiled = false;                // true：画像全体を tileSize ごとに並べて繰り返す（Sheet・Rect は使わない）
+	Vector2 tileSize = {0.0f, 0.0f};   // 1枚の大きさ（ピクセル。0 の向きは画像の大きさ）
+	Vector2 tileOffset = {0.0f, 0.0f}; // 模様をずらす量（1 で1枚分。動かすと模様が流れる）
 };
 
 static_assert(std::is_trivially_copyable_v<ImageComponent>);

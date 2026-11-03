@@ -73,7 +73,8 @@ void RenderTexture::PreDraw() {
 	auto* cmdList = DirectXCommon::GetCommandList();
 	if (useDepth_) {
 		cmdList->OMSetRenderTargets(1, &rtvHandle_, false, &dsvHandle_);
-		cmdList->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+		// 深度と一緒にステンシルも 0 にする（UI のマスクは、外にあるマスクの数をステンシルに数える）
+		cmdList->ClearDepthStencilView(dsvHandle_, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 	} else {
 		// 深度なし（IBL畳み込みなどフルスクリーンパス用）
 		cmdList->OMSetRenderTargets(1, &rtvHandle_, false, nullptr);

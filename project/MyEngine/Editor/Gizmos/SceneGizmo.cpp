@@ -17,6 +17,7 @@
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/Editor/Gizmos/ArrowStripGizmo.h"
 #include "MyEngine/Editor/Gizmos/PolygonShapeGizmo.h"
+#include "MyEngine/Editor/Gizmos/PolylineGizmo.h"
 #include "MyEngine/Editor/Gizmos/UIGizmo.h"
 #include "MyEngine/Editor/History/EditorHistory.h"
 #include "MyEngine/Editor/Inspector/ComponentEditor.h"
@@ -332,9 +333,9 @@ void SceneGizmo::Draw(DebugCamera& camera, const ImVec2& imageMin, const ImVec2&
 	UIScreenEditor::DrawFrame(imageMin, imageSize); // 画面（UI Screen）の編集中は、画面の枠（一番下に描く。選んだ物の枠・ギズモが上に重なる）
 	const Handle<Entity> selected = HierarchyWindow::GetSelected();
 	DrawSelectionOutline(selected, camera, imageMin, imageSize); // 枠を先に描く（ギズモが上に重なるように）
-	// 形・線の編集中（Polygon Shape の Edit Shape・Arrow Strip の Edit Path）は、点を動かすのがマウスの仕事。移動のギズモ・クリックで選び直すのはしない
+	// 形・線の編集中（Polygon Shape の Edit Shape・Arrow Strip の Edit Path・Polyline の Edit Points）は、点を動かすのがマウスの仕事。移動のギズモ・クリックで選び直すのはしない
 	// || は左から調べて true で止まるので、2つの編集が同じフレームに動くことはない
-	if (PolygonShapeGizmo::Draw(camera, imageMin, imageSize, isHovered) || ArrowStripGizmo::Draw(camera, imageMin, imageSize, isHovered)) {
+	if (PolygonShapeGizmo::Draw(camera, imageMin, imageSize, isHovered) || ArrowStripGizmo::Draw(camera, imageMin, imageSize, isHovered) || PolylineGizmo::Draw(imageMin, imageSize, isHovered)) {
 		return;
 	}
 	const bool isGizmoShown = Manipulate(selected, camera);

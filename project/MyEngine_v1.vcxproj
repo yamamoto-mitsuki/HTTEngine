@@ -143,6 +143,7 @@
     <ClCompile Include="MyEngine\Editor\Gizmos\GizmoLines.cpp" />
     <ClCompile Include="MyEngine\Editor\Gizmos\PointListGizmo.cpp" />
     <ClCompile Include="MyEngine\Editor\Gizmos\PolygonShapeGizmo.cpp" />
+    <ClCompile Include="MyEngine\Editor\Gizmos\PolylineGizmo.cpp" />
     <ClCompile Include="MyEngine\Editor\Gizmos\SceneGizmo.cpp" />
     <ClCompile Include="MyEngine\Editor\Gizmos\UIGizmo.cpp" />
     <ClCompile Include="MyEngine\Editor\Inspector\AssetInspector.cpp" />
@@ -285,10 +286,13 @@
     <ClCompile Include="MyEngine\Systems\Rendering3D\PrimitiveRenderSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Gameplay\ScriptSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Rendering2D\SpriteRenderSystem.cpp" />
+    <ClCompile Include="MyEngine\Systems\UI\PolylineMesh.cpp" />
+    <ClCompile Include="MyEngine\Systems\UI\PolylineSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\UI\TextRenderSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Effects\TrailSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Gameplay\TriggerActivatorSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Physics\WindZoneSystem.cpp" />
+    <ClCompile Include="MyEngine\Systems\UI\UIMaskSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\UI\UIStateSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\UI\VectorShapeSystem.cpp" />
     <ClCompile Include="MyEngine\Timeline\Camera\TimelineCameraShakeTrack.cpp" />
@@ -335,6 +339,8 @@
     <ClInclude Include="MyEngine\Components\Rendering3D\PolygonShapeComponent.h" />
     <ClInclude Include="MyEngine\Components\Rendering3D\PrimitiveRendererComponent.h" />
     <ClInclude Include="MyEngine\Components\Physics\RigidbodyComponent.h" />
+    <ClInclude Include="MyEngine\Components\UI\PolylineComponent.h" />
+    <ClInclude Include="MyEngine\Components\UI\UIMaskComponent.h" />
     <ClInclude Include="MyEngine\Components\UI\UIScreenComponent.h" />
     <ClInclude Include="MyEngine\Components\Rendering2D\SpriteRendererComponent.h" />
     <ClInclude Include="MyEngine\Components\UI\TextComponent.h" />
@@ -355,6 +361,7 @@
     <ClInclude Include="MyEngine\Editor\Gizmos\GizmoLines.h" />
     <ClInclude Include="MyEngine\Editor\Gizmos\PointListGizmo.h" />
     <ClInclude Include="MyEngine\Editor\Gizmos\PolygonShapeGizmo.h" />
+    <ClInclude Include="MyEngine\Editor\Gizmos\PolylineGizmo.h" />
     <ClInclude Include="MyEngine\Editor\Gizmos\SceneGizmo.h" />
     <ClInclude Include="MyEngine\Editor\Gizmos\UIGizmo.h" />
     <ClInclude Include="MyEngine\Editor\Inspector\AssetInspector.h" />
@@ -410,7 +417,6 @@
     <ClInclude Include="MyEngine\Systems\Camera\CameraVolume.h" />
     <ClInclude Include="MyEngine\Systems\Gameplay\AttackTableSystem.h" />
     <ClInclude Include="MyEngine\Systems\Gameplay\TimelineTriggerSystem.h" />
-    <ClInclude Include="MyEngine\Systems\Rendering2D\UIDrawOrder.h" />
     <ClInclude Include="MyEngine\Systems\Rendering3D\ArrowStripSystem.h" />
     <ClInclude Include="MyEngine\Systems\Audio\AudioSystem.h" />
     <ClInclude Include="MyEngine\Components\Audio\AudioSourceComponent.h" />
@@ -536,10 +542,13 @@
     <ClInclude Include="MyEngine\Systems\Rendering3D\PrimitiveRenderSystem.h" />
     <ClInclude Include="MyEngine\Systems\Gameplay\ScriptSystem.h" />
     <ClInclude Include="MyEngine\Systems\Rendering2D\SpriteRenderSystem.h" />
+    <ClInclude Include="MyEngine\Systems\UI\PolylineMesh.h" />
+    <ClInclude Include="MyEngine\Systems\UI\PolylineSystem.h" />
     <ClInclude Include="MyEngine\Systems\UI\TextRenderSystem.h" />
     <ClInclude Include="MyEngine\Systems\Effects\TrailSystem.h" />
     <ClInclude Include="MyEngine\Systems\Gameplay\TriggerActivatorSystem.h" />
     <ClInclude Include="MyEngine\Systems\Physics\WindZoneSystem.h" />
+    <ClInclude Include="MyEngine\Systems\UI\UIMaskSystem.h" />
     <ClInclude Include="MyEngine\Systems\UI\UIStateSystem.h" />
     <ClInclude Include="MyEngine\Systems\UI\VectorShapeSystem.h" />
     <ClInclude Include="MyEngine\Timeline\Camera\TimelineCameraShakeTrack.h" />
@@ -618,6 +627,10 @@
     <None Include="MyEngine\Shader\Data\Text\Text2d.hlsli.shader" />
     <None Include="MyEngine\Shader\Data\Text\Text2d.PS.shader" />
     <None Include="MyEngine\Shader\Data\Text\Text2d.VS.shader" />
+    <None Include="MyEngine\Shader\Data\VectorShape\Polyline.hlsli.shader" />
+    <None Include="MyEngine\Shader\Data\VectorShape\Polyline.PS.shader" />
+    <None Include="MyEngine\Shader\Data\VectorShape\Polyline.VS.shader" />
+    <None Include="MyEngine\Shader\Data\VectorShape\VectorCoverage.hlsli.shader" />
     <None Include="MyEngine\Shader\Data\VectorShape\VectorShape.PS.shader" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

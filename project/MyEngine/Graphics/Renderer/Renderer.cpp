@@ -154,8 +154,7 @@ void Renderer::PushSprite(const TConfig& config, Vector2 lb, Vector2 lt, Vector2
 	    {rt.x, rt.y, 0.0f, 1.0f},
         uvRt
     };
-	static_cast<DrawTarget&>(req) = config; // 描き分け（ウィンドウ・層・目で隠したか）をまとめて写す（DrawTarget の所だけ代入する）
-	req.order = config.order;
+	static_cast<Draw2dTarget&>(req) = config; // 描き分け（ウィンドウ・層・目で隠したか・重ねる順・ステンシル）をまとめて写す
 	RenderQueue::Request(std::move(req));
 }
 
@@ -502,8 +501,7 @@ void Renderer::DrawText2d(const Text2dConfig& config, std::vector<Vertex2dData> 
 		return;
 	}
 	TextRequest req;
-	static_cast<DrawTarget&>(req) = config; // 描き分け（ウィンドウ・層・目で隠したか）をまとめて写す（DrawTarget の所だけ代入する）
-	req.order = config.order;
+	static_cast<Draw2dTarget&>(req) = config; // 描き分け（ウィンドウ・層・目で隠したか・重ねる順・ステンシル）をまとめて写す
 	req.vertices = std::move(vertices);
 	// 色は Inspector で選んだ sRGB の色なので、リニアに直す（A はそのまま）
 	req.materialData.color = SrgbToLinear(config.color);
@@ -522,8 +520,7 @@ void Renderer::DrawText2d(const Text2dConfig& config, std::vector<Vertex2dData> 
 // ===== VectorShape =====
 void Renderer::DrawVectorShape(const VectorShapeConfig& config) {
 	VectorShapeRequest req;
-	static_cast<DrawTarget&>(req) = config; // 描き分け（ウィンドウ・層・目で隠したか）をまとめて写す（DrawTarget の所だけ代入する）
-	req.order = config.order;
+	static_cast<Draw2dTarget&>(req) = config; // 描き分け（ウィンドウ・層・目で隠したか・重ねる順・ステンシル）をまとめて写す
 	req.blendMode = config.blendMode;
 	req.materialData = config.material;
 	// 色は Inspector で選んだ sRGB の色なので、リニアに直す（A はそのまま）
@@ -548,6 +545,24 @@ void Renderer::DrawVectorShape(const VectorShapeConfig& config) {
 	    {config.rt.x, config.rt.y, 0.0f, 1.0f},
         {+half.x, +half.y}
     };
+	RenderQueue::Request(std::move(req));
+}
+
+// ===== Polyline =====
+void Renderer::DrawPolyline(const PolylineConfig& config) {
+	if (config.mesh == nullptr || config.indexCount == 0) {
+		return;
+	}
+	PolylineRequest req;
+	static_cast<Draw2dTarget&>(req) = config; // 描き分け（ウィンドウ・層・目で隠したか・重ねる順・ステンシル）をまとめて写す
+	req.blendMode = config.blendMode;
+	req.mesh = config.mesh; // shared_ptr を写すだけ（頂点は写さない）
+	req.indexStart = config.indexStart;
+	req.indexCount = config.indexCount;
+	req.materialData = config.material;
+	// 色は Inspector で選んだ sRGB の色なので、リニアに直す（A はそのまま）
+	req.materialData.fillColor = SrgbToLinear(config.material.fillColor);
+	req.materialData.strokeColor = SrgbToLinear(config.material.strokeColor);
 	RenderQueue::Request(std::move(req));
 }
 

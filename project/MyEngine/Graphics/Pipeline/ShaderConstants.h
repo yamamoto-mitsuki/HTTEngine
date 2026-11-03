@@ -125,9 +125,22 @@ struct VectorShapeMaterialData {
 	uint32_t gaugeMode = 0;                           // 0=切らない 1=直線 2=180 度より狭い扇形 3=180 度以上の扇形
 	uint32_t blendMode = 0;                           // 重ね方（BlendMode の順）
 	uint32_t strokeUsesGradient = 0;                  // 1：縁取りにも塗りのグラデーションを使う
-	float padA[3] = {};
+	uint32_t drawPart = 0;                            // 何を描くか（UIDrawPart の順。マスクの図形は、塗り・縁取り・形だけを分けて描く）
+	float padA[2] = {};
 };
 static_assert(sizeof(VectorShapeMaterialData) == 160, "HLSLのMaterial（VectorShape.PS）と大きさが違います");
+
+// ===== UIの折れ線のマテリアル（VS と PS の両方が読む。長さは全部描かれるピクセル）=====
+struct PolylineMaterialData {
+	Matrix4x4 toScreen = MakeIdentity4x4();         // 頂点の位置（Entity から見たピクセル）→ 画面の正規化座標（回転・移動・アンカー）
+	Vector4 fillColor = {1.0f, 1.0f, 1.0f, 1.0f};   // 塗りの色
+	Vector4 strokeColor = {1.0f, 1.0f, 1.0f, 1.0f}; // 線の色
+	float halfWidth = 0.0f;                         // 線の太さの半分
+	uint32_t blendMode = 0;                         // 重ね方（BlendMode の順）
+	uint32_t drawPart = 0;                          // 何を描くか（UIDrawPart の順。マスクの形だけを描くときは MaskRegion）
+	float padA = 0.0f;
+};
+static_assert(sizeof(PolylineMaterialData) == 112, "HLSLのMaterial（Polyline.hlsli）と大きさが違います");
 
 // ===== パーティクルのマテリアル =====
 struct MaterialParticleData {

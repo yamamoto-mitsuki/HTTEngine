@@ -30,6 +30,7 @@
 #include "MyEngine/Systems/Effects/TrailSystem.h"
 #include "MyEngine/Systems/Effects/ParticleSystem.h"
 // UI
+#include "MyEngine/Systems/UI/PolylineSystem.h"
 #include "MyEngine/Systems/UI/TextRenderSystem.h"
 #include "MyEngine/Systems/UI/VectorShapeSystem.h"
 #include "MyEngine/Components/Rendering3D/PrimitiveRendererComponent.h"

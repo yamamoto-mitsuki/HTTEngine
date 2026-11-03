@@ -1,6 +1,7 @@
 #include "SpriteRenderSystem.h"
 
 #include <array>
+#include <cmath>
 #include <memory>
 #include <vector>
 #include <utility>
@@ -20,19 +21,12 @@
 #include "MyEngine/Graphics/Texture/TextureManager.h"
 #include "MyEngine/Input/InputManager.h"
 #include "MyEngine/Math/Color.h"
-#include "MyEngine/Systems/Rendering2D/UIDrawOrder.h"
+#include "MyEngine/Systems/UI/UIMaskSystem.h"
 
 namespace {
 constexpr float kAlphaClipThreshold = 0.5f;     // Alpha Clip のとき、これより透明なピクセルを捨てる
 constexpr float kDefaultPixelsPerUnit = 100.0f; // Pixels Per Unit に0以下が入っていたときに使う値
-
-/// <summary>
-/// SpriteRenderSystem が持つ物（Initialize で作り、Release で消す）
-/// </summary>
-struct SpriteRenderState {
-	std::vector<UIDrawItem> images; // 並べる作業用（配列のメモリを使い回す）
-};
-std::unique_ptr<SpriteRenderState> state;
+constexpr float kMinTileSize = 1.0e-3f;         // Tile Size の下限（ピクセル。0 で割らないように）
 
 /// <summary>
 /// 画像の中の1コマの場所（UV。0〜1）。左上が uvMin、右下が uvMax（反転すると入れ替わる）
@@ -196,42 +190,55 @@ void DrawSprites(Camera* camera) {
 	});
 }
 
-// ===== Image：Order の順に、画面に重ねる =====
-void DrawImages() {
-	CollectUIDrawItems<ImageComponent>(state->images);
-	for (const UIDrawItem& item : state->images) {
-		const ImageComponent* image = EntityManager::Get<ImageComponent>(item.entity);
-		const TransformComponent* transform = EntityManager::Get<TransformComponent>(item.entity);
-		if (image == nullptr || transform == nullptr) {
-			continue;
-		}
-		// 親までの Alpha Group を掛ける（0 なら描かない）
-		const float groupAlpha = SpriteRenderSystem::CalcGroupAlpha(item.entity);
-		if (groupAlpha <= 0.0f) {
-			continue;
-		}
-		const ScreenQuad quad = CalcImageQuad(*image, *transform);
-		const FrameUV uv = CalcSourceUV(*image);
-		// Fill の分だけ、右の端の U も縮める（画面の左から、Fill の割合だけ貼る。反転していても同じ）
-		const float uRight = uv.min.x + (uv.max.x - uv.min.x) * std::clamp(image->fill, 0.0f, 1.0f);
-
-		Renderer::Quad2dConfig config;
-		config.lb = quad.lb;
-		config.lt = quad.lt;
-		config.rb = quad.rb;
-		config.rt = quad.rt;
-		config.uvLb = {uv.min.x, uv.max.y};
-		config.uvLt = {uv.min.x, uv.min.y};
-		config.uvRb = {uRight, uv.max.y};
-		config.uvRt = {uRight, uv.min.y};
-		config.color = ClampColor(MultiplyAlpha(image->color, groupAlpha));
-		config.textureHandle = image->textureHandle;
-		config.blendMode = image->blend;
-		config.rasterizerType = RasterizerType::SolidNone; // 反転・回転で裏返っても消えないように、両面を描く
-		config.order = image->order;                       // Text とも Order の順に重なる（RenderQueue が並べる）
-		config.isSceneHidden = SceneVisibility::IsHidden(item.entity); // Hierarchy の目で隠した物は、Scene ビューだけ描かない
-		Renderer::DrawQuad2d(config);
+// ===== Image の UV。Tiled なら、画像全体を Tile Size ごとに並べて繰り返す =====
+// サンプラーは WRAP（1 を超えた UV は画像の頭に戻る）なので、UV を「並べる枚数」まで伸ばすだけで繰り返す
+FrameUV CalcImageUV(const ImageComponent& image) {
+	if (!image.tiled || image.textureHandle == 0) {
+		return CalcSourceUV(image);
 	}
+	const Vector2 textureSize = TextureManager::GetTextureSize(image.textureHandle);
+	const Vector2 tile = {
+	    (std::max)((image.tileSize.x > 0.0f) ? image.tileSize.x : textureSize.x, kMinTileSize),
+	    (std::max)((image.tileSize.y > 0.0f) ? image.tileSize.y : textureSize.y, kMinTileSize),
+	};
+	FrameUV uv;
+	uv.min = image.tileOffset;
+	uv.max = {image.tileOffset.x + image.size.x / tile.x, image.tileOffset.y + image.size.y / tile.y};
+	return FlipUV(uv, image.flipX, image.flipY);
+}
+
+// ===== Image：画面に重ねる（重ねる順・マスクの中かは UIMaskSystem が決め、RenderQueue が並べる）=====
+void DrawImage(Handle<Entity> entity, const ImageComponent& image) {
+	const TransformComponent* transform = EntityManager::Get<TransformComponent>(entity);
+	if (transform == nullptr) {
+		return;
+	}
+	// 親までの Alpha Group を掛ける（0 なら描かない）
+	const float groupAlpha = SpriteRenderSystem::CalcGroupAlpha(entity);
+	if (groupAlpha <= 0.0f) {
+		return;
+	}
+	const ScreenQuad quad = CalcImageQuad(image, *transform);
+	const FrameUV uv = CalcImageUV(image);
+	// Fill の分だけ、右の端の U も縮める（画面の左から、Fill の割合だけ貼る。反転していても同じ）
+	const float uRight = uv.min.x + (uv.max.x - uv.min.x) * std::clamp(image.fill, 0.0f, 1.0f);
+
+	Renderer::Quad2dConfig config;
+	config.lb = quad.lb;
+	config.lt = quad.lt;
+	config.rb = quad.rb;
+	config.rt = quad.rt;
+	config.uvLb = {uv.min.x, uv.max.y};
+	config.uvLt = {uv.min.x, uv.min.y};
+	config.uvRb = {uRight, uv.max.y};
+	config.uvRt = {uRight, uv.min.y};
+	config.color = ClampColor(MultiplyAlpha(image.color, groupAlpha));
+	config.textureHandle = image.textureHandle;
+	config.blendMode = image.blend;
+	config.rasterizerType = RasterizerType::SolidNone;                              // 反転・回転で裏返っても消えないように、両面を描く
+	UIMaskSystem::MakeStep(entity, image.order, UIDrawKind::Image).ApplyTo(config); // Order の順に重なる。マスクの中なら切り抜く
+	config.isSceneHidden = SceneVisibility::IsHidden(entity);                       // Hierarchy の目で隠した物は、Scene ビューだけ描かない
+	Renderer::DrawQuad2d(config);
 }
 
 //=============================================================================
@@ -283,7 +290,16 @@ void DescribeImage(ComponentUI& ui, ImageComponent& value) {
 	ui.Field("Flip X###flipX", value.flipX, Tip("左右反転"));
 	ui.Field("Flip Y###flipY", value.flipY, Tip("上下反転"));
 	ui.Field("Blend###blend", value.blend, Tip("Normal：透明な所が透ける / Add：足して光る"));
+	// --- 繰り返し（模様）。オンの間は Sheet・Rect を使わない（灰色にするだけで、保存はする）---
+	ui.Separator("Tile");
+	ui.Field("Tiled###tiled", value.tiled, Tip("画像全体を並べて繰り返す（ドット・しま模様など）。Size を変えても模様は伸びず、並ぶ数が変わる"));
+	ui.BeginDisabled(!value.tiled);
+	ui.Field("Tile Size###tileSize", value.tileSize, AtLeast(0.0f).Drag(1.0f).Tip("1枚の大きさ（ピクセル）。0 の向きは画像の大きさ"));
+	ui.Field("Tile Offset###tileOffset", value.tileOffset, Drag(0.01f).Tip("模様をずらす量（1 で1枚分。Timeline で動かすと模様が流れる）"));
+	ui.EndDisabled();
+	ui.BeginDisabled(value.tiled);
 	DescribeSource(ui, value);
+	ui.EndDisabled();
 }
 
 // Alpha Group の見せ方
@@ -298,9 +314,6 @@ void DescribeAlphaGroup(ComponentUI& ui, AlphaGroupComponent& value) {
 // 初期化 / 解放
 //=============================================================================
 void SpriteRenderSystem::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
-	state = std::make_unique<SpriteRenderState>();
-
 	// 3つの Component の置き場所・保存・Inspector を登録する。見せ方はそれぞれ Describe〜 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<SpriteRendererComponent>();
 	ComponentSerializer::Register<SpriteRendererComponent>("Sprite Renderer", &DescribeSpriteRenderer);
@@ -314,15 +327,19 @@ void SpriteRenderSystem::Initialize() {
 	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<AlphaGroupComponent>>("Alpha Group", "UI", &DescribeAlphaGroup));
 }
 
-void SpriteRenderSystem::Release() { state.reset(); }
+void SpriteRenderSystem::Release() {} // 持っている物は無い（Image の重ねる順は RenderQueue が並べる）
 
 //=============================================================================
 // 描く（停止中も）
 //=============================================================================
 void SpriteRenderSystem::Draw(Camera* camera) {
-	MY_ASSERT_MSG(state != nullptr, "SpriteRenderSystem::Initialize()を先に呼んでください");
 	DrawSprites(camera);
-	DrawImages();
+	// Image：見つけた順に積む（重ねる順は drawKey で RenderQueue が並べる）
+	EntityManager::ForEach<ImageComponent>([](Handle<Entity> entity, const ImageComponent& image) {
+		if (image.enabled && EntityManager::IsActiveInHierarchy(entity)) {
+			DrawImage(entity, image);
+		}
+	});
 }
 
 //=============================================================================
@@ -376,6 +393,12 @@ ScreenQuad SpriteRenderSystem::CalcScreenQuad(const Matrix4x4& worldMatrix, Scre
 	// --- 2. 画面の正規化座標へ（Transform・アンカーの掛け方は CalcScreenPoint。Image・Text・エディタの枠で同じ）---
 	const auto toScreen = [&worldMatrix, anchor](float x, float y) { return CalcScreenPoint(worldMatrix, anchor, {x, y}); };
 	return {toScreen(left, bottom), toScreen(left, top), toScreen(right, bottom), toScreen(right, top)};
+}
+
+Vector2 SpriteRenderSystem::CalcScreenScale(const Matrix4x4& worldMatrix) {
+	// std::hypot(x, y)：sqrt(x * x + y * y) と同じ長さを、途中であふれにくい形で出す
+	const Matrix4x4& m = worldMatrix;
+	return {std::hypot(m.m[0][0], m.m[0][1]), std::hypot(m.m[1][0], m.m[1][1])};
 }
 
 bool SpriteRenderSystem::IsInsideQuad(const Vector2& point, const ScreenQuad& quad) {

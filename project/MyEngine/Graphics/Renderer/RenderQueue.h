@@ -29,8 +29,8 @@ public:
 	RenderQueue(const RenderQueue&) = delete;
 	RenderQueue& operator=(const RenderQueue&) = delete;
 
-	// 2Dのリクエスト1つ（スプライト・文字・図形のどれか）
-	using Request2d = std::variant<SpriteRequest, TextRequest, VectorShapeRequest>;
+	// 2Dのリクエスト1つ（スプライト・文字・図形・折れ線のどれか）
+	using Request2d = std::variant<SpriteRequest, TextRequest, VectorShapeRequest, PolylineRequest>;
 
 	// 初期化・解放
 	static void Initialize();
@@ -42,9 +42,10 @@ public:
 	static void Request(SpriteRequest&& req);
 	static void Request(TextRequest&& req);
 	static void Request(VectorShapeRequest&& req);
+	static void Request(PolylineRequest&& req);
 	static void Request(ParticleRequest&& req);
 
-	// ---  発行（2Dはスプライト・文字・図形を、order の小さい順に混ぜて描く）---
+	// ---  発行（2Dはスプライト・文字・図形・折れ線を、drawKey の順に混ぜて描く。マスクの子は、マスクの始まりと終わりの間）---
 	static void Flush2d(const std::wstring& windowTitle);
 	static void FlushTransparentMesh(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB);
 	static void FlushOpaqueMesh(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB);

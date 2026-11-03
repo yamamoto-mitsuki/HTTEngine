@@ -57,6 +57,11 @@ public:
 	static void DrawVectorShape(const VectorShapeRequest& req);
 
 	/// <summary>
+	/// 2Dの折れ線を描く（PolylineSystem が作ったメッシュの、indexStart から indexCount 個の番号）
+	/// </summary>
+	static void DrawPolyline(const PolylineRequest& req);
+
+	/// <summary>
 	/// パーティクルを描画する
 	/// </summary>
 	static void DrawParticles(const ParticleRequest& req);

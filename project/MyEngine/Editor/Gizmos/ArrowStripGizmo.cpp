@@ -37,11 +37,11 @@ bool ArrowStripGizmo::Draw(const Camera& camera, const ImVec2& imageMin, const I
 	list.count = &strip->pointCount;
 	list.minCount = kMinPoints;
 	list.isClosed = false;
-	list.planeZ = 0.0f;
 	list.curve = preview.GetPolyline();
 	list.editor = ComponentEditorRegistry::Find<ArrowStripComponent>();
 	list.component = strip;
-	if (!PointListGizmo::Draw(selected, list, transform->worldMatrix, camera, imageMin, imageSize, isHovered)) {
+	const PointMapping mapping = PointListGizmo::MakeCameraMapping(transform->worldMatrix, camera, 0.0f, imageMin, imageSize);
+	if (!PointListGizmo::Draw(selected, list, mapping, imageMin, imageSize, isHovered)) {
 		ArrowStripSystem::SetEditing(false); // Esc で終わった
 		return false;
 	}

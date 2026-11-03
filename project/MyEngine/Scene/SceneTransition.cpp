@@ -160,7 +160,7 @@ void SceneTransition::Draw() {
 	config.color = ClampColor({transition.color.x, transition.color.y, transition.color.z, transition.alpha});
 	config.blendMode = BlendMode::Normal;
 	config.rasterizerType = RasterizerType::SolidNone;
-	config.order = (std::numeric_limits<int>::max)(); // 一番手前（どの UI の Order よりも大きい）
+	config.drawKey = UIDrawKey::FromOrder((std::numeric_limits<int>::max)()); // 一番手前（どの UI の Order よりも大きい）
 	config.isSceneHidden = true;                      // Scene ビューには描かない（再生中でも、置いた物が見えるように。Game ビューだけ暗くなる）
 	Renderer::DrawQuad2d(config);
 }

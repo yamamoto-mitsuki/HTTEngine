@@ -3,11 +3,9 @@
 #include <array>
 #include <cmath>
 #include <memory>
-#include <vector>
 #include <algorithm>
 
 #include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/ComponentUI.h"
 #include "MyEngine/ECS/EntityManager.h"
@@ -19,7 +17,7 @@
 #include "MyEngine/Math/Color.h"
 #include "MyEngine/Math/MathUtility.h"
 #include "MyEngine/Systems/Rendering2D/SpriteRenderSystem.h"
-#include "MyEngine/Systems/Rendering2D/UIDrawOrder.h"
+#include "MyEngine/Systems/UI/UIMaskSystem.h"
 
 namespace {
 constexpr float kEdgeMargin = 2.0f;      // 四角の板を図形より広げる量（ピクセル。縁のなめらかな所が板の外で切れないように）
@@ -28,20 +26,9 @@ constexpr float kNoStrokeEdge = 1.0e5f;  // 縁取りが無いときの、塗り
 constexpr float kMaxSkewDegrees = 80.0f; // 平行四辺形の傾きの上限（度。90 に近づくと横の長さが無限になる）
 constexpr float kMaxTopShift = 0.9f;     // 平行四辺形の上の辺が横へずれる上限（幅の半分に対して。これで上の辺が幅の 1 割は残り、図形が消えない）
 
-/// <summary>
-/// VectorShapeSystem が持つ物（Initialize で作り、Release で消す）
-/// </summary>
-struct VectorShapeState {
-	std::vector<UIDrawItem> items; // 並べる作業用（配列のメモリを使い回す）
-};
-std::unique_ptr<VectorShapeState> state;
-
 //=============================================================================
 // Component の値 → シェーダーの値
 //=============================================================================
-// ===== 行列の x 軸・y 軸の長さ（Transform の scale に、親の scale も掛かった値。回っていても測れる）=====
-Vector2 CalcAxisScale(const Matrix4x4& m) { return {std::hypot(m.m[0][0], m.m[0][1]), std::hypot(m.m[1][0], m.m[1][1])}; }
-
 // ===== 2Dの向き（x・y）を、左へ 90 度回す =====
 Vector2 RotateLeft(const Vector2& v) { return {-v.y, v.x}; }
 
@@ -237,20 +224,19 @@ bool MakeMaterial(const VectorShapeComponent& shape, const Vector2& scale, float
 //=============================================================================
 // 描く
 //=============================================================================
-void DrawShape(const UIDrawItem& item) {
-	const VectorShapeComponent* shape = EntityManager::Get<VectorShapeComponent>(item.entity);
-	const TransformComponent* transform = EntityManager::Get<TransformComponent>(item.entity);
-	if (shape == nullptr || transform == nullptr || shape->size.x <= 0.0f || shape->size.y <= 0.0f) {
+void DrawShape(Handle<Entity> entity, const VectorShapeComponent& shape) {
+	const TransformComponent* transform = EntityManager::Get<TransformComponent>(entity);
+	if (transform == nullptr || shape.size.x <= 0.0f || shape.size.y <= 0.0f) {
 		return;
 	}
 	// 親までの Alpha Group を掛ける（0 なら描かない）
-	const float groupAlpha = SpriteRenderSystem::CalcGroupAlpha(item.entity);
-	const Vector2 scale = CalcAxisScale(transform->worldMatrix);
+	const float groupAlpha = SpriteRenderSystem::CalcGroupAlpha(entity);
+	const Vector2 scale = SpriteRenderSystem::CalcScreenScale(transform->worldMatrix);
 	if (groupAlpha <= 0.0f || scale.x < kMinScale || scale.y < kMinScale) {
 		return;
 	}
 	Renderer::VectorShapeConfig config;
-	if (!MakeMaterial(*shape, scale, groupAlpha, config.material)) {
+	if (!MakeMaterial(shape, scale, groupAlpha, config.material)) {
 		return;
 	}
 
@@ -258,10 +244,10 @@ void DrawShape(const UIDrawItem& item) {
 	// margin は描かれるピクセルで決めるので、Transform の scale が掛かる前の長さ（ローカル）へ割り戻す
 	const float margin = (std::max)(config.material.strokeOuter, 0.0f) + kEdgeMargin;
 	const Vector2 localMargin = {margin / scale.x, margin / scale.y};
-	const Vector2 center = {(0.5f - shape->pivot.x) * shape->size.x, (0.5f - shape->pivot.y) * shape->size.y};
-	const Vector2 localHalf = {shape->size.x * 0.5f + localMargin.x, shape->size.y * 0.5f + localMargin.y};
+	const Vector2 center = {(0.5f - shape.pivot.x) * shape.size.x, (0.5f - shape.pivot.y) * shape.size.y};
+	const Vector2 localHalf = {shape.size.x * 0.5f + localMargin.x, shape.size.y * 0.5f + localMargin.y};
 	const auto toScreen = [&](float signX, float signY) {
-		return SpriteRenderSystem::CalcScreenPoint(transform->worldMatrix, shape->anchor, {center.x + signX * localHalf.x, center.y + signY * localHalf.y});
+		return SpriteRenderSystem::CalcScreenPoint(transform->worldMatrix, shape.anchor, {center.x + signX * localHalf.x, center.y + signY * localHalf.y});
 	};
 	config.lb = toScreen(-1.0f, -1.0f);
 	config.lt = toScreen(-1.0f, +1.0f);
@@ -269,10 +255,22 @@ void DrawShape(const UIDrawItem& item) {
 	config.rt = toScreen(+1.0f, +1.0f);
 	// シェーダーへは、図形の真ん中を原点にした描かれるピクセルの場所を渡す（UV の代わり。板の中でなめらかにつながる）
 	config.localHalf = {localHalf.x * scale.x, localHalf.y * scale.y};
-	config.blendMode = shape->blend;
-	config.order = shape->order;
-	config.isSceneHidden = SceneVisibility::IsHidden(item.entity); // Hierarchy の目で隠した物は、Scene ビューだけ描かない
-	Renderer::DrawVectorShape(config);
+
+	// --- 描く手順（ふつうは1回。マスクの図形なら、塗り → 形を書く → 子 → 形を消す → 縁取り）---
+	const bool hasFill = shape.style != VectorShapeStyle::Stroke;
+	const bool hasStroke = shape.style != VectorShapeStyle::Fill && shape.strokeWidth > 0.0f;
+	const bool isHidden = SceneVisibility::IsHidden(entity); // Hierarchy の目で隠した物は、Scene ビューだけ描かない
+	const UIShapeSteps plan = UIMaskSystem::PlanShapeSteps(entity, shape.order, UIDrawKind::VectorShape, hasFill, hasStroke);
+	for (uint32_t i = 0; i < plan.count; ++i) {
+		const UIDrawStep& step = plan.steps[i];
+		step.ApplyTo(config);
+		config.material.drawPart = static_cast<uint32_t>(step.part);
+		// 形だけの手順は、色を出さない（Normal なら透明で、背景を変えない）。目で隠していても、子を切り抜くために描く
+		config.blendMode = step.isGraphic ? shape.blend : BlendMode::Normal;
+		config.material.blendMode = static_cast<uint32_t>(config.blendMode);
+		config.isSceneHidden = isHidden && step.isGraphic;
+		Renderer::DrawVectorShape(config);
+	}
 }
 
 //=============================================================================
@@ -344,26 +342,24 @@ void DescribeVectorShape(ComponentUI& ui, VectorShapeComponent& value) {
 // 初期化 / 解放
 //=============================================================================
 void VectorShapeSystem::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
-	state = std::make_unique<VectorShapeState>();
-
 	// Vector Shape の置き場所・保存・Inspector を登録する。見せ方は DescribeVectorShape 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<VectorShapeComponent>();
 	ComponentSerializer::Register<VectorShapeComponent>("Vector Shape", &DescribeVectorShape);
 	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<VectorShapeComponent>>("Vector Shape", "UI", &DescribeVectorShape));
 }
 
-void VectorShapeSystem::Release() { state.reset(); }
+void VectorShapeSystem::Release() {}
 
 //=============================================================================
 // 描く（停止中も）
 //=============================================================================
 void VectorShapeSystem::Draw() {
-	MY_ASSERT_MSG(state != nullptr, "VectorShapeSystem::Initialize()を先に呼んでください");
-	CollectUIDrawItems<VectorShapeComponent>(state->items);
-	for (const UIDrawItem& item : state->items) {
-		DrawShape(item);
-	}
+	// 見つけた順に積む（重ねる順は drawKey で RenderQueue が並べる）
+	EntityManager::ForEach<VectorShapeComponent>([](Handle<Entity> entity, const VectorShapeComponent& shape) {
+		if (shape.enabled && EntityManager::IsActiveInHierarchy(entity)) {
+			DrawShape(entity, shape);
+		}
+	});
 }
 
 //=============================================================================

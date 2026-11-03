@@ -25,6 +25,7 @@ RenderTextureFormat GetTargetFormat(DrawCategory category) {
 	case DrawCategory::Sprite:
 	case DrawCategory::Text:
 	case DrawCategory::VectorShape:
+	case DrawCategory::Polyline:
 		return RenderTextureFormat::SDR;
 	}
 	return RenderTextureFormat::SDR;
@@ -107,8 +108,8 @@ TopologyID PSOManager::GetTopologyID(DrawCategory category) {
 }
 
 // ===== PSOKey =====
-PSOKey PSOManager::GetPSOKey(DrawCategory category, ShadingType shading, BlendMode blend, RasterizerType raster, DepthMode depth) {
-	return PSOKey{GetShaderProgramID(category, shading), blend, raster, depth};
+PSOKey PSOManager::GetPSOKey(DrawCategory category, ShadingType shading, BlendMode blend, RasterizerType raster, DepthMode depth, StencilMode stencil) {
+	return PSOKey{GetShaderProgramID(category, shading), blend, raster, depth, stencil};
 }
 
 //=============================================================================
@@ -182,7 +183,7 @@ D3D12_GRAPHICS_PIPELINE_STATE_DESC PSOManager::MakePSO(const PSOKey& key, std::v
 	desc.PS = {ps.blob->GetBufferPointer(), ps.blob->GetBufferSize()};
 	desc.BlendState = RenderStates::MakeBlendDesc(key.blendMode);
 	desc.RasterizerState = RenderStates::MakeRasterizerDesc(key.rasterizerType);
-	desc.DepthStencilState = RenderStates::MakeDepthStencilDesc(key.depthMode);
+	desc.DepthStencilState = RenderStates::MakeDepthStencilDesc(key.depthMode, key.stencilMode);
 	desc.PrimitiveTopologyType = topology;
 	desc.NumRenderTargets = 1;
 	desc.RTVFormats[0] = RenderTexture::ToDXGIFormat(GetTargetFormat(p.category)); // 3D は HDR、2D は SDR

@@ -1,15 +1,15 @@
 #ifdef USE_IMGUI
 #include "UIGizmo.h"
 
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstddef>
-#include <tuple>
 #include <vector>
+#include <algorithm>
 
 #include "MyEngine/Components/Core/TransformComponent.h"
 #include "MyEngine/Components/UI/ImageComponent.h"
+#include "MyEngine/Components/UI/PolylineComponent.h"
 #include "MyEngine/Components/UI/TextComponent.h"
 #include "MyEngine/Components/UI/VectorShapeComponent.h"
 #include "MyEngine/ECS/EntityManager.h"
@@ -20,7 +20,9 @@
 #include "MyEngine/Editor/Windows/HierarchyWindow.h"
 #include "MyEngine/Graphics/Renderer/GameScreen.h"
 #include "MyEngine/Systems/Rendering2D/SpriteRenderSystem.h"
+#include "MyEngine/Systems/UI/PolylineSystem.h"
 #include "MyEngine/Systems/UI/TextRenderSystem.h"
+#include "MyEngine/Systems/UI/UIMaskSystem.h"
 
 namespace {
 constexpr ImU32 kSelectedColor = IM_COL32(255, 160, 40, 255); // 選んだ UI の枠（3D の物の枠と同じ色）
@@ -83,6 +85,17 @@ bool CalcShape(Handle<Entity> entity, UIShape& shape) {
 		shape.position = SpriteRenderSystem::CalcScreenPoint(m, vectorShape->anchor, {0.0f, 0.0f});
 		return true;
 	}
+	// 折れ線は、点を囲む四角（線の太さも入れる）
+	if (const PolylineComponent* polyline = EntityManager::Get<PolylineComponent>(entity); polyline != nullptr && polyline->enabled) {
+		Vector2 min;
+		Vector2 max;
+		if (PolylineSystem::CalcLocalBounds(*polyline, min, max)) {
+			const auto toScreen = [&m, polyline](float x, float y) { return SpriteRenderSystem::CalcScreenPoint(m, polyline->anchor, {x, y}); };
+			shape.quad = {toScreen(min.x, min.y), toScreen(min.x, max.y), toScreen(max.x, min.y), toScreen(max.x, max.y)};
+			shape.position = toScreen(0.0f, 0.0f);
+			return true;
+		}
+	}
 	if (const TextComponent* text = EntityManager::Get<TextComponent>(entity); text != nullptr && text->enabled) {
 		shape.quad = SpriteRenderSystem::CalcScreenQuad(m, text->anchor, text->pivot, TextRenderSystem::CalcTextSize(entity));
 		shape.position = SpriteRenderSystem::CalcScreenPoint(m, text->anchor, {0.0f, 0.0f});
@@ -100,28 +113,26 @@ ImVec2 ToImage(const Vector2& ndc, const ImVec2& imageMin, const ImVec2& imageSi
 //=============================================================================
 // クリックで選ぶ
 //=============================================================================
-// point の下にある UI のうち、一番手前に描いてある物（描く順と同じ：Order が大きい物。同じなら番号が大きい＝後に作った物）
+// point の下にある UI のうち、一番手前に描いてある物（描く順と同じ：UIMaskSystem が決める重ねる順のキーが大きい物）
+// マスクの子は、マスクの図形の Order の所にまとまって描かれるので、子の Order だけでは比べられない
 Handle<Entity> PickUI(const Vector2& point) {
 	Handle<Entity> best;
-	int bestOrder = 0;
-	EntityId bestId = 0;
-	const auto consider = [&](Handle<Entity> entity, int order) {
+	UIDrawKey bestKey;
+	const auto consider = [&](Handle<Entity> entity, int order, UIDrawKind kind) {
 		UIShape shape;
 		if (!CalcShape(entity, shape) || !SpriteRenderSystem::IsInsideQuad(point, shape.quad)) {
 			return;
 		}
-		const Entity* owner = EntityManager::Get(entity);
-		const EntityId id = (owner != nullptr) ? owner->id : 0;
-		// std::tie：「1つ目を比べて、同じなら2つ目」をまとめて書ける（描く順の並べ方と同じ）
-		if (!best.IsValid() || std::tie(order, id) > std::tie(bestOrder, bestId)) {
+		const UIDrawKey key = UIMaskSystem::MakeStep(entity, order, kind).key;
+		if (!best.IsValid() || bestKey < key) {
 			best = entity;
-			bestOrder = order;
-			bestId = id;
+			bestKey = key;
 		}
 	};
-	EntityManager::ForEach<ImageComponent>([&consider](Handle<Entity> entity, const ImageComponent& image) { consider(entity, image.order); });
-	EntityManager::ForEach<VectorShapeComponent>([&consider](Handle<Entity> entity, const VectorShapeComponent& shape) { consider(entity, shape.order); });
-	EntityManager::ForEach<TextComponent>([&consider](Handle<Entity> entity, const TextComponent& text) { consider(entity, text.order); });
+	EntityManager::ForEach<ImageComponent>([&consider](Handle<Entity> entity, const ImageComponent& image) { consider(entity, image.order, UIDrawKind::Image); });
+	EntityManager::ForEach<VectorShapeComponent>([&consider](Handle<Entity> entity, const VectorShapeComponent& shape) { consider(entity, shape.order, UIDrawKind::VectorShape); });
+	EntityManager::ForEach<PolylineComponent>([&consider](Handle<Entity> entity, const PolylineComponent& polyline) { consider(entity, polyline.order, UIDrawKind::Polyline); });
+	EntityManager::ForEach<TextComponent>([&consider](Handle<Entity> entity, const TextComponent& text) { consider(entity, text.order, UIDrawKind::Text); });
 	return best;
 }
 
@@ -333,6 +344,7 @@ bool UIGizmo::Draw(Handle<Entity> selected, const ImVec2& imageMin, const ImVec2
 }
 
 bool UIGizmo::IsScreenUI(Handle<Entity> entity) {
-	return EntityManager::Get<ImageComponent>(entity) != nullptr || EntityManager::Get<VectorShapeComponent>(entity) != nullptr || EntityManager::Get<TextComponent>(entity) != nullptr;
+	return EntityManager::Get<ImageComponent>(entity) != nullptr || EntityManager::Get<VectorShapeComponent>(entity) != nullptr || EntityManager::Get<PolylineComponent>(entity) != nullptr ||
+	       EntityManager::Get<TextComponent>(entity) != nullptr;
 }
 #endif

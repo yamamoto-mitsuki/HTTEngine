@@ -91,6 +91,9 @@ void RenderQueue::Request(TextRequest&& req) { instance_->requests2d_.emplace_ba
 // ===== 図形リクエスト（スプライトと同じ列に積む）=====
 void RenderQueue::Request(VectorShapeRequest&& req) { instance_->requests2d_.emplace_back(std::move(req)); }
 
+// ===== 折れ線リクエスト（スプライトと同じ列に積む）=====
+void RenderQueue::Request(PolylineRequest&& req) { instance_->requests2d_.emplace_back(std::move(req)); }
+
 // ===== Line群リクエスト =====
 void RenderQueue::Request(LineRequest&& req) { instance_->lineRequests_.push_back(std::move(req)); }
 
@@ -307,20 +310,21 @@ struct State2d {
 	DrawCategory category = DrawCategory::Sprite;      // シェーダー（スプライト・文字・図形）
 	BlendMode blend = BlendMode::Normal;               // PSO のブレンド
 	RasterizerType raster = RasterizerType::SolidBack; // PSO のラスタライザ
+	StencilMode stencil = StencilMode::None;           // PSO のステンシル（UI のマスク）
+	bool isStencilRefSet = false;                      // ステンシルの参照値をセットしたか
+	uint32_t stencilRef = 0;                           // セットしたステンシルの参照値
 };
 
+// ===== 2Dのリクエストの描き分けの情報（どの種類も Draw2dTarget を受け継ぐので、std::visit で1つにする）=====
+const Draw2dTarget& TargetOf(const RenderQueue::Request2d& request) {
+	return std::visit([](const auto& r) -> const Draw2dTarget& { return r; }, request);
+}
+
 // ===== 2Dのリクエストの重ねる順 =====
-int OrderOf(const RenderQueue::Request2d& request) {
-	return std::visit([](const auto& r) { return r.order; }, request);
-}
+const UIDrawKey& KeyOf(const RenderQueue::Request2d& request) { return TargetOf(request).drawKey; }
 
-// ===== 2Dのリクエストの描き分けの情報（どの種類も DrawTarget を受け継ぐので、OrderOf と同じく std::visit で1つにする）=====
-const DrawTarget& TargetOf(const RenderQueue::Request2d& request) {
-	return std::visit([](const auto& r) -> const DrawTarget& { return r; }, request);
-}
-
-// ===== 描く物に合わせて RootSignature・PSO をセットする（スプライト・文字・図形が交互に来ても、変わった所だけセットし直す）=====
-void Bind2d(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE heapStart, State2d& current, DrawCategory category, BlendMode blend, RasterizerType raster) {
+// ===== 描く物に合わせて RootSignature・PSO・ステンシルの参照値をセットする（スプライト・文字・図形が交互に来ても、変わった所だけセットし直す）=====
+void Bind2d(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE heapStart, State2d& current, DrawCategory category, BlendMode blend, RasterizerType raster, const Draw2dTarget& target) {
 	// --- シェーダーが変わったら、RootSignature とテクスチャの表を付け替える ---
 	const bool isCategoryChanged = !current.isSet || current.category != category;
 	if (isCategoryChanged) {
@@ -331,11 +335,21 @@ void Bind2d(ID3D12GraphicsCommandList* cmdList, D3D12_GPU_DESCRIPTOR_HANDLE heap
 			cmdList->SetGraphicsRootDescriptorTable(texSlot->second, heapStart);
 		}
 	}
-	// --- PSO（2dは深度無効なので DepthMode::Disable 固定）---
-	if (isCategoryChanged || current.blend != blend || current.raster != raster) {
-		cmdList->SetPipelineState(PSOManager::GetPSO(PSOManager::GetPSOKey(category, ShadingType::Unlit, blend, raster, DepthMode::Disable)).Get());
+	// --- PSO（2dは深度無効なので DepthMode::Disable 固定。ステンシルはマスクの使い方で変わる）---
+	if (isCategoryChanged || current.blend != blend || current.raster != raster || current.stencil != target.stencil) {
+		cmdList->SetPipelineState(PSOManager::GetPSO(PSOManager::GetPSOKey(category, ShadingType::Unlit, blend, raster, DepthMode::Disable, target.stencil)).Get());
 	}
-	current = {true, category, blend, raster};
+	// --- ステンシルの参照値（PSO ではなくコマンドリストに持つ値。マスクの入れ子の段で変わる）---
+	if (target.stencil != StencilMode::None && (!current.isStencilRefSet || current.stencilRef != target.stencilRef)) {
+		cmdList->OMSetStencilRef(target.stencilRef);
+		current.isStencilRefSet = true;
+		current.stencilRef = target.stencilRef;
+	}
+	current.isSet = true;
+	current.category = category;
+	current.blend = blend;
+	current.raster = raster;
+	current.stencil = target.stencil;
 }
 } // namespace
 
@@ -344,8 +358,9 @@ void RenderQueue::Flush2d(const std::wstring& windowTitle) {
 	// SRVヒープセット
 	const D3D12_GPU_DESCRIPTOR_HANDLE heapStart = DirectXCommon::BindSRVHeap(cmdList);
 
-	// order の小さい順（奥から）に並べる。ウィンドウの数だけ呼ばれるが、2回目からは並んでいるので順番は変わらない
-	std::ranges::stable_sort(instance_->requests2d_, {}, OrderOf);
+	// drawKey の順（奥から）に並べる。ウィンドウの数だけ呼ばれるが、2回目からは並んでいるので順番は変わらない
+	// 同じ drawKey（文字の影と文字など）は積んだ順のまま（stable_sort）
+	std::ranges::stable_sort(instance_->requests2d_, [](const UIDrawKey& a, const UIDrawKey& b) { return a < b; }, KeyOf);
 
 	State2d current;
 	for (const Request2d& request : instance_->requests2d_) {
@@ -355,20 +370,26 @@ void RenderQueue::Flush2d(const std::wstring& windowTitle) {
 		}
 		// --- スプライト ---
 		if (const SpriteRequest* sprite = std::get_if<SpriteRequest>(&request)) {
-			Bind2d(cmdList, heapStart, current, DrawCategory::Sprite, sprite->blendMode, sprite->rasterizerType);
+			Bind2d(cmdList, heapStart, current, DrawCategory::Sprite, sprite->blendMode, sprite->rasterizerType, *sprite);
 			RenderContext::DrawSprite(*sprite);
 			continue;
 		}
 		// --- 文字（両面を描く。回して裏返っても消えないように）---
 		if (const TextRequest* text = std::get_if<TextRequest>(&request)) {
-			Bind2d(cmdList, heapStart, current, DrawCategory::Text, text->blendMode, RasterizerType::SolidNone);
+			Bind2d(cmdList, heapStart, current, DrawCategory::Text, text->blendMode, RasterizerType::SolidNone, *text);
 			RenderContext::DrawText2d(*text);
 			continue;
 		}
 		// --- 図形（両面を描く。回して裏返っても消えないように）---
 		if (const VectorShapeRequest* shape = std::get_if<VectorShapeRequest>(&request)) {
-			Bind2d(cmdList, heapStart, current, DrawCategory::VectorShape, shape->blendMode, RasterizerType::SolidNone);
+			Bind2d(cmdList, heapStart, current, DrawCategory::VectorShape, shape->blendMode, RasterizerType::SolidNone, *shape);
 			RenderContext::DrawVectorShape(*shape);
+			continue;
+		}
+		// --- 折れ線（三角形の向きはそろえていないので、両面を描く）---
+		if (const PolylineRequest* polyline = std::get_if<PolylineRequest>(&request)) {
+			Bind2d(cmdList, heapStart, current, DrawCategory::Polyline, polyline->blendMode, RasterizerType::SolidNone, *polyline);
+			RenderContext::DrawPolyline(*polyline);
 		}
 	}
 }

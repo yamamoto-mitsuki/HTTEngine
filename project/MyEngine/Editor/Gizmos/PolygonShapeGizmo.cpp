@@ -37,11 +37,12 @@ bool PolygonShapeGizmo::Draw(const Camera& camera, const ImVec2& imageMin, const
 	list.count = &shape->pointCount;
 	list.minCount = kMinPoints;
 	list.isClosed = true;
-	list.planeZ = -std::abs(shape->depth) * 0.5f;
 	list.isValid = Polygon2D::IsSimple(shape->GetPoints());
 	list.editor = ComponentEditorRegistry::Find<PolygonShapeComponent>();
 	list.component = shape;
-	if (!PointListGizmo::Draw(selected, list, transform->worldMatrix, camera, imageMin, imageSize, isHovered)) {
+	const float planeZ = -std::abs(shape->depth) * 0.5f;
+	const PointMapping mapping = PointListGizmo::MakeCameraMapping(transform->worldMatrix, camera, planeZ, imageMin, imageSize);
+	if (!PointListGizmo::Draw(selected, list, mapping, imageMin, imageSize, isHovered)) {
 		PolygonShapeSystem::SetEditing(false); // Esc で終わった
 		return false;
 	}

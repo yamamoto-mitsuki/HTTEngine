@@ -42,10 +42,11 @@
 #include "MyEngine/Systems/Rendering3D/PolygonShapeSystem.h"
 #include "MyEngine/Systems/Rendering3D/PrimitiveRenderSystem.h"
 // UI
+#include "MyEngine/Systems/UI/UIMaskSystem.h"
 #include "MyEngine/Systems/UI/UIStateSystem.h"
+#include "MyEngine/Systems/UI/PolylineSystem.h"
 #include "MyEngine/Systems/UI/TextRenderSystem.h"
 #include "MyEngine/Systems/UI/VectorShapeSystem.h"
-
 
 #include "MyEngine/Time/EngineTime.h"
 #include "MyEngine/UI/UIScreen.h"
@@ -85,6 +86,8 @@ void EngineSystems::Initialize() {
 	SpriteRenderSystem::Initialize();     // Sprite Renderer・Image
 	TextRenderSystem::Initialize();       // Text
 	VectorShapeSystem::Initialize();      // Vector Shape
+	PolylineSystem::Initialize();         // Polyline
+	UIMaskSystem::Initialize();           // UI Mask
 	FogSystem::Initialize();              // Fog
 	DepthOfFieldSystem::Initialize();     // Depth Of Field
 	TriggerActivatorSystem::Initialize(); // Trigger Activator
@@ -147,6 +150,8 @@ void EngineSystems::Release() {
 	SpriteRenderSystem::Release();
 	TextRenderSystem::Release();
 	VectorShapeSystem::Release();
+	PolylineSystem::Release();
+	UIMaskSystem::Release();
 	EntityManager::Release();
 }
 
@@ -218,6 +223,7 @@ void EngineSystems::Draw(Camera* gameCamera, IBLEnvironment* gameEnvironment) {
 	ArrowStripSystem::Draw(gameCamera, gameEnvironment);      // 向きを示す矢印の列の描画
 	SpriteRenderSystem::Draw(gameCamera); // 画像の板（Sprite Renderer）と、画面に重ねる絵（Image）の描画
 	VectorShapeSystem::Draw(); // 画像を使わない UI の図形（Vector Shape）の描画（Image・Text とは Order の順に重なる）
+	PolylineSystem::Draw();    // 点をつないだ UI の線・形（Polyline）の描画（Image・Text とは Order の順に重なる）
 	TextRenderSystem::Draw();  // 画面に重ねる文字（Text）の描画（Image とは Order の順に重なる）
 	SceneTransition::Draw();   // シーンを切り替える幕（一番手前。Game ビューだけ）
 

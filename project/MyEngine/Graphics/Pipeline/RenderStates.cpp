@@ -1,5 +1,6 @@
 #include "MyEngine/Graphics/Pipeline/RenderStates.h"
 
+#include <algorithm>
 
 //=============================================================================
 // BlendMode → D3D12_BLEND_DESC
@@ -102,12 +103,12 @@ D3D12_RASTERIZER_DESC RenderStates::MakeRasterizerDesc(RasterizerType type) {
 
 
 //=============================================================================
-// DepthMode → D3D12_DEPTH_STENCIL_DESC
+// DepthMode・StencilMode → D3D12_DEPTH_STENCIL_DESC
 //=============================================================================
-D3D12_DEPTH_STENCIL_DESC RenderStates::MakeDepthStencilDesc(DepthMode mode) {
+D3D12_DEPTH_STENCIL_DESC RenderStates::MakeDepthStencilDesc(DepthMode mode, StencilMode stencil) {
 	D3D12_DEPTH_STENCIL_DESC desc{};
 	desc.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL; // 既定（手前を採用）
-	
+
 	switch (mode) {
 	case DepthMode::TestWrite: // 不透明3D
 		desc.DepthEnable = TRUE;
@@ -125,5 +126,51 @@ D3D12_DEPTH_STENCIL_DESC RenderStates::MakeDepthStencilDesc(DepthMode mode) {
 		desc.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
 		break;
 	}
+
+	// --- ステンシル（UI のマスク）。値が参照値と同じ所だけ通し、通った所を増やす・減らす・そのまま ---
+	if (stencil == StencilMode::None) {
+		return desc;
+	}
+	D3D12_DEPTH_STENCILOP_DESC face{};
+	face.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+	face.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	face.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	switch (stencil) {
+	case StencilMode::Increment:
+		face.StencilPassOp = D3D12_STENCIL_OP_INCR_SAT; // 1 増やす（255 で止まる）。同じピクセルに2回描いても、2回目は値が違うので通らない
+		break;
+	case StencilMode::Decrement:
+		face.StencilPassOp = D3D12_STENCIL_OP_DECR_SAT; // 1 減らす（0 で止まる）
+		break;
+	default:
+		face.StencilPassOp = D3D12_STENCIL_OP_KEEP; // 調べるだけ
+		break;
+	}
+	desc.StencilEnable = TRUE;
+	desc.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
+	desc.StencilWriteMask = (stencil == StencilMode::Test) ? 0 : D3D12_DEFAULT_STENCIL_WRITE_MASK;
+	desc.FrontFace = face; // 2D は両面を描くので、裏も同じにする
+	desc.BackFace = face;
 	return desc;
+}
+
+
+//=============================================================================
+// 2D を重ねる順
+//=============================================================================
+bool UIDrawKey::operator<(const UIDrawKey& other) const {
+	// --- 外の段から順に比べる（Order → 種類 → 番号）---
+	const uint32_t common = (std::min)(depth, other.depth);
+	for (uint32_t i = 0; i < common; ++i) {
+		if (parts[i] != other.parts[i]) {
+			return parts[i] < other.parts[i];
+		}
+	}
+	// --- 段の数が同じ：同じ物の、マスクの始まり → 終わり、その中の手順の順 ---
+	if (depth == other.depth) {
+		return (phase != other.phase) ? phase < other.phase : step < other.step;
+	}
+	// --- 片方の段が、もう片方の頭と同じ：段の少ない方がマスクの図形で、多い方はその中身 ---
+	// マスクの始まり（phase が −）なら中身より先、終わりなら後
+	return (depth < other.depth) ? (phase < 0) : (other.phase > 0);
 }

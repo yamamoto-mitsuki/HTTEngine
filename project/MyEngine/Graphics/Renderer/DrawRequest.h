@@ -8,6 +8,7 @@
 #include "MyEngine/Graphics/Pipeline/ShaderConstants.h"
 
 // どのリクエストも DrawTarget（どのウィンドウ・どの層・目で隠したか）を受け継ぐ。Renderer が Config から写す
+// 2D のリクエストは Draw2dTarget（重ねる順の drawKey・マスクのステンシル）を受け継ぐ。RenderQueue が drawKey の順に並べて描く
 
 // ===== 3Dメッシュ =====
 struct MeshRequest : DrawTarget {
@@ -54,10 +55,7 @@ struct ParticleRequest : DrawTarget {
 
 
 // ===== 2Dスプライト =====
-struct SpriteRequest : DrawTarget {
-	// 重ねる順（大きいほど手前。同じなら積んだ順。文字（TextRequest）とも、この順で混ぜて描く）
-	int order = 0;
-
+struct SpriteRequest : Draw2dTarget {
 	// --- ジオメトリ ---
 	std::array<Vertex2dData, 4> vertices;
 
@@ -71,10 +69,7 @@ struct SpriteRequest : DrawTarget {
 
 
 // ===== 2Dの文字 =====
-struct TextRequest : DrawTarget {
-	// 重ねる順（SpriteRequest の order と同じ）
-	int order = 0;
-
+struct TextRequest : Draw2dTarget {
 	// --- ジオメトリ（1文字につき4つ。左下・左上・右下・右上の順。位置は正規化座標）---
 	std::vector<Vertex2dData> vertices;
 
@@ -87,15 +82,33 @@ struct TextRequest : DrawTarget {
 
 
 // ===== 2Dの図形（画像を使わないUIの図形）=====
-struct VectorShapeRequest : DrawTarget {
-	// 重ねる順（SpriteRequestのorderと同じ）
-	int order = 0;
-
+struct VectorShapeRequest : Draw2dTarget {
 	// --- ジオメトリ（左下・左上・右下・右上の順。位置は正規化座標、texcoord は図形の真ん中を原点にしたピクセル）---
 	std::array<Vertex2dData, 4> vertices;
 
 	// --- Shaderとのバインド情報 ---
 	VectorShapeMaterialData materialData;
+
+	// --- 描画設定 ---
+	BlendMode blendMode = BlendMode::Normal;
+};
+
+
+// ===== 2Dの折れ線 =====
+// 折れ線のメッシュ（PolylineSystem が作って持つ。描き終わるまでは RenderQueue も同じ物を指す）
+struct PolylineMeshData {
+	std::vector<VertexPolylineData> vertices; // 頂点（位置は折れ線の Entity から見たピクセル）
+	std::vector<uint32_t> indices;            // 三角形の頂点の番号（3つで1つ）
+};
+
+struct PolylineRequest : Draw2dTarget {
+	// --- ジオメトリ（毎フレーム写さずに、PolylineSystem のメッシュを共有する。indices のうち indexStart から indexCount 個を描く）---
+	std::shared_ptr<const PolylineMeshData> mesh;
+	uint32_t indexStart = 0;
+	uint32_t indexCount = 0;
+
+	// --- Shaderとのバインド情報 ---
+	PolylineMaterialData materialData;
 
 	// --- 描画設定 ---
 	BlendMode blendMode = BlendMode::Normal;

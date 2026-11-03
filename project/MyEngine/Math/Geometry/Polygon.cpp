@@ -130,59 +130,90 @@ bool IsSimple(std::span<const Vector2> points) {
 //=============================================================================
 // 三角形に分ける（耳切り法）
 //=============================================================================
+// 点を毎フレーム動かす形（Polyline の塗り）でも使うので、調べる量を減らしてある
+// ・切り取った点は、前と次の番号（prev・next）をつなぎ替えて飛ばす（配列から消して詰めない）
+// ・耳の中に入りうるのは、へこんだ角の点だけ（とがった角の点が入るなら、辺どうしが交差している）。なので、へこんだ点だけ調べる
+// ・切り取ったら、最初からではなく、切った所の手前から調べ直す
 bool Triangulate(std::span<const Vector2> points, std::vector<uint32_t>& indices) {
-	if (points.size() < 3) {
+	const uint32_t count = static_cast<uint32_t>(points.size());
+	if (count < 3) {
 		return false;
 	}
-	// --- まだ切り取っていない点の番号（反時計回りに並べる）---
-	std::vector<uint32_t> remaining(points.size());
-	std::iota(remaining.begin(), remaining.end(), 0u); // 0, 1, 2, … と順に入れる
+	// --- 点の番号を反時計回りに並べ、となりの点のつながりを作る（位置 i の点は points[order[i]]）---
+	std::vector<uint32_t> order(count);
+	std::iota(order.begin(), order.end(), 0u); // 0, 1, 2, … と順に入れる
 	if (SignedArea(points) < 0.0f) {
-		std::ranges::reverse(remaining); // 時計回りなら逆に並べる
+		std::ranges::reverse(order); // 時計回りなら逆に並べる
 	}
+	std::vector<uint32_t> prev(count);
+	std::vector<uint32_t> next(count);
+	for (uint32_t i = 0; i < count; ++i) {
+		prev[i] = (i + count - 1) % count;
+		next[i] = (i + 1) % count;
+	}
+	const auto at = [&](uint32_t i) -> const Vector2& { return points[order[i]]; };
+	// へこんだ角（右回り）・一直線の角か。となりの点を切り取ると変わるので、そのたびに調べ直す
+	const auto calcReflex = [&](uint32_t i) { return Orient(at(prev[i]), at(i), at(next[i])) <= 0.0f; };
+	std::vector<uint8_t> isReflex(count);
+	for (uint32_t i = 0; i < count; ++i) {
+		isReflex[i] = calcReflex(i);
+	}
+	// 耳か：とがった角で、三角形の中（辺の上も入れる）に、ほかのへこんだ点が無い
+	const auto isEar = [&](uint32_t i) {
+		if (isReflex[i]) {
+			return false;
+		}
+		const Vector2& a = at(prev[i]);
+		const Vector2& b = at(i);
+		const Vector2& c = at(next[i]);
+		for (uint32_t other = next[next[i]]; other != prev[i]; other = next[other]) {
+			if (isReflex[other] && IsPointInTriangle(at(other), a, b, c)) {
+				return false;
+			}
+		}
+		return true;
+	};
+	// 点 i を切り離す（前と次をつなぎ、となりの角の形を調べ直す）
+	const auto unlink = [&](uint32_t i) {
+		next[prev[i]] = next[i];
+		prev[next[i]] = prev[i];
+		isReflex[prev[i]] = calcReflex(prev[i]);
+		isReflex[next[i]] = calcReflex(next[i]);
+	};
 
 	// --- 耳を1つずつ切り取る（点が n 個なら、三角形は n-2 個）---
 	// 耳：となりの2点と結んだ三角形が、とがっていて（左回り）、中にほかの点が入っていない角。切り取っても、残りは多角形のまま
-	while (remaining.size() > 3) {
-		const size_t count = remaining.size();
-		bool isCut = false;
-		for (size_t i = 0; i < count && !isCut; ++i) {
-			const uint32_t prev = remaining[(i + count - 1) % count];
-			const uint32_t current = remaining[i];
-			const uint32_t next = remaining[(i + 1) % count];
-			const Vector2& a = points[prev];
-			const Vector2& b = points[current];
-			const Vector2& c = points[next];
-			// へこんだ角（右回り）・一直線の角は、耳ではない
-			if (Orient(a, b, c) <= 0.0f) {
-				continue;
-			}
-			// 三角形の中に、ほかの点が入っていたら耳ではない（切り取ると、その点が外に出てしまう）
-			const bool hasInside = std::ranges::any_of(remaining, [&](uint32_t other) { return other != prev && other != current && other != next && IsPointInTriangle(points[other], a, b, c); });
-			if (hasInside) {
-				continue;
-			}
-			indices.insert(indices.end(), {prev, current, next});
-			remaining.erase(remaining.begin() + static_cast<std::ptrdiff_t>(i));
-			isCut = true;
-		}
-		if (isCut) {
+	uint32_t remaining = count;
+	uint32_t current = 0;
+	uint32_t missCount = 0; // 続けて耳でなかった点の数（1周しても耳が無いかを数える）
+	while (remaining > 3) {
+		if (isEar(current)) {
+			indices.insert(indices.end(), {order[prev[current]], order[current], order[next[current]]});
+			const uint32_t before = prev[current];
+			unlink(current);
+			--remaining;
+			current = before; // 切った所の手前から調べ直す（形が変わったのは、となりの2点だけ）
+			missCount = 0;
 			continue;
 		}
-		// --- 耳が無い：一直線の角（三角形にしても面積 0）があれば、三角形を作らずに外す。それも無ければ形がおかしい ---
-		size_t straight = count; // 一直線の角が何番目か（count なら無い）
-		for (size_t i = 0; i < count; ++i) {
-			if (Orient(points[remaining[(i + count - 1) % count]], points[remaining[i]], points[remaining[(i + 1) % count]]) == 0.0f) {
-				straight = i;
-				break;
+		current = next[current];
+		if (++missCount < remaining) {
+			continue;
+		}
+		// --- 1周しても耳が無い：一直線の角（三角形にしても面積 0）があれば、三角形を作らずに外す。それも無ければ形がおかしい ---
+		uint32_t straight = current;
+		while (Orient(at(prev[straight]), at(straight), at(next[straight])) != 0.0f) {
+			straight = next[straight];
+			if (straight == current) {
+				return false;
 			}
 		}
-		if (straight == count) {
-			return false;
-		}
-		remaining.erase(remaining.begin() + static_cast<std::ptrdiff_t>(straight));
+		current = prev[straight];
+		unlink(straight);
+		--remaining;
+		missCount = 0;
 	}
-	indices.insert(indices.end(), remaining.begin(), remaining.end());
+	indices.insert(indices.end(), {order[prev[current]], order[current], order[next[current]]});
 	return true;
 }
 } // namespace Polygon2D

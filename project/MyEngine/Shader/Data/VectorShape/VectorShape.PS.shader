@@ -13,6 +13,7 @@ vs:       Sprite2dVS
 
 #HLSL
 #include "Sprite/Sprite2d.hlsli"
+#include "VectorShape/VectorCoverage.hlsli"
 
 // 図形のマテリアル（C++ の VectorShapeMaterialData と同じ並び）
 struct Material
@@ -37,7 +38,8 @@ struct Material
     uint gaugeMode; // 0=切らない 1=直線 2=180 度より狭い扇形 3=180 度以上の扇形
     uint blendMode; // 重ね方（BlendMode の順）
     uint strokeUsesGradient; // 1：縁取りにも塗りのグラデーションを使う
-    float32_t3 padA;
+    uint drawPart; // 何を描くか（UIDrawPart の順）
+    float32_t2 padA;
 };
 ConstantBuffer<Material> gMaterial : register(b20);
 
@@ -52,9 +54,9 @@ static const uint kGradientLinear = 1;
 static const uint kGradientRadial = 2;
 static const uint kGaugeLinear = 1;
 static const uint kGaugeNarrowWedge = 2;
-static const uint kBlendNone = 0;
-static const uint kBlendMultiply = 4;
-static const uint kBlendScreen = 5;
+static const uint kPartFill = 1;
+static const uint kPartStroke = 2;
+static const uint kPartMaskRegion = 3;
 
 struct PixelShaderOutput
 {
@@ -136,15 +138,6 @@ float32_t CalcDistance(float32_t2 p)
     return 1.0f;
 }
 
-// ===== 輪郭のなめらかさ =====
-// 距離 d から「このピクセルのうち、図形に入っている割合」を出す（0〜1）
-// ddx・ddy：隣のピクセルとの d の差。どんな大きさ・回転で描いても、1ピクセル分の d の変化が分かるので、ちょうど1ピクセルの幅でなめらかになる
-float32_t Coverage(float32_t d)
-{
-    float32_t pixelWidth = max(length(float32_t2(ddx(d), ddy(d))), 1e-5f);
-    return saturate(0.5f - d / pixelWidth);
-}
-
 // ===== 塗りの色（グラデーション）=====
 float32_t4 CalcPaintColor(float32_t2 p)
 {
@@ -183,40 +176,51 @@ PixelShaderOutput main(VertexShaderOutput input)
     PixelShaderOutput output;
     float32_t2 p = input.texcoord; // 図形の真ん中を原点にした、描かれるピクセルの場所（Y は上が＋）
     float32_t distance = CalcDistance(p);
+    
+    // ===== 1. マスクの形（色は出さず、輪郭とゲージの内側で、ピクセルの半分より中だけを残す。ステンシルに書く・消す）=====
+    if (gMaterial.drawPart == kPartMaskRegion)
+    {
+        float32_t region = Coverage(distance);
+        if (gMaterial.gaugeMode != 0)
+        {
+            region *= Coverage(CalcGaugeDistance(p));
+        }
+        clip(region - 0.5f);
+        output.color = float32_t4(0.0f, 0.0f, 0.0f, 0.0f); // 透明（Normal の重ね方なので、色は変わらない）
+        return output;
+    }
 
-    // ===== 1. 塗りと縁取りの色 =====
+    // ===== 2. 塗りと縁取りの色 =====
     float32_t4 paint = CalcPaintColor(p);
     float32_t4 stroke = (gMaterial.strokeUsesGradient != 0) ? paint : gMaterial.strokeColor;
 
-    // ===== 2. 塗りと縁取りの間（strokeInner の線）で、色を切り替える =====
+    // ===== 3. 塗りと縁取りの間（strokeInner の線）で、色を切り替える =====
     // 透明度の違う色を混ぜるので、色に透明度を掛けた形（premultiplied）で足す
     float32_t fillMask = Coverage(distance - gMaterial.strokeInner);
     float32_t fillAlpha = paint.a * gMaterial.fillOpacity * fillMask;
     float32_t strokeAlpha = stroke.a * (1.0f - fillMask);
+    // マスクの図形は、塗り（子より奥）と縁取り（子より手前）を分けて描く
+    if (gMaterial.drawPart == kPartFill)
+    {
+        strokeAlpha = 0.0f;
+    }
+    else if (gMaterial.drawPart == kPartStroke)
+    {
+        fillAlpha = 0.0f;
+    }
     float32_t alpha = fillAlpha + strokeAlpha;
     float32_t3 rgb = (paint.rgb * fillAlpha + stroke.rgb * strokeAlpha) / max(alpha, 1e-5f);
 
-    // ===== 3. 図形全体の輪郭（strokeOuter の線）とゲージの切り口で、透明にする =====
+    // ===== 4. 図形全体の輪郭（strokeOuter の線）とゲージの切り口で、透明にする =====
     alpha *= Coverage(distance - gMaterial.strokeOuter);
     if (gMaterial.gaugeMode != 0)
     {
         alpha *= Coverage(CalcGaugeDistance(p));
     }
 
-    // ===== 4. 重ね方に合わせる =====
-    // 板は図形より広いので、図形の外（alpha が 0）が背景を変えないようにする
-    switch (gMaterial.blendMode)
-    {
-        case kBlendNone:
-            clip(alpha - 0.5f); // 混ぜないので、半分より外を捨てる
-            break;
-        case kBlendMultiply:
-            rgb = lerp(float32_t3(1.0f, 1.0f, 1.0f), rgb, alpha); // 乗算は alpha を見ないので、外を白（掛けても変わらない色）にする
-            break;
-        case kBlendScreen:
-            rgb *= alpha; // スクリーンも alpha を見ないので、外を黒（足しても変わらない色）にする
-            break;
-    }
+    // ===== 5. 重ね方に合わせる（板は図形より広いので、図形の外が背景を変えないように）=====
+    ApplyBlendFix(gMaterial.blendMode, rgb, alpha);
+    
     output.color = float32_t4(rgb, alpha);
     return output;
 }

@@ -34,6 +34,14 @@ struct VertexLineData {
 	Vector4 position;
 	Vector4 color;
 };
+// UIの折れ線の頂点（Polyline.VS が読む。部分の種類ごとに、PS が距離の測り方を変える）
+struct VertexPolylineData {
+	Vector2 position; // 位置（折れ線の Entity から見たピクセル。Scale は掛けてある。VS が画面へ写す）
+	Vector2 local;    // その部分から見た位置（直線・端：x=進む向き y=左へ / 角：円の中心から）
+	Vector2 param;    // 部分ごとの値（角：x=半径 y=内外の向き / 端：x=端の形 / 塗りの縁：y=内外の向き）
+	uint32_t piece;   // 部分の種類（PolylinePiece の番号）
+};
+static_assert(sizeof(VertexPolylineData) == 28, "Polyline.VS の VertexShaderInput と大きさが違います");
 
 //　スキンの頂点データ（どの骨にどれだけ動かされるか）
 // Vertex3dDataとは別の頂点バッファにして、Skinning の CS が StructuredBuffer<VertexInfluence> gInfluences として読む

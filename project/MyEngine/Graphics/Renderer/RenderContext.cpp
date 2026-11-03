@@ -291,6 +291,45 @@ void RenderContext::DrawVectorShape(const VectorShapeRequest& req) {
 
 
 //=============================================================================
+// 2Dの折れ線描画
+//=============================================================================
+void RenderContext::DrawPolyline(const PolylineRequest& req) {
+	if (req.mesh == nullptr || req.indexCount == 0 || req.mesh->vertices.empty()) {
+		return;
+	}
+	auto* cmdList = DirectXCommon::GetCommandList();
+	FrameUploadBuffer& upload = instance_->frameUploadBuffer_;
+	const PolylineMeshData& mesh = *req.mesh;
+
+	// ===== このフレーム用のバッファに書く（頂点は全部、番号は描く範囲だけ）=====
+	D3D12_GPU_VIRTUAL_ADDRESS materialAddress = upload.PushConstant(req.materialData);
+	FrameUploadBuffer::Allocation vertices = upload.PushArray(mesh.vertices.data(), mesh.vertices.size());
+	FrameUploadBuffer::Allocation indices = upload.PushArray(mesh.indices.data() + req.indexStart, req.indexCount);
+
+	// ===== ジオメトリ =====
+	D3D12_VERTEX_BUFFER_VIEW vbv{};
+	vbv.BufferLocation = vertices.gpuAddress;
+	vbv.SizeInBytes = static_cast<UINT>(vertices.size);
+	vbv.StrideInBytes = sizeof(VertexPolylineData);
+	D3D12_INDEX_BUFFER_VIEW ibv{};
+	ibv.BufferLocation = indices.gpuAddress;
+	ibv.SizeInBytes = static_cast<UINT>(indices.size);
+	ibv.Format = DXGI_FORMAT_R32_UINT;
+	cmdList->IASetVertexBuffers(0, 1, &vbv);
+	cmdList->IASetIndexBuffer(&ibv);
+	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// ===== ShaderConstantsバインド（VS と PS の両方が同じ定数を読む）=====
+	const RootSignatureInfo& rs = PSOManager::GetRootSignatureInfo(PSOManager::GetShaderProgramID(DrawCategory::Polyline));
+	cmdList->SetGraphicsRootConstantBufferView(SlotOf(rs, RootBind::Material), materialAddress);
+
+	// ===== Draw Call =====
+	DirectXCommon::IncrementDrawCallCount();
+	cmdList->DrawIndexedInstanced(req.indexCount, 1, 0, 0, 0);
+}
+
+
+//=============================================================================
 // Line3D描画
 //=============================================================================
 void RenderContext::DrawLines(const LineRequest& req) {

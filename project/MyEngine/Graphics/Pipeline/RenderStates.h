@@ -1,5 +1,8 @@
 #pragma once
+#include <array>
 #include <string>
+#include <compare>
+#include <cstdint>
 
 #include <d3d12.h>
 
@@ -26,6 +29,7 @@ enum class DrawCategory {
 	Line,
 	Text,
 	VectorShape, // 画像を使わないUIの図形
+	Polyline,    // UIの折れ線（メッシュで形を作り、縁はシェーダーでなめらかにする）
 };
 
 // サンプリング設定
@@ -66,9 +70,17 @@ enum RasterizerType {
 
 // 深度設定
 enum DepthMode {
-	TestWrite,  // 深度テストあり・書き込み有: 不透明3D
+	TestWrite,   // 深度テストあり・書き込み有: 不透明3D
 	TestNoWrite, // 深度テストあり・書き込み無: 半透明3D
 	Disable,     // 深度テストなし・書き込み無: 2D, UI, フルスクリーン
+};
+
+// ステンシルの使い方（UIのマスク。値は「外にあるマスクの数」で、参照値と同じところだけ通す）
+enum class StencilMode {
+	None,      // 使わない（マスクの外の UI・3D）
+	Test,      // 値が参照値と同じ所だけ描く（マスクの中の UI）
+	Increment, // 値が参照値と同じ所を 1 増やす（マスクの形を書く。入れ子なら、外のマスクの中だけが増える）
+	Decrement, // 値が参照値と同じ所を 1 減らす（子を描き終わったマスクの形を消す）
 };
 
 // ビルボード（カメラの方を向かせる）設定
@@ -96,6 +108,57 @@ struct DrawTarget {
 	bool isSceneHidden = false;           // Hierarchy の目で隠した物（Scene ビューだけ描かない。Game ビューにはいつも描く）
 };
 
+/// <summary>
+/// 2D を重ねる順の1段（Order → 種類 → Entity の番号の順に比べる。小さい方が奥）
+/// </summary>
+struct UIDrawKeyPart {
+	int order = 0;     // Component の Order
+	uint32_t kind = 0; // 同じ Order のときの順（Image → Vector Shape → Polyline → Text。UIDrawKind の番号）
+	uint64_t id = 0;   // 同じ Order・種類なら、Entity の番号の小さい方（先に作った物）が奥
+
+	// <=> を = default にすると、メンバーを上から順に比べる比較（<・== など）をコンパイラが作る
+	auto operator<=>(const UIDrawKeyPart&) const = default;
+};
+
+/// <summary>
+/// 2D の描く順。マスクの入れ子の数だけ段（parts）を持つ（外のマスクから順に並べ、最後が自分）
+/// <para>マスクの子は、マスクの段を頭に持つので、マスクの「始まり」と「終わり」の間に並ぶ（マスクの Order の所にまとまる）</para>
+/// <para>マスクの外の物は、段が1つだけ（自分の Order）。今までの Order の並びと同じになる</para>
+/// </summary>
+struct UIDrawKey {
+	static constexpr size_t kMaxDepth = 9;        // 段の数の上限（マスクの入れ子 8 段＋自分）
+	std::array<UIDrawKeyPart, kMaxDepth> parts{}; // 段（使うのは先頭から depth 個）
+	uint32_t depth = 1;                           // 使っている段の数
+	int32_t phase = 0;                            // マスクの図形の段：-1 始まり（子より前）/ 0 ふつう / +1 終わり（子より後）
+	uint32_t step = 0;                            // 同じキーの中の順（マスクの始まりは 塗り → 形を書く、終わりは 形を消す → 縁取り）
+
+	// Order だけの順（マスクを使わない物。シーンを切り替える幕など）
+	static UIDrawKey FromOrder(int order) {
+		UIDrawKey key;
+		key.parts[0].order = order;
+		return key;
+	}
+	// このキーの物が、other より先に（奥に）描かれるか
+	bool operator<(const UIDrawKey& other) const;
+};
+
+// 2D の図形・折れ線のどこを描くか（VectorShape.PS・Polyline.PS の drawPart と同じ番号）
+enum class UIDrawPart : uint32_t {
+	All,        // 塗りと線の全部（ふつう）
+	Fill,       // 塗りだけ（マスクの図形を、子より奥に描く）
+	Stroke,     // 線だけ（マスクの図形の縁取りを、子より手前に描く）
+	MaskRegion, // 色は出さず、形の内側だけを残す（マスクの形をステンシルに書く・消す）
+};
+
+/// <summary>
+/// 2D の描き分け（DrawTarget に、重ねる順とマスクのステンシルを足した物）。2D の Config とリクエストが受け継ぐ
+/// </summary>
+struct Draw2dTarget : DrawTarget {
+	UIDrawKey drawKey;                       // 重ねる順（RenderQueue が、この順に並べて描く）
+	StencilMode stencil = StencilMode::None; // ステンシルの使い方
+	uint32_t stencilRef = 0;                 // ステンシルの参照値（外にあるマスクの数）
+};
+
 
 /// <summary>
 /// 描画の際に調整したい設定の登録クラス
@@ -114,7 +177,7 @@ public:
 	static D3D12_RASTERIZER_DESC MakeRasterizerDesc(RasterizerType type);
 
 	/// <summary>
-	/// 引数にいれた
+	/// 引数にいれた DepthMode・StencilMode の設定を返す
 	/// </summary>
-	static D3D12_DEPTH_STENCIL_DESC MakeDepthStencilDesc(DepthMode mode);
+	static D3D12_DEPTH_STENCIL_DESC MakeDepthStencilDesc(DepthMode mode, StencilMode stencil = StencilMode::None);
 };
