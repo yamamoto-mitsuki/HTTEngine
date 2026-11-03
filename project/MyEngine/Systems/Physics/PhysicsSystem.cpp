@@ -14,6 +14,7 @@
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/ECS/GameComponent.h"
 #include "MyEngine/Editor/Inspector/ComponentEditor.h"
+#include "MyEngine/Physics/MotionQuery.h"
 #include "MyEngine/Physics/PhysicMaterialManager.h"
 #include "MyEngine/Systems/Physics/CollisionSystem.h"
 #include "MyEngine/Systems/Physics/ElasticSurfaceSystem.h"
@@ -47,7 +48,7 @@ struct Body {
 struct Solid {
 	WorldCollider shape;     // 今の形（Rigidbody が動いたら、一緒にずらす）
 	int body = -1;           // 動く Rigidbody の形なら bodies の何番目か（壁・床・Is Kinematic は -1）
-	PhysicMaterial material; // 表面の性質（Collider の Physic Material。選んでいなければ全部 0）
+	PhysicMaterial material; // 表面の性質（Collider の Physic Material。選んでいなければ既定＝摩擦 0.6・跳ね返り 0）
 };
 
 /// <summary>
@@ -62,16 +63,6 @@ std::unique_ptr<PhysicsState> state;
 //=============================================================================
 // 小さな道具
 //=============================================================================
-// 形を move だけずらす（物理では回さないので、ずらすだけでよい）
-void Translate(WorldCollider& shape, const Vector3& move) {
-	shape.sphere.center += move;
-	shape.box.min += move;
-	shape.box.max += move;
-	shape.capsule.start += move;
-	shape.capsule.end += move;
-	shape.polygon.origin += move;
-}
-
 // Rigidbody 同士がぶつかったとき、self が動く割合（0〜1。残りは相手が動く）。重さの逆の割合（軽い方がたくさん動く）
 // self が動く割合 ＝ 相手の重さ ÷ 2つの重さの和（同じ重さなら半分ずつ。相手が9倍重ければ、自分が 0.9 動く）
 float CalcSelfShare(const RigidbodyComponent& self, const RigidbodyComponent& other) {
@@ -99,12 +90,23 @@ Vector3 CalcFrictionChange(const Vector3& relative, const Vector3& normal, float
 	return slide * ((std::min)(slideSpeed, maxChange) / slideSpeed);
 }
 
-// Rigidbody を move だけ動かす（形も一緒に）
+// Rigidbody を move だけ動かす（形も一緒に。物理では回さないので、ずらすだけでよい）
 void MoveBody(Body& body, const Vector3& move) {
 	body.moved += move;
 	if (body.solid >= 0) {
-		Translate(state->solids[body.solid].shape, move);
+		state->solids[body.solid].shape.Translate(move);
 	}
+}
+
+// 動き方の窓口（MotionQuery）への答え方：Rigidbody が付いていれば、その速さと「乗っているか」
+bool GetRigidbodyMotion(Handle<Entity> entity, MotionState& out) {
+	const RigidbodyComponent* rigidbody = EntityManager::Get<RigidbodyComponent>(entity);
+	if (rigidbody == nullptr) {
+		return false;
+	}
+	out.velocity = rigidbody->velocity;
+	out.isGrounded = rigidbody->isGrounded;
+	return true;
 }
 
 //=============================================================================
@@ -252,7 +254,8 @@ void Resolve(size_t bodyIndex, const Vector3& up) {
 			MoveBody(body, push);
 			const float approach = Dot(rigidbody.velocity, normal);
 			if (approach < 0.0f) {
-				CollisionSystem::ReportImpact(body.entity, other.shape.entity, normal, rigidbody.velocity, {0.0f, 0.0f, 0.0f}); // 壁は動かない
+				// 相手の速さは窓口に聞く（ふつうの壁は0。Character Controller なら、その速さ。押し戻しには使わない＝動く壁も止まった壁と同じに押し戻す）
+				CollisionSystem::ReportImpact(body.entity, other.shape.entity, normal, rigidbody.velocity, MotionQuery::GetVelocity(other.shape.entity));
 				const float change = -approach * (1.0f + CalcBounce(approach, material.bounciness));
 				rigidbody.velocity += normal * change;
 				rigidbody.velocity -= CalcFrictionChange(rigidbody.velocity, normal, change * material.friction);
@@ -299,6 +302,8 @@ void PhysicsSystem::Initialize() {
 	EntityManager::RegisterComponent<RigidbodyComponent>();
 	ComponentSerializer::Register<RigidbodyComponent>("Rigidbody", &DescribeRigidbody);
 	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<RigidbodyComponent>>("Rigidbody", "Physics", &DescribeRigidbody));
+	// 速さ・乗っているかを、動き方の窓口から聞けるようにする（当たりの知らせ・カメラの追いかけ・Trigger が使う）
+	MotionQuery::Register(&GetRigidbodyMotion);
 
 	// 重力を Settings に出す（Save すると Parameters/Physics/World.json に残り、次の起動で読む）
 	GlobalVariables* gv = GlobalVariables::GetInstance();
@@ -330,8 +335,7 @@ bool PhysicsSystem::Update(float deltaTime) {
 
 	// ===== 2. 細かく分けて「面に押し返される → 面を進める → 動かす → 押し戻す」を繰り返す =====
 	const Vector3 gravity = GetGravity();
-	// 地面に乗っているかを決める「上」（重力の反対。重力が無ければ +Y）
-	const Vector3 up = (LengthSq(gravity) > 1e-8f) ? Normalize(-gravity) : Vector3{0.0f, 1.0f, 0.0f};
+	const Vector3 up = GetUp(); // 地面に乗っているかを決める「上」
 	// 1歩の長さの上限：弾む面があれば、面が要求する長さ（張りの強い膜は、1歩が長いと暴れる）
 	const float maxStepTime = hasSurfaces ? (std::min)(kMaxStepTime, surfaceStepTime) : kMaxStepTime;
 	const int maxSteps = static_cast<int>(std::ceil(Time::kMaxDeltaTime / maxStepTime)); // deltaTime が上限でも、1歩が maxStepTime を超えない回数
@@ -373,3 +377,8 @@ bool PhysicsSystem::Update(float deltaTime) {
 Vector3 PhysicsSystem::GetGravity() { return GlobalVariables::GetInstance()->Get<Vector3>(kGroupName, kCategoryName, kGravityName); }
 
 void PhysicsSystem::SetGravity(const Vector3& gravity) { GlobalVariables::GetInstance()->Set<Vector3>(kGroupName, kCategoryName, kGravityName, gravity); }
+
+Vector3 PhysicsSystem::GetUp() {
+	const Vector3 gravity = GetGravity();
+	return (LengthSq(gravity) > 1e-8f) ? Normalize(-gravity) : Vector3{0.0f, 1.0f, 0.0f};
+}

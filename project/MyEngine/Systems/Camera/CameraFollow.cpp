@@ -7,12 +7,12 @@
 
 #include "MyEngine/Components/Camera/CameraComponent.h"
 #include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Components/Physics/RigidbodyComponent.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/ECS/ComponentUI.h"
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/Graphics/Renderer/GameScreen.h"
 #include "MyEngine/Math/MathUtility.h"
+#include "MyEngine/Physics/MotionQuery.h"
 
 namespace {
 constexpr float kMinVerticalForward = 0.001f; // 前の向きの Y の大きさがこれより小さければ、カメラは水平（地面と交わらない）
@@ -188,7 +188,7 @@ void CameraFollow::Describe(ComponentUI& ui, CameraFollowComponent& value) {
 	ui.BeginDisabled(value.plane != CameraFollowPlane::XY);
 	ui.Field(
 	    "Ground Snap Y###groundSnapY", value.groundSnapY,
-	    Tip("追う物が地面にいる間は、縦の遊びを使わずに合わせる（跳んでも画面は揺れず、段に乗ると上がる・降りると下がる）。追う物に Rigidbody が要る。Plane が XY のときだけ"));
+	    Tip("追う物が地面にいる間は、縦の遊びを使わずに合わせる（跳んでも画面は揺れず、段に乗ると上がる・降りると下がる）。追う物に Rigidbody か Character Controller が要る。Plane が XY のときだけ"));
 	ui.EndDisabled();
 	ui.Field("Smooth Time###smoothTime", value.smoothTime, AtLeast(0.0f).Tip("追いつくまでの時間の目安（秒）。大きいほどゆっくり。0 ならすぐ合わせる"));
 	ui.Field("Max Lag###maxLag", value.maxLag, AtLeast(0.0f).Tip("遅れの上限（m）。速く動いても、追う物が画面の真ん中からこれより離れない"));
@@ -249,8 +249,8 @@ bool CameraFollow::Update(Handle<Entity> entity, CameraFollowComponent& follow, 
 	} else {
 		// 遊びの外へ出た分だけ追う。Y は、追う物が地面にいる間は遊びを使わずに合わせる（Ground Snap Y）
 		// 遊びだけだと、跳んで遊びの上へはみ出した分カメラが上がり、着地しても遊びの中なので戻らない（跳ぶたびに少しずつずれていく）
-		const RigidbodyComponent* targetBody = EntityManager::Get<RigidbodyComponent>(targetEntity);
-		const bool isSnapY = (follow.plane == CameraFollowPlane::XY) && follow.groundSnapY && targetBody != nullptr && targetBody->isGrounded;
+		// 地面にいるかは動き方の窓口に聞く（Rigidbody でも Character Controller でも同じ。どちらも無ければ地面にいない扱い）
+		const bool isSnapY = (follow.plane == CameraFollowPlane::XY) && follow.groundSnapY && MotionQuery::IsGrounded(targetEntity);
 		const Vector2 wanted = {ApplyDeadZone(center.x, focus.x, follow.deadZone.x), isSnapY ? focus.y : ApplyDeadZone(center.y, focus.y, follow.deadZone.y)};
 		// なめらかに近づける（指数補間。1フレームに「残りの差 × t」だけ進む）
 		center += (wanted - center) * CalcSmoothRate(deltaTime, follow.smoothTime);

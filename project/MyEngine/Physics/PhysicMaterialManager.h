@@ -19,12 +19,16 @@ enum class PhysicMaterialCombine {
 	Maximum,  // 大きい方
 };
 
+// 摩擦の既定（Physic Material を選んでいない Collider・新しく作った .physmat・ファイルに書いていないとき）。Unity の既定の Physic Material と同じ
+// 0 にすると、押された箱・転がった物が床の上でいつまでも滑り続ける
+constexpr float kDefaultFriction = 0.6f;
+
 /// <summary>
 /// 物の表面の性質（Unity の Physic Material）。Collider に付ける（ファイル .physmat を選ぶ）
-/// <para>Collider が選んでいなければ、全部 0（今までと同じ：跳ね返らない・滑っても止まらない）</para>
+/// <para>Collider が選んでいなければ、既定の値（摩擦 kDefaultFriction・跳ね返らない）</para>
 /// </summary>
 struct PhysicMaterial {
-	float friction = 0.0f;   // 摩擦（滑っているときに止める強さ。0：止まらない。0.5 くらいで普通、1 でよく止まる）
+	float friction = kDefaultFriction; // 摩擦（滑っているときに止める強さ。0：止まらない。0.5 くらいで普通、1 でよく止まる）
 	float bounciness = 0.0f; // 跳ね返り（0：ぶつかった向きの速さが0になる 1：同じ速さで跳ね返る）
 	PhysicMaterialCombine frictionCombine = PhysicMaterialCombine::Average; // 相手と摩擦をどう混ぜるか
 	PhysicMaterialCombine bounceCombine = PhysicMaterialCombine::Average;   // 相手と跳ね返りをどう混ぜるか
@@ -54,7 +58,7 @@ public:
 	// 番号からパスを引く（知らない番号なら空）
 	static const std::string& GetPath(uint32_t handle);
 
-	// 中身（0・知らない番号なら、全部 0 の既定の物）
+	// 中身（0・知らない番号なら、既定の物＝摩擦 kDefaultFriction・跳ね返り 0）
 	static const PhysicMaterial& Get(uint32_t handle);
 
 	// 中身を書き換える（Inspector から。ファイルにはまだ書かない）

@@ -38,7 +38,7 @@
 struct CollisionInfo {
 	GameObject gameObject;                      // ぶつかった相手（Exit のときは、もう消えていることがある。if (collision.gameObject) で確かめる）
 	Vector3 normal = {0.0f, 0.0f, 0.0f};        // 相手から自分へ押し出す向き（長さ1。ぶつかった面の向き）。相手の上に乗っていれば、だいたい (0, 1, 0)
-	Vector3 selfVelocity = {0.0f, 0.0f, 0.0f};  // 自分の、ぶつかる直前の速さ（物理でぶつかったとき。押し合わない当たりは今の速さ。Rigidbody が無ければ0）
+	Vector3 selfVelocity = {0.0f, 0.0f, 0.0f};  // 自分の、ぶつかる直前の速さ（物理でぶつかったとき。押し合わない当たりは今の速さ。動き方の Component（Rigidbody・Character Controller）が無ければ0）
 	Vector3 otherVelocity = {0.0f, 0.0f, 0.0f}; // 相手の、ぶつかる直前の速さ（同じ）
 
 	// 近づいていた速さ（ぶつかった強さ。プラスなら近づいていた）。normal の向きの分だけ数える（かすっただけなら小さい）

@@ -59,18 +59,58 @@ struct WorldCollider {
 	Capsule capsule{};                           // shape が Capsule のとき使う（いつも立っている。start が下の端の球の中心、end が上の端の球の中心）
 	ExtrudedPolygon polygon{};                   // shape が Polygon のとき使う（box には、それを囲む箱が入る）
 	bool isTrigger = false;                      // すり抜ける（押し戻さない）
+
+	// 形を move だけずらす（向き・大きさは変えない。動かした物の形を、Transform から作り直さずに合わせる）
+	void Translate(const Vector3& move) {
+		sphere.center += move;
+		box.min += move;
+		box.max += move;
+		capsule.start += move;
+		capsule.end += move;
+		polygon.origin += move;
+	}
 };
 
 // どのEntityを調べるか（true を返したEntityだけ調べる）。空なら全部
 // レイヤーの代わりに「相手が持っている Component」で絞る：[](Handle<Entity> e) { return EntityManager::Get<Wall>(e) != nullptr; }
 using CollisionFilter = std::function<bool(Handle<Entity>)>;
 
+/// <summary>
+/// 形を動かして調べる（Cast・Overlap）ときの決まり
+/// <para>調べる形の持ち主・その親子とは、いつも当たらない（自分の Collider・持っている剣の Collider に止められないように）</para>
+/// </summary>
+struct ShapeQuery {
+	CollisionFilter filter;       // 調べる相手を絞る（空なら全部）
+	Collision::AxisLock lock;     // その軸へは押し出さない（当たった面の向き・押し出すずれから、その軸の分を抜く）
+	bool includeTriggers = false; // Is Trigger の Collider も相手にするか（物を動かすときは、すり抜ける物を相手にしない）
+};
+
+/// <summary>
+/// Cast で最初に当たった物
+/// </summary>
+struct ShapeCastHit {
+	Handle<Entity> entity;               // 当たった Entity
+	Vector3 normal = {0.0f, 0.0f, 0.0f}; // 相手から、動かした形へ押し出す向き（長さ1。当たった面の向き。床なら、だいたい (0, 1, 0)）
+	Vector3 point = {0.0f, 0.0f, 0.0f};  // 当たった所（止まった所での、動かした形の表面の、相手に一番近い所。だいたいの位置）
+	float fraction = 0.0f;               // 動きの何割まで進めるか（0〜1。ここまでは何にも重ならない）
+	float distance = 0.0f;               // 進める距離（fraction × 動きの長さ）
+};
+
+/// <summary>
+/// Overlap で重なっていた物1つ
+/// </summary>
+struct ShapeOverlap {
+	Handle<Entity> entity;             // 重なっている Entity
+	Vector3 push = {0.0f, 0.0f, 0.0f}; // 調べた形を、この相手から外へ出すずれ（CalcPushOut と同じ。足すと、ちょうど触れた所になる）
+};
+
 
 /// <summary>
 /// ColliderComponent を持つEntity同士の重なりを調べて、「当たりの一覧」を作る
-/// <para>押し戻しはここではしない（Rigidbody を付けた物を PhysicsSystem が押し戻す）。ゲームは Script の OnTrigger〜 / OnCollision〜、
-/// または SYSTEM の中で GetHits を読んで、消す・音を鳴らすなどを決める</para>
-/// <para>1フレームの順番：SYSTEM（前のフレームの当たりを読む）→ ワールド行列 → Rigidbody の押し戻し（ぶつかった組を ReportImpact で知らせる）→ 破棄の反映 → ここで判定 → 描画</para>
+/// <para>押し戻しはここではしない（Rigidbody を PhysicsSystem が、Character Controller を CharacterControllerSystem が動かす。どちらも Cast・CalcPushOut でここに聞く）。
+/// ゲームは Script の OnTrigger〜 / OnCollision〜、または SYSTEM の中で GetHits を読んで、消す・音を鳴らすなどを決める</para>
+/// <para>1フレームの順番：SYSTEM（前のフレームの当たりを読む）→ ワールド行列 → 形を集め直す（SyncWorld）→ キャラを動かす → Rigidbody の押し戻し
+/// （どちらもぶつかった組を ReportImpact で知らせる）→ 破棄の反映 → ここで判定 → 描画</para>
 /// <para>一覧などの中身は CollisionSystem.cpp の中だけに置く（このヘッダはゲームのComponentのファイルがみんな読むので、軽くしておく）</para>
 /// </summary>
 class CollisionSystem {
@@ -93,8 +133,8 @@ public:
 	static std::span<const CollisionHit> GetHits(Handle<Entity> entity);
 
 	// ===== その場で調べる（SYSTEMの中で、何回呼んでもよい）=====
-	// 調べる相手の形は、前のフレームの Update で集めた物（1フレームの順番の 9。動かない壁なら気にしなくてよい）
-	// Play・シーン切り替えの直後のフレームは、作り直す前の Entity の形しか無いので、何にも当たらない
+	// 調べる相手の形は、最後に集めた物。再生中は、キャラを動かす前の SyncWorld（その後に動いた Rigidbody は動く前の位置）、Script の Update の中は前のフレームの Update
+	// Play・シーン切り替えの直後の Script の Update の中は、作り直す前の Entity の形しか無いので、何にも当たらない
 
 	/// <summary>
 	/// レイを飛ばして、一番近くで当たった Collider を探す（壁で線を止める・地面を指す）
@@ -113,6 +153,35 @@ public:
 	/// <param name="out">触れたEntityが入る（最初に空にする。並びは決まっていない）</param>
 	/// <param name="filter">調べる相手を絞る（空なら全部）</param>
 	static void SweepSphere(const Capsule& capsule, std::vector<Handle<Entity>>& out, const CollisionFilter& filter = {});
+
+	/// <summary>
+	/// 形を motion だけ動かしたときに、最初に当たる Collider を探す（物を動かす係が、壁で止める・面に沿わせるのに使う）
+	/// <para>どの形でも同じ書き方：少しずつ進めて CalcPushOut で重なりを見て、重なった区間を半分ずつ狭める。新しい形は CalcPushOut を書けば、ここでも使える</para>
+	/// <para>動かす前から重なっている相手は、近づく向きなら 0 で当たる（それ以上入らない）。離れる向きなら当たらない（中から出られる）</para>
+	/// </summary>
+	/// <param name="shape">動かす形（ワールド座標。CalcWorldCollider で作る）</param>
+	/// <param name="motion">動き（ワールド座標）</param>
+	/// <param name="hit">最初に当たった物が入る（当たらなければ変えない）</param>
+	/// <param name="query">調べる相手の決まり</param>
+	/// <returns>当たったか</returns>
+	static bool Cast(const WorldCollider& shape, const Vector3& motion, ShapeCastHit& hit, const ShapeQuery& query = {});
+
+	/// <summary>
+	/// 形に今重なっている Collider を全部集める（入り込まれたときに外へ出す量を知る）
+	/// </summary>
+	/// <param name="out">重なっている物と、そこから出すずれが入る（最初に空にする。並びは決まっていない）</param>
+	static void Overlap(const WorldCollider& shape, std::vector<ShapeOverlap>& out, const ShapeQuery& query = {});
+
+	/// <summary>
+	/// 調べる相手の形を、今の Transform で集め直す（Update の 1 と同じ。当たりの一覧は作らない）
+	/// <para>物を動かす係の前に呼ぶ（Script・アニメ・Timeline がこのフレームに動かした物を、動かした後の位置で調べる）</para>
+	/// </summary>
+	static void SyncWorld();
+
+	/// <summary>
+	/// 調べる相手の形のうち、entity とその子の物を move だけずらす（動かした係が呼ぶ。次に動かす物が、動いた後の位置で調べる）
+	/// </summary>
+	static void MoveCollider(Handle<Entity> entity, const Vector3& move);
 
 	// 全部の当たり（1組につき、両方から見た2件が入る。self の順に並んでいる）
 	static std::span<const CollisionHit> GetAllHits();
@@ -144,8 +213,8 @@ public:
 
 	/// <summary>
 	/// a を b から外へ出すずれ（a に push を足すと、ちょうど触れた所になる）。重なっていなければ false
-	/// <para>形の組み合わせ（球・箱・カプセル・多角形）で、使う関数を選ぶ。カプセルは ReplaceCapsulesWithSpheres で球にしてから出す</para>
-	/// <para>多角形は球とだけ当たる（カプセルは球にしてから）。箱 × 多角形・多角形 × 多角形は、いつも false（当たらない）</para>
+	/// <para>形の組み合わせ（球・箱・カプセル・多角形）で、使う関数を選ぶ。カプセルは ReplaceCapsulesWithSpheres で球にしてから出す（多角形が相手のときだけ、線分の上で一番深い所を探す）</para>
+	/// <para>多角形は球・カプセルとだけ当たる。箱 × 多角形・多角形 × 多角形は、いつも false（当たらない）</para>
 	/// </summary>
 	/// <param name="a">出す方（コピー。カプセルを球に置き換えるので）</param>
 	/// <param name="b">出される相手（コピー）</param>

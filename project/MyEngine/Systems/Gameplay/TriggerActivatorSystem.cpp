@@ -11,6 +11,7 @@
 #include "MyEngine/ECS/GameComponent.h"
 #include "MyEngine/Editor/Inspector/ComponentEditor.h"
 #include "MyEngine/Math/MathUtility.h"
+#include "MyEngine/Physics/MotionQuery.h"
 #include "MyEngine/Systems/Camera/CameraSystem.h"
 #include "MyEngine/Systems/Physics/CollisionSystem.h"
 
@@ -30,6 +31,8 @@ bool IsSource(TriggerSource source, EntityRef sourceEntity, Handle<Entity> other
 		return IsSelfOrDescendant(other, EntityManager::Find(sourceEntity));
 	case TriggerSource::AnyRigidbody:
 		return EntityManager::Get<RigidbodyComponent>(other) != nullptr;
+	case TriggerSource::AnyMover:
+		return MotionQuery::Has(other); // どの動き方かは知らずに、窓口に聞く
 	}
 	return false;
 }
@@ -134,7 +137,7 @@ void DescribeTriggerActivator(ComponentUI& ui, TriggerActivatorComponent& value)
 	ui.Separator("Source");
 	ui.Field(
 	    "Source###source", value.source,
-	    Tip("誰が入ったら反応するか。FollowTarget：カメラが追っている物（プレイヤー） / Entity：Source Entity に入れた物 / AnyRigidbody：Rigidbody を付けた物なら、どれでも"));
+	    Tip("誰が入ったら反応するか。FollowTarget：カメラが追っている物（プレイヤー） / Entity：Source Entity に入れた物 / AnyRigidbody：Rigidbody を付けた物なら、どれでも / AnyMover：Rigidbody か Character Controller を付けた物なら、どれでも"));
 	// --- 選んだ相手の値だけを見せる（保存も、使っている方だけが書かれる。Camera Follow の Mode と同じ）---
 	switch (value.source) {
 	case TriggerSource::FollowTarget:
@@ -143,6 +146,7 @@ void DescribeTriggerActivator(ComponentUI& ui, TriggerActivatorComponent& value)
 		ui.Field("Source Entity###sourceEntity", value.sourceEntity, Tip("反応する相手（Hierarchy からドラッグ）。子に付けた Collider も、この Entity として数える"));
 		break;
 	case TriggerSource::AnyRigidbody:
+	case TriggerSource::AnyMover:
 		break; // 選ぶ物は無い
 	}
 	// ===== どうするか =====

@@ -34,7 +34,7 @@ void DescribeTimelineTrigger(ComponentUI& ui, TimelineTriggerComponent& value) {
 	ui.Separator("Source");
 	ui.Field(
 	    "Source###source", value.source,
-	    Tip("誰が入ったら反応するか。FollowTarget：カメラが追っている物（プレイヤー） / Entity：Source Entity に入れた物 / AnyRigidbody：Rigidbody を付けた物なら、どれでも"));
+	    Tip("誰が入ったら反応するか。FollowTarget：カメラが追っている物（プレイヤー） / Entity：Source Entity に入れた物 / AnyRigidbody：Rigidbody を付けた物なら、どれでも / AnyMover：Rigidbody か Character Controller を付けた物なら、どれでも"));
 	// --- 選んだ相手の値だけを見せる（Trigger Activator と同じ）---
 	switch (value.source) {
 	case TriggerSource::FollowTarget:
@@ -43,6 +43,7 @@ void DescribeTimelineTrigger(ComponentUI& ui, TimelineTriggerComponent& value) {
 		ui.Field("Source Entity###sourceEntity", value.sourceEntity, Tip("反応する相手（Hierarchy からドラッグ）。子に付けた Collider も、この Entity として数える"));
 		break;
 	case TriggerSource::AnyRigidbody:
+	case TriggerSource::AnyMover:
 		break; // 選ぶ物は無い
 	}
 	// ===== 再生する Timeline =====

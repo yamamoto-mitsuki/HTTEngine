@@ -7,6 +7,7 @@
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/ECS/GameComponent.h"
 #include "MyEngine/Particle/ParticleManager.h"
+#include "MyEngine/Physics/MotionQuery.h"
 #include "MyEngine/Physics/PhysicMaterialManager.h"
 #include "MyEngine/Scene/Prefab/PrefabManager.h"
 #include "MyEngine/Scene/SceneTransition.h"
@@ -29,6 +30,7 @@
 // Lights
 #include "MyEngine/Systems/Lighting/LightSystem.h"
 // Physics
+#include "MyEngine/Systems/Physics/CharacterControllerSystem.h"
 #include "MyEngine/Systems/Physics/CollisionSystem.h"
 #include "MyEngine/Systems/Physics/ElasticSurfaceSystem.h"
 #include "MyEngine/Systems/Physics/PhysicsSystem.h"
@@ -67,10 +69,13 @@
 void EngineSystems::Initialize() {
 	EntityManager::Initialize();
 
+	MotionQuery::Initialize(); // 動き方の窓口（速さ・地面にいるか）。動き方の System（Rigidbody・Character Controller）が答え方を登録するので先に
+
 	// --- Component を EntityManager に登録する（保存・Inspector も。どれも EntityManager の後）---
 	LightSystem::Initialize();            // ライト
 	CollisionSystem::Initialize();        // Collider
 	PhysicsSystem::Initialize();          // RigidBody
+	CharacterControllerSystem::Initialize(); // Character Controller
 	AudioSystem::Initialize();            // AudioSource
 	CameraSystem::Initialize();           // Camera
 	TrailSystem::Initialize();            // Trail
@@ -123,6 +128,7 @@ void EngineSystems::Release() {
 	LightSystem::Release();
 	CollisionSystem::Release();
 	PhysicsSystem::Release();
+	CharacterControllerSystem::Release();
 	AudioSystem::Release();
 	CameraSystem::Release();
 	TrailSystem::Release();
@@ -152,6 +158,7 @@ void EngineSystems::Release() {
 	VectorShapeSystem::Release();
 	PolylineSystem::Release();
 	UIMaskSystem::Release();
+	MotionQuery::Release(); // 動き方の System の Release より後
 	EntityManager::Release();
 }
 
@@ -179,7 +186,16 @@ void EngineSystems::Update(bool isGameRunning, const std::shared_ptr<Camera>& ga
 	TimelineSystem::Update(isGameRunning);                          // Timeline（Script とアニメーションの後。書いた値を、このフレームのワールド行列・描画に使う。時間は Component ごとに選ぶ）
 	EntityManager::UpdateTransforms();      // ワールド行列（親→子）
 	WindZoneSystem::Update(isGameRunning, Time::GetDeltaTime()); // 風（Wind Zone）の範囲を集め直して、再生中なら Rigidbody を押す（押した速さで、すぐ後の物理が動かす）。画面の風の線の値も書く
-	
+
+	// キャラ（Character Controller）を動かす。動かす前に、当たりの形を今の位置で集め直す（Script・アニメ・Timeline がこのフレームに動かした物を、動いた後の位置で見る）
+	// 物理より前（Unity・Unreal と同じ。Rigidbody から見ると、キャラは動いた後の位置にある壁）。動かしたら、ワールド行列を計算し直す
+	if (isGameRunning) {
+		CollisionSystem::SyncWorld();
+		if (CharacterControllerSystem::Update(Time::GetDeltaTime())) {
+			EntityManager::UpdateTransforms();
+		}
+	}
+
 	// Rigid body を動かして、ぶつかった物から押し戻す
 	// 動かした物があれば、ワールド行列を計算し直す（カメラ・ライト・当たり判定・描画が、押し戻した後の位置を使うように）
 	if (isGameRunning && PhysicsSystem::Update(Time::GetDeltaTime())) {
@@ -232,6 +248,7 @@ void EngineSystems::Draw(Camera* gameCamera, IBLEnvironment* gameEnvironment) {
 	LightSystem::DrawGizmos(gameCamera);
 	CameraGizmo::Draw(gameCamera);
 	CollisionSystem::DrawGizmos(gameCamera);
+	CharacterControllerSystem::DrawGizmos(gameCamera); // 上れる段の高さ・地面の向き（Collider のギズモと一緒に出す・消す）
 	WindZoneSystem::DrawGizmos(gameCamera); // 風の範囲と向き（Collider のギズモと一緒に出す・消す）
 	AnimationSystem::DrawGizmos(gameCamera);
 #endif

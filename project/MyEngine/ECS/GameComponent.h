@@ -47,6 +47,7 @@
 //
 //   当たったかどうかは、③の中で CollisionSystem::GetHits(entity) を読む（Collider は Add Component → Physics で付ける）
 //   ぶつかったら止まる物は Rigidbody（Add Component → Physics）。③の中で EntityManager::Get<RigidbodyComponent>(entity)->velocity を書いて動かす
+//   歩くキャラは Character Controller（坂で滑らない・段を上る）。同じく velocity を書いて動かす
 //   画像は Sprite Renderer（3D空間の板）・Image（画面に重ねる絵）。ボタンは SpriteRenderSystem::IsMouseOver(entity)
 //   音は、③の中で AudioSystem::Play(entity) / PlayOneShot(entity) を呼ぶ（Audio Source は Add Component → Audio で付ける）
 //   カメラは Entity に付ける Camera Component。追いかけるなら、同じ Entity に Camera Follow（Add Component → Camera）を付けて Target を入れる

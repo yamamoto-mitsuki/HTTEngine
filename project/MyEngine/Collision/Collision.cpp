@@ -1,5 +1,6 @@
 #include "MyEngine/Collision/Collision.h"
 
+#include <array>
 #include <cmath>
 #include <cfloat>
 #include <chrono>
@@ -272,6 +273,83 @@ bool PushOutSpherePolygon(const Sphere& a, const ExtrudedPolygon& b, Vector3* pu
 // ===== 多角形を球から（球を多角形から出す向きの、反対へ）=====
 bool PushOutPolygonSphere(const ExtrudedPolygon& a, const Sphere& b, Vector3* push, AxisLock lock) {
 	if (!PushOutSpherePolygon(b, a, push, lock)) {
+		return false;
+	}
+	*push = -*push;
+	return true;
+}
+
+// ===== カプセルを、多角形を押し出した形から =====
+//   カプセルは線分を半径で太らせた形なので、線分の上の「一番深く入っている点」に置いた球を出せばよい
+//   その点の候補（線分の上の位置 t。0 が start、1 が end）：
+//     ・線分の両端
+//     ・多角形の点ごとに、線分の上で一番近い所（外にあるとき、角に一番近づく所）
+//     ・線分が辺をまたぐ所（X・Y で見て。表面にちょうど触れる所）
+//   外にある間の距離は、どれかの候補で一番短くなる。候補ごとに球を出してみて、一番大きく出す物を使う
+//   （囲む箱で1点だけ選ぶと、坂に立つカプセルでは足元より上の点を選んでしまい、足が坂に沈む）
+bool PushOutCapsulePolygon(const Capsule& a, const ExtrudedPolygon& b, Vector3* push, AxisLock lock) {
+	if (b.count < 3) {
+		return false; // 形が無い
+	}
+	const std::span<const Vector2> points = b.GetPoints();
+	const Vector3 direction = a.end - a.start;
+	const float lengthSq = LengthSq(direction);
+
+	// --- 候補の t を集める（両端・点の数・辺の数。kMaxPolygonPoints が上限なので配列で足りる）---
+	std::array<float, kMaxPolygonPoints * 2 + 2> candidates{};
+	size_t count = 0;
+	candidates[count++] = 0.0f;
+	candidates[count++] = 1.0f;
+	if (lengthSq > kPushEpsilon * kPushEpsilon) {
+		// 点に一番近い所：点を線分へ落とした位置（線分の外なら端）
+		const float nearZ = std::clamp(a.start.z, b.origin.z - b.halfDepth, b.origin.z + b.halfDepth);
+		for (const Vector2& point : points) {
+			const Vector3 vertex = {b.origin.x + point.x, b.origin.y + point.y, nearZ};
+			candidates[count++] = std::clamp(Dot(vertex - a.start, direction) / lengthSq, 0.0f, 1.0f);
+		}
+		// 辺をまたぐ所：線分と辺を X・Y で見た、2本の線分の交わる所（2次元の外積で解く）
+		//   線分 P(t) = s + d·t、辺 Q(u) = e0 + e·u。P(t) = Q(u) を解くと t = (e0 − s)×e ÷ (d×e)、u = (e0 − s)×d ÷ (d×e)
+		const Vector2 start = {a.start.x - b.origin.x, a.start.y - b.origin.y};
+		const Vector2 segment = {direction.x, direction.y};
+		const auto cross = [](const Vector2& p, const Vector2& q) { return p.x * q.y - p.y * q.x; };
+		for (size_t i = 0; i < points.size(); ++i) {
+			const Vector2& edgeStart = points[i];
+			const Vector2 edge = points[(i + 1) % points.size()] - edgeStart;
+			const float denominator = cross(segment, edge);
+			if (std::abs(denominator) < kPushEpsilon) {
+				continue; // 平行（またがない。近い所は点の候補で見ている）
+			}
+			const Vector2 toEdge = edgeStart - start;
+			const float t = cross(toEdge, edge) / denominator;
+			const float u = cross(toEdge, segment) / denominator;
+			if (t >= 0.0f && t <= 1.0f && u >= 0.0f && u <= 1.0f) {
+				candidates[count++] = t;
+			}
+		}
+	}
+
+	// --- 候補ごとに球を出してみて、一番大きく出す物を使う ---
+	bool isHit = false;
+	float bestSq = 0.0f;
+	for (size_t i = 0; i < count; ++i) {
+		const Sphere sphere = {a.start + direction * candidates[i], a.radius};
+		Vector3 candidatePush;
+		if (!PushOutSpherePolygon(sphere, b, &candidatePush, lock)) {
+			continue;
+		}
+		const float pushSq = LengthSq(candidatePush);
+		if (!isHit || pushSq > bestSq) {
+			*push = candidatePush;
+			bestSq = pushSq;
+			isHit = true;
+		}
+	}
+	return isHit;
+}
+
+// ===== 多角形をカプセルから（カプセルを多角形から出す向きの、反対へ）=====
+bool PushOutPolygonCapsule(const ExtrudedPolygon& a, const Capsule& b, Vector3* push, AxisLock lock) {
+	if (!PushOutCapsulePolygon(b, a, push, lock)) {
 		return false;
 	}
 	*push = -*push;

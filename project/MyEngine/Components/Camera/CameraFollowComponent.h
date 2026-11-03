@@ -38,7 +38,7 @@ struct CameraFollowComponent {
 	CameraFollowMode mode = CameraFollowMode::LookAhead; // 追い方
 	Vector2 offset = {0.0f, 1.5f};                       // 追う物から、画面の真ん中をどれだけずらすか（m。XY で Y を上げると、足元が広く見える）
 	Vector2 deadZone = {0.5f, 1.5f};                     // 遊び（m）。画面の真ん中から横・縦にこの範囲で動いても、カメラは動かない
-	bool groundSnapY = true;              // true：追う物が地面にいる間は、縦の遊びを使わずに合わせる（XY のとき。跳んでも画面は揺れず、段に乗ると上がる）。追う物の Rigidbody の isGrounded を見る
+	bool groundSnapY = true;              // true：追う物が地面にいる間は、縦の遊びを使わずに合わせる（XY のとき。跳んでも画面は揺れず、段に乗ると上がる）。追う物の Rigidbody・Character Controller が地面にいるかを見る（MotionQuery::IsGrounded）
 	float smoothTime = 0.15f;             // 追いつくまでの時間の目安（秒。0 ならすぐ合わせる）
 	Vector2 maxLag = {6.0f, 4.0f};        // 遅れの上限（m）。focus と画面の真ん中が、これより離れない（速く動いても画面から出ないように）
 	bool useBounds = false;               // true：画面の端が boundsMin〜boundsMax の外を写さない（ステージの端でカメラが止まる。XY・XZ のとき）

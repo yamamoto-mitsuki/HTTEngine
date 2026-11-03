@@ -642,6 +642,9 @@
     <ClCompile Include="MyEngine\Physics\ElasticSurfaceSimulation.cpp">
       <Filter>MyEngine\Physics</Filter>
     </ClCompile>
+    <ClCompile Include="MyEngine\Physics\MotionQuery.cpp">
+      <Filter>MyEngine\Physics</Filter>
+    </ClCompile>
     <ClCompile Include="MyEngine\Physics\PhysicMaterialManager.cpp">
       <Filter>MyEngine\Physics</Filter>
     </ClCompile>
@@ -733,6 +736,9 @@
       <Filter>MyEngine\Systems\Physics</Filter>
     </ClCompile>
     <ClCompile Include="MyEngine\Systems\Physics\ElasticSurfaceSystem.cpp">
+      <Filter>MyEngine\Systems\Physics</Filter>
+    </ClCompile>
+    <ClCompile Include="MyEngine\Systems\Physics\CharacterControllerSystem.cpp">
       <Filter>MyEngine\Systems\Physics</Filter>
     </ClCompile>
     <ClCompile Include="MyEngine\Systems\Physics\PhysicsSystem.cpp">
@@ -924,6 +930,9 @@
       <Filter>MyEngine\Components\Physics</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Components\Physics\ElasticSurfaceComponent.h">
+      <Filter>MyEngine\Components\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Components\Physics\CharacterControllerComponent.h">
       <Filter>MyEngine\Components\Physics</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Components\Physics\RigidbodyComponent.h">
@@ -1397,6 +1406,9 @@
     <ClInclude Include="MyEngine\Physics\ElasticSurfaceSimulation.h">
       <Filter>MyEngine\Physics</Filter>
     </ClInclude>
+    <ClInclude Include="MyEngine\Physics\MotionQuery.h">
+      <Filter>MyEngine\Physics</Filter>
+    </ClInclude>
     <ClInclude Include="MyEngine\Physics\PhysicMaterialManager.h">
       <Filter>MyEngine\Physics</Filter>
     </ClInclude>
@@ -1506,6 +1518,9 @@
       <Filter>MyEngine\Systems\Physics</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Systems\Physics\ElasticSurfaceSystem.h">
+      <Filter>MyEngine\Systems\Physics</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Systems\Physics\CharacterControllerSystem.h">
       <Filter>MyEngine\Systems\Physics</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Systems\Physics\PhysicsSystem.h">

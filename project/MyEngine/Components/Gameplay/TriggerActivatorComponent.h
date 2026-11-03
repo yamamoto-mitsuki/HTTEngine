@@ -16,6 +16,7 @@ enum class TriggerSource {
 	FollowTarget, // メインカメラの Camera Follow の Target（横から見るゲームのプレイヤー。何も選ばなくてよい）
 	Entity,       // Source Entity に入れた Entity（子に付けた Collider も、その Entity として数える）
 	AnyRigidbody, // Rigidbody を付けた物なら、どれでも
+	AnyMover,     // 動き方の Component（Rigidbody・Character Controller）を付けた物なら、どれでも
 };
 
 /// <summary>

@@ -29,4 +29,6 @@ public:
 	// 重力（Settings の Physics → World → Gravity。既定は (0, -9.8, 0)）
 	static Vector3 GetGravity();
 	static void SetGravity(const Vector3& gravity);
+	// 「上」の向き（長さ1。重力の反対。重力が 0 なら +Y）。地面に乗っているか・立てる坂かを決めるのに使う（Character Controller も同じ向きを使う）
+	static Vector3 GetUp();
 };

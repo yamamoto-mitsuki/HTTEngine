@@ -11,7 +11,6 @@
 #include "MyEngine/Collision/Collision.h"
 #include "MyEngine/Components/Rendering3D/PolygonShapeComponent.h"
 #include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Components/Physics/RigidbodyComponent.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/ComponentUI.h"
@@ -20,6 +19,7 @@
 #include "MyEngine/Editor/Gizmos/GizmoLines.h"
 #include "MyEngine/Editor/Inspector/ComponentEditor.h"
 #include "MyEngine/Graphics/Renderer/Renderer.h"
+#include "MyEngine/Physics/MotionQuery.h"
 #include "MyEngine/Systems/Rendering3D/PolygonShapeSystem.h"
 
 namespace {
@@ -80,11 +80,9 @@ HitPair MakePair(Handle<Entity> a, Handle<Entity> b, bool isTrigger, const Vecto
 // 同じ2つの組か（isTrigger は見ない）
 bool IsSamePair(const HitPair& a, const HitPair& b) { return a.first == b.first && a.second == b.second; }
 
-// Rigidbody の今の速さ（Rigidbody が無ければ0。動かない壁・床）
-Vector3 VelocityOf(Handle<Entity> entity) {
-	const RigidbodyComponent* rigidbody = EntityManager::Get<RigidbodyComponent>(entity);
-	return (rigidbody != nullptr) ? rigidbody->velocity : Vector3{0.0f, 0.0f, 0.0f};
-}
+// 今の速さ（Rigidbody・Character Controller など、動き方の Component が無ければ0。動かない壁・床）
+// どの動き方かは知らずに、窓口（MotionQuery）に聞く
+Vector3 VelocityOf(Handle<Entity> entity) { return MotionQuery::GetVelocity(entity); }
 
 // Entityの大きさ（ワールド行列の1〜3行目の長さ＝ローカルのX・Y・Z軸がどれだけ伸びているか。親の大きさも入っている）
 Vector3 GetWorldScale(const Matrix4x4& m) {
@@ -131,7 +129,7 @@ WorldCollider ToSphere(const WorldCollider& capsule, const Vector3& point) {
 }
 
 // カプセルの線分の上で、相手（球・箱）に一番近い点。箱に入っていれば、一番深く入っている点
-// 多角形は、囲む箱（box）で同じように選ぶ（立っているカプセルが足場に乗るなら、下の端の球になる）
+// 多角形は、囲む箱（box）で同じように選ぶ（押し出し・重なりの判定では使わない。CalcPushOut が多角形用の関数で、線分の上の候補から選ぶ）
 Vector3 NearestPointOnCapsule(const Capsule& capsule, const WorldCollider& other) {
 	if (other.shape == ColliderShape::Sphere) {
 		return Collision::ClosestPointOnSegment(other.sphere.center, capsule.start, capsule.end);
@@ -166,6 +164,21 @@ void AddHits(std::vector<CollisionHit>& hits, const HitPair& pair, HitPhase phas
 	if (EntityManager::IsAlive(pair.second)) {
 		hits.push_back({pair.second, pair.first, phase, pair.isTrigger, -pair.normal, pair.secondVelocity, pair.firstVelocity});
 	}
+}
+
+// 判定に使う形を集め直す（有効なEntityの、有効な Collider だけ）。Update と SyncWorld で共通
+void CollectColliders() {
+	state->colliders.clear();
+	EntityManager::ForEach<ColliderComponent>([](Handle<Entity> entity, const ColliderComponent& collider) {
+		if (!collider.enabled || !EntityManager::IsActiveInHierarchy(entity)) {
+			return;
+		}
+		const TransformComponent* transform = EntityManager::Get<TransformComponent>(entity);
+		if (transform == nullptr) {
+			return;
+		}
+		state->colliders.push_back(CollisionSystem::CalcWorldCollider(entity, collider, *transform));
+	});
 }
 
 // このEntityが、今重なっているか（当たり始め・当たっている。離れた＝Exit は入れない）
@@ -218,7 +231,7 @@ void DescribeCollider(ComponentUI& ui, ColliderComponent& value) {
 	ui.Field("Is Trigger###isTrigger", value.isTrigger, Tip("すり抜ける（Rigidbody を押し戻さない）。Script には OnTrigger〜、外すと OnCollision〜"));
 	ui.Field("Shape###shape", value.shape);
 	ui.Field("Center###center", value.center, Tip("Entityの位置からのずれ（Entityの回転と大きさも掛かる）"));
-	ui.AssetField("Physic Material###physicMaterial", value.physicMaterial, AssetType::PhysicMaterial, Tip("跳ね返り・摩擦（.physmat のファイル。Project の Create → Physic Material で作る）。(none) なら跳ね返らず、滑っても止まらない"));
+	ui.AssetField("Physic Material###physicMaterial", value.physicMaterial, AssetType::PhysicMaterial, Tip("跳ね返り・摩擦（.physmat のファイル。Project の Create → Physic Material で作る）。(none) なら跳ね返らず、摩擦は 0.6（Unity の既定と同じ）"));
 	// 形に合う大きさだけを見せる（保存も、使っている方だけが書かれる）
 	switch (value.shape) {
 	case ColliderShape::Sphere:
@@ -265,17 +278,7 @@ void CollisionSystem::Update() {
 	MY_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
 
 	// ===== 1. 判定に使う形を集める（有効なEntityの、有効な Collider だけ）=====
-	state->colliders.clear();
-	EntityManager::ForEach<ColliderComponent>([](Handle<Entity> entity, const ColliderComponent& collider) {
-		if (!collider.enabled || !EntityManager::IsActiveInHierarchy(entity)) {
-			return;
-		}
-		const TransformComponent* transform = EntityManager::Get<TransformComponent>(entity);
-		if (transform == nullptr) {
-			return;
-		}
-		state->colliders.push_back(CalcWorldCollider(entity, collider, *transform));
-	});
+	CollectColliders();
 
 	// ===== 2. 全部の組を調べる（総当たり。n個なら n×(n-1)/2 回。数百個まではこれで足りる）=====
 	// 触れているだけの物も当たっている扱い（IsInContact）。どちらかが Is Trigger なら、すり抜ける当たり
@@ -449,6 +452,14 @@ void CollisionSystem::ReplaceCapsulesWithSpheres(WorldCollider& a, WorldCollider
 // 押し出すずれ（判定・当たりの向き・押し戻しで共通）
 //=============================================================================
 bool CollisionSystem::CalcPushOut(WorldCollider a, WorldCollider b, Collision::AxisLock lock, Vector3* push) {
+	// カプセル × 多角形：線分の上の候補から一番深い所を探す（囲む箱で1点だけ選ぶと、坂に立つカプセルの足元を見落とす）
+	// 囲む箱にも触れていなければ、辺を1本ずつ調べなくても当たらない
+	if (a.shape == ColliderShape::Capsule && b.shape == ColliderShape::Polygon) {
+		return Collision::CapsuleAABB(a.capsule, b.box) && Collision::PushOutCapsulePolygon(a.capsule, b.polygon, push, lock);
+	}
+	if (a.shape == ColliderShape::Polygon && b.shape == ColliderShape::Capsule) {
+		return Collision::CapsuleAABB(b.capsule, a.box) && Collision::PushOutPolygonCapsule(a.polygon, b.capsule, push, lock);
+	}
 	// カプセルは、相手に一番近い所の球に置き換える（その球を出す量だけ、カプセルも出す）。ここから下は球・箱・多角形だけ
 	ReplaceCapsulesWithSpheres(a, b);
 	// 形の組み合わせ（a × b）で、使う関数を選ぶ
@@ -528,6 +539,148 @@ bool RayCollider(const Ray& ray, const WorldCollider& collider, float& t) {
 	}
 	return false;
 }
+
+// ===== 形を動かして調べる（Cast・Overlap）の道具 =====
+constexpr float kMinCastLength = 1e-6f; // これより短い動きは調べない（m）
+constexpr float kCastStepRatio = 0.5f;  // 1回に進める長さ ＝ 動かす形の一番細い所の半分の太さ × これ（細かいほど、かすっただけの物も見つける）
+constexpr float kMinCastStep = 0.01f;   // 1回に進める長さの下限（m。とても細い形でも、回数が増えすぎないように）
+constexpr int kCastBisectCount = 12;    // 当たった区間を半分にする回数（12 回で、1回に進める長さの 4096 分の1まで狭まる）
+
+// 形を囲む箱（調べる前に「近くにも無い物」を外すのに使う）
+AABB CalcBounds(const WorldCollider& collider) {
+	switch (collider.shape) {
+	case ColliderShape::Sphere: {
+		const Vector3 half = {collider.sphere.radius, collider.sphere.radius, collider.sphere.radius};
+		return {collider.sphere.center - half, collider.sphere.center + half};
+	}
+	case ColliderShape::Box:
+		return collider.box;
+	case ColliderShape::Capsule: {
+		const Capsule& capsule = collider.capsule;
+		const Vector3 half = {capsule.radius, capsule.radius, capsule.radius};
+		const Vector3 low = {(std::min)(capsule.start.x, capsule.end.x), (std::min)(capsule.start.y, capsule.end.y), (std::min)(capsule.start.z, capsule.end.z)};
+		const Vector3 high = {(std::max)(capsule.start.x, capsule.end.x), (std::max)(capsule.start.y, capsule.end.y), (std::max)(capsule.start.z, capsule.end.z)};
+		return {low - half, high + half};
+	}
+	case ColliderShape::Polygon: {
+		// box は点だけを囲む箱なので、太らせた量（radius）を足す
+		const Vector3 half = {collider.polygon.radius, collider.polygon.radius, collider.polygon.radius};
+		return {collider.box.min - half, collider.box.max + half};
+	}
+	}
+	return collider.box;
+}
+
+// 2つの箱を両方とも囲む箱
+AABB MergeBounds(const AABB& a, const AABB& b) {
+	return {
+	    {(std::min)(a.min.x, b.min.x), (std::min)(a.min.y, b.min.y), (std::min)(a.min.z, b.min.z)},
+	    {(std::max)(a.max.x, b.max.x), (std::max)(a.max.y, b.max.y), (std::max)(a.max.z, b.max.z)},
+	};
+}
+
+// 形の一番細い所の、半分の太さ（Cast で1回に進める長さを決める。これより短く進めれば、壁を飛び越えない）
+float CalcHalfThickness(const WorldCollider& collider) {
+	switch (collider.shape) {
+	case ColliderShape::Sphere:
+		return collider.sphere.radius;
+	case ColliderShape::Capsule:
+		return collider.capsule.radius;
+	case ColliderShape::Box:
+	case ColliderShape::Polygon: {
+		const AABB bounds = CalcBounds(collider);
+		const Vector3 size = bounds.max - bounds.min;
+		return (std::min)({size.x, size.y, size.z}) * 0.5f;
+	}
+	}
+	return 0.0f;
+}
+
+// 形の表面で、direction（長さ1）の向きに一番出ている所（当たった所のだいたいの位置に使う）
+Vector3 CalcFarthestPoint(const WorldCollider& collider, const Vector3& direction) {
+	switch (collider.shape) {
+	case ColliderShape::Sphere:
+		return collider.sphere.center + direction * collider.sphere.radius;
+	case ColliderShape::Capsule: {
+		// 線分の端のうち、その向きに出ている方（同じくらいなら真ん中）から、半径だけ先
+		const Capsule& capsule = collider.capsule;
+		const float startSide = Dot(capsule.start, direction);
+		const float endSide = Dot(capsule.end, direction);
+		const Vector3 base = (std::abs(startSide - endSide) < 1e-4f) ? (capsule.start + capsule.end) * 0.5f : ((startSide > endSide) ? capsule.start : capsule.end);
+		return base + direction * capsule.radius;
+	}
+	case ColliderShape::Box:
+	case ColliderShape::Polygon: {
+		// 箱の角のうち、その向きに一番出ている物（多角形は囲む箱で、だいたい）
+		const AABB bounds = CalcBounds(collider);
+		return {
+		    (direction.x >= 0.0f) ? bounds.max.x : bounds.min.x,
+		    (direction.y >= 0.0f) ? bounds.max.y : bounds.min.y,
+		    (direction.z >= 0.0f) ? bounds.max.z : bounds.min.z,
+		};
+	}
+	}
+	return collider.sphere.center;
+}
+
+// 形を動かして調べる相手か（生きている・Is Trigger の扱い・自分と親子でない・絞り込みに合う）
+bool IsShapeQueryTarget(const WorldCollider& collider, const WorldCollider& shape, const ShapeQuery& query) {
+	if (!EntityManager::IsAlive(collider.entity) || (collider.isTrigger && !query.includeTriggers)) {
+		return false;
+	}
+	if (shape.entity.IsValid() && EntityManager::IsRelated(shape.entity, collider.entity)) {
+		return false; // 自分の形・自分の子に付けた形（持っている剣など）
+	}
+	return !query.filter || query.filter(collider.entity);
+}
+
+// shape を motion だけ動かしたとき、other に最初に触れる割合（0〜limit）を探す。limit までに触れなければ false
+//   1. stepFraction ずつ進めて、重なったら止める（1回に進める長さは形の半分の太さより短いので、壁を飛び越えない）
+//   2. 最後に重ならなかった割合と、重なった割合の間を、半分ずつ狭める（二分探索）
+//   3. 向きは、重なった所で外へ出すずれの向き（CalcPushOut の向き＝当たった面の向き）
+bool CastAgainst(const WorldCollider& shape, const Vector3& motion, const WorldCollider& other, float stepFraction, float limit, Collision::AxisLock lock, float* fraction,
+                 Vector3* normal) {
+	Vector3 push;
+	// --- 動かす前から重なっている：近づく向きなら、そこで止める。離れる向きなら止めない（中から出られるように）---
+	if (CollisionSystem::CalcPushOut(shape, other, lock, &push)) {
+		if (Dot(push, motion) >= 0.0f) {
+			return false;
+		}
+		*fraction = 0.0f;
+		*normal = Normalize(push);
+		return true;
+	}
+	// --- 1. 少しずつ進めて、重なる所を探す ---
+	float freeFraction = 0.0f; // ここまでは重ならない
+	while (freeFraction < limit) {
+		const float next = (std::min)(freeFraction + stepFraction, limit);
+		WorldCollider moved = shape;
+		moved.Translate(motion * next);
+		if (!CollisionSystem::CalcPushOut(moved, other, lock, &push)) {
+			freeFraction = next;
+			continue;
+		}
+		// --- 2. 重ならない所と重なる所の間を、半分ずつ狭める ---
+		float hitFraction = next;
+		for (int i = 0; i < kCastBisectCount; ++i) {
+			const float middle = (freeFraction + hitFraction) * 0.5f;
+			WorldCollider probe = shape;
+			probe.Translate(motion * middle);
+			Vector3 middlePush;
+			if (CollisionSystem::CalcPushOut(probe, other, lock, &middlePush)) {
+				hitFraction = middle;
+				push = middlePush;
+			} else {
+				freeFraction = middle;
+			}
+		}
+		// --- 3. 重ならない方の割合まで進めてよい。向きは重なった所の押し出す向き ---
+		*fraction = freeFraction;
+		*normal = Normalize(push);
+		return true;
+	}
+	return false;
+}
 } // namespace
 
 
@@ -575,6 +728,84 @@ void CollisionSystem::SweepSphere(const Capsule& capsule, std::vector<Handle<Ent
 		}
 		if (IsOverlapping(sweep, collider)) {
 			out.push_back(collider.entity);
+		}
+	}
+}
+
+bool CollisionSystem::Cast(const WorldCollider& shape, const Vector3& motion, ShapeCastHit& hit, const ShapeQuery& query) {
+	MY_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
+	const float length = Length(motion);
+	if (length < kMinCastLength) {
+		return false; // 動かない
+	}
+	// 動いた跡を囲む箱（動く前と後の形を両方囲む）。これに触れない物は調べない
+	WorldCollider end = shape;
+	end.Translate(motion);
+	const AABB sweptBounds = MergeBounds(CalcBounds(shape), CalcBounds(end));
+	// 1回に進める割合（形の半分の太さ × kCastStepRatio を、動きの長さで割る）
+	const float stepFraction = (std::max)(CalcHalfThickness(shape) * kCastStepRatio, kMinCastStep) / length;
+
+	// 全部の相手を調べて、一番早く触れる物を残す（総当たり。Update と同じく数百個まではこれで足りる）
+	// 2つ目からは「今までで一番早い割合」までしか調べない（それより後に触れる物は要らない）
+	bool isHit = false;
+	float nearest = 1.0f;
+	for (const WorldCollider& collider : state->colliders) {
+		if (!IsShapeQueryTarget(collider, shape, query) || !Collision::AABBAABB(sweptBounds, CalcBounds(collider))) {
+			continue;
+		}
+		float fraction = 0.0f;
+		Vector3 normal;
+		if (!CastAgainst(shape, motion, collider, stepFraction, nearest, query.lock, &fraction, &normal)) {
+			continue;
+		}
+		if (isHit && fraction >= nearest) {
+			continue; // 同じ割合なら、先に見つけた方
+		}
+		isHit = true;
+		nearest = fraction;
+		hit.entity = collider.entity;
+		hit.normal = normal;
+	}
+	if (isHit) {
+		hit.fraction = nearest;
+		hit.distance = nearest * length;
+		// 止まった所での、相手に向いた表面の点（相手は normal の反対の向きにある）
+		WorldCollider stopped = shape;
+		stopped.Translate(motion * nearest);
+		hit.point = CalcFarthestPoint(stopped, -hit.normal);
+	}
+	return isHit;
+}
+
+void CollisionSystem::Overlap(const WorldCollider& shape, std::vector<ShapeOverlap>& out, const ShapeQuery& query) {
+	MY_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
+	out.clear();
+	const AABB bounds = CalcBounds(shape);
+	for (const WorldCollider& collider : state->colliders) {
+		if (!IsShapeQueryTarget(collider, shape, query) || !Collision::AABBAABB(bounds, CalcBounds(collider))) {
+			continue;
+		}
+		Vector3 push;
+		if (CalcPushOut(shape, collider, query.lock, &push)) {
+			out.push_back({collider.entity, push});
+		}
+	}
+}
+
+//=============================================================================
+// 調べる相手の形を、今の位置に合わせる（物を動かす係から）
+//=============================================================================
+void CollisionSystem::SyncWorld() {
+	MY_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
+	CollectColliders();
+}
+
+void CollisionSystem::MoveCollider(Handle<Entity> entity, const Vector3& move) {
+	MY_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
+	// 子に付けた形も、Transform では一緒に動くので、ここでも一緒にずらす
+	for (WorldCollider& collider : state->colliders) {
+		if (collider.entity == entity || EntityManager::IsDescendantOf(collider.entity, entity)) {
+			collider.Translate(move);
 		}
 	}
 }
