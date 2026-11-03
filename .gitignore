@@ -380,3 +380,14 @@ FodyWeavers.xsd
 
 # vcpkg が各 PC で用意する外部ライブラリ（externals/vcpkg.json を見て作る）
 project/externals/vcpkg_installed/
+
+# Sandbox（エンジンのテスト用の exe）が書くファイル
+/project/Sandbox/MyEngine/
+/project/Sandbox/imgui.ini
+/project/Sandbox/imgui_style.ini
+/project/Sandbox/saves/
+
+# エディタが書く、人ごとに違うファイル（git に入れると、保存するたびにぶつかる）
+*.bak
+*.broken
+/project/Sandbox/Parameters/Editor/
