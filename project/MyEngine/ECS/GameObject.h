@@ -26,6 +26,7 @@ struct GameObject {
 	__declspec(property(get = GetName, put = SetName)) std::string name;    // 名前
 	__declspec(property(get = IsActiveSelf)) bool activeSelf;               // 自分の有効・無効
 	__declspec(property(get = IsActiveInHierarchy)) bool activeInHierarchy; // 親まで全部有効か（無効の親の下なら false）
+	__declspec(property(get = GetLayer, put = SetLayer)) int layer;         // レイヤー（0〜31。名前との行き来は Layers::NameToLayer・LayerToName）
 
 	// ===== 作る・探す =====
 	// 新しい Entity を作る（Unity の new GameObject("名前")）。Transform はすぐ付いている
@@ -87,4 +88,6 @@ struct GameObject {
 	void SetName(const std::string& newName) const;
 	bool IsActiveSelf() const;
 	bool IsActiveInHierarchy() const;
+	int GetLayer() const;               // 消えた GameObject なら 0
+	void SetLayer(int newLayer) const;  // 0〜31 の外なら変えない（子は変えない。Unity と同じ）
 };

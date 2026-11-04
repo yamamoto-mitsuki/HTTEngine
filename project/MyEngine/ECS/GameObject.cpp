@@ -41,6 +41,21 @@ bool GameObject::IsActiveSelf() const {
 bool GameObject::IsActiveInHierarchy() const { return EntityManager::IsActiveInHierarchy(handle); }
 
 //=============================================================================
+// レイヤー
+//=============================================================================
+int GameObject::GetLayer() const {
+	const Entity* entity = EntityManager::Get(handle);
+	return (entity != nullptr) ? entity->layer : 0;
+}
+
+void GameObject::SetLayer(int newLayer) const {
+	Entity* entity = EntityManager::Get(handle);
+	if (entity != nullptr && newLayer >= 0 && newLayer < 32) {
+		entity->layer = static_cast<uint8_t>(newLayer);
+	}
+}
+
+//=============================================================================
 // 位置・名前
 //=============================================================================
 TransformComponent& GameObject::GetTransform() const {

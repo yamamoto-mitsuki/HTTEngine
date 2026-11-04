@@ -52,6 +52,7 @@ struct EntityData {
 	EntityId parent = 0; // 0ならroot
 	std::string name;
 	bool isActive = true;
+	uint8_t layer = 0; // レイヤー
 	std::vector<ComponentSnapshot> components; // 持っているComponent全部（Inspectorに出していない型も含む）
 	std::string scripts;  // 付いている Script 全部（バイト列では写せないので、保存と同じJSON の文字で）
 };
@@ -116,6 +117,7 @@ EntityData CaptureOne(Handle<Entity> handle) {
 	data.parent = IdOf(entity->parent);
 	data.name = entity->name;
 	data.isActive = entity->isActive;
+	data.layer = entity->layer;
 	EntityManager::CaptureComponents(handle, data.components);
 	data.scripts = ScriptSystem::Capture(handle);
 	return data;
@@ -156,6 +158,7 @@ bool Restore(const EntityTree& tree) {
 	for (const EntityData& data : tree) {
 		Handle<Entity> handle = EntityManager::CreateWithId(data.id, data.name, EntityManager::FindById(data.parent));
 		EntityManager::Get(handle)->isActive = data.isActive;
+		EntityManager::Get(handle)->layer = data.layer;
 	}
 	for (const EntityData& data : tree) {
 		const Handle<Entity> handle = EntityManager::FindById(data.id);
@@ -493,6 +496,8 @@ void EditorHistory::RequestRename(Handle<Entity> handle, const std::string& name
 }
 
 void EditorHistory::RequestSetActive(Handle<Entity> handle, bool isActive) { RequestSetEntityValue(handle, &Entity::isActive, isActive); }
+
+void EditorHistory::RequestSetLayer(Handle<Entity> handle, uint8_t layer) { RequestSetEntityValue(handle, &Entity::layer, layer); }
 
 void EditorHistory::RequestReparent(Handle<Entity> child, Handle<Entity> parent) {
 	if (parent.IsValid() && !EntityManager::IsAlive(parent)) {

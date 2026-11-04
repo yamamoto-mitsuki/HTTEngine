@@ -7,6 +7,7 @@
 #include <sstream>
 #ifdef USE_IMGUI
 #include "MyEngine/Editor/History/EditorHistory.h"
+#include "MyEngine/Editor/Widgets/EditorWidgets.h"
 #endif
 
 namespace {
@@ -338,6 +339,13 @@ void GlobalVariables::DrawItem(const std::string& groupName, const std::string& 
 				    uint32_t a = static_cast<uint32_t>(col[3] * 255.0f);
 				    v.rgba = (r << 24) | (g << 16) | (b << 8) | a;
 			    }
+
+		    } else if constexpr (std::is_same_v<T, std::string>) {
+			    // 文字（長さの上限なし。日本語も打てる）。ラベルは左、入力欄は右（bool・int と同じ並び）
+			    ImGui::Text("%s", label.c_str());
+			    ImGui::SameLine(150.0f);
+			    ImGui::SetNextItemWidth(-1);
+			    EditorWidgets::InputText(uid.c_str(), v);
 		    }
 	    },
 	    item);
@@ -474,7 +482,7 @@ GlobalVariables::json GlobalVariables::ItemToJson(const Item& item) {
 		    } else if constexpr (std::is_same_v<T, ComboItem>) {
 			    return v.currentIndex;
 		    } else {
-			    return v; // bool・int32_t・float はそのまま
+			    return v; // bool・int32_t・float・std::string はそのまま
 		    }
 	    },
 	    item);
@@ -524,6 +532,11 @@ bool GlobalVariables::JsonToItem(const json& value, Item& item) {
 				    return false;
 			    }
 			    v.currentIndex = value.get<int>();
+		    } else if constexpr (std::is_same_v<T, std::string>) {
+			    if (!value.is_string()) {
+				    return false;
+			    }
+			    v = value.get<std::string>();
 		    }
 		    return true;
 	    },

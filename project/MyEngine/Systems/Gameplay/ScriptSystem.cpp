@@ -13,6 +13,7 @@
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/ECS/Script.h"
 #include "MyEngine/Editor/Inspector/ScriptEditor.h"
+#include "MyEngine/Systems/Combat/HitSystem.h"
 #include "MyEngine/Systems/Physics/CollisionSystem.h"
 
 namespace {
@@ -205,6 +206,27 @@ void ScriptSystem::Update(EntityFilter filter) {
 		}
 	}
 
+	// --- 3.5 攻撃の当たり（前のフレームの終わりに HitSystem が作った一覧）---
+	// 当てた側（Hitbox の Entity・撃った本人）には OnHitDealt、受けた本体には OnHitTaken
+	for (size_t i = 0; i < count; ++i) {
+		Script& script = *scripts[i];
+		if (!IsRunning(script)) {
+			continue;
+		}
+		const Handle<Entity> self = script.gameObject_.handle;
+		for (const HitInfo& hit : HitSystem::GetAllHits()) {
+			if (!IsRunning(script) || isSkipped(script)) {
+				break; // 知らせの途中で自分を無効にした・消した
+			}
+			if (hit.hitbox == self || hit.instigator == self) {
+				script.OnHitDealt(hit);
+			}
+			if (hit.receiver == self && IsRunning(script)) {
+				script.OnHitTaken(hit);
+			}
+		}
+	}
+
 	// --- 4. Update ---
 	for (size_t i = 0; i < count; ++i) {
 		Script& script = *scripts[i];
@@ -232,6 +254,18 @@ void ScriptSystem::SendTimelineEvent(Handle<Entity> entity, const TimelineEvent&
 		Script& script = *scripts[i];
 		if (script.gameObject_.handle == entity && IsRunning(script)) {
 			script.OnTimelineEvent(event);
+		}
+	}
+}
+
+// ===== entity に付いている動いている Script 全部の OnBeforeHitTaken を呼ぶ（DamageSystem から）=====
+void ScriptSystem::SendBeforeHitTaken(Handle<Entity> entity, HitInfo& hit) {
+	// 呼んだ先で Script が増えても大丈夫なように、添字で回す（Update と同じ）
+	const size_t count = scripts.size();
+	for (size_t i = 0; i < count; ++i) {
+		Script& script = *scripts[i];
+		if (script.gameObject_.handle == entity && IsRunning(script)) {
+			script.OnBeforeHitTaken(hit);
 		}
 	}
 }

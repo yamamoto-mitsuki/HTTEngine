@@ -46,6 +46,7 @@ public:
 	static void RequestDestroy(Handle<Entity> handle);                         // 子も一緒に消える
 	static void RequestRename(Handle<Entity> handle, const std::string& name); // 空の名前にはしない
 	static void RequestSetActive(Handle<Entity> handle, bool isActive);
+	static void RequestSetLayer(Handle<Entity> handle, uint8_t layer); // 0〜31（子は変えない）
 	static void RequestReparent(Handle<Entity> child, Handle<Entity> parent); // parentが無効ならrootへ。見た目の位置は変えない
 
 	// ===== コピー・貼り付け =====

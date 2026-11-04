@@ -37,7 +37,7 @@ struct AttackTableComponent {
 	bool enabled = true;      // false の間は AI を止める（タイマーも止まる。AttackTableSystem::SetEnabled でも変えられる）
 	uint32_t table = 0;       // 攻撃表（AssetType::AttackTable の番号）
 	EntityRef target;         // 狙う相手。距離の条件に使う
-	float healthRatio = 1.0f; // 残りの HP の割合（0〜1）。ゲームが書く。フェーズの切り替えと撃破はこの値で決まる
+	float healthRatio = 1.0f; // 残りの HP の割合（0〜1）。同じ Entity に Health があれば AttackTableSystem がそこから書く（無ければゲームが書く）。フェーズの切り替えと撃破はこの値で決まる
 };
 
 static_assert(std::is_trivially_copyable_v<AttackTableComponent>);

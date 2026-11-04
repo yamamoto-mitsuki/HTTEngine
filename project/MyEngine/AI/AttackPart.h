@@ -68,6 +68,13 @@ public:
 	// 攻撃表に出す・保存する値（書き方は Script::Fields と同じ）。攻撃1行ごとに別の値を持てる
 	// 表はシーンの外のファイルなので、Entity への参照（EntityRef・GameObject）は書けない。Prefab は AssetField で書ける
 	virtual void Fields(ComponentUI& /*ui*/) {}
+
+protected:
+	/// <summary>
+	/// Hitbox の窓を、今の段階に合わせる（OnStage で呼ぶ）。攻撃表と Hitbox はお互いを知らないので、つなぐのは攻撃部品
+	/// <para>予備動作 → Warning（予告。段階の残りの秒）、攻撃 → Active（新しい攻撃の回。段階の残りの秒）、硬直 → Off。OnEnd でも呼ぶか HitSystem::Deactivate で閉じる</para>
+	/// </summary>
+	static void SyncHitbox(GameObject hitbox, const AttackPartContext& context);
 };
 
 

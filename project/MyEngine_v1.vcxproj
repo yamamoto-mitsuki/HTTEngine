@@ -132,9 +132,12 @@
     <!-- MyEngine -->
     <ClCompile Include="MyEngine\AI\AttackPart.cpp" />
     <ClCompile Include="MyEngine\AI\AttackTableManager.cpp" />
+    <ClCompile Include="MyEngine\Combat\DamageTypes.cpp" />
+    <ClCompile Include="MyEngine\Core\NameList.cpp" />
     <ClCompile Include="MyEngine\Curve\Curve.cpp" />
     <ClCompile Include="MyEngine\Curve\CurveManager.cpp" />
     <ClCompile Include="MyEngine\ECS\GameObject.cpp" />
+    <ClCompile Include="MyEngine\ECS\Layers.cpp" />
     <ClCompile Include="MyEngine\Editor\Assets\AssetIcons.cpp" />
     <ClCompile Include="MyEngine\Editor\Assets\AssetThumbnails.cpp" />
     <ClCompile Include="MyEngine\Editor\Assets\ProjectFiles.cpp" />
@@ -178,6 +181,7 @@
     <ClCompile Include="MyEngine\Graphics\Renderer\GameScreen.cpp" />
     <ClCompile Include="MyEngine\Graphics\Renderer\SkinCache.cpp" />
     <ClCompile Include="MyEngine\Graphics\Text\FontManager.cpp" />
+    <ClCompile Include="MyEngine\Math\Geometry\HitShape.cpp" />
     <ClCompile Include="MyEngine\Math\Geometry\PathCurve.cpp" />
     <ClCompile Include="MyEngine\Math\Geometry\Polygon.cpp" />
     <ClCompile Include="MyEngine\Math\Quaternion.cpp" />
@@ -196,6 +200,8 @@
     <ClCompile Include="MyEngine\Systems\Camera\CameraPath.cpp" />
     <ClCompile Include="MyEngine\Systems\Camera\CameraShake.cpp" />
     <ClCompile Include="MyEngine\Systems\Camera\CameraVolume.cpp" />
+    <ClCompile Include="MyEngine\Systems\Combat\DamageSystem.cpp" />
+    <ClCompile Include="MyEngine\Systems\Combat\HitSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Gameplay\AttackTableSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Gameplay\TimelineTriggerSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Rendering3D\ArrowStripSystem.cpp" />
@@ -323,11 +329,17 @@
   <ItemGroup>
     <ClInclude Include="MyEngine\AI\AttackPart.h" />
     <ClInclude Include="MyEngine\AI\AttackTableManager.h" />
+    <ClInclude Include="MyEngine\Combat\DamageTypes.h" />
+    <ClInclude Include="MyEngine\Combat\HitInfo.h" />
     <ClInclude Include="MyEngine\Components\Animation\TimelineComponent.h" />
     <ClInclude Include="MyEngine\Components\Camera\CameraLookAtComponent.h" />
     <ClInclude Include="MyEngine\Components\Camera\CameraPathComponent.h" />
     <ClInclude Include="MyEngine\Components\Camera\CameraShakeComponent.h" />
     <ClInclude Include="MyEngine\Components\Camera\CameraVolumeComponent.h" />
+    <ClInclude Include="MyEngine\Components\Combat\DamageSourceComponent.h" />
+    <ClInclude Include="MyEngine\Components\Combat\HealthComponent.h" />
+    <ClInclude Include="MyEngine\Components\Combat\HitboxComponent.h" />
+    <ClInclude Include="MyEngine\Components\Combat\HurtboxComponent.h" />
     <ClInclude Include="MyEngine\Components\Gameplay\AttackTableComponent.h" />
     <ClInclude Include="MyEngine\Components\Gameplay\TimelineTriggerComponent.h" />
     <ClInclude Include="MyEngine\Components\UI\AlphaGroupComponent.h" />
@@ -356,9 +368,11 @@
     <ClInclude Include="MyEngine\Components\Physics\WindZoneComponent.h" />
     <ClInclude Include="MyEngine\Components\UI\UIStateComponent.h" />
     <ClInclude Include="MyEngine\Components\UI\VectorShapeComponent.h" />
+    <ClInclude Include="MyEngine\Core\NameList.h" />
     <ClInclude Include="MyEngine\Curve\Curve.h" />
     <ClInclude Include="MyEngine\Curve\CurveManager.h" />
     <ClInclude Include="MyEngine\ECS\GameObject.h" />
+    <ClInclude Include="MyEngine\ECS\Layers.h" />
     <ClInclude Include="MyEngine\ECS\Script.h" />
     <ClInclude Include="MyEngine\Editor\Assets\AssetIcons.h" />
     <ClInclude Include="MyEngine\Editor\Assets\AssetThumbnails.h" />
@@ -404,6 +418,7 @@
     <ClInclude Include="MyEngine\Graphics\Text\FontManager.h" />
     <ClInclude Include="MyEngine\Math\Color.h" />
     <ClInclude Include="MyEngine\Math\Geometry\Capsule.h" />
+    <ClInclude Include="MyEngine\Math\Geometry\HitShape.h" />
     <ClInclude Include="MyEngine\Math\Geometry\PathCurve.h" />
     <ClInclude Include="MyEngine\Math\Geometry\Polygon.h" />
     <ClInclude Include="MyEngine\Math\Quaternion.h" />
@@ -426,6 +441,8 @@
     <ClInclude Include="MyEngine\Systems\Camera\CameraPath.h" />
     <ClInclude Include="MyEngine\Systems\Camera\CameraShake.h" />
     <ClInclude Include="MyEngine\Systems\Camera\CameraVolume.h" />
+    <ClInclude Include="MyEngine\Systems\Combat\DamageSystem.h" />
+    <ClInclude Include="MyEngine\Systems\Combat\HitSystem.h" />
     <ClInclude Include="MyEngine\Systems\Gameplay\AttackTableSystem.h" />
     <ClInclude Include="MyEngine\Systems\Gameplay\TimelineTriggerSystem.h" />
     <ClInclude Include="MyEngine\Systems\Rendering3D\ArrowStripSystem.h" />

@@ -5,6 +5,7 @@
 #include <typeinfo>
 #include <vector>
 
+#include "MyEngine/Combat/HitInfo.h"
 #include "MyEngine/ECS/GameComponent.h"
 #include "MyEngine/ECS/GameObject.h"
 #include "MyEngine/Systems/Gameplay/ScriptSystem.h"
@@ -75,6 +76,14 @@ public:
 	virtual void OnCollisionEnter(const CollisionInfo& /*collision*/) {} // ぶつかり始めた
 	virtual void OnCollisionStay(const CollisionInfo& /*collision*/) {}  // ぶつかっている（床に乗っている間もずっと）
 	virtual void OnCollisionExit(const CollisionInfo& /*collision*/) {}  // 離れた（normal は離れる前のフレームの向き）
+
+	// ===== 攻撃の当たり（Hitbox・Hurtbox・Health）=====
+	// OnHitDealt・OnHitTaken は、当たった次のフレームの Update の前に来る（Collider の当たりと同じ）。hit.point がダメージの数字を出す所、hit.damage が量
+	virtual void OnHitDealt(const HitInfo& /*hit*/) {} // 自分の攻撃が当たった（Hitbox の Entity と、撃った本人（Instigator）に来る）
+	virtual void OnHitTaken(const HitInfo& /*hit*/) {} // 攻撃を受けた（受けた本体＝Health の付いた Entity に来る）。hit.isDefeated なら倒れた
+	// 受ける前（HP を減らす前に、その場で呼ばれる。受けた本体に来る）。hit.result を Guarded（防いだ）・Ignored（断った）に変える・hit.damage を書き換えられる
+	// 無敵のように「いつも断る」物は Health の Invincible に書く方がよい（Inspector で見えて、Script の無い物にも効く）
+	virtual void OnBeforeHitTaken(HitInfo& /*hit*/) {}
 
 	// ===== Timeline =====
 	// Timeline のイベントトラックの時間になった（トラックの Target の Entity に付いている Script に来る）

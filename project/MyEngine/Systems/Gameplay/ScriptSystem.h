@@ -12,6 +12,7 @@
 class Script;
 class ComponentUI;
 struct TimelineEvent;
+struct HitInfo;
 
 
 /// <summary>
@@ -40,7 +41,7 @@ public:
 	// ===== 毎フレーム（SceneManager が再生中だけ呼ぶ）=====
 	// 呼ぶ Script を選ぶ関数（Script が付いている Entity を受け取って、呼ぶなら true）
 	using EntityFilter = bool (*)(Handle<Entity> entity);
-	// Awake・OnEnable → Start → 当たり（OnTrigger〜・OnCollision〜）→ Update。SYSTEM(...) より前
+	// Awake・OnEnable → Start → 当たり（OnTrigger〜・OnCollision〜）→ 攻撃の当たり（OnHitDealt・OnHitTaken）→ Update。SYSTEM(...) より前
 	// filter を渡すと、選んだ Script だけ呼ぶ（ゲームのポーズ中に、開いている画面の中の Script だけ動かす）。nullptr なら全部
 	static void Update(EntityFilter filter = nullptr);
 	// LateUpdate。SYSTEM(...) の後（filter は Update と同じ）
@@ -60,6 +61,8 @@ public:
 	static void FindAll(bool (*match)(const Script& script), std::vector<Script*>& out);
 	// entity に付いている動いている Script 全部の OnTimelineEvent を呼ぶ（TimelineSystem から）
 	static void SendTimelineEvent(Handle<Entity> entity, const TimelineEvent& event);
+	// entity に付いている動いている Script 全部の OnBeforeHitTaken を呼ぶ（DamageSystem から。HP を減らす前に、その場で）
+	static void SendBeforeHitTaken(Handle<Entity> entity, HitInfo& hit);
 	// 消す予約（フレームの終わりに消える。Script::Destroy から）
 	static void RequestDestroy(Script* script);
 	// その場で外す（エディタの Remove Component・Undo から。フレームの境目でだけ呼ぶ）

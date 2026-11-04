@@ -212,6 +212,7 @@ PendingLoad CreateEntities(uint32_t prefab, std::shared_ptr<const EntityRecords>
 	for (const SceneJson& item : items) {
 		const Handle<Entity> created = EntityManager::CreateWithId(item.at("id").get<EntityId>(), item.value("name", std::string("Entity")), {});
 		EntityManager::Get(created)->isActive = item.value("active", true);
+		EntityManager::Get(created)->layer = ReadEntityLayer(item);
 		pending.created.push_back(created);
 	}
 

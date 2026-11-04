@@ -1,4 +1,5 @@
 #pragma once
+#include <bit>
 #include <cfloat>
 #include <cstddef>
 #include <cstdint>
@@ -17,6 +18,7 @@
 
 // 前方宣言
 struct GameObject;
+class NameList;
 
 
 /// <summary>
@@ -177,6 +179,21 @@ public:
 
 	// ===== 選択肢を実行中に決める（アニメーションのクリップ名など。enumと同じく、保存は名前で）=====
 	void ChoiceField(const char* label, size_t& index, std::span<const std::string_view> names, FieldStyle style = {}) { EnumField(label, index, names, style); }
+
+	// ===== Settings の名前の一覧から選ぶ（レイヤー・攻撃の種類。NameList）=====
+	// 保存は番号（名前を付け直しても、選んだ物は変わらない）。名前の選択肢を出すのは Inspector だけで、保存・読み込みの係は int の項目と同じに扱う
+	// 1つ選ぶ（index は 0〜31）
+	virtual void NameField(const char* label, int& index, const NameList& names, FieldStyle style = {}) {
+		(void)names;
+		Field(label, index, style);
+	}
+	// いくつでも選ぶ（i 番を選んだら、bits の i 番目のビットが 1）。保存は数（Unity の LayerMask と同じ）
+	virtual void NameMaskField(const char* label, uint32_t& bits, const NameList& names, FieldStyle style = {}) {
+		(void)names;
+		int value = std::bit_cast<int>(bits); // ビットの並びを、そのまま int として読み書きする（全部 1 なら -1 になる）
+		Field(label, value, style);
+		bits = std::bit_cast<uint32_t>(value);
+	}
 
 protected:
 	// enumの中身。何番目の選択肢かで受け渡す（names は選択肢の名前）

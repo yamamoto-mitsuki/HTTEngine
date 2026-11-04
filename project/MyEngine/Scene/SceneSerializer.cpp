@@ -44,6 +44,7 @@ SceneJson SaveEntity(const Entity& entity, EntityId id, EntityId parentId, std::
 	item["name"] = entity.name;
 	item["parent"] = parentId; // 親は EntityId で書く（0は親なし）
 	item["active"] = entity.isActive;
+	WriteEntityLayer(item, entity.layer); // Default（0）なら書かない
 	item["components"] = std::move(components);
 	return item;
 }
@@ -151,6 +152,7 @@ bool LoadAll(const SceneJson& root) {
 		isInstance[i] = (prefab != item.end() && prefab->is_string());
 		created[i] = isInstance[i] ? LoadInstance(item, prefab->get<std::string>(), warnings) : EntityManager::CreateWithId(id, name, {});
 		EntityManager::Get(created[i])->isActive = item.value("active", true);
+		EntityManager::Get(created[i])->layer = ReadEntityLayer(item);
 	}
 
 	// ===== 2周目：親子をつなぐ =====

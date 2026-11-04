@@ -15,9 +15,17 @@ inline constexpr const char* kPrefabInstanceComponentName = "Prefab Instance";
 // 入れ子の深さの上限（Prefab の中に自分が入っていても、ここで止まる）
 inline constexpr size_t kMaxPrefabNestDepth = 8;
 
-// Entity 1つ分の JSON（{"id", "name", "parent", "active", "components"}。シーンファイルの1項目と同じ形）の並び。親が子より前
+// Entity 1つ分の JSON（{"id", "name", "parent", "active", "layer", "components"}。シーンファイルの1項目と同じ形）の並び。親が子より前
 // Prefab の中身を「置いたときの番号」で並べた物。Entity を作る前の形
 using EntityRecords = std::vector<SceneJson>;
+
+// ===== Entity 1つ分の JSON のレイヤー（"layer"）=====
+// 0（Default）は書かない（前のファイル・ほとんどの Entity は Default なので、ファイルを変えないように）。無ければ 0
+inline constexpr const char* kLayerKey = "layer";
+// 読む（無い・0〜31 の数でなければ 0）
+uint8_t ReadEntityLayer(const SceneJson& item);
+// 書く（0 なら項目を消す）
+void WriteEntityLayer(SceneJson& item, uint8_t layer);
 
 
 /// <summary>

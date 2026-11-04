@@ -11,6 +11,7 @@
 
 #include "MyEngine/AI/AttackTableManager.h"
 #include "MyEngine/AI/AttackPart.h"
+#include "MyEngine/Components/Combat/HealthComponent.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/Math/RandomEngine.h"
@@ -408,7 +409,7 @@ void DescribeAttackTableComponent(ComponentUI& ui, AttackTableComponent& value) 
 	ui.Field("Enabled###enabled", value.enabled, Tip("外すと AI が止まる（タイマーも止まる）"));
 	ui.AssetField("Table###table", value.table, AssetType::AttackTable, Tip("攻撃表（.attacktable）。Project ウィンドウの Create → Attack Table で作る"));
 	ui.Field("Target###target", value.target, Tip("狙う相手。距離の条件に使う"));
-	ui.Field("Health Ratio###healthRatio", value.healthRatio, Range(0.0f, 1.0f).Tip("残りの HP の割合（0〜1）。ゲームが書く。再生中につまむと、フェーズの移行と撃破を試せる"));
+	ui.Field("Health Ratio###healthRatio", value.healthRatio, Range(0.0f, 1.0f).Tip("残りの HP の割合（0〜1）。同じ Entity に Health があれば、再生中は毎フレームそこから書かれる。無ければゲームが書く。再生中につまむと、フェーズの移行と撃破を試せる（Health があるときは Health の値をつまむ）"));
 }
 } // namespace
 
@@ -436,7 +437,13 @@ void AttackTableSystem::Update(bool isGameRunning, float deltaTime) {
 	}
 	// --- Component を外された敵を片付ける ---
 	std::erase_if(runtimes, [](const AttackTableRuntime& runtime) { return EntityManager::Get<AttackTableComponent>(runtime.entity) == nullptr; });
-	EntityManager::ForEach<AttackTableComponent>([deltaTime](Handle<Entity> entity, AttackTableComponent& component) { UpdateEntity(entity, component, deltaTime); });
+	EntityManager::ForEach<AttackTableComponent>([deltaTime](Handle<Entity> entity, AttackTableComponent& component) {
+		// 同じ Entity に Health があれば、HP の割合はそこから読む（ゲームが毎フレーム書かなくてよい。書き忘れ・書く順番のずれが出ない）
+		if (const HealthComponent* health = EntityManager::Get<HealthComponent>(entity)) {
+			component.healthRatio = health->GetRatio();
+		}
+		UpdateEntity(entity, component, deltaTime);
+	});
 }
 
 //=============================================================================

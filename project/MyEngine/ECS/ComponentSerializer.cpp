@@ -389,6 +389,9 @@ public:
 	void Field(const char*, EntityRef&, FieldStyle) override {}
 	void Field(const char*, std::string&, FieldStyle) override {}
 	void AssetField(const char*, uint32_t&, AssetType, FieldStyle) override {}
+	// 名前の一覧の番号・ビットの並びは、数でも途中の値に意味が無い（Timeline でなめらかに動かす物ではない）ので書かない
+	void NameField(const char*, int&, const NameList&, FieldStyle) override {}
+	void NameMaskField(const char*, uint32_t&, const NameList&, FieldStyle) override {}
 	void Label(const char*) override {}
 	void Separator(const char*) override {}
 	void Space() override {}
@@ -458,6 +461,8 @@ public:
 	void Field(const char*, EntityRef&, FieldStyle) override {}
 	void Field(const char*, std::string&, FieldStyle) override {}
 	void AssetField(const char*, uint32_t&, AssetType, FieldStyle) override {}
+	void NameField(const char*, int&, const NameList&, FieldStyle) override {}
+	void NameMaskField(const char*, uint32_t&, const NameList&, FieldStyle) override {}
 	void Label(const char*) override {}
 	void Separator(const char*) override {}
 	void Space() override {}

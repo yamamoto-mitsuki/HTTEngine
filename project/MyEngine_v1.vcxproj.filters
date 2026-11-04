@@ -1,6 +1,15 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="MyEngine\Systems\Combat">
+      <UniqueIdentifier>{2CA4F6EA-F33C-3788-4B63-658BED85CD26}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MyEngine\Components\Combat">
+      <UniqueIdentifier>{DF406F7A-8754-BDE1-06D5-A70768680A24}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MyEngine\Combat">
+      <UniqueIdentifier>{A25D2329-FEA8-E6D5-10D9-EC89D8A0AC4E}</UniqueIdentifier>
+    </Filter>
     <Filter Include="externals">
       <UniqueIdentifier>{6f5995d9-53b1-4299-aa4f-c220fbb541de}</UniqueIdentifier>
     </Filter>
@@ -285,8 +294,14 @@
     <ClCompile Include="MyEngine\Collision\Profiling\CollisionProfiler.cpp">
       <Filter>MyEngine\Collision\Profiling</Filter>
     </ClCompile>
+    <ClCompile Include="MyEngine\Combat\DamageTypes.cpp">
+      <Filter>MyEngine\Combat</Filter>
+    </ClCompile>
     <ClCompile Include="MyEngine\Components\EngineComponents.cpp">
       <Filter>MyEngine\Components</Filter>
+    </ClCompile>
+    <ClCompile Include="MyEngine\Core\NameList.cpp">
+      <Filter>MyEngine\Core</Filter>
     </ClCompile>
     <ClCompile Include="MyEngine\Curve\Curve.cpp">
       <Filter>MyEngine\Curve</Filter>
@@ -313,6 +328,9 @@
       <Filter>MyEngine\ECS</Filter>
     </ClCompile>
     <ClCompile Include="MyEngine\ECS\GameObject.cpp">
+      <Filter>MyEngine\ECS</Filter>
+    </ClCompile>
+    <ClCompile Include="MyEngine\ECS\Layers.cpp">
       <Filter>MyEngine\ECS</Filter>
     </ClCompile>
     <ClCompile Include="MyEngine\Editor\Assets\AssetIcons.cpp">
@@ -603,6 +621,9 @@
     <ClCompile Include="MyEngine\Math\Geometry\AABB.cpp">
       <Filter>MyEngine\Math\Geometry</Filter>
     </ClCompile>
+    <ClCompile Include="MyEngine\Math\Geometry\HitShape.cpp">
+      <Filter>MyEngine\Math\Geometry</Filter>
+    </ClCompile>
     <ClCompile Include="MyEngine\Math\Geometry\OBB.cpp">
       <Filter>MyEngine\Math\Geometry</Filter>
     </ClCompile>
@@ -707,6 +728,12 @@
     </ClCompile>
     <ClCompile Include="MyEngine\Systems\Camera\CameraVolume.cpp">
       <Filter>MyEngine\Systems\Camera</Filter>
+    </ClCompile>
+    <ClCompile Include="MyEngine\Systems\Combat\DamageSystem.cpp">
+      <Filter>MyEngine\Systems\Combat</Filter>
+    </ClCompile>
+    <ClCompile Include="MyEngine\Systems\Combat\HitSystem.cpp">
+      <Filter>MyEngine\Systems\Combat</Filter>
     </ClCompile>
     <ClCompile Include="MyEngine\Systems\Effects\ParticleSystem.cpp">
       <Filter>MyEngine\Systems\Effects</Filter>
@@ -872,6 +899,12 @@
     <ClInclude Include="MyEngine\Collision\Profiling\CollisionProfiler.h">
       <Filter>MyEngine\Collision\Profiling</Filter>
     </ClInclude>
+    <ClInclude Include="MyEngine\Combat\DamageTypes.h">
+      <Filter>MyEngine\Combat</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Combat\HitInfo.h">
+      <Filter>MyEngine\Combat</Filter>
+    </ClInclude>
     <ClInclude Include="MyEngine\Components\Animation\AnimatorComponent.h">
       <Filter>MyEngine\Components\Animation</Filter>
     </ClInclude>
@@ -898,6 +931,18 @@
     </ClInclude>
     <ClInclude Include="MyEngine\Components\Camera\CameraVolumeComponent.h">
       <Filter>MyEngine\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Components\Combat\DamageSourceComponent.h">
+      <Filter>MyEngine\Components\Combat</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Components\Combat\HealthComponent.h">
+      <Filter>MyEngine\Components\Combat</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Components\Combat\HitboxComponent.h">
+      <Filter>MyEngine\Components\Combat</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Components\Combat\HurtboxComponent.h">
+      <Filter>MyEngine\Components\Combat</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Components\Core\FolderComponent.h">
       <Filter>MyEngine\Components\Core</Filter>
@@ -992,6 +1037,9 @@
     <ClInclude Include="MyEngine\Core\Handle.h">
       <Filter>MyEngine\Core</Filter>
     </ClInclude>
+    <ClInclude Include="MyEngine\Core\NameList.h">
+      <Filter>MyEngine\Core</Filter>
+    </ClInclude>
     <ClInclude Include="MyEngine\Core\SlotMap.h">
       <Filter>MyEngine\Core</Filter>
     </ClInclude>
@@ -1029,6 +1077,9 @@
       <Filter>MyEngine\ECS</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\ECS\GameObject.h">
+      <Filter>MyEngine\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\ECS\Layers.h">
       <Filter>MyEngine\ECS</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\ECS\Script.h">
@@ -1346,6 +1397,9 @@
     <ClInclude Include="MyEngine\Math\Geometry\Capsule.h">
       <Filter>MyEngine\Math\Geometry</Filter>
     </ClInclude>
+    <ClInclude Include="MyEngine\Math\Geometry\HitShape.h">
+      <Filter>MyEngine\Math\Geometry</Filter>
+    </ClInclude>
     <ClInclude Include="MyEngine\Math\Geometry\OBB.h">
       <Filter>MyEngine\Math\Geometry</Filter>
     </ClInclude>
@@ -1489,6 +1543,12 @@
     </ClInclude>
     <ClInclude Include="MyEngine\Systems\Camera\CameraVolume.h">
       <Filter>MyEngine\Systems\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Systems\Combat\DamageSystem.h">
+      <Filter>MyEngine\Systems\Combat</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Systems\Combat\HitSystem.h">
+      <Filter>MyEngine\Systems\Combat</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Systems\Effects\ParticleSystem.h">
       <Filter>MyEngine\Systems\Effects</Filter>

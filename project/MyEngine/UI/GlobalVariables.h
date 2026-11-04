@@ -45,7 +45,8 @@ public:
 		bool operator==(const ColorItem&) const = default;
 	};
 
-	using Item = std::variant<bool, int32_t, float, Vector2, Vector3, Vector4, ComboItem, ColorItem>;
+	// std::string は名前の一覧（レイヤー名・攻撃の種類の名前）などの文字の項目
+	using Item = std::variant<bool, int32_t, float, Vector2, Vector3, Vector4, ComboItem, ColorItem, std::string>;
 	using json = nlohmann::json;
 	// ツリーノード
 	struct GVNode {

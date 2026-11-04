@@ -37,13 +37,14 @@ SceneJson PrefabOverrides::MakeInstanceEntry(Handle<Entity> root, std::set<std::
 	if (entity == nullptr || link == nullptr) {
 		return {};
 	}
-	// ===== 置いた所ごとに必ず書く物（一番上の番号・名前・親・有効・Prefab のパス・Transform）=====
+	// ===== 置いた所ごとに必ず書く物（一番上の番号・名前・親・有効・レイヤー・Prefab のパス・Transform）=====
 	const Entity* parent = EntityManager::Get(entity->parent);
 	SceneJson entry = SceneJson::object();
 	entry["id"] = entity->id;
 	entry["name"] = entity->name;
 	entry["parent"] = (parent != nullptr) ? parent->id : EntityId{0};
 	entry["active"] = entity->isActive;
+	WriteEntityLayer(entry, entity->layer); // Default なら書かない（読むときも、無ければ Default）
 	entry[kPrefabEntryKey] = link->path.ToString();
 	SceneJson nowRoot = SaveComponents(root, warnings);
 	nowRoot.erase(kPrefabInstanceComponentName); // 印は書かない（"prefab" で分かる）
@@ -64,6 +65,7 @@ SceneJson PrefabOverrides::MakeInstanceEntry(Handle<Entity> root, std::set<std::
 		for (const char* key : {"id", "name", "parent", "active"}) {
 			keptEntry[key] = entry[key];
 		}
+		WriteEntityLayer(keptEntry, entity->layer);
 		if (components.contains(kTransformName)) {
 			keptEntry["components"][kTransformName] = components[kTransformName];
 		}
@@ -108,6 +110,10 @@ SceneJson PrefabOverrides::MakeInstanceEntry(Handle<Entity> root, std::set<std::
 		}
 		if (content->isActive != record.value("active", true)) {
 			override["active"] = content->isActive;
+		}
+		// レイヤーは違うときだけ書く。Default に戻したときも 0 と書く（書かないと Prefab の値に戻ってしまう）
+		if (content->layer != ReadEntityLayer(record)) {
+			override[kLayerKey] = content->layer;
 		}
 		const Entity* contentParent = EntityManager::Get(content->parent);
 		const EntityId parentId = (contentParent != nullptr) ? contentParent->id : EntityId{0};

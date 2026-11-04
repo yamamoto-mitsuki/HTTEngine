@@ -20,6 +20,11 @@
 #include "MyEngine/Systems/Audio/AudioSystem.h"
 // Camera
 #include "MyEngine/Systems/Camera/CameraSystem.h"
+// Combat
+#include "MyEngine/Combat/DamageTypes.h"
+#include "MyEngine/ECS/Layers.h"
+#include "MyEngine/Systems/Combat/DamageSystem.h"
+#include "MyEngine/Systems/Combat/HitSystem.h"
 // Physics
 #include "MyEngine/Systems/Physics/CollisionSystem.h"
 #include "MyEngine/Systems/Physics/PhysicsSystem.h"

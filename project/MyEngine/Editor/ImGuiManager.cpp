@@ -17,6 +17,7 @@
 #include <externals/imgui/imgui_impl_win32.h>
 
 #include "MyEngine/Systems/Animation/AnimationSystem.h"
+#include "MyEngine/Systems/Combat/HitSystem.h"
 #include "MyEngine/Systems/Physics/CollisionSystem.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
@@ -129,6 +130,7 @@ void DrawViewMenu() {
 		ImGui::MenuItem("Camera Icons", nullptr, &CameraGizmo::GetShowIcons());
 		ImGui::MenuItem("Camera Paths", nullptr, &CameraGizmo::GetShowPaths());
 		ImGui::MenuItem("Colliders", nullptr, &CollisionSystem::GetShowGizmos());
+		ImGui::MenuItem("Hit Shapes", nullptr, &HitSystem::GetShowGizmos()); // 攻撃の形・ジャスト判定の範囲・Hurtbox
 		ImGui::MenuItem("Skeletons", nullptr, &AnimationSystem::GetShowGizmos());
 		// Scene ビューの絵（ブルームなど。レンズは Scene では掛けない）
 		EditorViewport::ViewFlags& viewFlags = EditorViewport::GetViewFlags();

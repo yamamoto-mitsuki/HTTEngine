@@ -27,10 +27,10 @@ SceneJson MakeEmptyRecord(EntityId id) {
 	return record;
 }
 
-// ===== Entity 1つ分に、上書き（書いてある名前・有効・親・Component と、外した Component）を当てる =====
+// ===== Entity 1つ分に、上書き（書いてある名前・有効・レイヤー・親・Component と、外した Component）を当てる =====
 // Component は書いてある項目だけを上書きする（merge_patch。{"translation": [...]} なら translation だけ変わる）。Prefab に無い型は足す
 void ApplyOverride(SceneJson& record, const SceneJson& override) {
-	for (const char* key : {"name", "active", "parent"}) {
+	for (const char* key : {"name", "active", kLayerKey, "parent"}) {
 		if (const auto it = override.find(key); it != override.end()) {
 			record[key] = *it;
 		}
@@ -57,6 +57,29 @@ void ApplyOverride(SceneJson& record, const SceneJson& override) {
 	}
 }
 } // namespace
+
+
+//=============================================================================
+// Entity 1つ分の JSON のレイヤー
+//=============================================================================
+// ===== 読む =====
+uint8_t ReadEntityLayer(const SceneJson& item) {
+	const auto it = item.find(kLayerKey); // const の json に [] で無いキーを引くと止まるので、find を使う
+	if (it == item.end() || !it->is_number_integer()) {
+		return 0;
+	}
+	const int layer = it->get<int>();
+	return (layer >= 0 && layer < 32) ? static_cast<uint8_t>(layer) : uint8_t{0};
+}
+
+// ===== 書く =====
+void WriteEntityLayer(SceneJson& item, uint8_t layer) {
+	if (layer == 0) {
+		item.erase(kLayerKey);
+		return;
+	}
+	item[kLayerKey] = layer;
+}
 
 
 //=============================================================================
@@ -140,10 +163,11 @@ EntityRecords PrefabRecords::ExpandNested(uint32_t prefab, EntityId rootId, std:
 // 当てる
 //=============================================================================
 void PrefabRecords::ApplyEntry(EntityRecords& records, size_t begin, size_t count, const SceneJson& entry, std::set<std::string>& warnings) {
-	// --- 一番上（名前・有効・親は、書いていなくても置いた所ごとの値にする）---
+	// --- 一番上（名前・有効・レイヤー・親は、書いていなくても置いた所ごとの値にする）---
 	SceneJson& root = records[begin];
 	ApplyOverride(root, entry);
 	root["active"] = entry.value("active", true);
+	WriteEntityLayer(root, ReadEntityLayer(entry)); // 書いていなければ Default
 	root["parent"] = entry.value("parent", EntityId{0});
 	const EntityId rootId = root.at("id").get<EntityId>();
 

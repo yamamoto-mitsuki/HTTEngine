@@ -18,8 +18,11 @@
 #include <externals/magic_enum/magic_enum.hpp>
 #include <externals/nlohmann/json.hpp>
 
+#include "MyEngine/Core/NameList.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
+#include "MyEngine/ECS/ComponentUI.h"
 #include "MyEngine/ECS/EntityManager.h"
+#include "MyEngine/ECS/Layers.h"
 #include "MyEngine/Editor/Inspector/AssetInspector.h"
 #include "MyEngine/Editor/History/EditorHistory.h"
 #include "MyEngine/Editor/Inspector/ComponentEditor.h"
@@ -449,6 +452,13 @@ void InspectorWindow::DrawHeader(Handle<Entity> handle) {
 
 	// --- 名前（変更はHierarchyのダブルクリック・F2から）---
 	ImGui::TextUnformatted(entity->name.c_str());
+
+	// --- レイヤー（Unity と同じく名前の下。選択肢は Settings の Layers で名前を付けた物。履歴を通す）---
+	int layer = entity->layer;
+	GetInspectorUI().NameField("Layer", layer, Layers::GetNameList(), Tip("当たりの相手を絞るのに使う（Hitbox の Targets）。名前は Settings の Layers で付ける"));
+	if (layer != entity->layer) {
+		EditorHistory::RequestSetLayer(handle, static_cast<uint8_t>(layer));
+	}
 
 	// --- 参考情報（読み取り専用）---
 	ImGui::TextDisabled("ID: %llu  Handle: %u / %u", entity->id, handle.index, handle.generation);

@@ -23,7 +23,8 @@ public:
 	// 2：Prefab から置いた物を参照で書く（"prefab"）。1 のファイルはそのまま読める（"prefab" が無いだけ）
 	// 3：Prefab のファイルの中の入れ子の Prefab も参照で書く。2 のファイルはそのまま読める（入れ子が中身ごと書いてあるだけ）
 	// 4：置いた所ごとの上書き（"overrides" など）を書く。3 のファイルはそのまま読める（上書きが無いだけ）
-	static constexpr int kVersion = 4;
+	// 5：Entity のレイヤー（"layer"。Default なら書かない）を書く。4 のファイルはそのまま読める（全部 Default）
+	static constexpr int kVersion = 5;
 
 	// ===== ファイル =====
 	// フォルダが無ければ作る。前のファイルは「〇〇.bak」として1つだけ残す

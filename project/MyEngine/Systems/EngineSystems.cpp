@@ -1,11 +1,13 @@
 #include "MyEngine/Systems/EngineSystems.h"
 
 #include "MyEngine/AI/AttackTableManager.h"
+#include "MyEngine/Combat/DamageTypes.h"
 #include "MyEngine/Curve/CurveManager.h"
 #include "MyEngine/Timeline/TimelineManager.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/ECS/GameComponent.h"
+#include "MyEngine/ECS/Layers.h"
 #include "MyEngine/Particle/ParticleManager.h"
 #include "MyEngine/Physics/MotionQuery.h"
 #include "MyEngine/Physics/PhysicMaterialManager.h"
@@ -19,6 +21,9 @@
 #include "MyEngine/Systems/Audio/AudioSystem.h"
 // Camera
 #include "MyEngine/Systems/Camera/CameraSystem.h"
+// Combat
+#include "MyEngine/Systems/Combat/DamageSystem.h"
+#include "MyEngine/Systems/Combat/HitSystem.h"
 // Effects
 #include "MyEngine/Systems/Effects/ParticleSystem.h"
 #include "MyEngine/Systems/Effects/TrailSystem.h"
@@ -70,6 +75,8 @@ void EngineSystems::Initialize() {
 	EntityManager::Initialize();
 
 	MotionQuery::Initialize(); // 動き方の窓口（速さ・地面にいるか）。動き方の System（Rigidbody・Character Controller）が答え方を登録するので先に
+	Layers::Initialize();      // レイヤーの名前（Settings の Layers）。シーンを読む前に、名前の行を登録しておく
+	DamageTypes::Initialize(); // 攻撃の種類の名前（Settings の DamageTypes）
 
 	// --- Component を EntityManager に登録する（保存・Inspector も。どれも EntityManager の後）---
 	LightSystem::Initialize();            // ライト
@@ -97,6 +104,8 @@ void EngineSystems::Initialize() {
 	DepthOfFieldSystem::Initialize();     // Depth Of Field
 	TriggerActivatorSystem::Initialize(); // Trigger Activator
 	TimelineTriggerSystem::Initialize();  // Timeline Trigger（範囲に入ったら Timeline を再生する）
+	HitSystem::Initialize();              // Hitbox・Hurtbox（攻撃の当たり）
+	DamageSystem::Initialize();           // Health・Damage Source（攻撃のダメージ）。HitSystem に答え方を登録するので、HitSystem の後
 	AttackTableManager::Initialize();     // 攻撃表（.attacktable）。AttackTableSystem が読むので先に
 	AttackTableSystem::Initialize();      // Attack Table
 	CurveManager::Initialize();           // カーブ（.curve）
@@ -142,6 +151,8 @@ void EngineSystems::Release() {
 	DepthOfFieldSystem::Release();
 	TriggerActivatorSystem::Release();
 	TimelineTriggerSystem::Release();
+	DamageSystem::Release();
+	HitSystem::Release();
 	AttackTableSystem::Release();
 	AttackTableManager::Release();
 	CurveManager::Release();
@@ -215,6 +226,8 @@ void EngineSystems::Update(bool isGameRunning, const std::shared_ptr<Camera>& ga
 	ScriptSystem::FlushDestroy();           // Destroy(Script) の予約の反映（OnDestroy を呼ぶ。Entity の破棄より先）
 	EntityManager::FlushDestroy();          // 破棄予約の反映
 	CollisionSystem::Update();              // 当たり判定（消すと決めたEntityを消した後。結果は次のフレームのSYSTEMが読む）
+	DamageSystem::Update(isGameRunning, Time::GetDeltaTime()); // 被弾の後の無敵の残りを減らす（攻撃の当たりより前）
+	HitSystem::Update(isGameRunning, Time::GetDeltaTime());    // 攻撃の当たり（全部が動いた後の位置で。消すと決めた Entity はもう当たらない。ダメージの層に聞いて HP を減らす。知らせは次のフレームの Script・SYSTEM が読む）
 	TriggerActivatorSystem::Update(isGameRunning, Time::GetDeltaTime()); // 範囲に入った・出たで、Target を出す・消す（当たり判定の後。入ったフレームのうちに出し始める）
 	TimelineTriggerSystem::Update(isGameRunning);                        // 範囲に入った・出たで、Timeline の再生を頼む（当たり判定の後。値が動くのは次のフレームの TimelineSystem::Update から）
 	UIScreen::Update(isGameRunning);        // 画面（ポーズ画面など）の出す・消す動きを進めて、ゲームを止める・動かす（Motion の動きと、Timeline が終わったかを見る）
@@ -250,6 +263,7 @@ void EngineSystems::Draw(Camera* gameCamera, IBLEnvironment* gameEnvironment) {
 	CollisionSystem::DrawGizmos(gameCamera);
 	CharacterControllerSystem::DrawGizmos(gameCamera); // 上れる段の高さ・地面の向き（Collider のギズモと一緒に出す・消す）
 	WindZoneSystem::DrawGizmos(gameCamera); // 風の範囲と向き（Collider のギズモと一緒に出す・消す）
+	HitSystem::DrawGizmos(gameCamera);      // 攻撃の形（段階で色が変わる）・ジャスト判定の範囲・Hurtbox
 	AnimationSystem::DrawGizmos(gameCamera);
 #endif
 	TimelineSystem::FinishPreview(); // Timeline のプレビューの値を元へ戻す（描画の要求を積んだ後。この後の ImGui と、次のフレームの頭の保存・Undo は元の値を見る）

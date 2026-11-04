@@ -8,6 +8,7 @@
 #include <filesystem>
 
 #include "MyEngine/AI/AttackTableManager.h"
+#include "MyEngine/Core/NameList.h"
 #include "MyEngine/Curve/CurveManager.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/ECS/EntityManager.h"
@@ -305,6 +306,34 @@ void DrawSelectedFontSample(const std::string& file) {
 	ImGui::PopFont();
 }
 
+// ===== 名前の一覧のビットの並び =====
+constexpr uint32_t kAllBits = 0xFFFFFFFFu; // 全部選んだ（Everything）
+constexpr size_t kMaskPreviewNames = 3;    // 欄に並べる名前の数（これより多ければ「…」）
+
+// 欄に出す文字（何も無し・全部・選んだ名前を「,」でつないだ物）
+std::string MakeMaskPreview(uint32_t bits, const NameList& names) {
+	if (bits == 0u) {
+		return "Nothing";
+	}
+	if (bits == kAllBits) {
+		return "Everything";
+	}
+	std::string text;
+	size_t count = 0;
+	for (int i = 0; i < NameList::kCount; ++i) {
+		if ((bits & (1u << i)) == 0u) {
+			continue;
+		}
+		if (count == kMaskPreviewNames) {
+			return text + ", …";
+		}
+		const std::string name = names.GetName(i);
+		text += (count == 0 ? "" : ", ") + (name.empty() ? std::format("({})", i) : name);
+		++count;
+	}
+	return text;
+}
+
 
 /// <summary>
 /// Inspectorに描く係。ImGuiを知っているのはここだけ
@@ -422,6 +451,52 @@ public:
 					handle = LoadAsset(type, file); // 同じパスならキャッシュが返るので、選び直しても読み込み直さない
 				}
 			}
+			ImGui::EndCombo();
+		}
+		DrawTooltip(style);
+	}
+
+	// Settings の名前の一覧から1つ選ぶ（名前の付いている番号だけ並べる。今の番号に名前が無くても、欄にはその番号を出す）
+	void NameField(const char* label, int& index, const NameList& names, FieldStyle style) override {
+		const std::string preview = names.GetLabel(index);
+		if (ImGui::BeginCombo(label, preview.c_str())) {
+			for (const int i : names.GetNamedIndices()) {
+				const std::string text = names.GetLabel(i);
+				if (ImGui::Selectable(text.c_str(), i == index)) {
+					index = i;
+				}
+				if (i == index) {
+					ImGui::SetItemDefaultFocus(); // 開いたときに今の選択へスクロールする
+				}
+			}
+			ImGui::Separator();
+			ImGui::TextDisabled("名前は Settings の %s で付ける", names.GetGroupName().c_str());
+			ImGui::EndCombo();
+		}
+		DrawTooltip(style);
+	}
+
+	// Settings の名前の一覧から、いくつでも選ぶ（開くと、名前の付いている番号のチェックが並ぶ）
+	void NameMaskField(const char* label, uint32_t& bits, const NameList& names, FieldStyle style) override {
+		const std::string preview = MakeMaskPreview(bits, names);
+		if (ImGui::BeginCombo(label, preview.c_str())) {
+			if (ImGui::Selectable("Nothing", bits == 0u)) {
+				bits = 0u;
+			}
+			if (ImGui::Selectable("Everything", bits == kAllBits)) {
+				bits = kAllBits;
+			}
+			ImGui::Separator();
+			// チェックは押しても一覧が閉じない（Selectable は閉じる）ので、続けていくつも選べる
+			for (const int i : names.GetNamedIndices()) {
+				const uint32_t bit = 1u << i;
+				bool isOn = (bits & bit) != 0u;
+				if (ImGui::Checkbox(names.GetLabel(i).c_str(), &isOn)) {
+					bits = isOn ? (bits | bit) : (bits & ~bit);
+				}
+			}
+			ImGui::Separator();
+			ImGui::TextDisabled("名前は Settings の %s で付ける", names.GetGroupName().c_str());
 			ImGui::EndCombo();
 		}
 		DrawTooltip(style);

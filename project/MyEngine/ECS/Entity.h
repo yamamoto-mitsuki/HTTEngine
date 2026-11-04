@@ -30,4 +30,5 @@ struct Entity {
 	Handle<Entity> parent;
 	bool isActive = true;
 	bool isDontSave = false; // シーンに保存しない（子も一緒に。エディタで編集中の画面の中身）。シーンファイル・Play の退避・保存していない変更（*）に入らない
+	uint8_t layer = 0;       // レイヤー（0〜31。名前は Settings の Layers。Layers.h）。攻撃の当たりが「当てる相手」を絞るのに使う
 };
