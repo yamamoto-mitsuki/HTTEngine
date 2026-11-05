@@ -74,7 +74,7 @@ void DescribeModelRenderer(ComponentUI& ui, ModelRendererComponent& value) {
 	// --- マテリアル ---
 	ui.Field("overrideMaterial", value.overrideMaterial);
 	ui.ColorField("ambient", value.material.ambient);
-	ui.ColorField("diffuse", value.material.diffuse);
+	ui.ColorField("baseColor", value.material.baseColor); // 物の色（RGBA。前の "diffuse" は読まない）
 	ui.ColorField("specular", value.material.specular);
 	ui.ColorField("emissive", value.material.emissive);
 	ui.Field("shininess", value.material.shininess);

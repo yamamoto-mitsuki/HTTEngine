@@ -41,7 +41,7 @@ void ModelRenderSystem::Draw(Handle<Entity> root, Camera* camera, IBLEnvironment
 		Renderer::ModelConfig config{};
 		config.modelHandle = render.modelHandle;
 		config.textureHandle = render.textureHandle;
-		config.color = ClampColor(render.color);
+		config.color = ApplyIntensity(render.color, render.intensity); // 物ごとの色。明るさの倍率はリニアで掛ける（Color.h）
 		config.uvTransform = render.uvTransform;
 		config.material = render.material;
 		config.overrideMaterial = render.overrideMaterial;

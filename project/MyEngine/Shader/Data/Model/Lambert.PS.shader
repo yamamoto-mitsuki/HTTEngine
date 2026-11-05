@@ -11,32 +11,19 @@ vs:       Object3dVS
 
 #HLSL
 #include "Object3d.hlsli"
+#include "ModelSurface.hlsli"
 #include "Buffers/Camera.hlsli"
 #include "Buffers/Light.hlsli"
 #include "Fog/Fog.hlsli"
-#include "Resources/Texture.hlsli"
-
-// マテリアル
-struct Material
-{
-    float32_t4 color;
-    float4x4 uvTransform;
-    float32_t3 ambient;
-    float alphaCutoff;
-    float32_t3 diffuse;
-    float padD;
-    float32_t3 specular;
-    float shininess;
-    float32_t3 emissive;
-    uint textureIndex;
-};
-ConstantBuffer<Material> gMaterial : register(b20);
 
 static const float PI = 3.141596535f;
 
 
 PixelShaderOutput main(VertexShaderOutput input)
 {
+    // 面の色（tint × マテリアルの色 × テクスチャ。切り抜いたピクセルは、光の計算の前に捨てる）
+    ModelSurface surface = GetModelSurface(input.texcoord);
+
     float3 N = normalize(input.normal);
     float3 diffuseLighting = { 0.0f, 0.0f, 0.0f };
 
@@ -73,16 +60,9 @@ PixelShaderOutput main(VertexShaderOutput input)
         }
     }
 
-    float32_t4 transformedUV = mul(float32_t4(input.texcoord, 0.0f, 1.0f), gMaterial.uvTransform);
-    float32_t4 texColor      = gTextures[gMaterial.textureIndex].Sample(gSampler, transformedUV.xy);
-    if (texColor.a <= gMaterial.alphaCutoff) // 切り抜き（alphaCutoffが0なら、ちょうど0のピクセルだけ捨てる）
-    {
-        discard;
-    }
-    float32_t4 baseColor = gMaterial.color * texColor;
     float32_t4 finalColor;
-    finalColor.rgb = baseColor.rgb * diffuseLighting + gMaterial.emissive;
-    finalColor.a = baseColor.a;
+    finalColor.rgb = surface.baseColor * diffuseLighting + gMaterial.emissive;
+    finalColor.a = surface.alpha;
 
     PixelShaderOutput output;
     output.color = finalColor;

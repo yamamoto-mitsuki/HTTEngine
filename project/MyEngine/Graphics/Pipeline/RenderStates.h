@@ -9,11 +9,11 @@
 #include "MyEngine/Math/MathIncludes.h"
 
 
-// モデルマテリアルの調整用パラメータ
+// モデルマテリアルの調整用パラメータ（色は Inspector で選ぶ sRGB。Renderer がリニアに直す）
 struct MaterialParams {
-	Vector3 ambient = {0.2f, 0.2f, 0.2f};  // Ka: 環境光色
-	Vector3 diffuse = {1.0f, 1.0f, 1.0f};  // Kd: 拡散反射色
-	Vector3 specular = {0.0f, 0.0f, 0.0f}; // Ks: 鏡面反射色
+	Vector3 ambient = {0.2f, 0.2f, 0.2f};         // Ka: 環境光色
+	Vector4 baseColor = {1.0f, 1.0f, 1.0f, 1.0f}; // 物の色（A は不透明度）。Model Renderer の Override のときだけ、読み込んだ色の代わりに使う（Primitive は Color の方を使う）
+	Vector3 specular = {0.0f, 0.0f, 0.0f};        // Ks: 鏡面反射色
 	Vector3 emissive = {0.0f, 0.0f, 0.0f}; // Ke: 自己発光色
 	float shininess = 32.0f;               // Ns: 鏡面反射指数
 	float metallic = 0.0f;                 // 0=非金属 1=金属

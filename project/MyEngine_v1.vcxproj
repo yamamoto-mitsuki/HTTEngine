@@ -620,6 +620,7 @@
     <None Include="MyEngine\Shader\Data\Model\BlinnPhong.PS.shader" />
     <None Include="MyEngine\Shader\Data\Model\HalfLambert.PS.shader" />
     <None Include="MyEngine\Shader\Data\Model\Lambert.PS.shader" />
+    <None Include="MyEngine\Shader\Data\Model\ModelSurface.hlsli.shader" />
     <None Include="MyEngine\Shader\Data\Model\Object3d.hlsli.shader" />
     <None Include="MyEngine\Shader\Data\Model\Object3d.VS.shader" />
     <None Include="MyEngine\Shader\Data\Model\PBR.PS.shader" />

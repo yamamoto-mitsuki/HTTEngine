@@ -11,31 +11,11 @@ vs:       Object3dVS
 
 #HLSL
 #include "Object3d.hlsli"
+#include "ModelSurface.hlsli"
 #include "Buffers/Camera.hlsli"
 #include "Buffers/Light.hlsli"
 #include "Fog/Fog.hlsli"
-#include "Resources/Texture.hlsli"
 #include "Resources/TextureCube.hlsli"
-
-// マテリアル
-struct Material
-{
-    float32_t4 color;
-    float4x4 uvTransform;
-    float32_t3 ambient;
-    float alphaCutoff;
-    float32_t3 diffuse;
-    float padD;
-    float32_t3 specular;
-    float shininess;
-    float32_t3 emissive;
-    uint textureIndex;
-    float metallic;
-    float roughness;
-    float padP0;
-    float padP1;
-};
-ConstantBuffer<Material> gMaterial : register(b20);
 
 // IBLの索引
 struct IBLParams
@@ -158,13 +138,9 @@ PixelShaderOutput main(VertexShaderOutput input)
     float32_t3 V = normalize(gCamera.worldPosition - input.worldPosition); // 視点へ向かう
     
     // ===== アルベド（素の色） =====
-    float32_t4 transformdUV = mul(float32_t4(input.texcoord, 0.0f, 1.0f), gMaterial.uvTransform);
-    float32_t4 texColor = gTextures[gMaterial.textureIndex].Sample(gSampler, transformdUV.xy);
-    if (texColor.a <= gMaterial.alphaCutoff) // 切り抜き（alphaCutoffが0なら、ちょうど0のピクセルだけ捨てる）
-    {
-        discard;
-    }
-    float32_t3 albedo = gMaterial.color.rgb * texColor.rgb;
+    // 面の色（tint × マテリアルの色 × テクスチャ。切り抜きもここ）
+    ModelSurface surface = GetModelSurface(input.texcoord);
+    float32_t3 albedo = surface.baseColor;
     
     // ===== metallic計算 =====
     // 非金属(metallic=0): F0=4%グレー、albedoは拡散反射として使う
@@ -220,7 +196,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     }
     
     PixelShaderOutput output;
-    output.color = float32_t4(Lo + ambient + gMaterial.emissive, gMaterial.color.a * texColor.a);
+    output.color = float32_t4(Lo + ambient + gMaterial.emissive, surface.alpha);
     output.color.rgb = ApplyFog(output.color.rgb, input.worldPosition); // 霧（色が決まった後に混ぜる）
     if (output.color.a == 0.0)
     {

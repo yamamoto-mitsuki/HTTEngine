@@ -162,22 +162,24 @@ struct MaterialParticleData {
 };
 
 // ===== モデル用のPS =====
+// Shader/Data/Model/ModelSurface.hlsli の ModelMaterial と同じ並び（物の色 = tint × baseColor × テクスチャ。色はどれもリニア）
 struct Material3dData {
-	Vector4 color;            // 色
-	Matrix4x4 uvTransform;    // UV変換行列
-	Vector3 ambient;          // Ka: 環境光色
-	float alphaCutoff = 0.0f; // これ以下のアルファのピクセルを捨てる
-	Vector3 diffuse;          // Kd: 拡散反射色
+	Vector4 tint = {1.0f, 1.0f, 1.0f, 1.0f};      // 物ごとの色（Model Renderer の Color × Intensity）。マテリアルの色に掛ける
+	Vector4 baseColor = {1.0f, 1.0f, 1.0f, 1.0f}; // マテリアルの色（A はマテリアルの不透明度。切り抜きはこの A × テクスチャの A で比べる）
+	Matrix4x4 uvTransform;                        // UV変換行列
+	Vector3 ambient;                              // Ka: 環境光色
+	float alphaCutoff = 0.0f;                     // これ以下のアルファ（マテリアルの A × テクスチャの A）のピクセルを捨てる
+	Vector3 specular;                             // Ks: 鏡面反射色
+	float shininess;                              // Ns: 鏡面反射指数
+	Vector3 emissive;                             // Ke: 自己発光色
+	uint32_t textureIndex = 0;                    // 使用するテクスチャのインデックス（0はテクスチャなし）
+	float metallic = 0.0f;                        // 0=非金属 1=金属
+	float roughness = 0.5f;                       // 表面の粗さ（0=鏡面, 1=完全拡散）
+	float padA = 0.0f;
 	float padB = 0.0f;
-	Vector3 specular;          // Ks: 鏡面反射色
-	float shininess;           // Ns: 鏡面反射指数
-	Vector3 emissive;          // Ke: 自己発光色
-	uint32_t textureIndex = 0; // 使用するテクスチャのインデックス（0はテクスチャなし）
-	float metallic = 0.0f;     // 0=非金属 1=金属
-	float roughness = 0.5f;    // 表面の粗さ（0=鏡面, 1=完全拡散）
-	float padC = 0.0f;
-	float padD = 0.0f;
 };
+// HLSL の定数バッファは 16 バイトずつに詰めるので、並びを変えたら .hlsli も同じに直す（大きさがずれたら、ここで止まる）
+static_assert(sizeof(Material3dData) == 160, "Material3dData の大きさが ModelSurface.hlsli の ModelMaterial と違います");
 
 // Line3D用マテリアル(b0, PS)
 struct MaterialLineData {

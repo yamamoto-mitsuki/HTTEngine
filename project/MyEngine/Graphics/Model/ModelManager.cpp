@@ -1,7 +1,7 @@
 #include "MyEngine/Graphics/Model/ModelManager.h"
 
-#include <map>
 #include <cmath>
+#include <cctype>
 #include <format>
 #include <fstream>
 #include <sstream>
@@ -9,12 +9,15 @@
 #include <iterator>
 #include <algorithm>
 #include <filesystem>
+#include <string_view>
+#include <unordered_set>
 
 #include <pix.h>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <assimp/GltfMaterial.h>
 
 #include "MyEngine/Camera/Camera.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
@@ -60,23 +63,98 @@ static Matrix4x4 ConvertAssimpMatrix(const aiMatrix4x4& matrix) {
 }
 
 namespace {
-// マテリアル1つを読む
-ModelManager::MtlMaterial ParseMaterial(const aiMaterial* material, const std::filesystem::path& directoryPath) {
+// ===== glTF の alphaMode の文字（"OPAQUE"・"MASK"・"BLEND"）→ AlphaMode =====
+ModelManager::AlphaMode ParseAlphaMode(std::string_view text, const std::string& materialName) {
+	if (text == "MASK") {
+		return ModelManager::AlphaMode::Mask;
+	}
+	if (text == "BLEND") {
+		return ModelManager::AlphaMode::Blend;
+	}
+	if (text != "OPAQUE") {
+		LogManager::Warning(std::format("{}: 知らない alphaMode \"{}\" です（OPAQUE として読みます）", materialName, text));
+	}
+	return ModelManager::AlphaMode::Opaque;
+}
+
+// ===== OBJ か（拡張子を小文字にして比べる）=====
+bool IsObjFile(const std::filesystem::path& filePath) {
+	std::string extension = ToUtf8(filePath.extension());
+	std::ranges::transform(extension, extension.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+	return extension == ".obj";
+}
+
+// ===== OBJ・MTL の1行が key（"mtllib"・"newmtl"・"Kd" など）で始まっていれば、その後ろ（前後の空白を除いた物）を返す。違えば空 =====
+// 行の頭の空白は飛ばす。key の直後は空白でないといけない（"Kd" が "Kdx" に当たらないように）
+std::string_view ReadKeyword(std::string_view line, std::string_view key) {
+	constexpr std::string_view kSpaces = " \t\r";
+	const size_t begin = line.find_first_not_of(kSpaces);
+	if (begin == std::string_view::npos) {
+		return {};
+	}
+	line.remove_prefix(begin);
+	if (!line.starts_with(key) || line.size() <= key.size() || kSpaces.find(line[key.size()]) == std::string_view::npos) {
+		return {};
+	}
+	line.remove_prefix(key.size());
+	const size_t valueBegin = line.find_first_not_of(kSpaces);
+	if (valueBegin == std::string_view::npos) {
+		return {};
+	}
+	const size_t valueEnd = line.find_last_not_of(kSpaces);
+	return line.substr(valueBegin, valueEnd - valueBegin + 1);
+}
+
+// ===== OBJ の .mtl を読み、Kd（物の色）が書かれているマテリアルの名前を集める =====
+// assimp は Kd が無いと 0.6 を入れ、書いてあったかを外に出さないので、ここで自分で調べる
+std::unordered_set<std::string> FindMaterialsWithDiffuse(const std::filesystem::path& objPath) {
+	std::unordered_set<std::string> materialNames;
+	std::string line;
+	// --- .obj の mtllib の行から .mtl を見つける（.obj からの相対。行の残りを1つのファイル名として読む。assimp と同じ）---
+	std::vector<std::filesystem::path> mtlPaths;
+	std::ifstream obj(objPath);
+	while (std::getline(obj, line)) {
+		const std::string_view fileName = ReadKeyword(line, "mtllib");
+		if (!fileName.empty()) {
+			mtlPaths.push_back(objPath.parent_path() / ToPath(std::string(fileName))); // 文字は UTF-8 なので ToPath を通す
+		}
+	}
+	// --- .mtl の newmtl ごとに、Kd の行があるかを見る ---
+	for (const std::filesystem::path& mtlPath : mtlPaths) {
+		std::ifstream mtl(mtlPath);
+		std::string currentName; // 今読んでいるマテリアルの名前（newmtl の後ろ）
+		while (std::getline(mtl, line)) {
+			if (const std::string_view name = ReadKeyword(line, "newmtl"); !name.empty()) {
+				currentName = name;
+				continue;
+			}
+			if (!ReadKeyword(line, "Kd").empty()) {
+				materialNames.insert(currentName);
+			}
+		}
+	}
+	return materialNames;
+}
+
+// ===== マテリアル1つを読む（ファイルの形ごとの違いは、ここで ImportedMaterial の1つの形にそろえる）=====
+ModelManager::ImportedMaterial ParseMaterial(const aiMaterial* material, const std::filesystem::path& directoryPath) {
 	// テクスチャのパス（モデルファイルからの相対）を、モデルのフォルダにつなぐ
 	// path の / でつなぐと、フォルダが空（"cube.obj" だけ渡した）でも先頭に / が付かない。assimp の文字は UTF-8 なので ToPath を通す
 	auto makeTexturePath = [&directoryPath](const aiString& texPath) { return ToUtf8(directoryPath / ToPath(texPath.C_Str())); };
-	ModelManager::MtlMaterial mtl;
+	ModelManager::ImportedMaterial mtl;
 	// 名前（objのnewmtl名。ない場合assimpが"DefaultMaterial"を作る）
 	aiString name;
 	material->Get(AI_MATKEY_NAME, name);
 	mtl.name = name.C_Str();
-	// 環境光などの色（見つからない場合、MtlMaterialのデフォルト値）
+
+	// --- 色（どれもリニアのまま。glTF は決まりでリニア、OBJ の Kd なども Blender が書くリニアの値として扱う）---
 	aiColor3D color;
 	if (material->Get(AI_MATKEY_COLOR_AMBIENT, color) == AI_SUCCESS) {
 		mtl.ambient = {color.r, color.g, color.b};
 	}
+	// 物の色の RGB（OBJ の Kd・glTF の baseColorFactor。OBJ で Kd が書かれていないときは、assimp が 0.6 を入れるので、LoadObjFile で 1 に直す）
 	if (material->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
-		mtl.diffuse = {color.r, color.g, color.b};
+		mtl.baseColor = {color.r, color.g, color.b, 1.0f};
 	}
 	if (material->Get(AI_MATKEY_COLOR_SPECULAR, color) == AI_SUCCESS) {
 		mtl.specular = {color.r, color.g, color.b};
@@ -84,16 +162,32 @@ ModelManager::MtlMaterial ParseMaterial(const aiMaterial* material, const std::f
 	if (material->Get(AI_MATKEY_COLOR_EMISSIVE, color) == AI_SUCCESS) {
 		mtl.emissive = {color.r, color.g, color.b};
 	}
-	// スカラー
+
+	// --- 物の色の A（OBJ の d・glTF の baseColorFactor の A）---
+	// glTF は COLOR_DIFFUSE の4つ目にも OPACITY にも同じ A が入るので、OPACITY の方だけを読む（両方掛けると2回掛かる）
+	material->Get(AI_MATKEY_OPACITY, mtl.baseColor.w);
+
+	// --- 透け方（glTF だけ。OBJ にはキーが無いので Opaque のまま）---
+	aiString alphaMode;
+	if (material->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode) == AI_SUCCESS) {
+		mtl.alphaMode = ParseAlphaMode(alphaMode.C_Str(), mtl.name);
+		material->Get(AI_MATKEY_GLTF_ALPHACUTOFF, mtl.alphaCutoff);
+		// glTF の決まり：OPAQUE のときは A を使わない（Blender で A を下げても、不透明のまま）
+		if (mtl.alphaMode == ModelManager::AlphaMode::Opaque) {
+			mtl.baseColor.w = 1.0f;
+		}
+	}
+
+	// --- スカラー ---
 	material->Get(AI_MATKEY_SHININESS, mtl.shininess);
-	material->Get(AI_MATKEY_OPACITY, mtl.dissolve);
 	material->Get(AI_MATKEY_METALLIC_FACTOR, mtl.metallic);
 	material->Get(AI_MATKEY_ROUGHNESS_FACTOR, mtl.roughness);
-	// テクスチャ（パスはモデルファイルからの相対なので、makeTexturePath でモデルのフォルダにつなぐ）
+
+	// --- テクスチャ（パスはモデルファイルからの相対なので、makeTexturePath でモデルのフォルダにつなぐ）---
 	aiString texPath;
 	// glTFはbaseColor、OBJ / FBXはdiffuseに入る。あった方を使う
 	if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texPath) == AI_SUCCESS || material->GetTexture(aiTextureType_BASE_COLOR, 0, &texPath) == AI_SUCCESS) {
-		mtl.textureFilePath = makeTexturePath(texPath);
+		mtl.baseColorTexturePath = makeTexturePath(texPath);
 	}
 	if (material->GetTexture(aiTextureType_AMBIENT, 0, &texPath) == AI_SUCCESS) {
 		mtl.ambientTexFilePath = makeTexturePath(texPath);
@@ -108,9 +202,9 @@ ModelManager::MtlMaterial ParseMaterial(const aiMaterial* material, const std::f
 	return mtl;
 }
 
-// メッシュ1つを読む
-ModelManager::SubMesh ParseMesh(const aiMesh* mesh, const std::vector<std::string>& materialNames, const std::string& filename) {
-	// 法線・UVが無いモデルもあるので、無ければ既定値で補う
+// ===== メッシュ1つを読む =====
+ModelManager::SubMesh ParseMesh(const aiMesh* mesh, const std::string& filename) {
+	// --- 法線・UVが無いモデルもあるので、無ければ既定値で補う ---
 	const bool hasNormals = mesh->HasNormals();
 	const bool hasTexcoords = mesh->HasTextureCoords(0);
 	if (!hasNormals) {
@@ -119,9 +213,9 @@ ModelManager::SubMesh ParseMesh(const aiMesh* mesh, const std::vector<std::strin
 	if (!hasTexcoords) {
 		LogManager::Warning(filename + ": TexcoordがないMeshです。(0,0)で補完します");
 	}
-	// SubMesh
+	// --- SubMesh ---
 	ModelManager::SubMesh subMesh;
-	subMesh.materialName = materialNames[mesh->mMaterialIndex];
+	subMesh.materialIndex = mesh->mMaterialIndex; // assimp のマテリアルの番号（使わないマテリアルを外したあと、RemoveUnusedMaterials が付け直す）
 	subMesh.isSkinned = mesh->HasBones(); // 骨を持つメッシュ（gltfのskin）
 	subMesh.vertices.reserve(mesh->mNumVertices);
 	for (uint32_t vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex) {
@@ -155,6 +249,31 @@ ModelManager::SubMesh ParseMesh(const aiMesh* mesh, const std::vector<std::strin
 		}
 	}
 	return subMesh;
+}
+
+// ===== どのメッシュも使わないマテリアルを外す =====
+// assimp は、どのメッシュも使わない既定のマテリアルを足すことがある（OBJ の "DefaultMaterial"・glTF の名前の無い物）
+// マテリアルの番号は、そのままマテリアルの枠（Inspector の一覧）になるので、使う物だけをファイルの並びのまま詰めて、メッシュの番号を付け直す
+void RemoveUnusedMaterials(ModelManager::ModelAsset& asset) {
+	// --- どれが使われているか ---
+	std::vector<bool> isUsed(asset.materials.size(), false);
+	for (const ModelManager::SubMesh& mesh : asset.meshes) {
+		isUsed[mesh.materialIndex] = true;
+	}
+	// --- 使う物だけを並びのまま詰め、古い番号 → 新しい番号の表を作る ---
+	std::vector<ModelManager::ImportedMaterial> usedMaterials;
+	std::vector<uint32_t> newIndices(asset.materials.size(), 0);
+	for (size_t oldIndex = 0; oldIndex < asset.materials.size(); ++oldIndex) {
+		if (isUsed[oldIndex]) {
+			newIndices[oldIndex] = static_cast<uint32_t>(usedMaterials.size());
+			usedMaterials.push_back(std::move(asset.materials[oldIndex]));
+		}
+	}
+	// --- メッシュの番号を付け直す ---
+	for (ModelManager::SubMesh& mesh : asset.meshes) {
+		mesh.materialIndex = newIndices[mesh.materialIndex];
+	}
+	asset.materials = std::move(usedMaterials);
 }
 } // namespace
 
@@ -191,31 +310,19 @@ const ModelManager::ModelAsset* ModelManager::GetModelAsset(uint32_t handle) {
 	return nullptr;
 }
 
-// モデルのマテリアル
-ModelManager::MtlMaterial* ModelManager::GetMtlMaterial(uint32_t handle, const std::string name) { 
-	// --- 検索対象のモデル ---
-	auto modelCheck = GetInstance().models_.find(handle); 
-	// 存在しているmodelHandleか
-	if (modelCheck == GetInstance().models_.end()) {
-		LogManager::Error(std::format("{}: not found", handle));
-		MY_ASSERT_MSG(false, "存在しないmodelHandleを参照しています");
-	}
-	ModelAsset& model = modelCheck->second;
-
-	// --- マテリアル ---
-	auto materialCheck = model.materialMap.find(name);
-	// 存在している名前か
-	if (materialCheck == model.materialMap.end()) {
-		LogManager::Error(std::format("search name[{}] bytes={}", name, name.size()));
-		for (auto& [key, _] : model.materialMap) {
-			LogManager::Error(std::format("have key[{}] bytes={}", key, key.size()));
-		}
-
-		LogManager::Error(std::format("{}: not found", name));
-		MY_ASSERT_MSG(false, "存在しないマテリアル名を参照しています");
+// ===== 読み込んだマテリアル（番号で引く）=====
+const ModelManager::ImportedMaterial* ModelManager::GetImportedMaterial(uint32_t handle, uint32_t materialIndex) {
+	// --- 早期リターン（無いモデル）---
+	const ModelAsset* model = GetModelAsset(handle);
+	if (model == nullptr) {
 		return nullptr;
 	}
-	return &materialCheck->second;
+	// --- 番号が範囲の外（SubMesh::materialIndex は読み込みで assimp の番号のまま入るので、外れるのは呼ぶ側の間違い）---
+	if (materialIndex >= model->materials.size()) {
+		MY_ASSERT_MSG(false, std::format("{}: マテリアルの番号 {} は範囲の外です（{} 個）", model->name, materialIndex, model->materials.size()));
+		return nullptr;
+	}
+	return &model->materials[materialIndex];
 }
 
 // ===== モデル名取得 =====
@@ -258,15 +365,15 @@ uint32_t ModelManager::Load(const std::filesystem::path& filePath) {
 	ModelAsset ModelAsset = LoadObjFile(filePath);
 	ModelAsset.name = ToUtf8(filePath.stem());
 	// マテリアルのテクスチャをTextureManagerでロード（パスは UTF-8 の文字で持っているので ToPath を通す）
-	for (auto& [name, mat] : ModelAsset.materialMap) {
-		if (!mat.textureFilePath.empty()) {
-			mat.srvIndex = TextureManager::Load(ToPath(mat.textureFilePath));
+	for (ImportedMaterial& mat : ModelAsset.materials) {
+		if (!mat.baseColorTexturePath.empty()) {
+			mat.baseColorTextureHandle = TextureManager::Load(ToPath(mat.baseColorTexturePath));
 		}
 	}
 
-	// GPU常駐バッファを構築（転送を予約）
+	// GPU常駐バッファを構築（転送を予約。バッファの名前は「ファイル名/マテリアル名」）
 	for (SubMesh& mesh : ModelAsset.meshes) {
-		MakeMeshBuffer(mesh, filename);
+		MakeMeshBuffer(mesh, filename + "/" + ModelAsset.materials[mesh.materialIndex].name);
 	}
 	// 予約した転送をまとめて実行
 	UploadContext::Flush();
@@ -295,13 +402,22 @@ ModelManager::ModelAsset ModelManager::LoadObjFile(const std::filesystem::path& 
 
 	ModelAsset modelAsset;
 	// --- Material解析 ---
-	// assimpはメッシュごとにマテリアル番号（mMaterialIndex）しか持たないので、番号→名前の表を作っておき、後でSubMesh::materialNameにいれる
-	std::vector<std::string> materialNames(scene->mNumMaterials);
+	// assimp と同じ並びで読む（メッシュは番号 mMaterialIndex でマテリアルを指すので、そのまま SubMesh::materialIndex になる）
+	// 名前で持たないのは、glTF は同じ名前のマテリアルを許すから（名前の表だと、後から読んだ物が前の物を消す）
+	modelAsset.materials.reserve(scene->mNumMaterials);
 	// ループ
 	for (uint32_t materialIndex = 0; materialIndex < scene->mNumMaterials; ++materialIndex) {
-		const MtlMaterial mtl = ParseMaterial(scene->mMaterials[materialIndex], directoryPath);
-		materialNames[materialIndex] = mtl.name;
-		modelAsset.materialMap[mtl.name] = mtl;
+		modelAsset.materials.push_back(ParseMaterial(scene->mMaterials[materialIndex], directoryPath));
+	}
+	// OBJ：Kd が書かれていないマテリアルは、物の色を白にする（書いていない＝色を掛けない。glTF の baseColorFactor の既定 1 と同じ）
+	// Blender はテクスチャを使うマテリアルに Kd を書かないので、assimp の 0.6 のままだと、テクスチャが暗くなる
+	if (IsObjFile(filePath)) {
+		const std::unordered_set<std::string> withDiffuse = FindMaterialsWithDiffuse(filePath);
+		for (ImportedMaterial& material : modelAsset.materials) {
+			if (!withDiffuse.contains(material.name)) {
+				material.baseColor = {1.0f, 1.0f, 1.0f, material.baseColor.w}; // A（OBJ の d）はそのまま
+			}
+		}
 	}
 
 	// --- Mesh解析 ---
@@ -309,8 +425,10 @@ ModelManager::ModelAsset ModelManager::LoadObjFile(const std::filesystem::path& 
 	modelAsset.meshes.reserve(scene->mNumMeshes);
 	// ループ
 	for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex) {
-		modelAsset.meshes.push_back(ParseMesh(scene->mMeshes[meshIndex], materialNames, filename));
+		modelAsset.meshes.push_back(ParseMesh(scene->mMeshes[meshIndex], filename));
 	}
+	// どのメッシュも使わないマテリアルを外す（番号はファイルの並びのまま詰める）
+	RemoveUnusedMaterials(modelAsset);
 
 	// --- Node解析（モデルファイルの中の階層構造） ---
 	// 根からたどって、ノードごとの行列とメッシュ番号を配列に写す
@@ -474,12 +592,12 @@ void ModelManager::MakeMatrixPalette(const ModelAsset& asset, const std::vector<
 //======================================================================================================
 // メッシュのCPU頂点を GPU常駐バッファへ転送する（ロード時1回だけ）
 //======================================================================================================
-void ModelManager::MakeMeshBuffer(SubMesh& mesh, const std::string& modelName) {
+void ModelManager::MakeMeshBuffer(SubMesh& mesh, const std::string& bufferName) {
 	if (mesh.vertices.empty() || mesh.indices.empty()) {
 		return;
 	}
 	// バッファの名前の頭
-	const std::wstring base = ConvertString(modelName + "/" + mesh.materialName);
+	const std::wstring base = ConvertString(bufferName);
 
 	// 頂点バッファ（形。スキンのあるメッシュは、Skinning の CS も StructuredBuffer として読む）
 	mesh.vbv = UploadContext::CreateVertexBuffer(mesh.vertices, mesh.vertexBuffer, base + L"_VB");

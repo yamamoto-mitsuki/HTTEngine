@@ -1,5 +1,4 @@
 #pragma once
-#include <map>
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -30,23 +29,32 @@ class ModelManager {
 public:
 	static constexpr uint32_t kInvalidNode = 0xFFFFFFFF; // 親がいないノード（根）を表す
 
-	// ===== MTLファイルから読み込んだマテリアル情報 =====
-	struct MtlMaterial {
-		std::string name;
-		Vector3 ambient = {0.0f, 0.0f, 0.0f};  // Ka: 環境光色
-		Vector3 diffuse = {0.8f, 0.8f, 0.8f};  // Kd: 拡散反射色
-		Vector3 specular = {1.0f, 1.0f, 1.0f}; // Ks: 鏡面反射色
-		Vector3 emissive = {0.0f, 0.0f, 0.0f}; // Ke: 自己発光色
-		float shininess = 32.0f;               // Ns: 鏡面反射指数
-		float dissolve = 1.0f;                 // d: 不透明度（1=完全不透明）
-		float metallic = 0.0f;                 // 0=非金属 1=金属
-		float roughness = 0.5f;                // 表面の粗さ（0=鏡面, 1=完全拡散）
-		int32_t illum = 1;                     // illum: 照明モデル番号
-		std::string textureFilePath;           // map_Kd: ディフューズテクスチャ
-		std::string ambientTexFilePath;        // map_Ka: アンビエントテクスチャ
-		std::string specularTexFilePath;       // map_Ks: スペキュラテクスチャ
-		std::string bumpTexFilePath;           // map_bump/bump: バンプマップ
-		uint32_t srvIndex = 0;                 // TextureManager::Load()が返したSRVスロット番号
+	// ===== 透け方（glTF の alphaMode。OBJ には無いので Opaque）=====
+	enum class AlphaMode {
+		Opaque, // 不透明（Base Color の A は使わない）
+		Mask,   // 切り抜き（A が alphaCutoff 以下のピクセルを捨てる）
+		Blend,  // 半透明（A の分だけ透ける）
+	};
+
+	// ===== モデルファイルから読み込んだマテリアル（OBJ の mtl・glTF の material を、エンジンの1つの形にそろえた物）=====
+	// 色はどのファイルから読んでもリニア（glTF は決まりでリニア。OBJ の Kd も、Blender が書くリニアの値として扱う）
+	struct ImportedMaterial {
+		std::string name;                             // マテリアルの名前（表示・GPU のデバッグ名に使う。ぶつかることもあるので、引くときは番号で）
+		Vector4 baseColor = {1.0f, 1.0f, 1.0f, 1.0f}; // 物の色（RGB：OBJ の Kd・glTF の baseColorFactor、A：OBJ の d・glTF の baseColorFactor の A）。テクスチャに掛ける
+		Vector3 ambient = {0.0f, 0.0f, 0.0f};         // Ka: 環境光色
+		Vector3 specular = {1.0f, 1.0f, 1.0f};        // Ks: 鏡面反射色
+		Vector3 emissive = {0.0f, 0.0f, 0.0f};        // Ke: 自己発光色
+		float shininess = 32.0f;                      // Ns: 鏡面反射指数
+		float metallic = 0.0f;                        // 0=非金属 1=金属
+		float roughness = 0.5f;                       // 表面の粗さ（0=鏡面, 1=完全拡散）
+		AlphaMode alphaMode = AlphaMode::Opaque;      // 透け方（glTF の alphaMode。今は記録だけ。マテリアルの枠を作るときに Blend・切り抜きへ渡す）
+		float alphaCutoff = 0.5f;                     // Mask のときの切り抜きの値（glTF の alphaCutoff。今は記録だけ）
+		int32_t illum = 1;                            // illum: 照明モデル番号
+		std::string baseColorTexturePath;             // 物の色のテクスチャ（OBJ の map_Kd・glTF の baseColorTexture）
+		std::string ambientTexFilePath;               // map_Ka: アンビエントテクスチャ
+		std::string specularTexFilePath;              // map_Ks: スペキュラテクスチャ
+		std::string bumpTexFilePath;                  // map_bump/bump: バンプマップ
+		uint32_t baseColorTextureHandle = 0;          // baseColorTexturePath を TextureManager::Load() で読んだ番号（0 はテクスチャ無し）
 	};
 
 	// ===== メッシュデータ（1つのusemtlに対応）=====
@@ -54,7 +62,7 @@ public:
 		// CPU側で使う。ロード時のバッファ構築に使用
 		std::vector<Vertex3dData> vertices;
 		std::vector<uint32_t> indices;
-		std::string materialName; // materialMapのキー
+		uint32_t materialIndex = 0; // 使うマテリアルの番号（ModelAsset::materials の番号＝マテリアルの枠の番号）
 		// GPU側で使う。描画時にバインド
 		Microsoft::WRL::ComPtr<ID3D12Resource> vertexBuffer;
 		Microsoft::WRL::ComPtr<ID3D12Resource> indexBuffer;
@@ -86,7 +94,7 @@ public:
 		std::string name;
 		std::vector<SubMesh> meshes;
 		std::vector<Node> nodes; // 階層構造。0番が根
-		std::map<std::string, MtlMaterial> materialMap;
+		std::vector<ImportedMaterial> materials; // 読み込んだマテリアル（メッシュが使う物だけ、ファイルの並びのまま。番号で引く）
 	};
 
 	/// <summary>
@@ -122,12 +130,12 @@ public:
 	static const ModelAsset* GetModelAsset(uint32_t modelHandle);
 
 	/// <summary>
-	/// ModelAsset構造体の中のmaterialMapを取得
+	/// 読み込んだマテリアルを番号で取得
 	/// </summary>
-	/// <param name="handle">objファイルを読んだときに返ってくるmodelHandle</param>
-	/// <param name="name">SubMeshの中にあるmaterialName</param>
-	/// <returns></returns>
-	static MtlMaterial* GetMtlMaterial(uint32_t handle, const std::string name);
+	/// <param name="handle">Load が返したモデルハンドル</param>
+	/// <param name="materialIndex">マテリアルの番号（SubMesh::materialIndex）</param>
+	/// <returns>無いモデル・番号なら nullptr</returns>
+	static const ImportedMaterial* GetImportedMaterial(uint32_t handle, uint32_t materialIndex);
 
 	/// <summary>
 	/// メッシュを置く行列（ノードの行列のうち、そのメッシュに掛ける物）
@@ -183,7 +191,8 @@ private:
 	/// <summary>
 	/// メッシュのCPU頂点をGPU常駐バッファへ転送する（ロード時1回のみ）
 	/// </summary>
-	static void MakeMeshBuffer(SubMesh& mesh, const std::string& modelName);
+	/// <param name="bufferName">バッファの名前の頭（「ファイル名/マテリアル名」。PIX などで見分ける）</param>
+	static void MakeMeshBuffer(SubMesh& mesh, const std::string& bufferName);
 
 	std::unordered_map<uint32_t, ModelAsset> models_;        // キー → ModelAsset
 	std::unordered_map<std::string, uint32_t> pathToHandle_; // ファイルパス → キー（重複防止）

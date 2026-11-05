@@ -1,0 +1,778 @@
+{
+	"version": 1,
+	"entities": [
+		{
+			"id": 1,
+			"name": "Main Camera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.5, 0.0, -24.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Camera": {
+					"fovY": 60.0,
+					"nearZ": 0.1,
+					"farZ": 1000.0,
+					"priority": 0
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Directional Light",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 8.0, -8.0],
+					"rotation": [35.0, 25.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Directional Light": {
+					"color": [1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 3,
+			"name": "glTF Unlit",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-17.0, 5.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "Unlit",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 4,
+			"name": "OBJ Unlit",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-8.0, 5.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.obj",
+					"shadingType": "Unlit",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 5,
+			"name": "Color Unlit",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [1.0, 5.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "Unlit",
+					"color": [1.0, 0.5, 0.5, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 6,
+			"name": "Override Unlit",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [10.0, 5.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "Unlit",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": true,
+					"baseColor": [0.5, 0.5, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 7,
+			"name": "Primitive Unlit",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [16.5, 5.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.6, 1.6, 1.6]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Sphere",
+					"color": [0.9, 0.5, 0.2, 1.0],
+					"shadingType": "Unlit"
+				}
+			}
+		},
+		{
+			"id": 8,
+			"name": "Primitive Texture Unlit",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [19.5, 5.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.6, 1.6, 1.6]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Sphere",
+					"color": [0.6, 0.9, 1.0, 1.0],
+					"texture": "resources/Model/BaseColorTest/checker.png",
+					"shadingType": "Unlit"
+				}
+			}
+		},
+		{
+			"id": 9,
+			"name": "glTF Lambert",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-17.0, 3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "Lambert",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 10,
+			"name": "OBJ Lambert",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-8.0, 3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.obj",
+					"shadingType": "Lambert",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 11,
+			"name": "Color Lambert",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [1.0, 3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "Lambert",
+					"color": [1.0, 0.5, 0.5, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 12,
+			"name": "Override Lambert",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [10.0, 3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "Lambert",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": true,
+					"baseColor": [0.5, 0.5, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 13,
+			"name": "Primitive Lambert",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [16.5, 3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.6, 1.6, 1.6]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Sphere",
+					"color": [0.9, 0.5, 0.2, 1.0],
+					"shadingType": "Lambert"
+				}
+			}
+		},
+		{
+			"id": 14,
+			"name": "Primitive Texture Lambert",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [19.5, 3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.6, 1.6, 1.6]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Sphere",
+					"color": [0.6, 0.9, 1.0, 1.0],
+					"texture": "resources/Model/BaseColorTest/checker.png",
+					"shadingType": "Lambert"
+				}
+			}
+		},
+		{
+			"id": 15,
+			"name": "glTF HalfLambert",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-17.0, 1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "HalfLambert",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 16,
+			"name": "OBJ HalfLambert",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-8.0, 1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.obj",
+					"shadingType": "HalfLambert",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 17,
+			"name": "Color HalfLambert",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [1.0, 1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "HalfLambert",
+					"color": [1.0, 0.5, 0.5, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 18,
+			"name": "Override HalfLambert",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [10.0, 1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "HalfLambert",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": true,
+					"baseColor": [0.5, 0.5, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 19,
+			"name": "Primitive HalfLambert",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [16.5, 1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.6, 1.6, 1.6]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Sphere",
+					"color": [0.9, 0.5, 0.2, 1.0],
+					"shadingType": "HalfLambert"
+				}
+			}
+		},
+		{
+			"id": 20,
+			"name": "Primitive Texture HalfLambert",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [19.5, 1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.6, 1.6, 1.6]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Sphere",
+					"color": [0.6, 0.9, 1.0, 1.0],
+					"texture": "resources/Model/BaseColorTest/checker.png",
+					"shadingType": "HalfLambert"
+				}
+			}
+		},
+		{
+			"id": 21,
+			"name": "glTF Phong",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-17.0, -1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "Phong",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 22,
+			"name": "OBJ Phong",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-8.0, -1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.obj",
+					"shadingType": "Phong",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 23,
+			"name": "Color Phong",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [1.0, -1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "Phong",
+					"color": [1.0, 0.5, 0.5, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 24,
+			"name": "Override Phong",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [10.0, -1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "Phong",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": true,
+					"baseColor": [0.5, 0.5, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 25,
+			"name": "Primitive Phong",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [16.5, -1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.6, 1.6, 1.6]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Sphere",
+					"color": [0.9, 0.5, 0.2, 1.0],
+					"shadingType": "Phong"
+				}
+			}
+		},
+		{
+			"id": 26,
+			"name": "Primitive Texture Phong",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [19.5, -1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.6, 1.6, 1.6]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Sphere",
+					"color": [0.6, 0.9, 1.0, 1.0],
+					"texture": "resources/Model/BaseColorTest/checker.png",
+					"shadingType": "Phong"
+				}
+			}
+		},
+		{
+			"id": 27,
+			"name": "glTF BlinnPhong",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-17.0, -3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "BlinnPhong",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 28,
+			"name": "OBJ BlinnPhong",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-8.0, -3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.obj",
+					"shadingType": "BlinnPhong",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 29,
+			"name": "Color BlinnPhong",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [1.0, -3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "BlinnPhong",
+					"color": [1.0, 0.5, 0.5, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 30,
+			"name": "Override BlinnPhong",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [10.0, -3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "BlinnPhong",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": true,
+					"baseColor": [0.5, 0.5, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 31,
+			"name": "Primitive BlinnPhong",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [16.5, -3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.6, 1.6, 1.6]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Sphere",
+					"color": [0.9, 0.5, 0.2, 1.0],
+					"shadingType": "BlinnPhong"
+				}
+			}
+		},
+		{
+			"id": 32,
+			"name": "Primitive Texture BlinnPhong",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [19.5, -3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.6, 1.6, 1.6]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Sphere",
+					"color": [0.6, 0.9, 1.0, 1.0],
+					"texture": "resources/Model/BaseColorTest/checker.png",
+					"shadingType": "BlinnPhong"
+				}
+			}
+		},
+		{
+			"id": 33,
+			"name": "glTF PBR",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-17.0, -5.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "PBR",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 34,
+			"name": "OBJ PBR",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-8.0, -5.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.obj",
+					"shadingType": "PBR",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 35,
+			"name": "Color PBR",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [1.0, -5.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "PBR",
+					"color": [1.0, 0.5, 0.5, 1.0],
+					"overrideMaterial": false,
+					"baseColor": [1.0, 1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 36,
+			"name": "Override PBR",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [10.0, -5.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/BaseColorTest/BaseColorTest.gltf",
+					"shadingType": "PBR",
+					"color": [1.0, 1.0, 1.0, 1.0],
+					"overrideMaterial": true,
+					"baseColor": [0.5, 0.5, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 37,
+			"name": "Primitive PBR",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [16.5, -5.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.6, 1.6, 1.6]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Sphere",
+					"color": [0.9, 0.5, 0.2, 1.0],
+					"shadingType": "PBR"
+				}
+			}
+		},
+		{
+			"id": 38,
+			"name": "Primitive Texture PBR",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [19.5, -5.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.6, 1.6, 1.6]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Sphere",
+					"color": [0.6, 0.9, 1.0, 1.0],
+					"texture": "resources/Model/BaseColorTest/checker.png",
+					"shadingType": "PBR"
+				}
+			}
+		}
+	]
+}

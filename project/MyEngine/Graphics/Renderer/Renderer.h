@@ -56,13 +56,13 @@ public:
 		const Matrix4x4* worldMatrix = nullptr;                    // 指定するとtransformの代わりに使う（階層・ロール用）
 		const std::vector<Matrix4x4>* nodeMatrices = nullptr;      // ノードの行列（AnimationPlayer::GetNodeMatrices）。nullptr・数が合わないときはモデルに入っている行列
 		Handle<Entity> entity;                                     // 持ち主のEntity、スキンのあるメッシュを CS で曲げるとき、出力バッファを見分けるのに使う（無効なら曲げない）
-		Vector4 color = {1.0f, 1.0f, 1.0f, 1.0f};                               // 色
+		Vector4 color = {1.0f, 1.0f, 1.0f, 1.0f};                               // 物ごとの色（sRGB。読み込んだマテリアルの色に掛ける）
 		ShadingType shadingType = ShadingType::Unlit;              // シェーディング設定
 		BlendMode blendMode = BlendMode::Normal;                   // ブレンド設定
 		RasterizerType rasterizerType = RasterizerType::SolidBack; // ラスタライザ設定
 		DepthMode depthMode = DepthMode::TestWrite;                // 深度設定
 		MaterialParams material;                                   // マテリアル調整パラメータ
-		bool overrideMaterial = false;                             // true：material をモデルの mtl / glTF の値の代わりに使う（false なら mtl に無いときだけ）
+		bool overrideMaterial = false;                             // true：material を、読み込んだマテリアルの値の代わりに使う（全部のメッシュに同じ値。テクスチャは読み込んだ物のまま）
 		Camera* camera = nullptr;                                  // カメラ設定
 		IBLEnvironment* env = nullptr;                             // 環境光源
 		BillboardMode billboard = BillboardMode::None;             // カメラの方を向かせる（Full / AxisY。cameraが必要）
@@ -498,9 +498,30 @@ private:
 	template<class TConfig> static void PushSprite(const TConfig& config, Vector2 lb, Vector2 lt, Vector2 rb, Vector2 rt, 
 		Vector2 uvLb, Vector2 uvLt, Vector2 uvRb, Vector2 uvRt);
 
-	// MTLマテリアル + Config の色から Material3dData を構築する
-	// mat が nullptr か、overrideMaterial が true なら、params の値を使う
-	static Material3dData MakeModelMaterial(const ModelManager::MtlMaterial* mat, const Vector4& color, const Transform& uvTransform, const MaterialParams& params, bool overrideMaterial);
+	// ===== マテリアル1つぶんの値 =====
+	// 読み込んだマテリアル・Inspector の上書き・Primitive のどこから来ても、この形（色はリニア）にそろえてから GPU の形に詰める
+	// 既定の値は「マテリアルを渡されなかった形（Triangle・Plane など）」の見た目（光沢・環境光なし）
+	struct MaterialValues {
+		Vector4 baseColor = {1.0f, 1.0f, 1.0f, 1.0f}; // マテリアルの色（リニア。A は不透明度）
+		Vector3 ambient = {0.0f, 0.0f, 0.0f};         // Ka: 環境光色
+		Vector3 specular = {0.0f, 0.0f, 0.0f};        // Ks: 鏡面反射色
+		Vector3 emissive = {0.0f, 0.0f, 0.0f};        // Ke: 自己発光色
+		float shininess = 1.0f;                       // Ns: 鏡面反射指数
+		float metallic = 0.0f;                        // 0=非金属 1=金属
+		float roughness = 0.5f;                       // 表面の粗さ
+		uint32_t baseColorTexture = 0;                // 物の色のテクスチャ（TextureManager の番号。0 は白）
+	};
+
+	// Inspector の値（MaterialParams。色は sRGB）→ MaterialValues（色はリニア）。テクスチャは持たないので 0
+	static MaterialValues ToMaterialValues(const MaterialParams& params);
+
+	// モデルのマテリアルの枠1つ（= メッシュが使うマテリアルの番号）に使うマテリアルを決める
+	// 今は「Override なら Inspector の値、でなければ読み込んだ値」。Model Renderer の Texture を選んでいれば、テクスチャだけ差し替える
+	// 後でマテリアルの枠（.material）を作るときは、ここに「枠に .material があればそれ」を足す
+	static MaterialValues ResolveModelMaterial(const ModelConfig& config, uint32_t materialIndex);
+
+	// MaterialValues と物ごとの色（tint。リニア）を、GPU の定数バッファの形に詰める
+	static Material3dData MakeMaterial3dData(const MaterialValues& values, const Vector4& tint, const Transform& uvTransform, float alphaCutoff);
 
 	// 重心を操作
 	static Vector2 RotateAround2d(const Vector2& point, const Vector2& center, float radian);

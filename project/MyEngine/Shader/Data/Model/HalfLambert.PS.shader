@@ -11,31 +11,19 @@ vs:       Object3dVS
 
 #HLSL
 #include "Object3d.hlsli"
+#include "ModelSurface.hlsli"
 #include "Buffers/Camera.hlsli"
 #include "Buffers/Light.hlsli"
 #include "Fog/Fog.hlsli"
-#include "Resources/Texture.hlsli"
-
-// マテリアル
-struct ModelMaterial {
-    float32_t4   color;
-    float4x4 uvTransform;
-    float32_t3   ambient; 
-    float alphaCutoff;   
-    float32_t3   diffuse;    
-    float padD;
-    float32_t3   specular;   
-    float shininess;
-    float32_t3   emissive;   
-    uint textureIndex;
-};
-ConstantBuffer<ModelMaterial> gMaterial : register(b20);
 
 // 円周率
 static const float PI = 3.14159265f;
 
 
 PixelShaderOutput main(VertexShaderOutput input) {
+    // 面の色（tint × マテリアルの色 × テクスチャ。切り抜いたピクセルは、光の計算の前に捨てる）
+    ModelSurface surface = GetModelSurface(input.texcoord);
+
     PixelShaderOutput output;
     float3 N = normalize(input.normal);
     // 最終的な拡散光
@@ -82,17 +70,10 @@ PixelShaderOutput main(VertexShaderOutput input) {
         }
     }
      
-    // ===== Texture =====
-    float32_t4 transformedUV = mul(float32_t4(input.texcoord, 0.0f, 1.0f), gMaterial.uvTransform);
-    float32_t4 texColor      = gTextures[gMaterial.textureIndex].Sample(gSampler, transformedUV.xy);
-    if (texColor.a <= gMaterial.alphaCutoff) // 切り抜き（alphaCutoffが0なら、ちょうど0のピクセルだけ捨てる）
-    {
-        discard;
-    }
     // Output
-    output.color.rgb = gMaterial.color.rgb * texColor.rgb * diffuseLighting + gMaterial.emissive;
+    output.color.rgb = surface.baseColor * diffuseLighting + gMaterial.emissive;
     output.color.rgb = ApplyFog(output.color.rgb, input.worldPosition); // 霧（色が決まった後に混ぜる）
-    output.color.a = gMaterial.color.a * texColor.a;
+    output.color.a = surface.alpha;
     if (output.color.a == 0.0)
     {
         discard;

@@ -48,6 +48,12 @@ inline float LinearToSrgb(float value) {
 	return 1.055f * std::pow(value, 1.0f / 2.4f) - 0.055f;
 }
 
+// RGB（読み込んだマテリアルの色などを、Inspector の sRGB の欄へ写すとき）
+inline Vector3 LinearToSrgb(const Vector3& color) { return {LinearToSrgb(color.x), LinearToSrgb(color.y), LinearToSrgb(color.z)}; }
+
+// RGBA（A は透け方の割合なので、直さない）
+inline Vector4 LinearToSrgb(const Vector4& color) { return {LinearToSrgb(color.x), LinearToSrgb(color.y), LinearToSrgb(color.z), color.w}; }
+
 // ===== 明るさの倍率（Intensity）を掛けた色（HDR の色）=====
 // 色は 0〜1 に収めてから、リニア（光の強さ）で intensity 倍にして、sRGB の曲線で書き直す
 // Renderer は Config の色を SrgbToLinear で直すので、シェーダーに届くのはちょうど「色のリニア × intensity」

@@ -39,51 +39,61 @@ static float CameraDistanceSq(const Matrix4x4& worldMatrix, const Camera* camera
 	return Dot(d, d);
 }
 
-// ===== Primitive Material作成ヘルパー =====
-static Material3dData MakeDefaultModelMaterial(float r, float g, float b, float a, const Transform& uvTransform, float alphaCutoff) {
-	Material3dData mat;
-	mat.color = {r, g, b, a};
-	mat.uvTransform = MakeUVTransformMatrix(uvTransform);
-	mat.ambient = {0.0f, 0.0f, 0.0f};
-	mat.diffuse = {1.0f, 1.0f, 1.0f};
-	mat.specular = {0.0f, 0.0f, 0.0f};
-	mat.shininess = 1.0f;
-	mat.emissive = {0.0f, 0.0f, 0.0f};
-	mat.alphaCutoff = alphaCutoff;
-	return mat;
+// ===== Inspector の値 → マテリアル1つぶんの値 =====
+Renderer::MaterialValues Renderer::ToMaterialValues(const MaterialParams& params) {
+	// 色は Inspector で選んだ sRGB の色なので、リニアに直す（読み込んだマテリアルは、もうリニア）
+	MaterialValues values;
+	values.baseColor = SrgbToLinear(params.baseColor); // Base Color 物の色（A は不透明度。そのまま）
+	values.ambient = SrgbToLinear(params.ambient);     // Ka: Ambient   環境光（影になっている部分の明るさ）
+	values.specular = SrgbToLinear(params.specular);   // Ks: Specular  鏡面反射（ハイライトの強さ）
+	values.emissive = SrgbToLinear(params.emissive);   // Ke: Emissive  自己発光（光源がなくても発光する色）
+	values.shininess = params.shininess;               // Ns: Shininess 光沢（値が大きいほどハイライトが小さく鋭くなる）
+	values.metallic = params.metallic;
+	values.roughness = params.roughness;
+	return values;
 }
 
-// ===== Model Materialの共通作成部分 =====
-Material3dData Renderer::MakeModelMaterial(const ModelManager::MtlMaterial* mat, const Vector4& color, const Transform& uvTransform, const MaterialParams& params, bool overrideMaterial) {
-	// マテリアル構築（色は sRGB → リニア）
-	Material3dData material;
-	material.color = SrgbToLinear(color);
-	material.uvTransform = MakeUVTransformMatrix(uvTransform);
-	// 値が設定している場合（上書きしないときだけ、MTLの値を使う）
-	if (mat && !overrideMaterial) {
-		material.ambient = mat->ambient;
-		material.diffuse = mat->diffuse;
-		material.specular = mat->specular;
-		material.shininess = mat->shininess;
-		material.emissive = mat->emissive;
-		material.metallic = mat->metallic;
-		material.roughness = mat->roughness;
+// ===== モデルのマテリアルの枠1つに使うマテリアルを決める =====
+Renderer::MaterialValues Renderer::ResolveModelMaterial(const ModelConfig& config, uint32_t materialIndex) {
+	const ModelManager::ImportedMaterial* imported = ModelManager::GetImportedMaterial(config.modelHandle, materialIndex);
+	MaterialValues values;
+	// --- どのマテリアルか（Override なら Inspector の値、でなければ読み込んだ値）---
+	if (config.overrideMaterial || imported == nullptr) {
+		values = ToMaterialValues(config.material);
 	} else {
-		// 色の4つは Inspector で選んだ sRGB の色なので、リニアに直す（MTL の値はファイルのまま使う）
-		material.ambient = SrgbToLinear(params.ambient);   // Ka: Ambient   環境光（影になっている部分の明るさ）
-		material.diffuse = SrgbToLinear(params.diffuse);   // Kd: Diffuse   拡散反射（物体本来の色）
-		material.specular = SrgbToLinear(params.specular); // Ks: Specular  鏡面反射（ハイライトの強さ）
-		material.shininess = params.shininess;             // Ns: Shininess 光沢（値が大きいほどハイライトが小さく鋭くなる）
-		material.emissive = SrgbToLinear(params.emissive); // Ke: Emissive  自己発光（光源がなくても発光する色）
-		material.metallic = params.metallic;
-		material.roughness = params.roughness;
+		values.baseColor = imported->baseColor; // 読み込みでリニアにそろえてある
+		values.ambient = imported->ambient;
+		values.specular = imported->specular;
+		values.emissive = imported->emissive;
+		values.shininess = imported->shininess;
+		values.metallic = imported->metallic;
+		values.roughness = imported->roughness;
 	}
-	// 不透明度（MTL の d）は上書きしていても掛ける（MaterialParams に不透明度は無い。透けさせたいときは Color の A を使う）
-	if (mat) {
-		material.color.w *= mat->dissolve;
+	// --- テクスチャ（Inspector の上書きにテクスチャは無いので、Override でも読み込んだ物を使う）---
+	if (imported != nullptr) {
+		values.baseColorTexture = imported->baseColorTextureHandle;
 	}
-	// 切り抜きはMTLに無い設定なので、いつもMaterialParamsから取る
-	material.alphaCutoff = params.alphaCutoff;
+	// Model Renderer の Texture を選んでいれば、全部の枠のテクスチャを差し替える（マテリアルの色はそのまま掛かる）
+	if (config.textureHandle != 0) {
+		values.baseColorTexture = config.textureHandle;
+	}
+	return values;
+}
+
+// ===== GPU の定数バッファの形に詰める =====
+Material3dData Renderer::MakeMaterial3dData(const MaterialValues& values, const Vector4& tint, const Transform& uvTransform, float alphaCutoff) {
+	Material3dData material;
+	material.tint = tint;
+	material.baseColor = values.baseColor;
+	material.uvTransform = MakeUVTransformMatrix(uvTransform);
+	material.ambient = values.ambient;
+	material.alphaCutoff = alphaCutoff;
+	material.specular = values.specular;
+	material.shininess = values.shininess;
+	material.emissive = values.emissive;
+	material.textureIndex = ResolveTextureIndex(values.baseColorTexture);
+	material.metallic = values.metallic;
+	material.roughness = values.roughness;
 	return material;
 }
 
@@ -96,21 +106,22 @@ void Renderer::PushMesh(const TConfig& config, std::vector<Vertex3dData>&& verti
 template<class TConfig> 
 void Renderer::PushMesh(const TConfig& config, std::vector<Vertex3dData>&& vertices, std::vector<uint32_t>&& indices, 
 	const Matrix4x4& worldMatrix, BillboardMode billboard) {
-	// --- 色変換（sRGB → リニア）---
-	const Vector4 color = SrgbToLinear(config.color);
 	// --- bind情報、頂点データ ---
 	MeshRequest req;
 	req.vertices = std::move(vertices);
 	req.indices = std::move(indices);
-	req.materialData = MakeDefaultModelMaterial(color.x, color.y, color.z, color.w, config.uvTransform, config.alphaCutoff);
 	// --- マテリアル：Config が material を持っていて、何かを指していれば、その値（光沢・金属感・自己発光など）---
+	MaterialValues values;
 	if constexpr (requires { config.material; }) {
 		if (config.material != nullptr) {
-			req.materialData = MakeModelMaterial(nullptr, config.color, config.uvTransform, *config.material, true);
-			req.materialData.alphaCutoff = config.alphaCutoff; // 切り抜きは、どの Config にもある alphaCutoff の方を使う
+			values = ToMaterialValues(*config.material);
 		}
 	}
-	req.materialData.textureIndex = ResolveTextureIndex(config.textureHandle);
+	// 形（Primitive など）には読み込んだマテリアルが無く、Config の Color と Texture がマテリアルの色とテクスチャ（sRGB → リニア）
+	// そのため MaterialParams の Base Color は使わず、物ごとの色（tint）は白
+	values.baseColor = SrgbToLinear(config.color);
+	values.baseColorTexture = config.textureHandle;
+	req.materialData = MakeMaterial3dData(values, {1.0f, 1.0f, 1.0f, 1.0f}, config.uvTransform, config.alphaCutoff); // 切り抜きは、どの Config にもある alphaCutoff の方を使う
 	req.objectTransformData = MakeObjectTransform(worldMatrix, billboard);
 	req.shadingType = config.shadingType;
 	req.blendMode = config.blendMode;
@@ -240,10 +251,10 @@ void Renderer::DrawModel(const ModelConfig& config) {
 				// 曲げる仕事を積み、曲げた頂点の VBV に差し替える（Dispatch は描き始める前にまとめて）
 				req.vbv = SkinCache::Request(config.entity, meshIndex, mesh, paletteAddress);
 			}
-			// マテリアル構築
-			const ModelManager::MtlMaterial* mat = ModelManager::GetMtlMaterial(config.modelHandle, mesh.materialName);
-			req.materialData = MakeModelMaterial(mat, config.color, config.uvTransform, config.material, config.overrideMaterial);
-			req.materialData.textureIndex = ResolveTextureIndex((config.textureHandle != 0) ? config.textureHandle : (mat ? mat->srvIndex : 0));
+			// マテリアル構築（枠＝メッシュが使うマテリアルの番号で決めて、物ごとの色（Color。sRGB → リニア）と一緒に詰める）
+			// 切り抜きは読み込んだマテリアルに無い設定なので、いつも Inspector の値（MaterialParams）から取る
+			const MaterialValues materialValues = ResolveModelMaterial(config, mesh.materialIndex);
+			req.materialData = MakeMaterial3dData(materialValues, SrgbToLinear(config.color), config.uvTransform, config.material.alphaCutoff);
 			// メッシュのワールド行列（ノードの行列を挟む。スキンのあるメッシュは挟まない）
 			const Matrix4x4 meshWorldMatrix = ModelManager::MeshMatrix(mesh, nodeMatrix) * worldMatrix;
 			req.objectTransformData = MakeObjectTransform(meshWorldMatrix, config.billboard);
@@ -258,7 +269,7 @@ void Renderer::DrawModel(const ModelConfig& config) {
 			req.receivesDecals = config.receivesDecals;
 			static_cast<DrawTarget&>(req) = config; // 描き分け（ウィンドウ・層・目で隠したか）をまとめて写す（DrawTarget の所だけ代入する）
 			req.debugName = &ModelManager::GetModelName(config.modelHandle);
-			req.debugSubName = &mesh.materialName;
+			req.debugSubName = &asset->materials[mesh.materialIndex].name;
 
 			RenderQueue::Request(std::move(req));
 		}
