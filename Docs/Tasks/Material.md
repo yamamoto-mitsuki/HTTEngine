@@ -13,6 +13,6 @@
 |---|---|---|
 | **1** | **`alphaCutoff`（切り抜き）を足す ＋ `ModelConfig::material` を実際に使う** | **反映済み**（現行コードと照合。実行確認済みの記録はLight.md参照） |
 | 2 | **glTF（PBR）に対応する**：baseColor / metallic / roughness とそのテクスチャ、UVの向き、`.glb` の埋め込みテクスチャ | これから（PBRを使うならここが先） |
-| 3 | マテリアルをアセットとして持つ（今は描画のたびに `Material3dData` を組み立てている） | これから（Inspectorの作業と一緒） |
+| 3 | マテリアルをアセットとして持つ（今は描画のたびに `Material3dData` を組み立てている） | **半分**：汎用のマテリアル（.material＝Shader のパス＋#PROPERTIES の値＋Curve＋描くときの状態の上書き）を [MaterialTelegraph.md](MaterialTelegraph.md) で足す（最初の使い道はデカールと床の予告）。今の Model Renderer・Primitive Renderer を .material へ載せ替えるのは、これから（MaterialTelegraph.md の 3章） |
 | 4 | 法線マップを実際にシェーダーで使う | 将来（PBRの精度を上げるとき） |
 | 5 | **ガラス・宝石（屈折）** | 将来（下の「ダイヤモンドみたいな表現」。2・3の後なら安く付く） |
