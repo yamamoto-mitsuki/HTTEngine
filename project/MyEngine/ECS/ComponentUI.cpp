@@ -14,10 +14,12 @@
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/ECS/GameObject.h"
 #include "MyEngine/Physics/PhysicMaterialManager.h"
+#include "MyEngine/Graphics/Material/MaterialManager.h"
 #include "MyEngine/Graphics/Model/ModelManager.h"
 #include "MyEngine/Graphics/Text/FontManager.h"
 #include "MyEngine/Graphics/Texture/TextureManager.h"
 #include "MyEngine/Graphics/Animation/AnimationManager.h"
+#include "MyEngine/Graphics/Pipeline/ShaderPackageLoader.h"
 #include "MyEngine/Sound/SoundManager.h"
 #include "MyEngine/String/ConvertString.h"
 #include "MyEngine/String/FileNameRule.h"
@@ -53,6 +55,10 @@ const std::string& GetAssetPath(AssetType type, uint32_t handle) {
 		return CurveManager::GetPath(handle);
 	case AssetType::Timeline:
 		return TimelineManager::GetPath(handle);
+	case AssetType::Shader:
+		return ShaderPackageLoader::GetProgramPath(handle);
+	case AssetType::Material:
+		return MaterialManager::GetPath(handle);
 	}
 	return kEmpty;
 }
@@ -90,6 +96,16 @@ uint32_t LoadAsset(AssetType type, const std::string& path) {
 		return CurveManager::Load(filePath);
 	case AssetType::Timeline:
 		return TimelineManager::Load(filePath);
+	case AssetType::Shader: {
+		// .shader はエンジンが起動したときに全部読んである。番号は描画プログラムの番号 + 1（#PROGRAM の無い .shader は選べない）
+		const uint32_t handle = ShaderPackageLoader::FindProgramHandle(path);
+		if (handle == 0) {
+			LogManager::Warning(std::format("#PROGRAM のある .shader ではないので、Shader に選べません（未選択として扱います）: {}", path));
+		}
+		return handle;
+	}
+	case AssetType::Material:
+		return MaterialManager::Load(filePath);
 	}
 	return 0;
 }
@@ -108,6 +124,8 @@ constexpr std::array<std::string_view, 1> kPhysicMaterialExtensions = {PhysicMat
 constexpr std::array<std::string_view, 1> kAttackTableExtensions = {AttackTableManager::kFileExtension};       // ".attacktable"
 constexpr std::array<std::string_view, 1> kCurveExtensions = {CurveManager::kFileExtension};                   // ".curve"
 constexpr std::array<std::string_view, 1> kTimelineExtensions = {TimelineManager::kFileExtension};             // ".timeline"
+constexpr std::array<std::string_view, 1> kShaderExtensions = {".shader"};                                    // ".shader"（#PROGRAM の無い物は、一覧に出さない）
+constexpr std::array<std::string_view, 1> kMaterialExtensions = {MaterialManager::kFileExtension};             // ".material"
 
 // その種類の拡張子の一覧
 std::span<const std::string_view> ExtensionsOf(AssetType type) {
@@ -132,6 +150,10 @@ std::span<const std::string_view> ExtensionsOf(AssetType type) {
 		return kCurveExtensions;
 	case AssetType::Timeline:
 		return kTimelineExtensions;
+	case AssetType::Shader:
+		return kShaderExtensions;
+	case AssetType::Material:
+		return kMaterialExtensions;
 	}
 	return {};
 }
@@ -215,12 +237,16 @@ const std::string& SearchRootsText() {
 	return text;
 }
 
-// その種類のファイルを探すフォルダ（フォントだけは、Windows のフォントのフォルダも足す）
+// その種類のファイルを探すフォルダ（フォントは Windows のフォントのフォルダ、Shader はエンジンの .shader の置き場も足す）
 std::vector<std::filesystem::path> SearchRootsOf(AssetType type) {
 	std::vector<std::filesystem::path> roots(std::begin(kAssetSearchRoots), std::end(kAssetSearchRoots));
 	if (type == AssetType::Font) {
 		const std::vector<std::filesystem::path> systemFolders = FontManager::GetSystemFontFolders();
 		roots.insert(roots.end(), systemFolders.begin(), systemFolders.end());
+	}
+	// Shader は、エンジンの .shader の置き場（MyEngine/Shader/Data）も探す（エンジンの既定の Shader も選べるように）
+	if (type == AssetType::Shader) {
+		roots.emplace_back(kShaderDataDir);
 	}
 	return roots;
 }
@@ -249,6 +275,10 @@ const std::vector<std::string>& AssetFiles(AssetType type, bool refresh) {
 			// UTF-8 で作る（generic_string() は Shift-JIS になり、ImGui・Manager は UTF-8 のつもりで読むので合わない）
 			const std::string path = ToUtf8(entry.path());
 			if (!IsAssetFile(path, type)) {
+				continue;
+			}
+			// Shader は、#PROGRAM のある .shader（.material が選べる物）だけ。Include・VS・ポストエフェクトの PS は出さない
+			if (type == AssetType::Shader && ShaderPackageLoader::FindProgramHandle(path) == 0) {
 				continue;
 			}
 			// 日本語などが入った名前は、選ぶと Manager が読めずに止まるので、一覧に出さない（Audio.md 8章）
@@ -502,8 +532,14 @@ public:
 		DrawTooltip(style);
 	}
 
-	void ColorField(const char* label, Vector3& rgb) override { ImGui::ColorEdit3(label, &rgb.x); }
-	void ColorField(const char* label, Vector4& rgba) override { ImGui::ColorEdit4(label, &rgba.x); }
+	void ColorField(const char* label, Vector3& rgb, FieldStyle style) override {
+		ImGui::ColorEdit3(label, &rgb.x);
+		DrawTooltip(style);
+	}
+	void ColorField(const char* label, Vector4& rgba, FieldStyle style) override {
+		ImGui::ColorEdit4(label, &rgba.x);
+		DrawTooltip(style);
+	}
 
 	void BeginDisabled(bool isDisabled) override { ImGui::BeginDisabled(isDisabled); }
 	void EndDisabled() override { ImGui::EndDisabled(); }
@@ -601,8 +637,8 @@ public:
 	void Field(const char*, EntityRef&, FieldStyle) override {}
 	void Field(const char*, std::string&, FieldStyle) override {}
 	void AssetField(const char*, uint32_t&, AssetType, FieldStyle) override {}
-	void ColorField(const char*, Vector3&) override {}
-	void ColorField(const char*, Vector4&) override {}
+	void ColorField(const char*, Vector3&, FieldStyle) override {}
+	void ColorField(const char*, Vector4&, FieldStyle) override {}
 	void Label(const char*) override {}
 	void Separator(const char*) override {}
 	void Space() override {}

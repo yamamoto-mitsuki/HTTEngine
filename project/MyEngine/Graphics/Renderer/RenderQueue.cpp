@@ -2,6 +2,7 @@
 
 #include <algorithm>
 
+#include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/Graphics/Renderer/RenderContext.h"
 #include "MyEngine/Graphics/RenderTarget/RenderWindow.h"
 #include "MyEngine/Graphics/Pipeline/PSOManager.h"
@@ -36,6 +37,7 @@ void RenderQueue::Clear() {
 	instance_->particleRequests_.clear();
 	instance_->requests2d_.clear();
 	instance_->lineRequests_.clear();
+	instance_->decalRequests_.clear();
 }
 
 // ===== 層ごとに描くか =====
@@ -65,7 +67,10 @@ bool RenderQueue::IsDrawnInView(const DrawTarget& target, const std::wstring& wi
 // ===== モデル群リクエスト =====
 void RenderQueue::Request(MeshRequest&& req) {
 	// PSOKey → SortKey
-	PSOKey psoKey = PSOManager::GetPSOKey(req.category, req.shadingType, req.blendMode, req.rasterizerType, req.depthMode);
+	// デカールを受けない不透明な物は、描いた所のステンシルに印を付ける（半透明な物は深度を書かないので、デカールはもともと塗らない）
+	req.stencilMode = (!req.receivesDecals && req.depthMode == DepthMode::TestWrite) ? StencilMode::MarkNoDecal : StencilMode::None;
+	// PSOKey → SortKey
+	PSOKey psoKey = PSOManager::GetPSOKey(req.category, req.shadingType, req.blendMode, req.rasterizerType, req.depthMode, req.stencilMode);
 	req.sortKey = PSOManager::GetSortKey(psoKey);
 	// リクエストに積む
 	if (req.depthMode == DepthMode::TestNoWrite) {
@@ -97,6 +102,13 @@ void RenderQueue::Request(PolylineRequest&& req) { instance_->requests2d_.emplac
 // ===== Line群リクエスト =====
 void RenderQueue::Request(LineRequest&& req) { instance_->lineRequests_.push_back(std::move(req)); }
 
+// ===== デカールのリクエスト =====
+void RenderQueue::Request(DecalRequest&& req) {
+	// 深度は読むだけの窓口で結んで描くので、書くことはできない（書く PSO で描くとデバッグレイヤーに止められる）
+	MY_ASSERT_MSG(req.depthMode != DepthMode::TestWrite, "デカールの深度は TestNoWrite か Disable にしてください（深度を読みながら描くので、書けません）");
+	instance_->decalRequests_.push_back(std::move(req));
+}
+
 
 //=============================================================================
 // Mesh
@@ -106,6 +118,8 @@ void RenderQueue::FlushMeshList(const std::vector<MeshRequest>& meshes, const st
 	auto* cmdList = DirectXCommon::GetCommandList();
 	// SRVセット
 	const D3D12_GPU_DESCRIPTOR_HANDLE heapStart = DirectXCommon::BindSRVHeap(cmdList);
+	// ステンシルの参照値（デカールを受けない物が書く印。印を書かない PSO はステンシルを使わないので、全部に同じ値でよい）
+	cmdList->OMSetStencilRef(kStencilNoDecalBit);
 	// キー初期化
 	uint64_t currentKey = UINT64_MAX;
 	uint32_t scopeIndex = UINT32_MAX;
@@ -151,7 +165,7 @@ void RenderQueue::FlushMeshList(const std::vector<MeshRequest>& meshes, const st
 				GPUProfiler::End(cmdList, scopeIndex);
 			}
 			// PSO
-			PSOKey psoKey = PSOManager::GetPSOKey(req.category, req.shadingType, req.blendMode, req.rasterizerType, req.depthMode);
+			PSOKey psoKey = PSOManager::GetPSOKey(req.category, req.shadingType, req.blendMode, req.rasterizerType, req.depthMode, req.stencilMode);
 			cmdList->SetPipelineState(PSOManager::GetPSO(psoKey).Get());
 			scopeIndex = GPUProfiler::Begin(cmdList, (std::string(name) + "/" + PSOManager::GetStateName(psoKey)).c_str());
 			currentKey = req.sortKey;
@@ -177,6 +191,61 @@ void RenderQueue::FlushTransparentMesh(const std::wstring& windowTitle, D3D12_GP
 	// 正しくブレンド＝奥→手前（距離²の降順）
 	std::sort(meshes.begin(), meshes.end(), [](const MeshRequest& a, const MeshRequest& b) { return a.cameraDistanceSq > b.cameraDistanceSq; });
 	FlushMeshList(meshes, windowTitle, cameraCB, "Transparent");
+}
+
+
+//=============================================================================
+// Decal
+//=============================================================================
+// ===== 積んだか（無ければ、深度を読む状態に切り替えなくてよい）=====
+bool RenderQueue::HasDecal() { return !instance_->decalRequests_.empty(); }
+
+// ===== 発行（Order の順。同じ Order は Shader・状態の順にまとめる）=====
+void RenderQueue::FlushDecal(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB, uint32_t depthIndex) {
+	auto* cmdList = DirectXCommon::GetCommandList();
+	const D3D12_GPU_DESCRIPTOR_HANDLE heapStart = DirectXCommon::BindSRVHeap(cmdList);
+	// ステンシルの参照値（受けない物の印。印の無い所だけ塗る）
+	cmdList->OMSetStencilRef(kStencilNoDecalBit);
+
+	// --- 並べる：重なりの順（Order）を先に守り、同じ Order の中は PSO が同じ物を続ける ---
+	auto& decals = instance_->decalRequests_;
+	const auto psoKeyOf = [](const DecalRequest& req) { return PSOKey{req.programId, req.blendMode, req.rasterizerType, req.depthMode, StencilMode::DecalTest}; };
+	// std::stable_sort：同じ順の物は、積んだ順のまま並べる（毎フレーム、重なりの上下が入れ替わらないように）
+	std::stable_sort(decals.begin(), decals.end(), [&psoKeyOf](const DecalRequest& a, const DecalRequest& b) {
+		if (a.order != b.order) {
+			return a.order < b.order;
+		}
+		return PSOManager::GetSortKey(psoKeyOf(a)) < PSOManager::GetSortKey(psoKeyOf(b));
+	});
+
+	uint32_t currentShaderProg = UINT32_MAX;
+	uint64_t currentKey = UINT64_MAX;
+	for (const DecalRequest& req : decals) {
+		if (!IsDrawnInView(req, windowTitle)) {
+			continue;
+		}
+		// --- シェーダー(RootSignature)が変わったとき：カメラ・テクスチャを結び直す ---
+		if (req.programId != currentShaderProg) {
+			const RootSignatureInfo& rs = PSOManager::GetRootSignatureInfo(req.programId);
+			cmdList->SetGraphicsRootSignature(rs.rootSignature.Get());
+			if (auto camSlot = rs.slotOf.find(RootBind::Camera); cameraCB && camSlot != rs.slotOf.end()) {
+				cmdList->SetGraphicsRootConstantBufferView(camSlot->second, cameraCB);
+			}
+			if (auto texSlot = rs.slotOf.find(RootBind::BindlessTexture); texSlot != rs.slotOf.end()) {
+				cmdList->SetGraphicsRootDescriptorTable(texSlot->second, heapStart);
+			}
+			currentShaderProg = req.programId;
+			currentKey = UINT64_MAX; // RootSignature を変えたら PSO も結び直す
+		}
+		// --- PSO が変わったとき ---
+		const PSOKey psoKey = psoKeyOf(req);
+		const uint64_t sortKey = PSOManager::GetSortKey(psoKey);
+		if (sortKey != currentKey) {
+			cmdList->SetPipelineState(PSOManager::GetPSO(psoKey).Get());
+			currentKey = sortKey;
+		}
+		RenderContext::DrawDecal(req, depthIndex);
+	}
 }
 
 

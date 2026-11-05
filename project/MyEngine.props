@@ -108,4 +108,34 @@
 	    <Error Condition="!Exists('$(VCInstallDir)vcpkg\vcpkg.exe')" Text="Visual Studioに vcpkg がありません。Visual Studio Installerで「vcpkgパッケージマネージャー」を入れてください。"/>
         <Exec Command="&quot;$(VCInstallDir)vcpkg\vcpkg.exe&quot; install --triplet x64-windows-static --clean-after-build --x-manifest-root=&quot;$(MyEngineRoot)externals&quot; --x-install-root=&quot;$(VcpkgInstallRoot)&quot;" />
 	</Target>
+
+	<!-- ===== エンジンの実行に要るファイルを、ゲームを起動するフォルダへ写す ===== -->
+	<!-- ゲーム（exe を作るプロジェクト）をビルドした後に、エンジンの .shader と Resources を、起動するフォルダ（ゲームのプロジェクトのフォルダ）の MyEngine\ へ写す -->
+	<!-- Release とエンジンのフォルダが無い PC は、ここを読む（Debug・Development はエンジンのフォルダの .shader を直接読む。ShaderPackageLoader::FindDataDir） -->
+	<!-- 写し先は、ゲームのリポジトリの .gitignore で git に入れない -->
+	<PropertyGroup>
+		<MyEngineRuntimeDir>$(MSBuildProjectDirectory)\MyEngine\</MyEngineRuntimeDir>
+	</PropertyGroup>
+	<Target Name="CopyMyEngineRuntimeFiles" AfterTargets="Build" Condition="'$(ConfigurationType)'=='Application'">
+		<!-- ~~~ 写す元（** はフォルダの下を全部。%(RecursiveDir) は ** に当たったフォルダの並び）~~~ -->
+		<ItemGroup>
+			<MyEngineShaderFile Include="$(MyEngineRoot)MyEngine\Shader\Data\**\*" />
+			<MyEngineResourceFile Include="$(MyEngineRoot)Resources\**\*" />
+		</ItemGroup>
+
+		<!-- ~~~ .shader：写し先を消してから、全部写す ~~~ -->
+		<!-- ファイル名から Shader の名前を作るので、元と同じ名前にそろえる（上書きで写すと、大文字・小文字だけ変えた名前は写し先の古い方のまま残る） -->
+		<!-- 消した・動かした .shader も残らない（残ると、同じ名前の Shader が2つになって起動時に止まる）。60 個ほどの小さいファイルなので、毎回写しても速い -->
+		<RemoveDir Directories="$(MyEngineRuntimeDir)Shader\Data" />
+		<Copy SourceFiles="@(MyEngineShaderFile)" DestinationFiles="@(MyEngineShaderFile->'$(MyEngineRuntimeDir)Shader\Data\%(RecursiveDir)%(Filename)%(Extension)')" />
+
+		<!-- ~~~ Resources：変わった物だけ写し、元に無い物を消す（画像・モデルは大きいので、毎回は写さない）~~~ -->
+		<!-- パスで読むので、大文字・小文字の違いは読むときに困らない（Windows のファイルの名前は大文字・小文字を区別しない） -->
+		<Copy SourceFiles="@(MyEngineResourceFile)" DestinationFiles="@(MyEngineResourceFile->'$(MyEngineRuntimeDir)Resources\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+		<ItemGroup>
+			<MyEngineCopiedResource Include="$(MyEngineRuntimeDir)Resources\**\*" />
+			<MyEngineStaleResource Include="@(MyEngineCopiedResource)" Exclude="@(MyEngineResourceFile->'$(MyEngineRuntimeDir)Resources\%(RecursiveDir)%(Filename)%(Extension)')" />
+		</ItemGroup>
+		<Delete Files="@(MyEngineStaleResource)" />
+	</Target>
 </Project>

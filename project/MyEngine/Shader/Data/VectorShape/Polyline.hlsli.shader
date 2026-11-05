@@ -1,6 +1,5 @@
 #META
 stage: Include
-path : VectorShape/Polyline.hlsli
 #META_END
 
 

@@ -86,7 +86,7 @@ private:
 	static DepthOfFieldSettings GetViewDepthOfField();
 	static void SetViewportAndScissor(const ViewRect& rect);
 	static RenderTexture* RenderWorldForPost(const Camera* camera, const std::wstring& windowTitle);
-	static void RenderOpaque(const Camera* camera, D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle);
+	static void RenderOpaque(const Camera* camera, D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle, RenderTexture& work);
 	static void RenderTransparent(D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle);
 	static void RenderUI(const std::wstring& windowTitle, const ViewRect& rect);
 	static D3D12_GPU_VIRTUAL_ADDRESS UploadCameraCB(const Camera* camera);

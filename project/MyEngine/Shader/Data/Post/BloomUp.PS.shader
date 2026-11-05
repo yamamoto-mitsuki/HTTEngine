@@ -1,6 +1,5 @@
 #META
 stage: PS
-path : Post/BloomUp.PS.hlsl
 profile : ps_6_0
 #META_END
 

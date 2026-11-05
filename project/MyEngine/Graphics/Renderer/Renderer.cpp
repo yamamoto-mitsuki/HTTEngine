@@ -3,13 +3,16 @@
 #include <format>
 #include <utility>
 #include <algorithm>
+#include <unordered_set>
 #include <Windows.h>
 #include "MyEngine/Math/Color.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Camera/Camera.h"
 #include "MyEngine/Graphics/Pipeline/VertexFormat.h"
+#include "MyEngine/Graphics/Material/MaterialManager.h"
 #include "MyEngine/Graphics/Model/ModelManager.h"
+#include "MyEngine/Graphics/Pipeline/ShaderPackageLoader.h"
 #include "MyEngine/Graphics/Texture/TextureManager.h"
 #include "MyEngine/Graphics/Renderer/DrawRequest.h"
 #include "MyEngine/Graphics/Renderer/RenderQueue.h"
@@ -113,6 +116,10 @@ void Renderer::PushMesh(const TConfig& config, std::vector<Vertex3dData>&& verti
 	req.blendMode = config.blendMode;
 	req.rasterizerType = config.rasterizerType;
 	req.depthMode = config.depthMode;
+	// --- デカールを受けるか：Config が receivesDecals を持っていれば、その値（持たない形は受ける）---
+	if constexpr (requires { config.receivesDecals; }) {
+		req.receivesDecals = config.receivesDecals;
+	}
 	static_cast<DrawTarget&>(req) = config; // 描き分け（ウィンドウ・層・目で隠したか）をまとめて写す（DrawTarget の所だけ代入する）
 	// --- 環境光（IBL）：PBR に要る。Config が env を持っていれば、そのアドレス ---
 	if constexpr (requires { config.env; }) {
@@ -248,6 +255,7 @@ void Renderer::DrawModel(const ModelConfig& config) {
 			req.blendMode = config.blendMode;
 			req.rasterizerType = config.rasterizerType;
 			req.depthMode = config.depthMode;
+			req.receivesDecals = config.receivesDecals;
 			static_cast<DrawTarget&>(req) = config; // 描き分け（ウィンドウ・層・目で隠したか）をまとめて写す（DrawTarget の所だけ代入する）
 			req.debugName = &ModelManager::GetModelName(config.modelHandle);
 			req.debugSubName = &mesh.materialName;
@@ -741,4 +749,61 @@ void Renderer::MakeBoxGeometry(const std::array<Vector3, 8>& corners, const Vect
         });
 		outIndices.insert(outIndices.end(), {base + 0, base + 2, base + 1, base + 2, base + 3, base + 1});
 	}
+}
+
+//=============================================================================
+// デカール
+//=============================================================================
+void Renderer::DrawDecal(const DecalConfig& config, std::span<const std::byte> drawData) {
+	// --- マテリアルを描く形にする（Curve を付けた値は、進み具合で動かす）---
+	ResolvedMaterial material;
+	if (!MaterialManager::Resolve(config.material, config.progress, material)) {
+		return; // マテリアルが無い・Shader が未選択
+	}
+	// --- 描けないマテリアルは、1回だけ警告して描かない（Inspector で選び間違えても止めない。毎フレーム警告しない）---
+	static std::unordered_set<uint32_t> warnedMaterials; // 警告を出したマテリアルの番号
+	const auto skip = [&config](std::string_view reason) {
+		if (warnedMaterials.insert(config.material).second) {
+			LogManager::Warning(std::format("{}: {}", MaterialManager::GetPath(config.material), reason));
+		}
+	};
+	// Model の Shader などを選ぶと、頂点の形・描く所が合わない
+	if (material.category != DrawCategory::Decal) {
+		skip("Shader が Decal の物ではないので、デカールに使えません（#PROGRAM が category: Decal の .shader を選んでください）");
+		return;
+	}
+	// 深度は読むだけの窓口で結んで描くので、書けない
+	if (material.depth == DepthMode::TestWrite) {
+		skip("デカールの Depth は TestNoWrite か Disable にしてください（深度を読みながら描くので、書けません）");
+		return;
+	}
+	// 描き手の値（gDrawData）を読む Shader には、その値を送る描き手が要る
+	const ProgramEntry& program = ShaderPackageLoader::GetProgramAt(material.programId);
+	const ShaderConstantBuffer* drawDataBuffer = ShaderPackageLoader::GetShaderReflection(program.psName).FindConstantBuffer(kDrawDataConstantBufferName);
+	if (drawDataBuffer != nullptr && drawData.empty()) {
+		skip(std::format("この Shader は描き手の値（{}）を読みます。その値を送る描き手（Hitbox Telegraph など）で使ってください", kDrawDataConstantBufferName));
+		return;
+	}
+	// 描き手の構造体と HLSL の構造体の大きさが違うのは、写し間違い（コードを直すまで正しく描けない）なので止める
+	if (drawDataBuffer != nullptr) {
+		constexpr size_t kRegisterBytes = 16; // 定数バッファは 16 バイトずつ
+		const size_t alignedSize = (drawData.size() + kRegisterBytes - 1) / kRegisterBytes * kRegisterBytes;
+		MY_ASSERT_MSG(alignedSize == drawDataBuffer->size,
+		    std::format("{}: 描き手の値の大きさが違います（C++ {} バイト / HLSL の {} {} バイト）。構造体の並びをそろえてください", program.assetPath, drawData.size(), kDrawDataConstantBufferName, drawDataBuffer->size));
+	}
+
+	// --- リクエスト ---
+	DecalRequest req;
+	static_cast<DrawTarget&>(req) = config; // 描き分け（ウィンドウ・層・目で隠したか）をまとめて写す（DrawTarget の所だけ代入する）
+	req.programId = material.programId;
+	req.blendMode = material.blend;
+	req.rasterizerType = material.rasterizer;
+	req.depthMode = material.depth;
+	req.order = config.order;
+	req.worldMatrix = config.worldMatrix;
+	req.materialConstants = std::move(material.constants);
+	if (drawDataBuffer != nullptr) {
+		req.drawData.assign(drawData.begin(), drawData.end()); // 読まない Shader には送らない
+	}
+	RenderQueue::Request(std::move(req));
 }

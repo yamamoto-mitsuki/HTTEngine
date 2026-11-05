@@ -1,6 +1,5 @@
 #META
 stage: VS
-path : Text/Text2d.VS.hlsl
 profile : vs_6_0
 #META_END
 

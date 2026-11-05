@@ -21,6 +21,7 @@ RenderTextureFormat GetTargetFormat(DrawCategory category) {
 	case DrawCategory::Model:
 	case DrawCategory::Particle:
 	case DrawCategory::Line:
+	case DrawCategory::Decal:
 		return RenderTextureFormat::HDR;
 	case DrawCategory::Sprite:
 	case DrawCategory::Text:
@@ -55,11 +56,12 @@ void PSOManager::Release() {
 // SortKey
 //=============================================================================
 uint64_t PSOManager::GetSortKey(const PSOKey& key) {
-	return (
-		static_cast<uint64_t>(key.shaderProgramID) << 24) // ShadingType
-     | (static_cast<uint64_t>(key.blendMode)       << 16) // BlendMOde
-     | (static_cast<uint64_t>(key.rasterizerType)  << 8)  // Rasterizer
-	 |  static_cast<uint64_t>(key.depthMode);             // DepthMode
+	// PSOKey の全部を入れる（入れていない物だけが違う2つが同じキーになると、PSO を切り替えずに描いてしまう）
+	return (static_cast<uint64_t>(key.shaderProgramID) << 32) // Shader
+	     | (static_cast<uint64_t>(key.stencilMode)     << 24) // StencilMode（デカールを受けない印）
+	     | (static_cast<uint64_t>(key.blendMode)       << 16) // BlendMode
+	     | (static_cast<uint64_t>(key.rasterizerType)  << 8)  // Rasterizer
+	     |  static_cast<uint64_t>(key.depthMode);              // DepthMode
 }
 
 

@@ -1,6 +1,5 @@
 #META
 stage: Include
-path : VectorShape/VectorCoverage.hlsli
 #META_END
 
 #HLSL

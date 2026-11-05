@@ -1,6 +1,5 @@
 #META
 stage: Include
-path:  Line/Line3d.hlsli
 #META_END
 
 #HLSL

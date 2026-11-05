@@ -1,6 +1,5 @@
 #META
 stage: Include
-path : Buffers/ObjectTransform.hlsli
 #META_END
 
 #HLSL

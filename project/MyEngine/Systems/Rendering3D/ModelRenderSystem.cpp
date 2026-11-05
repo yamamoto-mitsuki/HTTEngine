@@ -50,6 +50,7 @@ void ModelRenderSystem::Draw(Handle<Entity> root, Camera* camera, IBLEnvironment
 		config.rasterizerType = render.rasterizerType;
 		config.depthMode = render.depthMode;
 		config.billboard = render.billboard;
+		config.receivesDecals = render.receivesDecals;
 		config.worldMatrix = &transform->worldMatrix;
 		config.nodeMatrices = AnimationSystem::GetNodeMatrices(entity);
 		config.entity = entity;

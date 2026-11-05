@@ -1,6 +1,12 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
+    <Filter Include="MyEngine\Shader\Data\Decal">
+      <UniqueIdentifier>{2DD3F94A-DD8D-F5AC-2F1B-519BBFDE32B8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="MyEngine\Graphics\Material">
+      <UniqueIdentifier>{EEE6E1BB-285C-62BB-3D06-331401D9799C}</UniqueIdentifier>
+    </Filter>
     <Filter Include="MyEngine\Systems\Combat">
       <UniqueIdentifier>{2CA4F6EA-F33C-3788-4B63-658BED85CD26}</UniqueIdentifier>
     </Filter>
@@ -393,6 +399,9 @@
     <ClCompile Include="MyEngine\Editor\Inspector\LightEditor.cpp">
       <Filter>MyEngine\Editor\Inspector</Filter>
     </ClCompile>
+    <ClCompile Include="MyEngine\Editor\Inspector\MaterialAssetEditor.cpp">
+      <Filter>MyEngine\Editor\Inspector</Filter>
+    </ClCompile>
     <ClCompile Include="MyEngine\Editor\Inspector\ModelRendererEditor.cpp">
       <Filter>MyEngine\Editor\Inspector</Filter>
     </ClCompile>
@@ -530,6 +539,9 @@
     </ClCompile>
     <ClCompile Include="MyEngine\Graphics\IBL\PrefilterPass.cpp">
       <Filter>MyEngine\Graphics\IBL</Filter>
+    </ClCompile>
+    <ClCompile Include="MyEngine\Graphics\Material\MaterialManager.cpp">
+      <Filter>MyEngine\Graphics\Material</Filter>
     </ClCompile>
     <ClCompile Include="MyEngine\Graphics\Model\ModelManager.cpp">
       <Filter>MyEngine\Graphics\Model</Filter>
@@ -732,6 +744,9 @@
     <ClCompile Include="MyEngine\Systems\Combat\DamageSystem.cpp">
       <Filter>MyEngine\Systems\Combat</Filter>
     </ClCompile>
+    <ClCompile Include="MyEngine\Systems\Combat\HitboxTelegraphSystem.cpp">
+      <Filter>MyEngine\Systems\Combat</Filter>
+    </ClCompile>
     <ClCompile Include="MyEngine\Systems\Combat\HitSystem.cpp">
       <Filter>MyEngine\Systems\Combat</Filter>
     </ClCompile>
@@ -778,6 +793,9 @@
       <Filter>MyEngine\Systems\Rendering2D</Filter>
     </ClCompile>
     <ClCompile Include="MyEngine\Systems\Rendering3D\ArrowStripSystem.cpp">
+      <Filter>MyEngine\Systems\Rendering3D</Filter>
+    </ClCompile>
+    <ClCompile Include="MyEngine\Systems\Rendering3D\DecalRenderSystem.cpp">
       <Filter>MyEngine\Systems\Rendering3D</Filter>
     </ClCompile>
     <ClCompile Include="MyEngine\Systems\Rendering3D\DepthOfFieldSystem.cpp">
@@ -941,6 +959,9 @@
     <ClInclude Include="MyEngine\Components\Combat\HitboxComponent.h">
       <Filter>MyEngine\Components\Combat</Filter>
     </ClInclude>
+    <ClInclude Include="MyEngine\Components\Combat\HitboxTelegraphComponent.h">
+      <Filter>MyEngine\Components\Combat</Filter>
+    </ClInclude>
     <ClInclude Include="MyEngine\Components\Combat\HurtboxComponent.h">
       <Filter>MyEngine\Components\Combat</Filter>
     </ClInclude>
@@ -990,6 +1011,9 @@
       <Filter>MyEngine\Components\Rendering2D</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Components\Rendering3D\ArrowStripComponent.h">
+      <Filter>MyEngine\Components\Rendering3D</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Components\Rendering3D\DecalRendererComponent.h">
       <Filter>MyEngine\Components\Rendering3D</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Components\Rendering3D\DepthOfFieldComponent.h">
@@ -1145,6 +1169,9 @@
     <ClInclude Include="MyEngine\Editor\Inspector\LightEditor.h">
       <Filter>MyEngine\Editor\Inspector</Filter>
     </ClInclude>
+    <ClInclude Include="MyEngine\Editor\Inspector\MaterialAssetEditor.h">
+      <Filter>MyEngine\Editor\Inspector</Filter>
+    </ClInclude>
     <ClInclude Include="MyEngine\Editor\Inspector\ModelRendererEditor.h">
       <Filter>MyEngine\Editor\Inspector</Filter>
     </ClInclude>
@@ -1286,6 +1313,12 @@
     <ClInclude Include="MyEngine\Graphics\IBL\PrefilterPass.h">
       <Filter>MyEngine\Graphics\IBL</Filter>
     </ClInclude>
+    <ClInclude Include="MyEngine\Graphics\Material\Material.h">
+      <Filter>MyEngine\Graphics\Material</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Graphics\Material\MaterialManager.h">
+      <Filter>MyEngine\Graphics\Material</Filter>
+    </ClInclude>
     <ClInclude Include="MyEngine\Graphics\Model\ModelManager.h">
       <Filter>MyEngine\Graphics\Model</Filter>
     </ClInclude>
@@ -1305,6 +1338,9 @@
       <Filter>MyEngine\Graphics\Pipeline</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Graphics\Pipeline\ShaderPackageLoader.h">
+      <Filter>MyEngine\Graphics\Pipeline</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Graphics\Pipeline\ShaderProperty.h">
       <Filter>MyEngine\Graphics\Pipeline</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Graphics\Pipeline\VertexFormat.h">
@@ -1547,6 +1583,9 @@
     <ClInclude Include="MyEngine\Systems\Combat\DamageSystem.h">
       <Filter>MyEngine\Systems\Combat</Filter>
     </ClInclude>
+    <ClInclude Include="MyEngine\Systems\Combat\HitboxTelegraphSystem.h">
+      <Filter>MyEngine\Systems\Combat</Filter>
+    </ClInclude>
     <ClInclude Include="MyEngine\Systems\Combat\HitSystem.h">
       <Filter>MyEngine\Systems\Combat</Filter>
     </ClInclude>
@@ -1593,6 +1632,9 @@
       <Filter>MyEngine\Systems\Rendering2D</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Systems\Rendering3D\ArrowStripSystem.h">
+      <Filter>MyEngine\Systems\Rendering3D</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Systems\Rendering3D\DecalRenderSystem.h">
       <Filter>MyEngine\Systems\Rendering3D</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Systems\Rendering3D\DepthOfFieldSystem.h">
@@ -1700,10 +1742,25 @@
     <None Include="MyEngine\Shader\Data\Compute\Skinning.CS.shader">
       <Filter>MyEngine\Shader\Data\Compute</Filter>
     </None>
+    <None Include="MyEngine\Shader\Data\Decal\Decal.hlsli.shader">
+      <Filter>MyEngine\Shader\Data\Decal</Filter>
+    </None>
+    <None Include="MyEngine\Shader\Data\Decal\DecalTexture.PS.shader">
+      <Filter>MyEngine\Shader\Data\Decal</Filter>
+    </None>
+    <None Include="MyEngine\Shader\Data\Decal\HitboxTelegraph.hlsli.shader">
+      <Filter>MyEngine\Shader\Data\Decal</Filter>
+    </None>
+    <None Include="MyEngine\Shader\Data\Decal\HitboxTelegraph.PS.shader">
+      <Filter>MyEngine\Shader\Data\Decal</Filter>
+    </None>
+    <None Include="MyEngine\Shader\Data\Decal\HitShape.hlsli.shader">
+      <Filter>MyEngine\Shader\Data\Decal</Filter>
+    </None>
     <None Include="MyEngine\Shader\Data\Fog\Fog.hlsli.shader">
       <Filter>MyEngine\Shader\Data\Fog</Filter>
     </None>
-    <None Include="MyEngine\Shader\Data\IBL\BrdfLUT.PS.shader">
+    <None Include="MyEngine\Shader\Data\IBL\BrdfLut.PS.shader">
       <Filter>MyEngine\Shader\Data\IBL</Filter>
     </None>
     <None Include="MyEngine\Shader\Data\IBL\BrdfLut.VS.shader">

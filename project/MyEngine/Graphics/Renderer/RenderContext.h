@@ -41,6 +41,12 @@ public:
 	static void DrawMesh(const MeshRequest& req);
 
 	/// <summary>
+	/// デカールを1つ描画する（1辺 1 の箱を描き、PS が深度から塗る所を決める）
+	/// </summary>
+	/// <param name="depthIndex">不透明な物の深度の SRV の番号（gDecal に入れる）</param>
+	static void DrawDecal(const DecalRequest& req, uint32_t depthIndex);
+
+	/// <summary>
 	/// 2Dスプライトを1つ描画する
 	/// </summary>
 	static void DrawSprite(const SpriteRequest& req);

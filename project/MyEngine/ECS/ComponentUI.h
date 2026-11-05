@@ -94,6 +94,8 @@ enum class AssetType {
 	AttackTable,    // AttackTableManager::Load の番号（.attacktable）
 	Curve,          // CurveManager::Load の番号（.curve）
 	Timeline,       // TimelineManager::Load の番号（.timeline）
+	Shader,         // 描画プログラムの番号 + 1（ShaderPackageLoader::FindProgramHandle。#PROGRAM のある .shader）
+	Material,       // MaterialManager::Load の番号（.material）
 };
 
 // アセットの番号からパスを引く（未選択・知らない番号なら空）。保存とInspectorの表示で使う
@@ -157,9 +159,9 @@ public:
 	// ===== アセット（モデル・テクスチャの番号。Inspectorではファイルを選ぶ。保存はパスで）=====
 	virtual void AssetField(const char* label, uint32_t& handle, AssetType type, FieldStyle style = {}) = 0;
 
-	// ===== 色（0〜1。色見本を押すと色を選べる）=====
-	virtual void ColorField(const char* label, Vector3& rgb) = 0;
-	virtual void ColorField(const char* label, Vector4& rgba) = 0;
+	// ===== 色（0〜1。色見本を押すと色を選べる。style は説明（Tip）だけ効く）=====
+	virtual void ColorField(const char* label, Vector3& rgb, FieldStyle style = {}) = 0;
+	virtual void ColorField(const char* label, Vector4& rgba, FieldStyle style = {}) = 0;
 
 	// ===== 飾り（保存には関係しない）=====
 	virtual void Label(const char* text) = 0;               // 灰色の説明文

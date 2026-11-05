@@ -1,6 +1,5 @@
 #META
 stage: Include
-path : Post/ToneMap.hlsli
 #META_END
 
 #HLSL

@@ -104,7 +104,7 @@ RenderTexture* SceneRenderer::RenderWorldForPost(const Camera* camera, const std
 	// --- 不透明な物と空 ---
 	work->PreDraw();
 	SetViewportAndScissor(workRect);
-	RenderOpaque(camera, camCB, windowTitle);
+	RenderOpaque(camera, camCB, windowTitle, *work);
 	// --- 被写界深度を掛けないなら、そのまま半透明も描く ---
 	if (!depthOfField.enabled || camera == nullptr) {
 		RenderTransparent(camCB, windowTitle);
@@ -120,10 +120,18 @@ RenderTexture* SceneRenderer::RenderWorldForPost(const Camera* camera, const std
 	return blurred;
 }
 
-// ===== 不透明な物と空 =====
-void SceneRenderer::RenderOpaque(const Camera* camera, D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle) {
+// ===== 不透明な物・デカール・空 =====
+void SceneRenderer::RenderOpaque(const Camera* camera, D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle, RenderTexture& work) {
 	auto* cmdList = DirectXCommon::GetCommandList();
 	RenderQueue::FlushOpaqueMesh(windowTitle, camCB); // 不透明Model（関数内で計測済み）
+	// --- デカール：不透明な物の深度を読んで、箱の中にある所に塗る（空・粒より先。どちらも深度を書かないので塗られない）---
+	// 深度は読むだけの窓口で結び直す（同じ深度を SRV で読みながら、ステンシルで受けない物を除く）
+	if (camCB != 0 && RenderQueue::HasDecal()) {
+		GPU_SCOPE(cmdList, "Decal");
+		work.BeginDepthRead();
+		RenderQueue::FlushDecal(windowTitle, camCB, work.GetDepthSRVSlot());
+		work.EndDepthRead();
+	}
 	if (instance_->skybox_) {
 		GPU_SCOPE(cmdList, "Skybox");
 		instance_->skybox_->Draw(camera, camCB);
@@ -206,6 +214,7 @@ D3D12_GPU_VIRTUAL_ADDRESS SceneRenderer::UploadCameraCB(const Camera* camera) {
 	// --- 転送情報 ---
 	const Matrix4x4& v = camera->GetViewMatrix();
 	dst->viewProj = v * camera->GetProjectionMatrix();
+	dst->inverseViewProj = Inverse(dst->viewProj); // デカールが、深度からワールドの位置へ戻すのに使う
 	dst->worldPosition = camera->GetTranslation();
 	dst->right = {v.m[0][0], v.m[1][0], v.m[2][0]};
 	dst->up = {v.m[0][1], v.m[1][1], v.m[2][1]};

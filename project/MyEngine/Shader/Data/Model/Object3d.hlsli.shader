@@ -1,6 +1,5 @@
 #META
 stage: Include
-path:  Model/Object3d.hlsli
 #META_END
 
 #HLSL

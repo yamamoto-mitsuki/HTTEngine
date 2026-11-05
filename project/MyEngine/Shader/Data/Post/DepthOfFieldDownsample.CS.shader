@@ -1,6 +1,5 @@
 #META
 stage: CS
-path : Post/DepthOfFieldDownsample.CS.hlsl
 profile : cs_6_0
 #META_END
 

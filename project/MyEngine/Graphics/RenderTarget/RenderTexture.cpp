@@ -127,6 +127,23 @@ void RenderTexture::EndShaderRead() {
 }
 
 //=============================================================================
+// 深度を読みながら描く
+//=============================================================================
+// ===== 読むだけで結ぶ =====
+void RenderTexture::BeginDepthRead() {
+	MY_ASSERT_MSG(isDepthReadable_, "深度を読むには、isDepthReadable で作ってください");
+	// 書く状態 → 深度テストで読む ＋ PS で読む（DEPTH_READ と PIXEL_SHADER_RESOURCE は一緒にできる）
+	DirectXCommon::TransitionBarrier(depthResource_.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+	DirectXCommon::GetCommandList()->OMSetRenderTargets(1, &rtvHandle_, false, &readOnlyDsvHandle_);
+}
+
+// ===== 書く状態に戻す =====
+void RenderTexture::EndDepthRead() {
+	DirectXCommon::TransitionBarrier(depthResource_.Get(), D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
+	DirectXCommon::GetCommandList()->OMSetRenderTargets(1, &rtvHandle_, false, &dsvHandle_);
+}
+
+//=============================================================================
 // RTVとSRV共通のリソースを生成してRTV/SRVを登録する
 //=============================================================================
 void RenderTexture::CreateResource() {
@@ -165,8 +182,8 @@ void RenderTexture::CreateResource() {
 void RenderTexture::CreateDSVResource() {
 	// Resource（読めるようにするときは、型なしで作る）
 	depthResource_ = GpuResources::CreateDepthStencilTextureResource(static_cast<int32_t>(width_), static_cast<int32_t>(height_), isDepthReadable_);
-	// DSVDescriptorHeap
-	dsvDescriptorHeap_ = GpuResources::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1, false);
+	// DSVDescriptorHeap（深度を読めるときは、読むだけの窓口の分も入れて2つ）
+	dsvDescriptorHeap_ = GpuResources::CreateDescriptorHeap(D3D12_DESCRIPTOR_HEAP_TYPE_DSV, isDepthReadable_ ? 2 : 1, false);
 	dsvHandle_ = dsvDescriptorHeap_->GetCPUDescriptorHandleForHeapStart();
 	// DSV
 	D3D12_DEPTH_STENCIL_VIEW_DESC dsvDesc{};
@@ -174,6 +191,15 @@ void RenderTexture::CreateDSVResource() {
 	dsvDesc.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
 	DirectXCommon::GetDevice()->CreateDepthStencilView(depthResource_.Get(), &dsvDesc, dsvHandle_);
 	dsvDescriptorHeap_->SetName(L"RenderTexture_DSVHeap");
+
+	// ===== 深度を読むだけの窓口（DSV）=====
+	// READ_ONLY を付けた DSV は、深度テスト・ステンシルテストには使えるが、書けない。その代わり、同じ深度を SRV で読みながら結んでおける
+	if (isDepthReadable_) {
+		readOnlyDsvHandle_ = DirectXCommon::GetCPUDescriptorHandle(dsvDescriptorHeap_.Get(), D3D12_DESCRIPTOR_HEAP_TYPE_DSV, 1);
+		D3D12_DEPTH_STENCIL_VIEW_DESC readOnlyDesc = dsvDesc;
+		readOnlyDesc.Flags = D3D12_DSV_FLAG_READ_ONLY_DEPTH | D3D12_DSV_FLAG_READ_ONLY_STENCIL;
+		DirectXCommon::GetDevice()->CreateDepthStencilView(depthResource_.Get(), &readOnlyDesc, readOnlyDsvHandle_);
+	}
 
 	// ===== 深度を読む窓口（SRV）=====
 	// 同じ中身を、書くとき（DSV）は D24_UNORM_S8_UINT、読むとき（SRV）は R24_UNORM_X8_TYPELESS として見る

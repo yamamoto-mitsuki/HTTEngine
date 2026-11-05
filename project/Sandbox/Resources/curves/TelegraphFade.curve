@@ -1,0 +1,20 @@
+{
+	"keys": [
+		{
+			"time": 0.0,
+			"value": 0.0,
+			"interp": "Linear",
+			"handleMode": "Aligned",
+			"inHandle": [0.0, 0.0],
+			"outHandle": [0.0, 0.0]
+		},
+		{
+			"time": 1.0,
+			"value": 1.0,
+			"interp": "Linear",
+			"handleMode": "Aligned",
+			"inHandle": [0.0, 0.0],
+			"outHandle": [0.0, 0.0]
+		}
+	]
+}

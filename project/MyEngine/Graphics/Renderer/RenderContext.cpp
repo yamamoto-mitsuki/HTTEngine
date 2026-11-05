@@ -167,6 +167,62 @@ void RenderContext::DrawMesh(const MeshRequest& req) {
 
 
 //=============================================================================
+// デカール描画
+//=============================================================================
+void RenderContext::DrawDecal(const DecalRequest& req, uint32_t depthIndex) {
+	auto* cmdList = DirectXCommon::GetCommandList();
+	FrameUploadBuffer& upload = instance_->frameUploadBuffer_;
+
+	// ===== 箱（1辺 1 の立方体。角 i の x・y・z は、i のビット 1・2・4 が立っていれば +0.5、無ければ -0.5）=====
+	// 三角形は外から見て時計回り（表）。描くときは表を捨てて裏を描く（SolidFront）ので、カメラが箱の中にあっても塗れる
+	static const std::array<Vertex3dData, 8> kCorners = [] {
+		std::array<Vertex3dData, 8> corners{};
+		for (size_t i = 0; i < corners.size(); ++i) {
+			corners[i].position = {(i & 1) ? 0.5f : -0.5f, (i & 2) ? 0.5f : -0.5f, (i & 4) ? 0.5f : -0.5f, 1.0f};
+		}
+		return corners;
+	}();
+	static constexpr std::array<uint32_t, 36> kIndices = {
+	    0, 2, 1, 2, 3, 1, // -Z
+	    4, 5, 6, 5, 7, 6, // +Z
+	    0, 4, 2, 4, 6, 2, // -X
+	    1, 3, 5, 3, 7, 5, // +X
+	    0, 1, 4, 1, 5, 4, // -Y
+	    2, 6, 3, 6, 7, 3, // +Y
+	};
+	FrameUploadBuffer::Allocation vertices = upload.PushArray(kCorners.data(), kCorners.size());
+	FrameUploadBuffer::Allocation indices = upload.PushArray(kIndices.data(), kIndices.size());
+	D3D12_VERTEX_BUFFER_VIEW vbv{vertices.gpuAddress, static_cast<UINT>(vertices.size), sizeof(Vertex3dData)};
+	D3D12_INDEX_BUFFER_VIEW ibv{indices.gpuAddress, static_cast<UINT>(indices.size), DXGI_FORMAT_R32_UINT};
+	cmdList->IASetVertexBuffers(0, 1, &vbv);
+	cmdList->IASetIndexBuffer(&ibv);
+	cmdList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// ===== 定数（シェーダーが使っている物だけ結ぶ）=====
+	const RootSignatureInfo& rs = PSOManager::GetRootSignatureInfo(req.programId);
+	// 箱の位置（VS）
+	cmdList->SetGraphicsRootConstantBufferView(SlotOf(rs, RootBind::ObjectTransform), upload.PushConstant(MakeObjectTransform(req.worldMatrix)));
+	// 箱の中へ戻す行列と深度（PS。全部のデカールで共通）
+	DecalData decal;
+	decal.worldToDecal = Inverse(req.worldMatrix);
+	decal.depthIndex = depthIndex;
+	BindConstantIfUsed(cmdList, rs, RootBind::Decal, upload.PushConstant(decal));
+	// マテリアルの値（gMaterial の並びに詰めた物）
+	if (!req.materialConstants.empty()) {
+		BindConstantIfUsed(cmdList, rs, RootBind::Material, upload.PushConstantBytes(req.materialConstants));
+	}
+	// 描き手の値（形など。読む Shader か・大きさが合うかは Renderer::DrawDecal で確かめてある）
+	if (!req.drawData.empty()) {
+		BindConstantIfUsed(cmdList, rs, RootBind::DrawData, upload.PushConstantBytes(req.drawData));
+	}
+
+	// ===== DrawCall =====
+	DirectXCommon::IncrementDrawCallCount();
+	cmdList->DrawIndexedInstanced(static_cast<UINT>(kIndices.size()), 1, 0, 0, 0);
+}
+
+
+//=============================================================================
 // パーティクル描画
 //=============================================================================
 void RenderContext::DrawParticles(const ParticleRequest& req) {

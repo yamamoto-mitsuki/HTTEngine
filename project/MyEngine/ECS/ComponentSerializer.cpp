@@ -99,8 +99,8 @@ public:
 		Put(label, path);
 	}
 
-	void ColorField(const char* label, Vector3& rgb) override { Field(label, rgb, {}); }
-	void ColorField(const char* label, Vector4& rgba) override { Field(label, rgba, {}); }
+	void ColorField(const char* label, Vector3& rgb, FieldStyle) override { Field(label, rgb, {}); }
+	void ColorField(const char* label, Vector4& rgba, FieldStyle) override { Field(label, rgba, {}); }
 
 	// 飾りは保存しない
 	void Label(const char*) override {}
@@ -206,8 +206,8 @@ public:
 		handle = LoadAsset(type, path); // 空なら0（未選択）
 	}
 
-	void ColorField(const char* label, Vector3& rgb) override { ReadFloats(label, &rgb.x, 3); }
-	void ColorField(const char* label, Vector4& rgba) override { ReadFloats(label, &rgba.x, 4); }
+	void ColorField(const char* label, Vector3& rgb, FieldStyle) override { ReadFloats(label, &rgb.x, 3); }
+	void ColorField(const char* label, Vector4& rgba, FieldStyle) override { ReadFloats(label, &rgba.x, 4); }
 
 	void Label(const char*) override {}
 	void Separator(const char*) override {}
@@ -329,8 +329,8 @@ public:
 	}
 
 	void AssetField(const char*, uint32_t&, AssetType, FieldStyle) override {}
-	void ColorField(const char*, Vector3&) override {}
-	void ColorField(const char*, Vector4&) override {}
+	void ColorField(const char*, Vector3&, FieldStyle) override {}
+	void ColorField(const char*, Vector4&, FieldStyle) override {}
 	void Label(const char*) override {}
 	void Separator(const char*) override {}
 	void Space() override {}
@@ -382,8 +382,8 @@ public:
 	void Field(const char* label, Vector2& value, FieldStyle) override { WriteFloats(label, &value.x, 2); }
 	void Field(const char* label, Vector3& value, FieldStyle) override { WriteFloats(label, &value.x, 3); }
 	void Field(const char* label, Vector4& value, FieldStyle) override { WriteFloats(label, &value.x, 4); }
-	void ColorField(const char* label, Vector3& rgb) override { WriteFloats(label, &rgb.x, 3); }
-	void ColorField(const char* label, Vector4& rgba) override { WriteFloats(label, &rgba.x, 4); }
+	void ColorField(const char* label, Vector3& rgb, FieldStyle) override { WriteFloats(label, &rgb.x, 3); }
+	void ColorField(const char* label, Vector4& rgba, FieldStyle) override { WriteFloats(label, &rgba.x, 4); }
 
 	// 数で表せない項目は書かない（isWritten_ が false のままなので、NoField になる）
 	void Field(const char*, EntityRef&, FieldStyle) override {}
@@ -454,8 +454,8 @@ public:
 	void Field(const char* label, Vector2& value, FieldStyle) override { Add(label, &value.x, 2, false); }
 	void Field(const char* label, Vector3& value, FieldStyle) override { Add(label, &value.x, 3, false); }
 	void Field(const char* label, Vector4& value, FieldStyle) override { Add(label, &value.x, 4, false); }
-	void ColorField(const char* label, Vector3& rgb) override { Add(label, &rgb.x, 3, true); }
-	void ColorField(const char* label, Vector4& rgba) override { Add(label, &rgba.x, 4, true); }
+	void ColorField(const char* label, Vector3& rgb, FieldStyle) override { Add(label, &rgb.x, 3, true); }
+	void ColorField(const char* label, Vector4& rgba, FieldStyle) override { Add(label, &rgba.x, 4, true); }
 
 	// 数で表せない項目は集めない（ValueWriterUI が書けない物と同じ）
 	void Field(const char*, EntityRef&, FieldStyle) override {}

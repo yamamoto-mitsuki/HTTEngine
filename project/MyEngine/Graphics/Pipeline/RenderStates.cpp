@@ -127,29 +127,51 @@ D3D12_DEPTH_STENCIL_DESC RenderStates::MakeDepthStencilDesc(DepthMode mode, Sten
 		break;
 	}
 
-	// --- ステンシル（UI のマスク）。値が参照値と同じ所だけ通し、通った所を増やす・減らす・そのまま ---
+	// --- ステンシル（UI のマスク・デカールを受けない印）---
 	if (stencil == StencilMode::None) {
 		return desc;
 	}
 	D3D12_DEPTH_STENCILOP_DESC face{};
-	face.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
 	face.StencilFailOp = D3D12_STENCIL_OP_KEEP;
 	face.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	face.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	desc.StencilEnable = TRUE;
 	switch (stencil) {
-	case StencilMode::Increment:
-		face.StencilPassOp = D3D12_STENCIL_OP_INCR_SAT; // 1 増やす（255 で止まる）。同じピクセルに2回描いても、2回目は値が違うので通らない
+	// UI のマスク：下の 7 ビットだけを見て、値が参照値と同じ所だけ通す
+	case StencilMode::Test: // 調べるだけ（書かない）
+		face.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+		desc.StencilReadMask = kStencilUIMaskBits;
+		desc.StencilWriteMask = 0;
 		break;
-	case StencilMode::Decrement:
-		face.StencilPassOp = D3D12_STENCIL_OP_DECR_SAT; // 1 減らす（0 で止まる）
+	case StencilMode::Increment: // 通った所を 1 増やす。同じピクセルに2回描いても、2回目は値が違うので通らない
+		face.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+		face.StencilPassOp = D3D12_STENCIL_OP_INCR_SAT;
+		desc.StencilReadMask = kStencilUIMaskBits;
+		desc.StencilWriteMask = kStencilUIMaskBits;
 		break;
-	default:
-		face.StencilPassOp = D3D12_STENCIL_OP_KEEP; // 調べるだけ
+	case StencilMode::Decrement: // 通った所を 1 減らす（0 で止まる）
+		face.StencilFunc = D3D12_COMPARISON_FUNC_EQUAL;
+		face.StencilPassOp = D3D12_STENCIL_OP_DECR_SAT;
+		desc.StencilReadMask = kStencilUIMaskBits;
+		desc.StencilWriteMask = kStencilUIMaskBits;
+		break;
+	// デカールを受けない物：いつも通し、描いた所の一番上のビットを参照値（kStencilNoDecalBit）で書く
+	case StencilMode::MarkNoDecal:
+		face.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+		face.StencilPassOp = D3D12_STENCIL_OP_REPLACE;
+		desc.StencilReadMask = 0;
+		desc.StencilWriteMask = kStencilNoDecalBit;
+		break;
+	// デカール：一番上のビットが参照値（立っている）と違う所＝立っていない所だけ通す。書かない
+	case StencilMode::DecalTest:
+		face.StencilFunc = D3D12_COMPARISON_FUNC_NOT_EQUAL;
+		desc.StencilReadMask = kStencilNoDecalBit;
+		desc.StencilWriteMask = 0;
+		break;
+	case StencilMode::None:
 		break;
 	}
-	desc.StencilEnable = TRUE;
-	desc.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
-	desc.StencilWriteMask = (stencil == StencilMode::Test) ? 0 : D3D12_DEFAULT_STENCIL_WRITE_MASK;
-	desc.FrontFace = face; // 2D は両面を描くので、裏も同じにする
+	desc.FrontFace = face; // 2D・デカールの箱は裏も描くので、裏も同じにする
 	desc.BackFace = face;
 	return desc;
 }

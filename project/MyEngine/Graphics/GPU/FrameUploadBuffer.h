@@ -1,6 +1,9 @@
 #pragma once
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <span>
 #include <string>
 
 #include <d3d12.h>
@@ -49,6 +52,18 @@ public:
 	D3D12_GPU_VIRTUAL_ADDRESS PushConstant(const T& data) {
 		Allocation allocation = Allocate(AlignUp(sizeof(T), kConstantBufferAlignment), kConstantBufferAlignment);
 		std::memcpy(allocation.cpuAddress, &data, sizeof(T));
+		return allocation.gpuAddress;
+	}
+
+	/// <summary>
+	/// 定数バッファ1個分を、バイトの並びのまま書き込み、GPUに渡す場所を返す（中身の型が実行中に決まる物。マテリアルの値など）
+	/// <para>開始位置も大きさも256バイトの倍数にする（PushConstant と同じ）</para>
+	/// </summary>
+	D3D12_GPU_VIRTUAL_ADDRESS PushConstantBytes(std::span<const std::byte> bytes) {
+		Allocation allocation = Allocate(AlignUp((std::max)(bytes.size(), size_t{1}), kConstantBufferAlignment), kConstantBufferAlignment);
+		if (!bytes.empty()) {
+			std::memcpy(allocation.cpuAddress, bytes.data(), bytes.size());
+		}
 		return allocation.gpuAddress;
 	}
 

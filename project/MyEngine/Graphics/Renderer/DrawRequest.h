@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <cstddef>
 #include <memory>
 #include <vector>
 
@@ -18,6 +19,8 @@ struct MeshRequest : DrawTarget {
 	BlendMode blendMode = BlendMode::Normal;                   // ブレンド設定
 	RasterizerType rasterizerType = RasterizerType::SolidBack; // ラスタライザ設定
 	DepthMode depthMode = DepthMode::TestWrite;                // 深度設定
+	bool receivesDecals = true;                                // false：デカールを受けない（不透明な物だけ。ステンシルに印を付ける）
+	StencilMode stencilMode = StencilMode::None;               // ステンシル（RenderQueue::Request が receivesDecals から決める）
 	float cameraDistanceSq = 0.0f;                             // カメラとの距離
 	uint64_t sortKey;                                          // ソートキー
 	
@@ -41,6 +44,25 @@ struct MeshRequest : DrawTarget {
 	bool isBillboard = false; // ビルボード（Shaderで計算）
 	const std::string* debugName = nullptr;    // PIX表示用（ModelAssetの文字列を指す。所有しない）
 	const std::string* debugSubName = nullptr; // サブメッシュのマテリアル名
+};
+
+
+// ===== デカール（箱の中にある、不透明な物の深度の所に塗る）=====
+// Shader・状態・gMaterial の中身は、マテリアルから作る（Renderer::DrawDecal が MaterialManager::Resolve で作る）
+struct DecalRequest : DrawTarget {
+	// --- 描き方（マテリアルの Shader と、描くときの状態）---
+	uint32_t programId = 0;                                     // 描画プログラムの番号（category が Decal の Shader）
+	BlendMode blendMode = BlendMode::Normal;                    // ブレンド設定
+	RasterizerType rasterizerType = RasterizerType::SolidFront; // ラスタライザ設定（箱の裏の面を描く。カメラが箱の中にあっても塗れる）
+	DepthMode depthMode = DepthMode::Disable;                   // 深度設定（深度は読むだけの窓口で結ぶので、書く TestWrite は使えない）
+	int order = 0;                                              // 重なったときの順（小さい方が先＝下）
+
+	// --- 箱 ---
+	Matrix4x4 worldMatrix = MakeIdentity4x4(); // 箱のワールド行列（大きさ 1 で 1辺 1）
+
+	// --- Shaderとのバインド情報 ---
+	std::vector<std::byte> materialConstants; // gMaterial の中身（マテリアルの値。空なら結ばない）
+	std::vector<std::byte> drawData;          // gDrawData の中身（描き手の値。形など。描き手が無い物は空）
 };
 
 

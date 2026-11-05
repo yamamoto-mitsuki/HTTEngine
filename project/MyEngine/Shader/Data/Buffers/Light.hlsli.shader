@@ -1,6 +1,5 @@
 #META
 stage: Include
-path : Buffers/Light.hlsli
 #META_END
 
 #HLSL

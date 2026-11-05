@@ -1,6 +1,5 @@
 #META
 stage: Include
-path : Buffers/Camera.hlsli
 #META_END
 
 #HLSL
@@ -22,6 +21,8 @@ struct Camera
     float heightFogFalloff;    // 高さの霧が、上へ薄くなる速さ（1m あたり）
     float32_t3 heightFogColor; // 高さの霧の色
     float heightFogMaxOpacity; // 高さの霧の一番濃い所（0 なら高さの霧なし）
+    // --- 画面から戻す（C++ の inverseViewProj）---
+    float4x4 inverseViewProj;  // viewProj の逆行列（画面の位置と深度から、ワールドの位置へ戻す。デカールが使う）
 };
 ConstantBuffer<Camera> gCamera : register(b0);
 #HLSL_END

@@ -1,6 +1,5 @@
 #META
 stage: Include
-path:  Sprite/Sprite2d.hlsli
 #META_END
 
 #HLSL

@@ -72,13 +72,6 @@
       </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
-    <PostBuildEvent>
-      <Command>
-                if /I "$(SolutionDir)"=="$(ProjectDir)" exit /b 0
-				xcopy /Y /S /I "$(ProjectDir)MyEngine\Shader\*" "$(SolutionDir)MyEngine\Shader\"
-				xcopy /Y /S /I "$(ProjectDir)Resources" "$(SolutionDir)MyEngine\Resources\"
-			</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -95,13 +88,6 @@
       </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
-    <PostBuildEvent>
-      <Command>
-                if /I "$(SolutionDir)"=="$(ProjectDir)" exit /b 0
-				xcopy /Y /S /I "$(ProjectDir)MyEngine\Shader\*" "$(SolutionDir)MyEngine\Shader\"
-				xcopy /Y /S /I "$(ProjectDir)Resources" "$(SolutionDir)MyEngine\Resources\"
-			</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
     <ClCompile>
@@ -120,13 +106,6 @@
       </SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
-    <PostBuildEvent>
-      <Command>
-                if /I "$(SolutionDir)"=="$(ProjectDir)" exit /b 0
-				xcopy /Y /S /I "$(ProjectDir)MyEngine\Shader\*" "$(SolutionDir)MyEngine\Shader\"
-				xcopy /Y /S /I "$(ProjectDir)Resources" "$(SolutionDir)MyEngine\Resources\"
-			</Command>
-    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <!-- MyEngine -->
@@ -152,6 +131,7 @@
     <ClCompile Include="MyEngine\Editor\Inspector\AssetInspector.cpp" />
     <ClCompile Include="MyEngine\Editor\Inspector\AttackTableEditor.cpp" />
     <ClCompile Include="MyEngine\Editor\Inspector\CurveAssetEditor.cpp" />
+    <ClCompile Include="MyEngine\Editor\Inspector\MaterialAssetEditor.cpp" />
     <ClCompile Include="MyEngine\Editor\Inspector\ScriptEditor.cpp" />
     <ClCompile Include="MyEngine\Editor\Inspector\TimelineAssetEditor.cpp" />
     <ClCompile Include="MyEngine\Editor\Timeline\TimelineDetails.cpp" />
@@ -177,6 +157,7 @@
     <ClCompile Include="MyEngine\Graphics\Compute\ComputeTexture.cpp" />
     <ClCompile Include="MyEngine\Graphics\Diagnostics\GraphicsDebug.cpp" />
     <ClCompile Include="MyEngine\Graphics\GPU\DescriptorAllocator.cpp" />
+    <ClCompile Include="MyEngine\Graphics\Material\MaterialManager.cpp" />
     <ClCompile Include="MyEngine\Graphics\PostEffect\DepthOfFieldPass.cpp" />
     <ClCompile Include="MyEngine\Graphics\Renderer\GameScreen.cpp" />
     <ClCompile Include="MyEngine\Graphics\Renderer\SkinCache.cpp" />
@@ -201,6 +182,7 @@
     <ClCompile Include="MyEngine\Systems\Camera\CameraShake.cpp" />
     <ClCompile Include="MyEngine\Systems\Camera\CameraVolume.cpp" />
     <ClCompile Include="MyEngine\Systems\Combat\DamageSystem.cpp" />
+    <ClCompile Include="MyEngine\Systems\Combat\HitboxTelegraphSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Combat\HitSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Gameplay\AttackTableSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Gameplay\TimelineTriggerSystem.cpp" />
@@ -262,6 +244,7 @@
     <ClCompile Include="MyEngine\Graphics\RenderTarget\RenderTextureManager.cpp" />
     <ClCompile Include="MyEngine\Graphics\RenderTarget\RenderWindow.cpp" />
     <ClCompile Include="MyEngine\Graphics\Texture\TextureManager.cpp" />
+    <ClCompile Include="MyEngine\Systems\Rendering3D\DecalRenderSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Rendering3D\DepthOfFieldSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Physics\ElasticSurfaceSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Rendering3D\FogSystem.cpp" />
@@ -339,9 +322,11 @@
     <ClInclude Include="MyEngine\Components\Combat\DamageSourceComponent.h" />
     <ClInclude Include="MyEngine\Components\Combat\HealthComponent.h" />
     <ClInclude Include="MyEngine\Components\Combat\HitboxComponent.h" />
+    <ClInclude Include="MyEngine\Components\Combat\HitboxTelegraphComponent.h" />
     <ClInclude Include="MyEngine\Components\Combat\HurtboxComponent.h" />
     <ClInclude Include="MyEngine\Components\Gameplay\AttackTableComponent.h" />
     <ClInclude Include="MyEngine\Components\Gameplay\TimelineTriggerComponent.h" />
+    <ClInclude Include="MyEngine\Components\Rendering3D\DecalRendererComponent.h" />
     <ClInclude Include="MyEngine\Components\UI\AlphaGroupComponent.h" />
     <ClInclude Include="MyEngine\Components\Animation\AnimatorComponent.h" />
     <ClInclude Include="MyEngine\Components\Rendering3D\ArrowStripComponent.h" />
@@ -388,6 +373,7 @@
     <ClInclude Include="MyEngine\Editor\Inspector\AssetInspector.h" />
     <ClInclude Include="MyEngine\Editor\Inspector\AttackTableEditor.h" />
     <ClInclude Include="MyEngine\Editor\Inspector\CurveAssetEditor.h" />
+    <ClInclude Include="MyEngine\Editor\Inspector\MaterialAssetEditor.h" />
     <ClInclude Include="MyEngine\Editor\Inspector\ScriptEditor.h" />
     <ClInclude Include="MyEngine\Editor\Inspector\TimelineAssetEditor.h" />
     <ClInclude Include="MyEngine\Editor\Timeline\TimelineEditorState.h" />
@@ -411,6 +397,9 @@
     <ClInclude Include="MyEngine\Graphics\Compute\ComputeTexture.h" />
     <ClInclude Include="MyEngine\Graphics\Diagnostics\GraphicsDebug.h" />
     <ClInclude Include="MyEngine\Graphics\GPU\DescriptorAllocator.h" />
+    <ClInclude Include="MyEngine\Graphics\Material\Material.h" />
+    <ClInclude Include="MyEngine\Graphics\Material\MaterialManager.h" />
+    <ClInclude Include="MyEngine\Graphics\Pipeline\ShaderProperty.h" />
     <ClInclude Include="MyEngine\Graphics\PostEffect\DepthOfFieldPass.h" />
     <ClInclude Include="MyEngine\Graphics\PostEffect\PostOverride.h" />
     <ClInclude Include="MyEngine\Graphics\Renderer\GameScreen.h" />
@@ -442,6 +431,7 @@
     <ClInclude Include="MyEngine\Systems\Camera\CameraShake.h" />
     <ClInclude Include="MyEngine\Systems\Camera\CameraVolume.h" />
     <ClInclude Include="MyEngine\Systems\Combat\DamageSystem.h" />
+    <ClInclude Include="MyEngine\Systems\Combat\HitboxTelegraphSystem.h" />
     <ClInclude Include="MyEngine\Systems\Combat\HitSystem.h" />
     <ClInclude Include="MyEngine\Systems\Gameplay\AttackTableSystem.h" />
     <ClInclude Include="MyEngine\Systems\Gameplay\TimelineTriggerSystem.h" />
@@ -526,6 +516,7 @@
     <ClInclude Include="MyEngine\Graphics\Texture\TextureManager.h" />
     <ClInclude Include="MyEngine\Input\InputIncludes.h" />
     <ClInclude Include="MyEngine\Components\Lighting\LightComponent.h" />
+    <ClInclude Include="MyEngine\Systems\Rendering3D\DecalRenderSystem.h" />
     <ClInclude Include="MyEngine\Systems\Rendering3D\DepthOfFieldSystem.h" />
     <ClInclude Include="MyEngine\Systems\Physics\ElasticSurfaceSystem.h" />
     <ClInclude Include="MyEngine\Systems\Rendering3D\FogSystem.h" />
@@ -610,8 +601,13 @@
     <None Include="MyEngine\Shader\Data\Buffers\Light.hlsli.shader" />
     <None Include="MyEngine\Shader\Data\Buffers\ObjectTransform.hlsli.shader" />
     <None Include="MyEngine\Shader\Data\Compute\Skinning.CS.shader" />
+    <None Include="MyEngine\Shader\Data\Decal\Decal.hlsli.shader" />
+    <None Include="MyEngine\Shader\Data\Decal\DecalTexture.PS.shader" />
+    <None Include="MyEngine\Shader\Data\Decal\HitboxTelegraph.hlsli.shader" />
+    <None Include="MyEngine\Shader\Data\Decal\HitboxTelegraph.PS.shader" />
+    <None Include="MyEngine\Shader\Data\Decal\HitShape.hlsli.shader" />
     <None Include="MyEngine\Shader\Data\Fog\Fog.hlsli.shader" />
-    <None Include="MyEngine\Shader\Data\IBL\BrdfLUT.PS.shader" />
+    <None Include="MyEngine\Shader\Data\IBL\BrdfLut.PS.shader" />
     <None Include="MyEngine\Shader\Data\IBL\BrdfLut.VS.shader" />
     <None Include="MyEngine\Shader\Data\IBL\EquirectToCube.PS.shader" />
     <None Include="MyEngine\Shader\Data\IBL\EquirectToCube.VS.shader" />

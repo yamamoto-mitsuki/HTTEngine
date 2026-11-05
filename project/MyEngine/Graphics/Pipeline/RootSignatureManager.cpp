@@ -73,6 +73,8 @@ std::optional<RootBind> RootSignatureManager::NameToRole(std::string_view name) 
 	    {"gDof",                  RootBind::DepthOfField        },
 	    {"gTextures",             RootBind::BindlessTexture     },
 	    {"gTexturesCube",         RootBind::BindlessTextureCube },
+	    {"gDecal",                RootBind::Decal               },
+	    {"gDrawData",             RootBind::DrawData            },
 	};
 
 	if (auto it = table.find(name); it != table.end()) {

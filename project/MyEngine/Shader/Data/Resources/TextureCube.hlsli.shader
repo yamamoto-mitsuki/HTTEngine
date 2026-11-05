@@ -1,6 +1,5 @@
 #META
 stage: Include
-path : Resources/TextureCube.hlsli
 #META_END
 
 #HLSL

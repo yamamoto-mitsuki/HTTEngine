@@ -1,6 +1,5 @@
 #META
 stage:   VS
-path:    Line/Line3d.VS.hlsl
 profile: vs_6_0
 #META_END
 

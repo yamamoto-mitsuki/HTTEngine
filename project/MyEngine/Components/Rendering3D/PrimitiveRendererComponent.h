@@ -33,6 +33,7 @@ struct PrimitiveMaterial {
 	Vector2 uvScale = {1.0f, 1.0f};                     // テクスチャ1枚の大きさ（Elastic Surface は m。Primitive Renderer は1面を1として、0.5 なら1面に2回くり返す）
 	ShadingType shadingType = ShadingType::HalfLambert; // 陰の付け方（Unlit：色そのまま／BlinnPhong：ハイライト／PBR：金属感・粗さ）
 	MaterialParams params;                              // 光沢・金属感・自己発光など（どの値を使うかは shadingType で変わる）
+	bool receivesDecals = true;                         // false：デカールを受けない（箱の中にあっても塗られない。Opaque のときだけ効く）
 };
 
 static_assert(std::is_trivially_copyable_v<PrimitiveMaterial>);

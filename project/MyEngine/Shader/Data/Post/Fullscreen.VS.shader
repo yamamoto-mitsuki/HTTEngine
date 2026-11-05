@@ -1,6 +1,5 @@
 #META
 stage: VS
-path : Post/Fullscreen.VS.hlsl
 profile : vs_6_0
 #META_END
 

@@ -1,6 +1,5 @@
 #META
 stage: Include
-path : Resources/Texture.hlsli
 #META_END
 
 #HLSL

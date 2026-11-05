@@ -20,7 +20,7 @@ public:
 	RenderTextureCube* GetEnvironment() const { return env_.get(); }
 	RenderTextureCube* GetIrradiance() const { return irradiance_.get(); }
 	RenderTextureCube* GetPrefilter() const { return prefilter_.get(); }
-	RenderTexture* GetBrdfLUT() const { return brdfLut_.get(); }
+	RenderTexture* GetBrdfLut() const { return brdfLut_.get(); }
 	D3D12_GPU_VIRTUAL_ADDRESS GetParametersAddress() { return paramsAddress_; }
 
 private:

@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <cstddef>
 #include <span>
 #include <list>
 #include <memory>
@@ -65,6 +66,7 @@ public:
 		Camera* camera = nullptr;                                  // カメラ設定
 		IBLEnvironment* env = nullptr;                             // 環境光源
 		BillboardMode billboard = BillboardMode::None;             // カメラの方を向かせる（Full / AxisY。cameraが必要）
+		bool receivesDecals = true;                                // false：デカールを受けない（不透明なときだけ効く）
 	};
 
 	// --- 3D三角形の描画設定 ---
@@ -103,6 +105,7 @@ public:
 		const MaterialParams* material = nullptr;                  // 光沢・金属感・自己発光など（nullptr なら既定の値。切り抜きは alphaCutoff の方を使う）
 		IBLEnvironment* env = nullptr;                             // 環境光（PBR に要る。無ければ PBR の代わりに Half Lambert で描く）
 		Camera* camera = nullptr;                                  // カメラ設定
+		bool receivesDecals = true;                                // false：デカールを受けない（不透明なときだけ効く）
 		bool isBillboard = false;                                  // trueで常にカメラの方を向く（cameraが必要）
 	};
 
@@ -179,6 +182,7 @@ public:
 		const MaterialParams* material = nullptr;                  // 光沢・金属感・自己発光など（nullptr なら既定の値。切り抜きは alphaCutoff の方を使う）
 		IBLEnvironment* env = nullptr;                             // 環境光（PBR に要る。無ければ PBR の代わりに Half Lambert で描く）
 		Camera* camera = nullptr;                                  // カメラ設定
+		bool receivesDecals = true;                                // false：デカールを受けない（不透明なときだけ効く）
 		bool isBillboard = false;                                  // 使わない（頂点はワールド座標で渡す）。PushMesh が読むので置いてある
 	};
 
@@ -211,6 +215,7 @@ public:
 		const MaterialParams* material = nullptr;                  // 光沢・金属感・自己発光など（nullptr なら既定の値。切り抜きは alphaCutoff の方を使う）
 		IBLEnvironment* env = nullptr;                             // 環境光（PBR に要る。無ければ PBR の代わりに Half Lambert で描く）
 		Camera* camera = nullptr;                                  // カメラ設定
+		bool receivesDecals = true;                                // false：デカールを受けない（不透明なときだけ効く）
 		bool isBillboard = false;                                  // trueで常にカメラの方を向く（cameraが必要）
 	};
 
@@ -341,6 +346,18 @@ public:
 		DepthMode depthMode = DepthMode::TestWrite; // Disable にすると、物の後ろ・中でも見える（骨のギズモなど）
 	};
 
+	//=============================================================================
+	// Decal
+	//=============================================================================
+	// --- デカール（箱の中にある不透明な物に、マテリアルで塗る）---
+	// 箱は大きさ 1 で 1辺 1（worldMatrix の大きさが箱の大きさ）。上（+Y）から下へ貼る。箱の XZ がテクスチャの UV
+	struct DecalConfig : DrawTarget {
+		uint32_t material = 0;                     // マテリアル（MaterialManager::Load の番号。Shader の #PROGRAM の category が Decal の物）
+		float progress = 0.0f;                     // マテリアルの Curve の横軸（0〜1。描き手が決める）
+		Matrix4x4 worldMatrix = MakeIdentity4x4(); // 箱のワールド行列
+		int order = 0;                             // 重なったときの順（小さい方が先＝下）
+	};
+
 	// コピー・ムーブ禁止
 	Renderer(const Renderer&) = delete;
 	Renderer& operator=(const Renderer&) = delete;
@@ -445,6 +462,13 @@ public:
 	/// 3Dライン群の描画リクエスト(複数の線を1ドローコールで描く)
 	/// </summary>
 	static void DrawLines(const LineListConfig& config);
+
+	/// <summary>
+	/// デカールを描く（不透明な物の後に、その深度の所へ塗る）
+	/// <para>drawData は描き手の値（Shader の gDrawData と同じ並びの構造体のバイト）。Shader が gDrawData を読むなら、大きさが合わないと止める</para>
+	/// <para>マテリアルが無い・Shader が Decal の物でないときは描かない（警告は1回だけ）</para>
+	/// </summary>
+	static void DrawDecal(const DecalConfig& config, std::span<const std::byte> drawData = {});
 
 	/// <summary>
 	/// このフレームで使うライトを設定する（LightSystemが1フレームに1回呼ぶ）

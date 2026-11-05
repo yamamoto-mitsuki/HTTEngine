@@ -67,6 +67,7 @@ void DescribeModelRenderer(ComponentUI& ui, ModelRendererComponent& value) {
 	ui.Field("rasterizerType", value.rasterizerType);
 	ui.Field("depthMode", value.depthMode);
 	ui.Field("billboard", value.billboard);
+	ui.Field("receivesDecals", value.receivesDecals); // デカールを受けるか（前のファイルには無い＝受ける）
 	// --- 色（sRGB。保存の形は前と同じ [r, g, b, a]）---
 	ui.ColorField("color", value.color);
 	ui.Field("intensity", value.intensity); // 明るさの倍率（前のファイルには無い＝1 のまま）

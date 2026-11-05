@@ -1,0 +1,17 @@
+{
+	"shader": "resources/shaders/RingTelegraph.PS.shader",
+	"blendOverride": false,
+	"blend": "Normal",
+	"rasterizerOverride": false,
+	"rasterizer": "SolidFront",
+	"depthOverride": false,
+	"depth": "Disable",
+	"baseColor": [0.2, 0.5, 1.0, 0.15],
+	"baseColorCurve": "",
+	"ringColor": [0.3, 0.8, 1.0, 0.7],
+	"ringColorCurve": "",
+	"ringCount": 4.0,
+	"ringCountCurve": "",
+	"speed": 1.5,
+	"speedCurve": ""
+}

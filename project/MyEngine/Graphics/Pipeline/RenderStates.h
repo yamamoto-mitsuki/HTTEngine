@@ -30,6 +30,7 @@ enum class DrawCategory {
 	Text,
 	VectorShape, // 画像を使わないUIの図形
 	Polyline,    // UIの折れ線（メッシュで形を作り、縁はシェーダーでなめらかにする）
+	Decal,       // 箱の中にある物（深度に描かれた不透明な物）に塗る。不透明な物の後に描く
 };
 
 // サンプリング設定
@@ -75,12 +76,20 @@ enum DepthMode {
 	Disable,     // 深度テストなし・書き込み無: 2D, UI, フルスクリーン
 };
 
-// ステンシルの使い方（UIのマスク。値は「外にあるマスクの数」で、参照値と同じところだけ通す）
+// ステンシルのビットの分け方（1つの値の中を、使い道ごとにビットで分ける。分けた所しか読まない・書かない）
+inline constexpr uint8_t kStencilUIMaskBits = 0x7F;  // 下の 7 ビット：UI のマスク（外にあるマスクの数。入れ子は 8 段までなので足りる）
+inline constexpr uint8_t kStencilNoDecalBit = 0x80;  // 一番上のビット：デカールを受けない物（Receive Decals を外した物）を描いた所
+
+// ステンシルの使い方
+// UI のマスク：値は「外にあるマスクの数」で、参照値と同じところだけ通す（kStencilUIMaskBits だけ使う）
+// デカール：受けない物が kStencilNoDecalBit を立て、デカールはそのビットの無い所だけ塗る（参照値は kStencilNoDecalBit）
 enum class StencilMode {
-	None,      // 使わない（マスクの外の UI・3D）
-	Test,      // 値が参照値と同じ所だけ描く（マスクの中の UI）
-	Increment, // 値が参照値と同じ所を 1 増やす（マスクの形を書く。入れ子なら、外のマスクの中だけが増える）
-	Decrement, // 値が参照値と同じ所を 1 減らす（子を描き終わったマスクの形を消す）
+	None,        // 使わない（マスクの外の UI・3D）
+	Test,        // 値が参照値と同じ所だけ描く（マスクの中の UI）
+	Increment,   // 値が参照値と同じ所を 1 増やす（マスクの形を書く。入れ子なら、外のマスクの中だけが増える）
+	Decrement,   // 値が参照値と同じ所を 1 減らす（子を描き終わったマスクの形を消す）
+	MarkNoDecal, // 描いた所に kStencilNoDecalBit を立てる（デカールを受けない不透明な物）
+	DecalTest,   // kStencilNoDecalBit の無い所だけ描く（デカール）
 };
 
 // ビルボード（カメラの方を向かせる）設定

@@ -1,6 +1,5 @@
 #META
 stage: Include
-path : Post/DepthOfField.hlsli
 #META_END
 
 #HLSL

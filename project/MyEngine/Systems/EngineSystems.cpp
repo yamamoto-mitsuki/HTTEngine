@@ -3,6 +3,7 @@
 #include "MyEngine/AI/AttackTableManager.h"
 #include "MyEngine/Combat/DamageTypes.h"
 #include "MyEngine/Curve/CurveManager.h"
+#include "MyEngine/Graphics/Material/MaterialManager.h"
 #include "MyEngine/Timeline/TimelineManager.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/EntityManager.h"
@@ -24,6 +25,7 @@
 // Combat
 #include "MyEngine/Systems/Combat/DamageSystem.h"
 #include "MyEngine/Systems/Combat/HitSystem.h"
+#include "MyEngine/Systems/Combat/HitboxTelegraphSystem.h"
 // Effects
 #include "MyEngine/Systems/Effects/ParticleSystem.h"
 #include "MyEngine/Systems/Effects/TrailSystem.h"
@@ -44,6 +46,7 @@
 #include "MyEngine/Systems/Rendering2D/SpriteRenderSystem.h"
 // Rendering3D
 #include "MyEngine/Systems/Rendering3D/ArrowStripSystem.h"
+#include "MyEngine/Systems/Rendering3D/DecalRenderSystem.h"
 #include "MyEngine/Systems/Rendering3D/DepthOfFieldSystem.h"
 #include "MyEngine/Systems/Rendering3D/FogSystem.h"
 #include "MyEngine/Systems/Rendering3D/PolygonShapeSystem.h"
@@ -62,6 +65,7 @@
 #include "MyEngine/Editor/History/EditorHistory.h"
 #include "MyEngine/Editor/Inspector/AttackTableEditor.h"
 #include "MyEngine/Editor/Inspector/CurveAssetEditor.h"
+#include "MyEngine/Editor/Inspector/MaterialAssetEditor.h"
 #include "MyEngine/Editor/Inspector/TimelineAssetEditor.h"
 #include "MyEngine/Editor/Windows/UIScreenEditor.h"
 #endif
@@ -91,6 +95,7 @@ void EngineSystems::Initialize() {
 	PrimitiveRenderSystem::Initialize();  // Primitive Renderer
 	PolygonShapeSystem::Initialize();     // Polygon Shape・Polygon Renderer
 	ArrowStripSystem::Initialize();       // Arrow Strip
+	DecalRenderSystem::Initialize();      // Decal Renderer
 	WindZoneSystem::Initialize();         // Wind Zone
 	AnimationSystem::Initialize();        // Animator
 	PrefabManager::Initialize();          // Prefab（Entity をまとめて取っておいたファイル）。中身は JSON だけなので、GPU の物とは関係ない
@@ -106,9 +111,11 @@ void EngineSystems::Initialize() {
 	TimelineTriggerSystem::Initialize();  // Timeline Trigger（範囲に入ったら Timeline を再生する）
 	HitSystem::Initialize();              // Hitbox・Hurtbox（攻撃の当たり）
 	DamageSystem::Initialize();           // Health・Damage Source（攻撃のダメージ）。HitSystem に答え方を登録するので、HitSystem の後
+	HitboxTelegraphSystem::Initialize();  // Hitbox Telegraph（攻撃の予告を床に描く。Hitbox の形を読む）
 	AttackTableManager::Initialize();     // 攻撃表（.attacktable）。AttackTableSystem が読むので先に
 	AttackTableSystem::Initialize();      // Attack Table
 	CurveManager::Initialize();           // カーブ（.curve）
+	MaterialManager::Initialize();        // マテリアル（.material）。Shader の #PROPERTIES の値と Curve を使う
 	TimelineManager::Initialize();        // Timeline（.timeline）。TimelineSystem が読むので先に
 	TimelineSystem::Initialize();         // Timeline
 	UIScreen::Initialize();               // UI Screen・UI Screen Element
@@ -117,6 +124,7 @@ void EngineSystems::Initialize() {
 	UIScreenEditor::Initialize(); // .uiscreen のファイルを Inspector に出す（Edit UI Screen のボタン）
 	AttackTableEditor::Initialize(); // .attacktable のファイルを Inspector で直す
 	CurveAssetEditor::Initialize();  // .curve のファイルを Inspector で直す
+	MaterialAssetEditor::Initialize(); // .material のファイルを Inspector で直す
 	TimelineAssetEditor::Initialize(); // .timeline のファイルを Inspector に出す（開くボタン）
 #endif
 
@@ -146,15 +154,18 @@ void EngineSystems::Release() {
 	PrimitiveRenderSystem::Release();
 	PolygonShapeSystem::Release();
 	ArrowStripSystem::Release();
+	DecalRenderSystem::Release();
 	WindZoneSystem::Release();
 	FogSystem::Release();
 	DepthOfFieldSystem::Release();
 	TriggerActivatorSystem::Release();
 	TimelineTriggerSystem::Release();
 	DamageSystem::Release();
+	HitboxTelegraphSystem::Release();
 	HitSystem::Release();
 	AttackTableSystem::Release();
 	AttackTableManager::Release();
+	MaterialManager::Release();
 	CurveManager::Release();
 	TimelineSystem::Release();
 	TimelineManager::Release();
@@ -250,6 +261,8 @@ void EngineSystems::Draw(Camera* gameCamera, IBLEnvironment* gameEnvironment) {
 	PrimitiveRenderSystem::Draw(gameCamera, gameEnvironment); // 決まった形（球・箱）の描画
 	PolygonShapeSystem::Draw(gameCamera, gameEnvironment);    // 多角形を押し出した形（足場）の描画
 	ArrowStripSystem::Draw(gameCamera, gameEnvironment);      // 向きを示す矢印の列の描画
+	DecalRenderSystem::Draw();                                // 箱の中の床・壁に塗る（Decal Renderer）の描画
+	HitboxTelegraphSystem::Draw();                            // 攻撃の予告を床に塗る（Hitbox Telegraph）の描画
 	SpriteRenderSystem::Draw(gameCamera); // 画像の板（Sprite Renderer）と、画面に重ねる絵（Image）の描画
 	VectorShapeSystem::Draw(); // 画像を使わない UI の図形（Vector Shape）の描画（Image・Text とは Order の順に重なる）
 	PolylineSystem::Draw();    // 点をつないだ UI の線・形（Polyline）の描画（Image・Text とは Order の順に重なる）
@@ -263,6 +276,7 @@ void EngineSystems::Draw(Camera* gameCamera, IBLEnvironment* gameEnvironment) {
 	CollisionSystem::DrawGizmos(gameCamera);
 	CharacterControllerSystem::DrawGizmos(gameCamera); // 上れる段の高さ・地面の向き（Collider のギズモと一緒に出す・消す）
 	WindZoneSystem::DrawGizmos(gameCamera); // 風の範囲と向き（Collider のギズモと一緒に出す・消す）
+	DecalRenderSystem::DrawGizmos(gameCamera); // デカールの箱（Scene ビューだけ）
 	HitSystem::DrawGizmos(gameCamera);      // 攻撃の形（段階で色が変わる）・ジャスト判定の範囲・Hurtbox
 	AnimationSystem::DrawGizmos(gameCamera);
 #endif

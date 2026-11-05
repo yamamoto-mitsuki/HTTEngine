@@ -1,6 +1,5 @@
 #META
 stage: Include
-path:  Particle/Particle.hlsli
 #META_END
 
 #HLSL

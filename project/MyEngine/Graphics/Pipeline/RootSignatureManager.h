@@ -29,6 +29,8 @@ enum class RootBind {
 	DepthOfField,         // 被写界深度のパラメータ（合成の PS）
 	BindlessTexture,      // バインドレステクスチャ
 	BindlessTextureCube,  // バインドレスキューブテクスチャ
+	Decal,                // デカールの箱（ワールド → 箱の中の行列・深度の番号）。全部のデカールで共通（PS）
+	DrawData,             // 描き手が描く物ごとに送る値（形・進み具合など。中身は描き手ごとの構造体。PS）
 };
 
 // マージ後の1リソース（reflection情報 + どのステージから見えるか）

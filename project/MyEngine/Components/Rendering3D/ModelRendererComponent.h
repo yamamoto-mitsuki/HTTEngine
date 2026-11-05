@@ -19,6 +19,7 @@ struct ModelRendererComponent {
 	RasterizerType rasterizerType = RasterizerType::SolidBack;
 	DepthMode depthMode = DepthMode::TestWrite;
 	BillboardMode billboard = BillboardMode::None; // カメラの方を向かせる（Full / AxisY）
+	bool receivesDecals = true;                    // false：デカールを受けない（箱の中にあっても塗られない。不透明なときだけ効く）
 	bool enabled = true;
 };
 

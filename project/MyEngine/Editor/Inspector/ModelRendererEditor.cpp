@@ -52,6 +52,8 @@ void ModelRendererEditor::DrawComponent(ModelRendererComponent& render) const {
 	EditorWidgets::EnumCombo("Rasterizer", render.rasterizerType);
 	EditorWidgets::EnumCombo("Depth", render.depthMode);
 	EditorWidgets::EnumCombo("Billboard", render.billboard);
+	ImGui::Checkbox("Receive Decals", &render.receivesDecals);
+	ImGui::SetItemTooltip("外すと、デカールの箱の中にあっても、このモデルには塗られない（不透明なときだけ効く）");
 
 	// --- 色（sRGB の 0〜1）---
 	ImGui::ColorEdit4("Color", &render.color.x);

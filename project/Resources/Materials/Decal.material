@@ -1,0 +1,12 @@
+{
+	"shader": "MyEngine/Shader/Data/Decal/DecalTexture.PS.shader",
+	"blendOverride": false,
+	"blend": "Normal",
+	"rasterizerOverride": false,
+	"rasterizer": "SolidFront",
+	"depthOverride": false,
+	"depth": "Disable",
+	"color": [1.0, 1.0, 1.0, 1.0],
+	"colorCurve": "",
+	"texture": ""
+}

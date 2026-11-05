@@ -58,9 +58,10 @@ struct CameraData {
 	float padB = 0.0f;
 	Vector3 up; // ビルボード用
 	float padC = 0.0f;
-	FogData fog; // 霧（3D のシェーダーの最後で、色に混ぜる。Fog.hlsli の ApplyFog）
+	FogData fog;                // 霧（3D のシェーダーの最後で、色に混ぜる。Fog.hlsli の ApplyFog）
+	Matrix4x4 inverseViewProj;  // viewProj の逆行列（画面の位置と深度から、ワールドの位置へ戻す。デカールが使う）
 };
-static_assert(sizeof(CameraData) == 160, "HLSLのCameraと大きさが違います");
+static_assert(sizeof(CameraData) == 224, "HLSLのCameraと大きさが違います");
 
 // ===== パーティクル（粒1つ分。StructuredBuffer<Particle> gParticles として Particle.VS が読む）=====
 // VS は world から中心（4行目）と大きさ（1行目の長さ＝横・2行目の長さ＝縦）だけを読み、カメラの右・上で板を組む（world の向きは使わない）
@@ -71,6 +72,15 @@ struct ParticleData {
 	float rotation = 0.0f;                  // 板を画面の上で回す角度（ラジアン。正で左回り。direction があれば、その向きからさらに回す）
 };
 static_assert(sizeof(ParticleData) == 96, "HLSLのParticleと大きさが違います");
+
+// ===== デカールの箱（全部のデカールで共通。描き手ごとの値は gDrawData に別に送る）=====
+// 箱は Transform の大きさ 1 で 1辺 1（中心が原点、-0.5〜+0.5）。箱の XZ がテクスチャの UV、Y が貼る向き（上から下へ貼る）
+struct DecalData {
+	Matrix4x4 worldToDecal = MakeIdentity4x4(); // ワールド → 箱の中（箱のワールド行列の逆行列。中なら x・y・z が -0.5〜+0.5）
+	uint32_t depthIndex = 0;                    // 不透明な物の深度（gTextures[] の番号）
+	float padA[3] = {};
+};
+static_assert(sizeof(DecalData) == 80, "HLSLのDecal（Decal/Decal.hlsli）と大きさが違います");
 
 // ===== スキンの行列パレットの1つ分（骨1本分）。StructuredBuffer<Well> gMatrixPalette としてSkinning の CS が読む =====
 struct WellForGPU {

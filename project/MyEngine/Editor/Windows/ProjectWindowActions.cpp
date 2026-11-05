@@ -15,6 +15,7 @@
 #include "MyEngine/Editor/Windows/UIScreenEditor.h"
 #include "MyEngine/AI/AttackTableManager.h"
 #include "MyEngine/Curve/CurveManager.h"
+#include "MyEngine/Graphics/Material/MaterialManager.h"
 #include "MyEngine/Physics/PhysicMaterialManager.h"
 #include "MyEngine/Timeline/TimelineManager.h"
 #include "MyEngine/Scene/Prefab/PrefabManager.h"
@@ -158,6 +159,11 @@ void ProjectWindow::DrawCreateMenu() {
 			CreateAssetFile("NewCurve", CurveManager::kFileExtension, &CurveManager::CreateNewFile);
 		}
 		ImGui::SetItemTooltip("今のフォルダに作ります（時間に対して値がどう変わるかのカーブ）");
+		// Material
+		if (ImGui::MenuItem("Material")) {
+			CreateAssetFile("NewMaterial", MaterialManager::kFileExtension, &MaterialManager::CreateNewFile);
+		}
+		ImGui::SetItemTooltip("今のフォルダに作ります（Shader と値。Decal Renderer・Hitbox Telegraph の Material で選ぶ）");
 		// Timeline
 		if (ImGui::MenuItem("Timeline")) {
 			CreateAssetFile("NewTimeline", TimelineManager::kFileExtension, &TimelineManager::CreateNewFile);

@@ -113,6 +113,7 @@ void Engine::Initialize(const WindowConfig& config, SceneFactory initialScene) {
 	EngineSystems::Initialize(); // EntityManager と全 System（Component の登録もここ）
 
 	ShaderPackageLoader::LoadAll(ShaderPackageLoader::FindDataDir()); // .hlsl生成
+	ShaderPackageLoader::LoadProject(kProjectShaderDir);             // ゲームの resources の下の .shader（エンジンの .hlsli を include できるように、エンジンの後）
 
 	IBLBaker::Initialize(); // IBL
 	SceneRenderer::InitializeSkybox(); // 天球初期化

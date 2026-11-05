@@ -1,6 +1,5 @@
 #META
 stage: Include
-path : Text/Text2d.hlsli
 #META_END
 
 #HLSL

@@ -45,6 +45,7 @@ public:
 		config.shadingType = material.shadingType;
 		config.material = &material.params;
 		config.env = environment;
+		config.receivesDecals = material.receivesDecals;
 		// --- 透け方：奥行きを書かない（TestNoWrite）物は、Renderer が半透明として、不透明な物の後にカメラから遠い順で描く ---
 		switch (material.surface) {
 		case SurfaceType::Opaque:

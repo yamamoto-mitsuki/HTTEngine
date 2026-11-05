@@ -94,16 +94,12 @@
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
-    <!-- ビルドの後 -->
-    <!-- 1・2行目：シェーダーのコンパイラ（dxcompiler.dll・dxil.dll）を exe の隣へ -->
-    <!-- 3・4行目：エンジンの .shader と Resources（アイコン・グリッド・白の画像・空）を、起動するフォルダ（このフォルダ）の MyEngine\ へ -->
-    <!--           /D は「写し先より新しいファイルだけ」写す（2回目からは速い）。写し先は .gitignore で git に入れない -->
+    <!-- ビルドの後：シェーダーのコンパイラ（dxcompiler.dll・dxil.dll）を exe の隣へ -->
+    <!-- エンジンの .shader と Resources を起動するフォルダ（このフォルダ）の MyEngine\ へ写すのは、MyEngine.props の CopyMyEngineRuntimeFiles（ゲームと同じ） -->
     <PostBuildEvent>
       <Command>
 copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
 copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dxil.dll"
-xcopy /Y /S /I /D "$(MyEngineRoot)MyEngine\Shader\Data" "$(ProjectDir)MyEngine\Shader\Data\"
-xcopy /Y /S /I /D "$(MyEngineRoot)Resources" "$(ProjectDir)MyEngine\Resources\"
       </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>

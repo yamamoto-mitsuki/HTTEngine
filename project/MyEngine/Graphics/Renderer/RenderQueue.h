@@ -44,6 +44,7 @@ public:
 	static void Request(VectorShapeRequest&& req);
 	static void Request(PolylineRequest&& req);
 	static void Request(ParticleRequest&& req);
+	static void Request(DecalRequest&& req);
 
 	// ---  発行（2Dはスプライト・文字・図形・折れ線を、drawKey の順に混ぜて描く。マスクの子は、マスクの始まりと終わりの間）---
 	static void Flush2d(const std::wstring& windowTitle);
@@ -52,6 +53,10 @@ public:
 	// isBeforeDepthOfField：true なら被写界深度の前に描く粒（Use Depth Of Field）だけ、false なら後に描く粒だけ
 	static void FlushParticle(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB, bool isBeforeDepthOfField);
 	static void FlushLine(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB);
+	// デカール（不透明な物の後。深度は読むだけの窓口で結び、depthIndex の SRV で読む）
+	static void FlushDecal(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB, uint32_t depthIndex);
+	// デカールを積んだか（無ければ、深度を読む状態に切り替えなくてよい）
+	static bool HasDecal();
 	
 	// フレーム末にクリア
 	static void Clear();
@@ -77,6 +82,7 @@ private:
 	std::vector<Request2d> requests2d_;
 	std::vector<ParticleRequest> particleRequests_;
 	std::vector<LineRequest> lineRequests_;
+	std::vector<DecalRequest> decalRequests_;
 	std::array<bool, magic_enum::enum_count<DrawLayer>()> isLayerVisible_{}; // 層ごとに、今のビューで描くか（番号は DrawLayer の順。magic_enum::enum_count で層の数を数える）
 	bool isSceneHiddenVisible_ = true; // 目で隠した物を、今のビューで描くか（Scene ビューだけ false）
 };

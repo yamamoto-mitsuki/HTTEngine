@@ -16,7 +16,7 @@ enum class RenderTextureFormat {
 /// </summary>
 class RenderTexture {
 public:
-	// 1枚作る（isDepthReadable：深度をシェーダーから読めるようにする。被写界深度が奥行きを知るのに使う。useDepth が true のときだけ）
+	// 1枚作る（isDepthReadable：深度をシェーダーから読めるようにする。被写界深度が奥行きを知る・デカールが塗る所を知るのに使う。useDepth が true のときだけ）
 	RenderTexture(uint32_t width, uint32_t height, RenderTextureFormat format, bool useDepth = true, bool isDepthReadable = false);
 	// SRVスロットの解放
 	~RenderTexture();
@@ -55,6 +55,18 @@ public:
 	void EndShaderRead();
 
 	/// <summary>
+	/// 深度を読みながら描く（デカール）。深度は読むだけの窓口（読むだけの DSV）で結び直し、同じ深度を SRV でも読める状態にする
+	/// <para>PreDraw の後に呼ぶ（isDepthReadable で作ったときだけ）。描き終わったら EndDepthRead（深度を書く状態に戻す）</para>
+	/// <para>読むだけの間は、深度もステンシルも書けない（書く PSO で描くとデバッグレイヤーに止められる）</para>
+	/// </summary>
+	void BeginDepthRead();
+
+	/// <summary>
+	/// BeginDepthRead の前の状態（深度を書く窓口で結んだ、書く状態）に戻す
+	/// </summary>
+	void EndDepthRead();
+
+	/// <summary>
 	/// 形式 → DXGI_FORMAT（PSO の描画先の形式を、描く先の RenderTexture とそろえるのに使う）
 	/// </summary>
 	static DXGI_FORMAT ToDXGIFormat(RenderTextureFormat format);
@@ -84,6 +96,7 @@ private:
 	Microsoft::WRL::ComPtr<ID3D12Resource> depthResource_ = nullptr;
 	Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> dsvDescriptorHeap_ = nullptr;
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvHandle_ = {};
+	D3D12_CPU_DESCRIPTOR_HANDLE readOnlyDsvHandle_ = {}; // 深度を読むだけの窓口（isDepthReadable_ のときだけ。BeginDepthRead で結ぶ）
 	uint32_t depthSrvSlot_ = 0; // 深度を読む窓口（isDepthReadable_ のときだけ）
 	// Format
 	DXGI_FORMAT format_ = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;

@@ -1,6 +1,5 @@
 #META
 stage: PS
-path : Post/Lens.PS.hlsl
 profile : ps_6_0
 #META_END
 

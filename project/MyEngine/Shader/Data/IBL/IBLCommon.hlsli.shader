@@ -1,6 +1,5 @@
 #META
 stage: Include
-path:  IBL/IBLCommon.hlsli
 #META_END
 
 #HLSL

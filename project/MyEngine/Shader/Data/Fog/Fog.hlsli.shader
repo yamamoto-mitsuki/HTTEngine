@@ -1,6 +1,5 @@
 #META
 stage: Include
-path : Fog/Fog.hlsli
 #META_END
 
 #HLSL

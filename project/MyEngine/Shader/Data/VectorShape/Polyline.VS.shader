@@ -1,6 +1,5 @@
 #META
 stage: VS
-path : VectorShape/Polyline.VS.hlsl
 profile : vs_6_0
 #META_END
 

@@ -1,6 +1,5 @@
 #META
 stage: Include
-path : Post/Bloom.hlsli
 #META_END
 
 #HLSL
