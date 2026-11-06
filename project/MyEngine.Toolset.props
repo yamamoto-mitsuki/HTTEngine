@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+=============================================================================
+ MyEngine.Toolset.props
+ コンパイラ・リンカーの選び方。Microsoft.Cpp.props より前に読まないと効かない設定だけを置く
+ MyEngine.props は Microsoft.Cpp.props の後に読まれるので、ここに分けている
+ 読む場所：
+   エンジンのリポジトリ … project/Directory.Build.props（project/ より下の全部のプロジェクト）
+   ゲームのリポジトリ   … ゲームの vcxproj と同じフォルダの Directory.Build.props から Import する
+=============================================================================
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- ===== 64 ビット版のツールを使う ===== -->
+  <PropertyGroup>
+    <!-- 既定は 32 ビット版のリンカー（bin\HostX86\x64）。Release の MyEngine_v1.lib（/GL で 1GB を超える）をメモリに写せず、 -->
+    <!-- 毎回 64 ビット版でリンクをやり直す（リンク時のコード生成が2回になる）。初めから 64 ビット版（bin\HostX64\x64）を使う -->
+    <PreferredToolArchitecture>x64</PreferredToolArchitecture>
+  </PropertyGroup>
+
+</Project>

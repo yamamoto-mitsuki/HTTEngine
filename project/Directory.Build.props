@@ -4,9 +4,14 @@
  Directory.Build.props
  このフォルダより下の全部のプロジェクトを、MSBuild が自動で読む（vcxproj に書かなくても読まれる）
  externals のファイルを書き換えずに、DirectXTex の出力先だけを OutputDirs.props に差し替える
+ Microsoft.Cpp.props より前に読まれるので、ツールの選び方（MyEngine.Toolset.props）もここで読む
 =============================================================================
 -->
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- ===== 全部のプロジェクト ===== -->
+  <!-- 64 ビット版のツールを使う（ゲームのリポジトリも、自分の Directory.Build.props から同じファイルを読む） -->
+  <Import Project="$(MSBuildThisFileDirectory)MyEngine.Toolset.props" />
 
   <!-- ===== DirectXTexだけ ===== -->
   <PropertyGroup Condition="'$(MSBuildProjectName)'=='DirectXTex_Desktop_2022_Win10'">

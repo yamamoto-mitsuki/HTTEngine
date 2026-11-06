@@ -597,6 +597,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="MyEngine.props" />
+    <None Include="MyEngine.Toolset.props" />
     <None Include="MyEngine\Shader\Data\Buffers\Camera.hlsli.shader" />
     <None Include="MyEngine\Shader\Data\Buffers\Light.hlsli.shader" />
     <None Include="MyEngine\Shader\Data\Buffers\ObjectTransform.hlsli.shader" />

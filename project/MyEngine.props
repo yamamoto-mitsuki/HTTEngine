@@ -68,6 +68,19 @@
 
 	</ItemDefinitionGroup>
 
+	<!-- ===== Release ===== -->
+	<ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+		<Link>
+			<!-- リンク時のコード生成（/LTCG）を、毎回全部の関数でやり直す -->
+			<!-- 既定の /LTCG:incremental は、前回の結果（obj の .iobj・.ipdb）から変わっていない関数を写して速くする -->
+			<!-- その記録が今の pdb と食い違うと LNK4020（型レコードの破損）が出続け、リンクだけやり直しても消えない -->
+			<!-- Release は配る exe なので、速さより毎回同じ結果になる方を選ぶ -->
+			<LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+			<!-- 増分用の記録（.iobj）は読まないので、書き出しも止める（空にすると /LTCGOUT が付かない） -->
+			<LinkTimeCodeGenerationObjectFile></LinkTimeCodeGenerationObjectFile>
+		</Link>
+	</ItemDefinitionGroup>
+
     <!-- ===== ゲーム自身が参照するプロジェクト ===== -->
     <!-- エンジン自身もこの propsを読むので、MyEngine_v1の時は自分を参照してしまうので外す -->
     <ItemGroup Condition="'$(MSBuildProjectName)'!='MyEngine_v1'">
