@@ -1730,7 +1730,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="MyEngine.props" />
-    <None Include="MyEngine.Toolset.props" />
     <None Include="MyEngine\Shader\Data\Buffers\Camera.hlsli.shader">
       <Filter>MyEngine\Shader\Data\Buffers</Filter>
     </None>

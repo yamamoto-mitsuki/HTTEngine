@@ -3,8 +3,7 @@
 - 前方宣言と不完全型（`std::shared_ptr` は不完全型のまま持てる）：https://en.cppreference.com/w/cpp/memory/shared_ptr ・ https://en.cppreference.com/w/cpp/language/type#Incomplete_type
 - `/GL`（プログラム全体の最適化。obj に中間コードが入る）：https://learn.microsoft.com/ja-jp/cpp/build/reference/gl-whole-program-optimization
 - `/LTCG`（リンク時のコード生成・`:incremental`）：https://learn.microsoft.com/ja-jp/cpp/build/reference/ltcg-link-time-code-generation
-- `PreferredToolArchitecture`（64 ビット版のツールを使う）：https://learn.microsoft.com/ja-jp/cpp/build/reference/msbuild-visual-cpp-overview
-- `Directory.Build.props`（MSBuild が自動で読むファイル）：https://learn.microsoft.com/ja-jp/visualstudio/msbuild/customize-by-directory
+- `PreferredToolArchitecture`（コンパイラ・リンカーの 32 / 64 ビットの選び方）：https://learn.microsoft.com/ja-jp/cpp/build/reference/msbuild-visual-cpp-overview
 
 # LogManager.h から spdlog を外す
 
@@ -228,5 +227,11 @@ include の並び（CLAUDE.md の決まり）にもそろえる。
 Release のリンクで `LNK4020（型レコードの破損）` が出続けていた件の直し。写経は無し。
 
 - `MyEngine.props` の Release：`LinkTimeCodeGeneration` を `UseLinkTimeCodeGeneration`（増分なしの `/LTCG`）、`LinkTimeCodeGenerationObjectFile` を空（`.iobj` を書かない）
-- `project/MyEngine.Toolset.props`（新しい）：`PreferredToolArchitecture=x64`。`project/Directory.Build.props` から読む
-- AL4_01 は、`project/Directory.Build.props` を作って `..\MyEngine_v1\project\MyEngine.Toolset.props` を Import する（サブモジュールを ae5e586 より後に進めてから）
+- ゲームのプロジェクトには何も足さなくてよい（MyEngine.props を読めば、上の設定も入る）
+
+### 64 ビット版のツールについて（設定は要らない）
+
+- VS の既定は「MSBuild 自身が 64 ビットなら、コンパイラ・リンカーも 64 ビット版（`bin\HostX64\x64`）」
+- Visual Studio 本体（64 ビット）からのビルドと、GitHub Actions（`Bin\amd64\MSBuild.exe` を探して使う）は、何もしなくても 64 ビット版になる
+- コマンドからビルドするときは **`MSBuild\Current\Bin\amd64\MSBuild.exe` を使う**。`MSBuild\Current\Bin\MSBuild.exe` は 32 ビット版で、ツールも 32 ビット版になる。Release の大きい MyEngine_v1.lib をメモリに写せず、毎回 64 ビット版でリンクをやり直す（`LINK : 32 ビット リンカー … 64 ビット リンカーとのリンクを再開しています` と出る）
+- 一度、`PreferredToolArchitecture=x64` を props に入れた（ae5e586）が、上の既定で足りるので外した。この設定は Microsoft.Cpp.props より前に読む必要があり、MyEngine.props では遅い。ゲームごとに `Directory.Build.props` を書くことになるので、やめた
