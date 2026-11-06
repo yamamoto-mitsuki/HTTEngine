@@ -7,6 +7,7 @@
 #include <format>
 #include <memory>
 #include <algorithm>
+#include <string_view>
 
 #include <externals/imgui/imgui.h>
 #include <externals/nlohmann/json.hpp>
@@ -21,7 +22,8 @@
 
 namespace {
 constexpr std::string_view kTypeName = "Attack Table"; // Inspector の見出しに出す名前
-constexpr const char* kNoPartDescription = "部品を使わない（中身は動かず、時間だけ進む）"; // Part が (none) のときの説明
+constexpr const char* kNoPartDescription = "部品を使わない（中身は動かず、時間だけ進む）";         // Part が (none) のときの説明
+constexpr const char* kNoIdlePartDescription = "部品を使わない（攻撃を選ぶまで、何もせずに待つ）"; // Idle Part が (none) のときの説明
 
 //=============================================================================
 // 攻撃部品
@@ -29,22 +31,21 @@ constexpr const char* kNoPartDescription = "部品を使わない（中身は動
 // ===== Part の選択欄 =====
 // 選択肢は ATTACK_PART(...) で登録した部品。選んでいる部品の説明を、欄の下に出す
 // 知らない名前（別のゲームで作った部品など）は、消さずに赤で出す
-void DrawPartCombo(AttackData& attack, const std::vector<std::string>& names) {
-	const bool isUnknown = !attack.part.empty() && std::ranges::find(names, attack.part) == names.end();
+// 攻撃の行の Part と、フェーズの Idle Part の両方がこれを使う（label は欄の名前、noneDescription は (none) の説明）
+void DrawPartCombo(const char* label, AttackPartSlot& slot, const std::vector<std::string>& names, const char* noneDescription) {
+	const bool isUnknown = !slot.name.empty() && std::ranges::find(names, slot.name) == names.end();
 	if (isUnknown) {
 		ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 96, 96, 255));
 	}
-	const std::string preview = attack.part.empty() ? "(none)" : attack.part;
-	if (ImGui::BeginCombo("Part###part", preview.c_str())) {
-		if (ImGui::Selectable("(none)", attack.part.empty())) {
-			attack.part.clear();
-			attack.partFields = "{}";
+	const std::string preview = slot.name.empty() ? "(none)" : slot.name;
+	if (ImGui::BeginCombo(label, preview.c_str())) {
+		if (ImGui::Selectable("(none)", slot.name.empty())) {
+			slot = AttackPartSlot{};
 		}
-		ImGui::SetItemTooltip("%s", kNoPartDescription);
+		ImGui::SetItemTooltip("%s", noneDescription);
 		for (const std::string& name : names) {
-			if (ImGui::Selectable(name.c_str(), name == attack.part) && name != attack.part) {
-				attack.part = name;
-				attack.partFields = "{}"; // 別の部品の値は使えない
+			if (ImGui::Selectable(name.c_str(), name == slot.name) && name != slot.name) {
+				slot = AttackPartSlot{name}; // 別の部品の値は使えないので、値は空に戻す
 			}
 			const std::string& description = AttackPartRegistry::GetDescription(name);
 			if (!description.empty()) {
@@ -60,8 +61,8 @@ void DrawPartCombo(AttackData& attack, const std::vector<std::string>& names) {
 		ImGui::SetItemTooltip("ATTACK_PART(...) で登録した攻撃部品から選ぶ");
 	}
 	// --- 選んでいる部品の説明（長い文でも欄の幅で折り返す）---
-	const std::string& description = AttackPartRegistry::GetDescription(attack.part);
-	const char* text = attack.part.empty() ? kNoPartDescription : description.c_str();
+	const std::string& description = AttackPartRegistry::GetDescription(slot.name);
+	const char* text = slot.name.empty() ? noneDescription : description.c_str();
 	if (text[0] != '\0') {
 		ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
 		ImGui::TextWrapped("%s", text);
@@ -71,18 +72,22 @@ void DrawPartCombo(AttackData& attack, const std::vector<std::string>& names) {
 
 // ===== 部品の値 =====
 // 部品を1つ作って、表の値を読み、Fields を描いて、書き戻す（Fields の実体はゲームのクラスの中にあるので、表だけでは描けない）
-void DrawPartFields(ComponentUI& ui, AttackData& attack) {
-	std::unique_ptr<AttackPart> part = AttackPartRegistry::Create(attack.part);
+// label は警告に出す名前（攻撃の名前・フェーズの名前）
+void DrawPartFields(ComponentUI& ui, AttackPartSlot& slot, std::string_view label) {
+	std::unique_ptr<AttackPart> part = AttackPartRegistry::Create(slot.name);
 	if (part == nullptr) {
 		return;
 	}
 	std::set<std::string> warnings;
 	const auto describe = [&part](ComponentUI& fields) { part->Fields(fields); };
-	ComponentSerializer::ReadFields(attack.name, describe, SceneJson::parse(attack.partFields, nullptr, false), warnings);
+	ComponentSerializer::ReadFields(label, describe, SceneJson::parse(slot.fields, nullptr, false), warnings);
+	// 部品の欄の名前は部品が決めるので、表の欄（Name など）とぶつからないように ID の枠を分ける
+	ImGui::PushID("partFields");
 	part->Fields(ui);
+	ImGui::PopID();
 	SceneJson json;
-	ComponentSerializer::WriteFields(attack.name, describe, json, warnings);
-	attack.partFields = json.dump();
+	ComponentSerializer::WriteFields(label, describe, json, warnings);
+	slot.fields = json.dump();
 	for (const std::string& warning : warnings) {
 		LogManager::Warning(warning);
 	}
@@ -93,11 +98,18 @@ void DrawPartFields(ComponentUI& ui, AttackData& attack) {
 //=============================================================================
 // ===== フェーズ =====
 void DrawPhases(ComponentUI& ui, AttackTable& table, bool isLocked) {
+	const std::vector<std::string> partNames = AttackPartRegistry::GetNames();
 	int removePhase = -1;
 	for (int i = 0; i < static_cast<int>(table.phases.size()); ++i) {
+		AttackPhaseData& phase = table.phases[i];
 		ImGui::PushID(i);
-		ImGui::SeparatorText(std::format("{}. {}", i + 1, table.phases[i].name).c_str());
-		AttackTableManager::DescribePhase(ui, table.phases[i], i == 0);
+		ImGui::SeparatorText(std::format("{}. {}", i + 1, phase.name).c_str());
+		AttackTableManager::DescribePhase(ui, phase, i == 0);
+		// --- 待ちの部品（攻撃の Part と同じ一覧から選ぶ。再生中は替えられない）---
+		ImGui::BeginDisabled(isLocked);
+		DrawPartCombo("Idle Part###idlePart", phase.idlePart, partNames, kNoIdlePartDescription);
+		ImGui::EndDisabled();
+		DrawPartFields(ui, phase.idlePart, phase.name);
 		if (i != 0) {
 			ImGui::BeginDisabled(isLocked);
 			if (ImGui::SmallButton("Remove Phase")) {
@@ -137,9 +149,9 @@ void DrawAttacks(ComponentUI& ui, AttackTable& table, bool isLocked) {
 			AttackTableManager::DescribeAttack(ui, attack, table.phases);
 			ImGui::SeparatorText("Part");
 			ImGui::BeginDisabled(isLocked);
-			DrawPartCombo(attack, partNames);
+			DrawPartCombo("Part###part", attack.part, partNames, kNoPartDescription);
 			ImGui::EndDisabled();
-			DrawPartFields(ui, attack);
+			DrawPartFields(ui, attack.part, attack.name);
 			ImGui::Spacing();
 			ImGui::BeginDisabled(isLocked);
 			if (ImGui::SmallButton("Duplicate")) {

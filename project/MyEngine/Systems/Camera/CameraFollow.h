@@ -15,7 +15,4 @@ void Describe(ComponentUI& ui, CameraFollowComponent& value);
 
 // カメラ1つ分の追いかけ。Transform を動かしたら true
 bool Update(Handle<Entity> entity, CameraFollowComponent& follow, float deltaTime);
-
-// なめらかに近づけるときの、1フレームに進む割合（残りの差 × これ だけ進む）。smoothTime が 0 なら 1（すぐ合わせる）
-float CalcSmoothRate(float deltaTime, float smoothTime);
 } // namespace CameraFollow

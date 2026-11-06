@@ -203,7 +203,7 @@ void UpdateLookAt(CameraLookAtComponent& lookAt, float deltaTime) {
 		lookAt.isAiming = true;
 		return;
 	}
-	lookAt.currentPoint += (*point - lookAt.currentPoint) * CameraFollow::CalcSmoothRate(deltaTime, lookAt.smoothTime);
+	lookAt.currentPoint += (*point - lookAt.currentPoint) * MathUtility::CalcSmoothRate(deltaTime, lookAt.smoothTime);
 }
 
 // ===== 今見る点。再生中はなめらかにした点、停止中は見たい点そのもの（Inspector で変えた値がすぐ見えるように）=====

@@ -27,6 +27,8 @@
   <!-- ===== ソースファイル ===== -->
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Source\AttackParts\ChaseTarget.cpp" />
+    <ClCompile Include="Source\AttackParts\SpinAttack.cpp" />
     <ClCompile Include="Source\Scripts\CharacterKeyboardMover.cpp" />
     <ClCompile Include="Source\Scripts\HitboxCycler.cpp" />
     <ClCompile Include="Source\Scripts\HitTestPlayer.cpp" />

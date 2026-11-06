@@ -87,6 +87,14 @@ void AttackTableWindow::DrawStatus(Handle<Entity> entity) {
 	ImGui::Text("Attack: %s", status.attackName.empty() ? "-" : status.attackName.c_str());
 	ImGui::SameLine();
 	ImGui::TextDisabled("（最後に選んだ：%s）", status.lastAttackName.empty() ? "-" : status.lastAttackName.c_str());
+	// --- 待ちの部品（Selecting の間だけ動く。残りの秒は下の棒が Min Idle Seconds の残り）---
+	const AttackTable* table = AttackTableManager::Get(component->table);
+	const std::string& idlePart = table->phases[status.phase].idlePart.name;
+	ImGui::Text("Idle Part: %s", idlePart.empty() ? "-" : idlePart.c_str());
+	if (status.state == AttackTableState::Selecting) {
+		ImGui::SameLine();
+		ImGui::TextDisabled(status.GetRemaining() > 0.0f ? "（Min Idle Seconds の待ち）" : "（使える攻撃を待っている）");
+	}
 	// --- 残り時間 ---
 	const float progress = (status.duration > 0.0f) ? status.time / status.duration : 0.0f;
 	ImGui::ProgressBar(progress, ImVec2(-FLT_MIN, 0.0f), std::format("残り {:.2f} / {:.2f} 秒", status.GetRemaining(), status.duration).c_str());

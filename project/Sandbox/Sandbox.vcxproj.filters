@@ -7,9 +7,18 @@
     <Filter Include="Source\Scripts">
       <UniqueIdentifier>{7d4e9b12-2a6c-4f83-8e51-5b9c0a3d6e24}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\AttackParts">
+      <UniqueIdentifier>{8d4fdb17-5795-4708-aa13-c2c7dd01a5d6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="Source\AttackParts\ChaseTarget.cpp">
+      <Filter>Source\AttackParts</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\AttackParts\SpinAttack.cpp">
+      <Filter>Source\AttackParts</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Scripts\CharacterKeyboardMover.cpp">
       <Filter>Source\Scripts</Filter>
     </ClCompile>

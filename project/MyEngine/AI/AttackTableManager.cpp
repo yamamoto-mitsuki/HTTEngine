@@ -51,13 +51,29 @@ AttackTableAsset* Find(uint32_t handle) {
 // ファイルの形（"phases"・"attacks" は [ ] の並び。1つの中身は Describe〜 の項目）
 //   { "settings": {...}, "phases": [{...}], "attacks": [{...}] }
 
+/// <summary>
+/// 部品（名前と値）を書くときのキーの名前
+/// </summary>
+struct PartKeys {
+	const char* name;   // 部品の名前
+	const char* fields; // 部品の値
+};
+constexpr PartKeys kAttackPartKeys = {"part", "partFields"};         // 攻撃の行の部品
+constexpr PartKeys kIdlePartKeys = {"idlePart", "idlePartFields"}; // フェーズの待ちの部品
+
+// ===== 部品（名前と値）=====
+// 部品は Describe の並びに入れない（選択肢が実行中に決まり、値の形も部品ごとに違う）ので、決めたキーで別に書く
+void WritePartSlot(SceneJson& json, const AttackPartSlot& slot, const PartKeys& keys) {
+	json[keys.name] = slot.name;
+	json[keys.fields] = SceneJson::parse(slot.fields, nullptr, false);
+}
+
 // ===== 攻撃1行 =====
 // Describe の項目のほかに、Part と部品の値を書く
 SceneJson AttackToJson(AttackData attack, const std::vector<AttackPhaseData>& phases, std::set<std::string>& warnings) {
 	SceneJson json;
 	ComponentSerializer::WriteFields(kTypeName, [&](ComponentUI& ui) { AttackTableManager::DescribeAttack(ui, attack, phases); }, json, warnings);
-	json["part"] = attack.part;
-	json["partFields"] = SceneJson::parse(attack.partFields, nullptr, false);
+	WritePartSlot(json, attack.part, kAttackPartKeys);
 	return json;
 }
 
@@ -71,6 +87,7 @@ SceneJson ToJson(AttackTable table) {
 		AttackPhaseData phase = table.phases[i];
 		SceneJson item;
 		ComponentSerializer::WriteFields(kTypeName, [&](ComponentUI& ui) { AttackTableManager::DescribePhase(ui, phase, i == 0); }, item, warnings);
+		WritePartSlot(item, phase.idlePart, kIdlePartKeys);
 		phases.push_back(std::move(item));
 	}
 
@@ -92,22 +109,30 @@ SceneJson ToJson(AttackTable table) {
 //=============================================================================
 // JSON から読む
 //=============================================================================
+// ===== 部品（名前と値）=====
+// 読んだキーは json から消す（部品を除いた残りを Describe の並びで読むため。残すと「読む所がない」と警告が出る）
+AttackPartSlot TakePartSlot(SceneJson& json, const PartKeys& keys) {
+	AttackPartSlot slot;
+	if (const auto name = json.find(keys.name); name != json.end()) {
+		if (name->is_string()) {
+			slot.name = name->get<std::string>();
+		}
+		json.erase(name);
+	}
+	if (const auto fields = json.find(keys.fields); fields != json.end()) {
+		if (fields->is_object()) {
+			slot.fields = fields->dump();
+		}
+		json.erase(fields);
+	}
+	return slot;
+}
+
 // ===== 攻撃1行 =====
 AttackData AttackFromJson(const SceneJson& json, const std::vector<AttackPhaseData>& phases, std::set<std::string>& warnings) {
 	AttackData attack;
-	SceneJson fields = json; // Part と部品の値を除いた残りを、Describe の並びで読む（残すと「読む所がない」と警告が出る）
-	if (const auto part = fields.find("part"); part != fields.end()) {
-		if (part->is_string()) {
-			attack.part = part->get<std::string>();
-		}
-		fields.erase(part);
-	}
-	if (const auto partFields = fields.find("partFields"); partFields != fields.end()) {
-		if (partFields->is_object()) {
-			attack.partFields = partFields->dump();
-		}
-		fields.erase(partFields);
-	}
+	SceneJson fields = json; // 部品を除いた残りを、Describe の並びで読む
+	attack.part = TakePartSlot(fields, kAttackPartKeys);
 	ComponentSerializer::ReadFields(kTypeName, [&](ComponentUI& ui) { AttackTableManager::DescribeAttack(ui, attack, phases); }, fields, warnings);
 	return attack;
 }
@@ -127,7 +152,9 @@ AttackTable FromJson(const SceneJson& root, std::set<std::string>& warnings) {
 			}
 			const bool isFirst = table.phases.empty();
 			AttackPhaseData phase = isFirst ? AttackTable{}.phases.front() : AttackPhaseData{}; // 一番上のフェーズはしきい値を書かないので、表の既定の値から始める
-			ComponentSerializer::ReadFields(kTypeName, [&](ComponentUI& ui) { AttackTableManager::DescribePhase(ui, phase, isFirst); }, item, warnings);
+			SceneJson fields = item; // 待ちの部品を除いた残りを、Describe の並びで読む
+			phase.idlePart = TakePartSlot(fields, kIdlePartKeys);
+			ComponentSerializer::ReadFields(kTypeName, [&](ComponentUI& ui) { AttackTableManager::DescribePhase(ui, phase, isFirst); }, fields, warnings);
 			table.phases.push_back(std::move(phase));
 		}
 	}
@@ -246,11 +273,12 @@ void AttackTableManager::DescribeTable(ComponentUI& ui, AttackTable& value) {
 void AttackTableManager::DescribePhase(ComponentUI& ui, AttackPhaseData& value, bool isFirst) {
 	ui.Field("Name###name", value.name);
 	// 一番上のフェーズは最初から入っているので、しきい値も移行の長さも使わない（保存もしない）
-	if (isFirst) {
-		return;
+	if (!isFirst) {
+		ui.Field("HP Threshold###healthThreshold", value.healthThreshold, Range(0.0f, 1.0f).Tip("HP の割合がこの値以下になったら、このフェーズへ移る（0.5 で 50%）"));
+		ui.Field("Transition Seconds###transitionSeconds", value.transitionSeconds, AtLeast(0.0f).Tip("このフェーズへ移るときの長さ（秒）。0 なら移行の状態を飛ばす"));
 	}
-	ui.Field("HP Threshold###healthThreshold", value.healthThreshold, Range(0.0f, 1.0f).Tip("HP の割合がこの値以下になったら、このフェーズへ移る（0.5 で 50%）"));
-	ui.Field("Transition Seconds###transitionSeconds", value.transitionSeconds, AtLeast(0.0f).Tip("このフェーズへ移るときの長さ（秒）。0 なら移行の状態を飛ばす"));
+	ui.Field("Min Idle Seconds###minIdleSeconds", value.minIdleSeconds,
+	         AtLeast(0.0f).Tip("次の攻撃を選ぶまでの最短の秒。攻撃の後・怯みの後・フェーズの移行の後・始めに、Selecting に入るたびに 0 から数える（0 ならすぐ選ぶ。RequestAttack は待たない）"));
 }
 
 // ===== 攻撃1行 =====

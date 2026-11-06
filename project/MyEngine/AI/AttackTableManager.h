@@ -19,12 +19,24 @@ constexpr std::array<bool, kMaxAttackPhases> MakeAllPhases() {
 }
 
 /// <summary>
+/// 選んだ攻撃部品1つ（部品の名前と、その部品の Fields に書いた値）。攻撃の行と、フェーズの待ちの部品が使う
+/// </summary>
+struct AttackPartSlot {
+	std::string name;          // ATTACK_PART(...) の名前（空なら部品を使わない）
+	std::string fields = "{}"; // 部品の Fields に書いた値（JSON の文字）
+
+	bool operator==(const AttackPartSlot&) const = default;
+};
+
+/// <summary>
 /// フェーズ1つ
 /// </summary>
 struct AttackPhaseData {
 	std::string name = "Phase";     // 名前（確認の画面に出す）
 	float healthThreshold = 0.5f;   // HP の割合がこの値以下になったら、このフェーズへ移る（一番上のフェーズでは使わない）
 	float transitionSeconds = 2.0f; // このフェーズへ移るときの長さ（0 なら移行の状態を飛ばす）
+	float minIdleSeconds = 0.0f;    // 次の攻撃を選ぶまでの最短の秒（Selecting に入るたびに 0 から数える。0 ならすぐ選ぶ）
+	AttackPartSlot idlePart;        // 待ちの部品（Selecting の間だけ動かす。空なら何もしない）
 
 	bool operator==(const AttackPhaseData&) const = default;
 };
@@ -34,8 +46,7 @@ struct AttackPhaseData {
 /// </summary>
 struct AttackData {
 	std::string name = "Attack";   // 名前（確認の画面・RequestAttack に使う）
-	std::string part;              // 攻撃部品（ATTACK_PART(...) の名前。空なら時間が進むだけ）
-	std::string partFields = "{}"; // 攻撃部品の Fields に書いた値（JSON の文字）
+	AttackPartSlot part;           // 攻撃部品（空なら時間が進むだけ）
 	float weight = 1.0f;           // 抽選の重み（大きいほど選ばれやすい）
 	float minDistance = 0.0f;      // 相手との距離がこれより近いと使わない
 	float maxDistance = 0.0f;      // 相手との距離がこれより遠いと使わない（0 なら上限なし）
@@ -99,7 +110,7 @@ public:
 	static bool CreateNewFile(const std::filesystem::path& filePath);
 
 	// ===== 見せ方（Inspector とファイルの両方がこの並びを使う）=====
-	// 表全体の値・フェーズ1つ・攻撃1行。攻撃の Part と部品の値は、形が違うので別に扱う（Part は選択肢が実行中に決まる）
+	// 表全体の値・フェーズ1つ・攻撃1行。部品（攻撃の Part・フェーズの Idle Part）と部品の値は、形が違うので別に扱う（選択肢が実行中に決まる）
 	static void DescribeTable(ComponentUI& ui, AttackTable& value);
 	static void DescribePhase(ComponentUI& ui, AttackPhaseData& value, bool isFirst);
 	static void DescribeAttack(ComponentUI& ui, AttackData& value, const std::vector<AttackPhaseData>& phases);

@@ -12,7 +12,7 @@
 /// AI の状態。Attacking の間だけ、AttackStage も動く
 /// </summary>
 enum class AttackTableState {
-	Selecting,       // 次の攻撃を選んでいる（使える攻撃が無ければ、ここで待つ）
+	Selecting,       // 次の攻撃を選んでいる（Min Idle Seconds が過ぎるまでと、使える攻撃が無い間は、待ちの部品を動かして待つ）
 	Attacking,       // 攻撃している（予備動作 → 攻撃 → 硬直）
 	Staggered,       // 怯んでいる（AttackTableSystem::Stagger）
 	PhaseTransition, // フェーズの移行中

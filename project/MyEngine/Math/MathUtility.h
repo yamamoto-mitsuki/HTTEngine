@@ -87,6 +87,11 @@ inline Vector3 Lerp(const Vector3& start, const Vector3& end, float t) {
 /// Vector4 の線形補間（色を混ぜるときなど）
 inline Vector4 Lerp(const Vector4& start, const Vector4& end, float t) { return start + (end - start) * t; }
 
+/// なめらかに近づけるときの、1フレームに進む割合（残りの差 × これ だけ進む）。smoothTime が 0 以下なら 1（すぐ合わせる）
+/// 1 - e^(-deltaTime / smoothTime)。毎フレーム決まった割合（0.2 など）にすると、フレームが多いほど速く近づいてしまう。これならフレームの速さに左右されない
+/// smoothTime 秒たつと、残りの差が約 37%（e の -1 乗）になる。使い方：value = Lerp(value, target, CalcSmoothRate(deltaTime, smoothTime))
+inline float CalcSmoothRate(float deltaTime, float smoothTime) { return (smoothTime > 0.0f) ? 1.0f - std::exp(-deltaTime / smoothTime) : 1.0f; }
+
 /// current を target へ、maxDelta だけ近づける
 /// 速さを「1秒に accel ずつ」目標の速さへ変えるとき：velocity = MoveTowards(velocity, target, accel * deltaTime)
 inline float MoveTowards(float current, float target, float maxDelta) {
@@ -97,5 +102,21 @@ inline float MoveTowards(float current, float target, float maxDelta) {
 		return current - maxDelta; // まだ遠い（下へ）
 	}
 	return target; // 1回で届く
+}
+
+// ===== 角度（度） =====
+/// from から to へ、一番近い回り方で回るときの差（度。-180〜180）。350 度から 10 度へは +20 度（-340 度ではない）
+/// std::remainder(a, b) は「a から、b の一番近い整数倍を引いた余り」なので -b/2〜b/2 に収まる（std::fmod は a と同じ符号の側に収まる）
+/// 向きをなめらかに回すとき：yaw += DeltaAngle(yaw, targetYaw) * CalcSmoothRate(deltaTime, smoothTime)
+inline float DeltaAngle(float from, float to) { return std::remainder(to - from, 360.0f); }
+
+/// 地面に平らな向きから、Y のまわりの角度（度）。+Z で 0、+X で 90（SetEulerAngles の Y と同じ測り方）
+/// 向きの Y は使わない。X と Z が両方 0 なら 0
+inline float DirectionToYaw(const Vector3& direction) { return std::atan2(direction.x, direction.z) * kRadToDeg; }
+
+/// Y のまわりの角度（度）から、地面に平らな長さ 1 の向き（DirectionToYaw の逆）
+inline Vector3 YawToDirection(float yaw) {
+	const float radian = yaw * kDegToRad;
+	return {std::sin(radian), 0.0f, std::cos(radian)};
 }
 }

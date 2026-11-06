@@ -27,8 +27,9 @@ struct AttackTableRuntime {
 	Handle<Entity> entity;                          // どの敵か
 	uint32_t table = 0;                             // 作ったときの攻撃表（Component の表が替わったら作り直す）
 	uint32_t revision = 0;                          // 読んだ攻撃表の版（変わったら部品の値を読み直す）
-	std::vector<std::unique_ptr<AttackPart>> parts; // [攻撃の行] 攻撃部品（Part が空・知らない名前なら nullptr）
-	std::vector<float> cooldowns;                   // [攻撃の行] クールタイムの残りの秒
+	std::vector<std::unique_ptr<AttackPart>> parts;     // [攻撃の行] 攻撃部品（Part が空・知らない名前なら nullptr）
+	std::vector<std::unique_ptr<AttackPart>> idleParts; // [フェーズ] 待ちの部品（Idle Part が空・知らない名前なら nullptr）
+	std::vector<float> cooldowns;                       // [攻撃の行] クールタイムの残りの秒
 
 	AttackTableState state = AttackTableState::Selecting; // 状態
 	AttackStage stage = AttackStage::None;                // 攻撃の段階
@@ -37,8 +38,9 @@ struct AttackTableRuntime {
 	int lastAttack = kNoAttack;                           // 最後に選んだ攻撃の行（同じ攻撃が続いた回数を数える）
 	int repeatCount = 0;                                  // lastAttack を続けて選んだ回数
 	int requestedAttack = kNoAttack;                      // RequestAttack で決められた次の攻撃の行
+	bool isIdleBegun = false;                             // 待ちの部品の OnBegin を呼んで、まだ OnEnd を呼んでいない（Selecting の間だけ true になる）
 	float time = 0.0f;                                    // 今の段階・状態に入ってからの秒
-	float duration = 0.0f;                                // 今の段階・状態の長さ
+	float duration = 0.0f;                                // 今の段階・状態の長さ（Selecting はフェーズの Min Idle Seconds）
 };
 
 std::vector<AttackTableRuntime> runtimes; // 動いている敵（数が少ないので、一列に並べて順に探す）
@@ -50,21 +52,39 @@ AttackTableRuntime* FindRuntime(Handle<Entity> entity) {
 }
 
 //=============================================================================
-// 攻撃部品の値を読む
+// 攻撃部品を作る・値を読む
 //=============================================================================
-void ReadPartFields(AttackPart& part, const AttackData& attack, std::string_view tablePath) {
-	const SceneJson json = SceneJson::parse(attack.partFields, nullptr, false);
+// ===== 部品を作る（Part が空・知らない名前なら nullptr。知らない名前は警告を出す）=====
+// owner は警告に出す持ち主（「攻撃 "Dash"」「フェーズ "Phase 1" の待ち」）
+std::unique_ptr<AttackPart> CreatePart(const AttackPartSlot& slot, std::string_view owner) {
+	std::unique_ptr<AttackPart> part = AttackPartRegistry::Create(slot.name);
+	if (part == nullptr && !slot.name.empty()) {
+		LogManager::Warning(std::format("{}の部品 \"{}\" がありません（ATTACK_PART(...) を確かめてください）。部品なしで動かします", owner, slot.name));
+	}
+	return part;
+}
+
+// ===== 部品の値を読む（label は警告に出す名前）=====
+void ReadPartFields(AttackPart& part, const AttackPartSlot& slot, std::string_view label, std::string_view tablePath) {
+	const SceneJson json = SceneJson::parse(slot.fields, nullptr, false);
 	std::set<std::string> warnings;
-	ComponentSerializer::ReadFields(attack.name, [&part](ComponentUI& ui) { part.Fields(ui); }, json, warnings);
+	ComponentSerializer::ReadFields(label, [&part](ComponentUI& ui) { part.Fields(ui); }, json, warnings);
 	for (const std::string& warning : warnings) {
 		LogManager::Warning(std::format("{}: {}", tablePath, warning));
 	}
 }
 
+// ===== 攻撃の行と、フェーズの待ちの部品の値を、全部読む =====
 void ReadAllPartFields(AttackTableRuntime& runtime, const AttackTable& table) {
+	const std::string& tablePath = AttackTableManager::GetPath(runtime.table);
 	for (size_t i = 0; i < runtime.parts.size(); ++i) {
 		if (runtime.parts[i] != nullptr) {
-			ReadPartFields(*runtime.parts[i], table.attacks[i], AttackTableManager::GetPath(runtime.table));
+			ReadPartFields(*runtime.parts[i], table.attacks[i].part, table.attacks[i].name, tablePath);
+		}
+	}
+	for (size_t i = 0; i < runtime.idleParts.size(); ++i) {
+		if (runtime.idleParts[i] != nullptr) {
+			ReadPartFields(*runtime.idleParts[i], table.phases[i].idlePart, table.phases[i].name, tablePath);
 		}
 	}
 }
@@ -91,6 +111,7 @@ AttackPartContext MakeContext(const AttackTableRuntime& runtime, const AttackTab
 	AttackPartContext context;
 	context.self = GameObject{runtime.entity};
 	context.target = GameObject{EntityManager::Find(component.target)};
+	context.state = runtime.state;
 	context.stage = runtime.stage;
 	context.stageTime = runtime.time;
 	context.stageDuration = runtime.duration;
@@ -106,6 +127,10 @@ void EnterState(AttackTableRuntime& runtime, AttackTableState state, float durat
 	runtime.time = 0.0f;
 	runtime.duration = duration;
 }
+
+// ===== 選ぶ状態へ（長さはフェーズの Min Idle Seconds）=====
+// 待ちの部品の OnBegin はここでは呼ばず、次に時間が進むフレームの UpdateSelecting で呼ぶ（AI が止まっている・時間が 0 のフレームに呼ばないため）
+void EnterSelecting(AttackTableRuntime& runtime, const AttackTable& table) { EnterState(runtime, AttackTableState::Selecting, table.phases[runtime.phase].minIdleSeconds); }
 
 // ===== 段階の長さ =====
 float StageSeconds(const AttackData& attack, AttackStage stage) {
@@ -167,6 +192,38 @@ void EndAttack(AttackTableRuntime& runtime, const AttackTableComponent& componen
 	runtime.cooldowns[runtime.attack] = table.attacks[runtime.attack].cooldown;
 	runtime.attack = kNoAttack;
 	runtime.stage = AttackStage::None;
+}
+
+//=============================================================================
+// 待ちの部品・止める
+//=============================================================================
+// ===== 今のフェーズの待ちの部品（Idle Part が空・知らない名前なら nullptr）=====
+AttackPart* GetIdlePart(const AttackTableRuntime& runtime) {
+	const size_t phase = static_cast<size_t>(runtime.phase);
+	return (phase < runtime.idleParts.size()) ? runtime.idleParts[phase].get() : nullptr;
+}
+
+// ===== 待ちの部品へ、終わったことを知らせる（OnBegin を呼んでいなければ何もしない）=====
+void EndIdle(AttackTableRuntime& runtime, const AttackTableComponent& component, AttackPartEnd reason, float deltaTime) {
+	if (!runtime.isIdleBegun) {
+		return;
+	}
+	runtime.isIdleBegun = false; // OnEnd より先に下ろす（OnEnd の中で Stagger を呼ばれても、2回知らせないように）
+	if (AttackPart* part = GetIdlePart(runtime)) {
+		part->OnEnd(MakeContext(runtime, component, deltaTime), reason);
+	}
+}
+
+// ===== 今動いている部品（待ちか攻撃）を止める（怯み・フェーズの移行・撃破。攻撃のクールタイムも数える）=====
+void InterruptCurrent(AttackTableRuntime& runtime, const AttackTableComponent& component, const AttackTable& table, float deltaTime) {
+	EndIdle(runtime, component, AttackPartEnd::Interrupted, deltaTime);
+	EndAttack(runtime, component, table, AttackPartEnd::Interrupted, deltaTime);
+}
+
+// ===== 今動いている部品（待ちか攻撃）へ、止められたことだけを知らせる（表の作り直し・敵が消えるとき。この後で実行中の値ごと捨てる）=====
+void NotifyInterrupted(AttackTableRuntime& runtime, const AttackTableComponent& component) {
+	EndIdle(runtime, component, AttackPartEnd::Interrupted, 0.0f);
+	NotifyAttackEnd(runtime, component, AttackPartEnd::Interrupted, 0.0f);
 }
 
 //=============================================================================
@@ -246,17 +303,17 @@ float CalcDistance(Handle<Entity> entity, const AttackTableComponent& component)
 //=============================================================================
 // 実行中の値を作る
 //=============================================================================
-// ===== 表に合わせて攻撃部品を作る =====
+// ===== 表に合わせて攻撃部品・待ちの部品を作る =====
 void Build(AttackTableRuntime& runtime, const AttackTableComponent& component, const AttackTable& table) {
 	runtime.table = component.table;
 	runtime.revision = AttackTableManager::GetRevision(component.table);
 	runtime.parts.clear();
 	for (const AttackData& attack : table.attacks) {
-		std::unique_ptr<AttackPart> part = AttackPartRegistry::Create(attack.part);
-		if (part == nullptr && !attack.part.empty()) {
-			LogManager::Warning(std::format("攻撃 \"{}\" の部品 \"{}\" がありません（ATTACK_PART(...) を確かめてください）。時間だけ進めます", attack.name, attack.part));
-		}
-		runtime.parts.push_back(std::move(part));
+		runtime.parts.push_back(CreatePart(attack.part, std::format("攻撃 \"{}\" ", attack.name)));
+	}
+	runtime.idleParts.clear();
+	for (const AttackPhaseData& phase : table.phases) {
+		runtime.idleParts.push_back(CreatePart(phase.idlePart, std::format("フェーズ \"{}\" の待ち", phase.name)));
 	}
 	ReadAllPartFields(runtime, table);
 	runtime.cooldowns.assign(table.attacks.size(), 0.0f);
@@ -264,8 +321,9 @@ void Build(AttackTableRuntime& runtime, const AttackTableComponent& component, c
 	runtime.lastAttack = kNoAttack;
 	runtime.repeatCount = 0;
 	runtime.requestedAttack = kNoAttack;
+	runtime.isIdleBegun = false;
 	runtime.phase = CalcPhase(table, 0, component.healthRatio); // 始めから HP が減っていれば、移行の状態を飛ばしてそのフェーズから
-	EnterState(runtime, AttackTableState::Selecting, 0.0f);
+	EnterSelecting(runtime, table);
 }
 
 // ===== その敵の実行中の値を、今の Component に合わせて返す（表が選ばれていなければ nullptr）=====
@@ -277,9 +335,9 @@ AttackTableRuntime* PrepareRuntime(Handle<Entity> entity, const AttackTableCompo
 		Build(*runtime, component, table);
 		return runtime;
 	}
-	// --- 表が替わった・行の数が変わった：今の攻撃を止めて作り直す ---
-	if (runtime->table != component.table || runtime->parts.size() != table.attacks.size()) {
-		NotifyAttackEnd(*runtime, component, AttackPartEnd::Interrupted, 0.0f); // 表はもう新しい物なので、クールタイムは数えない（Build で全部 0 に戻る）
+	// --- 表が替わった・攻撃の行やフェーズの数が変わった：今の部品を止めて作り直す ---
+	if (runtime->table != component.table || runtime->parts.size() != table.attacks.size() || runtime->idleParts.size() != table.phases.size()) {
+		NotifyInterrupted(*runtime, component); // 表はもう新しい物なので、クールタイムは数えない（Build で全部 0 に戻る）
 		Build(*runtime, component, table);
 		return runtime;
 	}
@@ -302,7 +360,7 @@ bool UpdateHealth(AttackTableRuntime& runtime, const AttackTableComponent& compo
 		return true;
 	}
 	if (component.healthRatio <= 0.0f) {
-		EndAttack(runtime, component, table, AttackPartEnd::Interrupted, deltaTime);
+		InterruptCurrent(runtime, component, table, deltaTime);
 		EnterState(runtime, AttackTableState::Defeated, 0.0f);
 		return true;
 	}
@@ -310,24 +368,53 @@ bool UpdateHealth(AttackTableRuntime& runtime, const AttackTableComponent& compo
 	if (phase == runtime.phase) {
 		return false;
 	}
-	EndAttack(runtime, component, table, AttackPartEnd::Interrupted, deltaTime);
+	InterruptCurrent(runtime, component, table, deltaTime); // 待ちの部品は、移る前のフェーズの物を止める
 	runtime.phase = phase;
 	EnterState(runtime, AttackTableState::PhaseTransition, table.phases[phase].transitionSeconds);
 	return true;
 }
 
 // ===== 選ぶ =====
+// Min Idle Seconds が過ぎるまでと、使える攻撃が無い間は、待ちの部品を動かして待つ
 void UpdateSelecting(AttackTableRuntime& runtime, const AttackTableComponent& component, const AttackTable& table, float deltaTime) {
+	runtime.duration = table.phases[runtime.phase].minIdleSeconds; // 再生中に秒を直しても、すぐ効くように
+	AttackPart* idle = GetIdlePart(runtime);
+	// --- Selecting の最初のフレーム：待ちの部品を始める ---
+	if (!runtime.isIdleBegun) {
+		runtime.isIdleBegun = true;
+		if (idle != nullptr) {
+			idle->OnBegin(MakeContext(runtime, component, deltaTime));
+		}
+		// OnBegin の中で Stagger を呼ばれたら、待ちはもう終わっている
+		if (runtime.state != AttackTableState::Selecting) {
+			return;
+		}
+	}
+	// --- 待ちの部品を進める ---
+	runtime.time += deltaTime;
+	if (idle != nullptr) {
+		idle->OnUpdate(MakeContext(runtime, component, deltaTime));
+	}
+	if (runtime.state != AttackTableState::Selecting) {
+		return; // OnUpdate の中で Stagger を呼ばれた
+	}
+	// --- 選ぶ（RequestAttack で決められた攻撃は、Min Idle Seconds を待たない）---
 	int attack = runtime.requestedAttack;
-	runtime.requestedAttack = kNoAttack;
-	if (attack == kNoAttack) {
+	if (attack == kNoAttack && runtime.time >= runtime.duration) {
 		static std::vector<AttackCheck> checks; // 毎フレーム配列を作り直さないように使い回す
 		CheckAttacks(runtime, table, CalcDistance(runtime.entity, component), checks);
 		attack = PickAttack(checks);
 	}
-	if (attack != kNoAttack) {
-		BeginAttack(runtime, component, table, attack, deltaTime);
+	if (attack == kNoAttack) {
+		return; // まだ待つ
 	}
+	// --- 待ちを終えてから、攻撃を始める（待ちの部品が書いた速さなどを、攻撃の OnBegin より先に片付けられるように）---
+	EndIdle(runtime, component, AttackPartEnd::Finished, deltaTime);
+	if (runtime.state != AttackTableState::Selecting) {
+		return; // OnEnd の中で Stagger を呼ばれた（RequestAttack の分は、次に選ぶときへ残す）
+	}
+	runtime.requestedAttack = kNoAttack;
+	BeginAttack(runtime, component, table, attack, deltaTime);
 }
 
 // ===== 攻撃を進める =====
@@ -353,16 +440,16 @@ void UpdateAttacking(AttackTableRuntime& runtime, const AttackTableComponent& co
 	case AttackStage::Recovery:
 	case AttackStage::None:
 		EndAttack(runtime, component, table, AttackPartEnd::Finished, deltaTime);
-		EnterState(runtime, AttackTableState::Selecting, 0.0f);
+		EnterSelecting(runtime, table);
 		break;
 	}
 }
 
 // ===== 怯み・フェーズの移行：時間が来たら選ぶ状態へ =====
-void UpdateTimedState(AttackTableRuntime& runtime, float deltaTime) {
+void UpdateTimedState(AttackTableRuntime& runtime, const AttackTable& table, float deltaTime) {
 	runtime.time += deltaTime;
 	if (runtime.time >= runtime.duration) {
-		EnterState(runtime, AttackTableState::Selecting, 0.0f);
+		EnterSelecting(runtime, table);
 	}
 }
 
@@ -395,7 +482,7 @@ void UpdateEntity(Handle<Entity> entity, const AttackTableComponent& component, 
 		break;
 	case AttackTableState::Staggered:
 	case AttackTableState::PhaseTransition:
-		UpdateTimedState(*runtime, deltaTime);
+		UpdateTimedState(*runtime, *table, deltaTime);
 		break;
 	case AttackTableState::Defeated:
 		break;
@@ -467,7 +554,7 @@ bool AttackTableSystem::Stagger(Handle<Entity> entity, float seconds) {
 	case AttackTableState::Attacking:
 		break;
 	}
-	EndAttack(*runtime, *component, *table, AttackPartEnd::Interrupted, 0.0f);
+	InterruptCurrent(*runtime, *component, *table, 0.0f); // 待ちの部品・攻撃の部品のどちらも止める
 	EnterState(*runtime, AttackTableState::Staggered, seconds);
 	return true;
 }
@@ -546,7 +633,7 @@ void AttackTableSystem::OnEntityDestroyed(Handle<Entity> entity) {
 	}
 	const AttackTableComponent* component = EntityManager::Get<AttackTableComponent>(entity);
 	if (component != nullptr) {
-		NotifyAttackEnd(*runtime, *component, AttackPartEnd::Interrupted, 0.0f); // Component はまだ読める。攻撃部品が出した物を片付けられるように
+		NotifyInterrupted(*runtime, *component); // Component はまだ読める。部品が出した物を片付けられるように
 	}
 	std::erase_if(runtimes, [entity](const AttackTableRuntime& other) { return other.entity == entity; });
 }

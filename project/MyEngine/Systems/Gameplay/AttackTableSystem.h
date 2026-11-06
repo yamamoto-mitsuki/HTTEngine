@@ -20,7 +20,7 @@ struct AttackTableStatus {
 	std::string attackName;                               // 今の攻撃の名前（攻撃していなければ空）
 	std::string lastAttackName;                           // 最後に選んだ攻撃の名前（1つも選んでいなければ空）
 	float time = 0.0f;                                    // 今の段階・状態に入ってからの秒
-	float duration = 0.0f;                                // 今の段階・状態の長さ（秒。Selecting・Defeated は 0）
+	float duration = 0.0f;                                // 今の段階・状態の長さ（秒。Selecting はフェーズの Min Idle Seconds、Defeated は 0）
 
 	// 残りの秒
 	float GetRemaining() const { return (duration > time) ? duration - time : 0.0f; }
@@ -42,8 +42,9 @@ struct AttackCheck {
 
 /// <summary>
 /// 攻撃表の AI を動かす係（状態マシン・フェーズ・攻撃の抽選・段階の進行）
-/// <para>流れ：Selecting → Attacking（Windup → Active → Recovery）→ Selecting。怯み・フェーズの移行・撃破が、攻撃を途中で止める</para>
-/// <para>タイマー・クールタイム・攻撃部品の実体は、ここが敵ごとに持つ（再生が始まって最初の Update で作り、Stop で Entity と一緒に消える）</para>
+/// <para>流れ：Selecting → Attacking（Windup → Active → Recovery）→ Selecting。怯み・フェーズの移行・撃破が、待ちと攻撃を途中で止める</para>
+/// <para>Selecting の間は、フェーズの待ちの部品（Idle Part）を動かす。Min Idle Seconds が過ぎて、使える攻撃があれば選ぶ</para>
+/// <para>タイマー・クールタイム・部品の実体は、ここが敵ごとに持つ（再生が始まって最初の Update で作り、Stop で Entity と一緒に消える）</para>
 /// <para>時間は Time::GetDeltaTime() だけで進める。0 の間（一時停止・ポーズ・時間停止・ヒットストップ）は、攻撃部品も含めて何も呼ばない</para>
 /// </summary>
 class AttackTableSystem {
@@ -71,6 +72,7 @@ public:
 
 	/// <summary>
 	/// 次の攻撃を名前で決める（条件を見ずに、次に選ぶときに必ずこの攻撃になる）
+	/// <para>フェーズの Min Idle Seconds は待たない（演出の後に、すぐ大技を出すため）。攻撃の途中なら、終わってすぐ次がこの攻撃</para>
 	/// </summary>
 	/// <returns>その名前の攻撃があったか</returns>
 	static bool RequestAttack(Handle<Entity> entity, std::string_view attackName);

@@ -203,8 +203,6 @@ void CameraFollow::Describe(ComponentUI& ui, CameraFollowComponent& value) {
 //=============================================================================
 // 追いかけ
 //=============================================================================
-float CameraFollow::CalcSmoothRate(float deltaTime, float smoothTime) { return (smoothTime > 0.0f) ? 1.0f - std::exp(-deltaTime / smoothTime) : 1.0f; }
-
 bool CameraFollow::Update(Handle<Entity> entity, CameraFollowComponent& follow, float deltaTime) {
 	// --- 早期リターン ---
 	const Handle<Entity> targetEntity = EntityManager::Find(follow.target);
@@ -226,7 +224,7 @@ bool CameraFollow::Update(Handle<Entity> entity, CameraFollowComponent& follow, 
 	if (follow.isFollowing) {
 		const Vector2 velocity = (target - axes.ToPlane(follow.lastTargetPosition)) / deltaTime;
 		const Vector2 wanted = CalcWantedLookAhead(follow, velocity);
-		follow.currentLookAhead += (wanted - follow.currentLookAhead) * CalcSmoothRate(deltaTime, follow.lookAheadSmoothTime);
+		follow.currentLookAhead += (wanted - follow.currentLookAhead) * MathUtility::CalcSmoothRate(deltaTime, follow.lookAheadSmoothTime);
 	}
 	follow.lastTargetPosition = targetPosition;
 
@@ -253,7 +251,7 @@ bool CameraFollow::Update(Handle<Entity> entity, CameraFollowComponent& follow, 
 		const bool isSnapY = (follow.plane == CameraFollowPlane::XY) && follow.groundSnapY && MotionQuery::IsGrounded(targetEntity);
 		const Vector2 wanted = {ApplyDeadZone(center.x, focus.x, follow.deadZone.x), isSnapY ? focus.y : ApplyDeadZone(center.y, focus.y, follow.deadZone.y)};
 		// なめらかに近づける（指数補間。1フレームに「残りの差 × t」だけ進む）
-		center += (wanted - center) * CalcSmoothRate(deltaTime, follow.smoothTime);
+		center += (wanted - center) * MathUtility::CalcSmoothRate(deltaTime, follow.smoothTime);
 		// 遅れすぎないように縛る（吹っ飛びのような速い動きでも、追う物が画面から出ない）
 		center.x = std::clamp(center.x, focus.x - follow.maxLag.x, focus.x + follow.maxLag.x);
 		center.y = std::clamp(center.y, focus.y - follow.maxLag.y, focus.y + follow.maxLag.y);
@@ -288,7 +286,7 @@ bool CameraFollow::Update(Handle<Entity> entity, CameraFollowComponent& follow, 
 	Vector3 move = axes.horizontal * (center.x - oldCenter.x) + axes.vertical * (center.y - oldCenter.y);
 	// View の面はカメラと一緒に回るので、横・縦だけでは奥行きがずれていく（90 度回ると、奥にいた物が真横になる）。保つ奥行きへ戻す
 	if (follow.plane == CameraFollowPlane::View) {
-		move += forward * ((depth - follow.viewDepth) * CalcSmoothRate(deltaTime, follow.smoothTime));
+		move += forward * ((depth - follow.viewDepth) * MathUtility::CalcSmoothRate(deltaTime, follow.smoothTime));
 	}
 	if (LengthSq(move) == 0.0f) {
 		return false;

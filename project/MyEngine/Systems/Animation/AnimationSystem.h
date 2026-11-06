@@ -40,8 +40,23 @@ public:
 
 
 	// ===== ゲームから使う =====
-	// そのEntityのアニメーションを最初から再生する。Animatorが無い・アニメーションが未選択なら false
-	static bool Play(Handle<Entity> entity);
+	// Script・攻撃部品から呼ぶ。どれも、呼んだフレームの Update（Script・攻撃表の AI より後に回る）から効く
+	// 流し始めたフレームは時刻を進めないので、そのフレームはアニメの 0 秒の形が見える
+
+	/// <summary>
+	/// アニメーションを番号で流す（毎フレーム呼んでよい）。Animator の Clip・Loop・Speed をこの値に書き換える
+	/// <para>番号が違う・止まっている（ループしないアニメが最後まで行った・Stop した）→ そのアニメを最初から</para>
+	/// <para>同じ番号が流れている → 速さと loop だけ変える（最初には戻らない。途中で最初からにしたいときは Restart）</para>
+	/// </summary>
+	/// <param name="clipIndex">ファイルの中の何番目のアニメーションか（Animator の Clip と同じ番号）</param>
+	/// <param name="loop">ループするか</param>
+	/// <param name="speed">1 で等速（CalcSpeedToFit で「N 秒で流しきる」速さを作れる）</param>
+	/// <returns>流れているか（Animator が無い・その番号のアニメが無い・Entity が無効なら false）</returns>
+	static bool Play(Handle<Entity> entity, int clipIndex, bool loop, float speed = 1.0f);
+	// 今のアニメーション（Animator の Clip）を最初から流し直す。Animator が無い・アニメーションが未選択なら false
+	static bool Restart(Handle<Entity> entity);
+	// そのアニメーションを、ちょうど seconds 秒で流しきる速さ（長さ ÷ seconds）。Animator・アニメが無い・seconds が 0 以下なら 1
+	static float CalcSpeedToFit(Handle<Entity> entity, int clipIndex, float seconds);
 	// 止めて最初の時刻に戻す
 	static void Stop(Handle<Entity> entity);
 	// 再生中か（ループしないアニメが最後まで行ったら false）

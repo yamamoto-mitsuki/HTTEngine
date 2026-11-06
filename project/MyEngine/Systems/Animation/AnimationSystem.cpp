@@ -40,6 +40,7 @@ struct AnimatorState {
 	uint32_t animationHandle = 0; // 再生しているアニメーションの番号
 	int clipIndex = 0;            // 再生しているのはファイルの中の何番目か
 	AnimationPlayer player;       // 今の時刻・ノードの行列
+	bool isJustStarted = false;   // 流し始めたばかり（次の Update は時刻を進めず、0 秒の形を見せる）
 };
 
 /// <summary>
@@ -88,9 +89,11 @@ bool HasClip(uint32_t animationHandle, int clipIndex) {
 }
 
 // ===== Componentで選んでいるアニメーションを最初の時刻から持ち直す =====
-void Restart(AnimatorState& animator, const AnimatorComponent& component, bool play) {
+// AnimationSystem::Restart（ゲームから呼ぶ方）と名前がぶつかるので、こちらは ResetPlayer
+void ResetPlayer(AnimatorState& animator, const AnimatorComponent& component, bool play) {
 	animator.animationHandle = component.animationHandle;
 	animator.clipIndex = component.clipIndex;
+	animator.isJustStarted = false;
 	// 未選択・無い番号: 空の AnimationPlayerにする（ノードの行列が空 → モデルに入っている形で描く）
 	if (!HasClip(component.animationHandle, component.clipIndex)) {
 		animator.player = AnimationPlayer{};
@@ -99,7 +102,10 @@ void Restart(AnimatorState& animator, const AnimatorComponent& component, bool p
 	animator.player.Play(component.animationHandle, static_cast<uint32_t>(component.clipIndex), component.loop);
 	if (!play) {
 		animator.player.Stop(); // アニメーションは覚えたまま、最初の時刻で止まる
+		return;
 	}
+	// 流し始めたフレームは 0 秒の形を見せる（Update で進めると、最初の形が1フレームも見えず、呼んだ側の「段階に入ってからの秒」とも1フレームずれる）
+	animator.isJustStarted = true;
 }
 
 // ===== Inspector と 保存 =====
@@ -133,7 +139,7 @@ void DescribeAnimator(ComponentUI& ui, AnimatorComponent& value) {
 
 	ui.Field("Speed###speed", value.speed, Drag(0.01f).Tip("1で等速、2で倍速、負で逆再生"));
 	ui.Field("Loop###loop", value.loop, Tip("ループするか"));
-	ui.Field("Play On Start###playOnStart", value.playOnStart, Tip("Play を押したとき（シーンが始まったとき）に再生する。オフならゲームから AnimationSystem::Play"));
+	ui.Field("Play On Start###playOnStart", value.playOnStart, Tip("Play を押したとき（シーンが始まったとき）に再生する。オフならゲームから AnimationSystem::Play・Restart"));
 
 	// --- 停止中のプレビュー ---
 	ui.Separator("Preview");
@@ -190,11 +196,11 @@ void AnimationSystem::Update(bool isGameRunning, float deltaTime) {
 		if (animator == nullptr) {
 			animators.push_back({entity});
 			animator = &animators.back();
-			Restart(*animator, component, isGameRunning && component.playOnStart);
+			ResetPlayer(*animator, component, isGameRunning && component.playOnStart);
 		} else if (component.animationHandle != animator->animationHandle || component.clipIndex != animator->clipIndex) {
 			// Inspector・ゲームからアニメーションから選び直した → 新しい方を最初から
 			// 再生中のゲームなら、再生していた・Play On Start のときは再生する（未選択から選んでときも動き出すように）
-			Restart(*animator, component, isGameRunning && (animator->player.IsPlaying() || component.playOnStart));
+			ResetPlayer(*animator, component, isGameRunning && (animator->player.IsPlaying() || component.playOnStart));
 		}
 
 		// --- 時刻 ---
@@ -202,7 +208,12 @@ void AnimationSystem::Update(bool isGameRunning, float deltaTime) {
 		player.SetSpeed(component.speed);
 		player.SetLoop(component.loop);
 		if (isGameRunning) {
-			player.Update(deltaTime); // 一時停止中は deltaTime が0なので進まない
+			// 流し始めたフレーム（Play・Restart・Play On Start・Clip の選び直し）は進めない。0 秒の形を見せて、次のフレームから進める
+			if (animator->isJustStarted) {
+				animator->isJustStarted = false;
+			} else {
+				player.Update(deltaTime); // 一時停止中は deltaTime が0なので進まない
+			}
 		} else {
 			player.SetTime(component.previewTime); // 停止中はInspectorの時刻のポーズ
 		}
@@ -237,11 +248,37 @@ const std::vector<Matrix4x4>* AnimationSystem::GetNodeMatrices(Handle<Entity> en
 //=============================================================================
 // ゲームから
 //=============================================================================
-// ===== 最初から再生 =====
-bool AnimationSystem::Play(Handle<Entity> entity) {
+// ===== 番号で流す =====
+bool AnimationSystem::Play(Handle<Entity> entity, int clipIndex, bool loop, float speed) {
 	MY_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
-	// Play を呼ぶのはゲーム（Script・SYSTEM。ゲームが動いている間だけ回る）なので、ここで切り替えておく
-	// ゲームが動き出した最初のフレームは、Script が AnimationSystem::Update より先に回るので、切り替えないと後の Update がこの Play を捨てる
+	AnimatorComponent* component = EntityManager::Get<AnimatorComponent>(entity);
+	if (component == nullptr) {
+		return false; // Animator が無い（RequestAdd した直後は、次のフレームまで付いていない）
+	}
+	// --- Component に書く ---
+	// Update は毎フレーム、Component の Speed・Loop を AnimationPlayer へ写し、Clip が変わっていたら最初から流す。ここに書かないと Update に戻されてしまう
+	component->clipIndex = clipIndex;
+	component->loop = loop;
+	component->speed = speed;
+	if (!EntityManager::IsActiveInHierarchy(entity)) {
+		return false; // 無効な Entity（値だけ書いておく）
+	}
+	// --- 同じアニメが流れているなら、ここまで（速さと loop は Update が写す）---
+	// 一覧を見る前に、ゲームが動いている側へ切り替えておく（理由は Restart と同じ）
+	SwitchGameRunning(true);
+	const AnimatorState* animator = FindAnimator(entity);
+	if (animator != nullptr && animator->animationHandle == component->animationHandle && animator->clipIndex == clipIndex && animator->player.IsPlaying()) {
+		return true;
+	}
+	// --- 番号が違う・止まっている：最初から ---
+	return Restart(entity);
+}
+
+// ===== 最初から流し直す =====
+bool AnimationSystem::Restart(Handle<Entity> entity) {
+	MY_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
+	// Restart を呼ぶのはゲーム（Script・SYSTEM。ゲームが動いている間だけ回る）なので、ここで切り替えておく
+	// ゲームが動き出した最初のフレームは、Script が AnimationSystem::Update より先に回るので、切り替えないと後の Update がこの Restart を捨てる
 	SwitchGameRunning(true);
 	const AnimatorComponent* component = EntityManager::Get<AnimatorComponent>(entity);
 	// Animatorが無い（RequestAdd した直後は、次のフレームまで付いていない）・無効なEntity
@@ -250,8 +287,18 @@ bool AnimationSystem::Play(Handle<Entity> entity) {
 	}
 	// 一覧に入れるので、この後のUpdateがPlay On Startでもう一度からにすることはない
 	AnimatorState& animator = FindOrAddAnimator(entity);
-	Restart(animator, *component, true);
+	ResetPlayer(animator, *component, true);
 	return animator.player.IsPlaying();
+}
+
+// ===== N 秒で流しきる速さ =====
+float AnimationSystem::CalcSpeedToFit(Handle<Entity> entity, int clipIndex, float seconds) {
+	const AnimatorComponent* component = EntityManager::Get<AnimatorComponent>(entity);
+	if (component == nullptr || seconds <= 0.0f || !HasClip(component->animationHandle, clipIndex)) {
+		return 1.0f;
+	}
+	const Animation* clip = AnimationManager::GetAnimation(component->animationHandle, static_cast<uint32_t>(clipIndex));
+	return (clip->duration > 0.0f) ? clip->duration / seconds : 1.0f; // 長さ 0 のアニメ（1枚の形だけ）は、どの速さでも同じ
 }
 
 // ===== 止めて最初の時刻に戻す =====
