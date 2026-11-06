@@ -3,15 +3,18 @@
 #include <string_view>
 #include <format>
 
-
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/String/ConvertString.h"
-
+// shellapi.h は Windows.h の型（HWND など）を使うので、先に Windows.h を読む
+// （前は LogManager.h の中の spdlog が Windows.h を読んでいたので、たまたま通っていた）
+#include <Windows.h>
 #include <shellapi.h>
+
 #include <winrt/Windows.Data.Xml.Dom.h>
 #include <winrt/Windows.Foundation.h>
 #include <winrt/Windows.UI.Notifications.h>
 #pragma comment(lib, "windowsapp.lib")
+
+#include "MyEngine/Diagnostics/LogManager.h"
+#include "MyEngine/String/ConvertString.h"
 
 using namespace winrt::Windows::UI::Notifications;
 using namespace winrt::Windows::Data::Xml::Dom;

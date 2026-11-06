@@ -4,6 +4,8 @@
 #include <chrono>
 #include <filesystem>
 
+// spdlog の include はこの .cpp だけに置く（LogManager.h は前方宣言だけ）
+#include <externals/spdlog/spdlog.h>
 #include <externals/spdlog/async.h>
 #include <externals/spdlog/sinks/msvc_sink.h>
 #include <externals/spdlog/sinks/basic_file_sink.h>
@@ -109,6 +111,15 @@ void LogManager::Shutdown() {
 }
 
 //=============================================================================
+// 即時フラッシュ
+//=============================================================================
+void LogManager::Flush() {
+	if (instance_ && instance_->logger_) {
+		instance_->logger_->flush();
+	}
+}
+
+//=============================================================================
 // INFOレベルでログを出力する
 //=============================================================================
 void LogManager::Log(const std::string& message, const std::source_location& loc) {
@@ -123,7 +134,7 @@ void LogManager::Log(const std::string& message, const std::source_location& loc
 
 #ifdef USE_IMGUI
 	std::lock_guard<std::mutex> lock(instance_->bufferMutex_);
-	instance_->logBuffer_.push_back({std::format("[{}] ", FuncNameOnly(loc.function_name())) + message, spdlog::level::info});
+	instance_->logBuffer_.push_back({std::format("[{}] ", FuncNameOnly(loc.function_name())) + message, LogLevel::Info});
 	if (static_cast<int>(instance_->logBuffer_.size()) > kMaxLines) {
 		instance_->logBuffer_.erase(instance_->logBuffer_.begin());
 	}
@@ -146,7 +157,7 @@ void LogManager::Warning(const std::string& message, const std::source_location&
 
 #ifdef USE_IMGUI
 	std::lock_guard<std::mutex> lock(instance_->bufferMutex_);
-	instance_->logBuffer_.push_back({std::format("[{}] ", FuncNameOnly(loc.function_name())) + message, spdlog::level::warn});
+	instance_->logBuffer_.push_back({std::format("[{}] ", FuncNameOnly(loc.function_name())) + message, LogLevel::Warning});
 	if (static_cast<int>(instance_->logBuffer_.size()) > kMaxLines) {
 		instance_->logBuffer_.erase(instance_->logBuffer_.begin());
 	}
@@ -169,7 +180,7 @@ void LogManager::Error(const std::string& message, const std::source_location& l
 
 #ifdef USE_IMGUI
 	std::lock_guard<std::mutex> lock(instance_->bufferMutex_);
-	instance_->logBuffer_.push_back({std::format("[{}] ",FuncNameOnly(loc.function_name())) + message, spdlog::level::err});
+	instance_->logBuffer_.push_back({std::format("[{}] ",FuncNameOnly(loc.function_name())) + message, LogLevel::Error});
 	if (static_cast<int>(instance_->logBuffer_.size()) > kMaxLines) {
 		instance_->logBuffer_.erase(instance_->logBuffer_.begin());
 	}
@@ -206,14 +217,13 @@ void LogManager::DrawImGuiWindow() {
 		ImVec4 color;
 		bool hasColor = true;
 		switch (entry.level) {
-		case spdlog::level::warn:
+		case LogLevel::Warning:
 			color = ImVec4(1.0f, 0.9f, 0.2f, 1.0f);
 			break; // 黄
-		case spdlog::level::err:
-		case spdlog::level::critical:
+		case LogLevel::Error:
 			color = ImVec4(1.0f, 0.3f, 0.3f, 1.0f);
 			break; // 赤
-		default:
+		case LogLevel::Info:
 			hasColor = false;
 			break; // 白（デフォルト）
 		}

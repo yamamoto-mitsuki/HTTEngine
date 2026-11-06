@@ -4,10 +4,16 @@
 #include <vector>
 #include <fstream>
 #include <source_location>
+#include <mutex>
 
-#include <externals/spdlog/common.h>
-#include <externals/spdlog/spdlog.h>
-#include <externals/spdlog/async.h>
+// ===== spdlog の前方宣言 =====
+// spdlog はヘッダーだけで使う形（実装も全部ヘッダーにある）。ここで include すると、
+// LogManager.h を読む全部の .cpp が spdlog の実装を持ってしまう（Release の /GL では 1 つで約 6MB 増える）
+// ここでは型の名前だけ知らせて、spdlog の include は LogManager.cpp だけに置く
+// （std::shared_ptr は、中身の分からない型（不完全型）のままでも持てる）
+namespace spdlog {
+class async_logger;
+}
 
 /// <summary>
 /// Log管理クラス
@@ -37,11 +43,7 @@ public:
 	/// バッファを即時フラッシュする。
 	/// <para>assertの直前など、強制終了前に確実にログを書き出したいときに呼ぶ。</para>
 	/// </summary>
-	static void Flush() {
-		if (instance_ && instance_->logger_) {
-			instance_->logger_->flush();
-		}
-	}
+	static void Flush(); // logger_ の中身（spdlog の型）を使うので、本体は LogManager.cpp
 
 	/// <summary>
 	/// 現在のログファイルパスを返す
@@ -85,10 +87,17 @@ private:
 	std::string logFilePath_;
 
 #ifdef USE_IMGUI
+	// ImGui表示用の重さ（色分けに使う。spdlog の level_enum をヘッダーに出さないため、自分の型にする）
+	enum class LogLevel {
+		Info,    // 白
+		Warning, // 黄
+		Error,   // 赤
+	};
+
 	// ImGui表示用バッファ
 	struct LogEntry {
 		std::string message;
-		spdlog::level::level_enum level;
+		LogLevel level;
 	};
 	static constexpr int kMaxLines = 500;
 
