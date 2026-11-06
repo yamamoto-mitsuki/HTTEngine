@@ -1,15 +1,19 @@
 #include "AnimationSystem.h"
 
+#include <set>
 #include <cfloat>
 #include <format>
 #include <memory>
 #include <string>
 #include <vector>
+#include <utility>
+#include <optional>
 #include <algorithm>
 #include <string_view>
 
 #include "MyEngine/Components/Core/TransformComponent.h"  
 #include "MyEngine/Components/Rendering3D/ModelRendererComponent.h"
+#include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/Editor/Gizmos/GizmoLines.h" 
 #include "MyEngine/ECS/ComponentSerializer.h"
@@ -38,7 +42,7 @@ constexpr float kNoFadeEnd = 20000.0f;
 struct AnimatorState {
 	Handle<Entity> entity;        // 持ち主
 	uint32_t animationHandle = 0; // 再生しているアニメーションの番号
-	int clipIndex = 0;            // 再生しているのはファイルの中の何番目か
+	AnimationClipName clip;       // 再生しているアニメーションの名前（Component の Clip が変わったかを見る）
 	AnimationPlayer player;       // 今の時刻・ノードの行列
 	bool isJustStarted = false;   // 流し始めたばかり（次の Update は時刻を進めず、0 秒の形を見せる）
 };
@@ -49,6 +53,7 @@ struct AnimatorState {
 struct AnimationState {
 	std::vector<AnimatorState> animators; // 見つけたAnimatorの一覧。止まっていても持つ
 	bool wasGameRunning = false;          // ゲームが動いているとして一覧を持っているか（Play / Stop の切り替わりで、一覧を捨てる。SwitchGameRunning）
+	std::set<std::pair<uint32_t, std::string>> warnedClips; // 「ファイルに無い」と警告した（ファイルの番号, 名前）。同じ物は1回だけ出す（毎フレーム出さない）
 
 	// --- 骨のギズモ ---
 	Renderer::LineListConfig gizmoLines; // ギズモの線の置き場（配列のメモリを使い回す）
@@ -82,24 +87,35 @@ AnimatorState& FindOrAddAnimator(Handle<Entity> entity) {
 	return state->animators.back();
 }
 
-// ===== ファイルの中に、その番号のアニメーションがあるか（無い番号で GetAnimation を呼ぶと、警告が毎フレーム出るので先に確かめる =====
-bool HasClip(uint32_t animationHandle, int clipIndex) {
-	const uint32_t count = AnimationManager::GetAnimationCount(animationHandle);
-	return clipIndex >= 0 && static_cast<uint32_t>(clipIndex) < count;
+// ===== 名前から、ファイルの中の何番目かを探す =====
+// ファイルに無い名前なら、ログに警告して空を返す（同じファイル・同じ名前の警告は1回だけ）
+// ファイル・名前が未選択（0・空）なら、警告せずに空を返す
+std::optional<uint32_t> FindClip(uint32_t animationHandle, std::string_view clip) {
+	if (animationHandle == 0 || clip.empty()) {
+		return std::nullopt;
+	}
+	const std::optional<uint32_t> index = AnimationManager::FindAnimationIndex(animationHandle, clip);
+	// set::emplace は、もう入っていたら .second が false（＝前に警告した）
+	if (!index.has_value() && state->warnedClips.emplace(animationHandle, std::string(clip)).second) {
+		LogManager::Warning(std::format("アニメーション「{}」が {} にありません（流さずに、モデルに入っている形で描きます）", clip, AnimationManager::GetPath(animationHandle)));
+	}
+	return index;
 }
 
 // ===== Componentで選んでいるアニメーションを最初の時刻から持ち直す =====
 // AnimationSystem::Restart（ゲームから呼ぶ方）と名前がぶつかるので、こちらは ResetPlayer
 void ResetPlayer(AnimatorState& animator, const AnimatorComponent& component, bool play) {
 	animator.animationHandle = component.animationHandle;
-	animator.clipIndex = component.clipIndex;
+	animator.clip = component.clip;
 	animator.isJustStarted = false;
-	// 未選択・無い番号: 空の AnimationPlayerにする（ノードの行列が空 → モデルに入っている形で描く）
-	if (!HasClip(component.animationHandle, component.clipIndex)) {
+	// 未選択・ファイルに無い名前: 空の AnimationPlayerにする（ノードの行列が空 → モデルに入っている形で描く）
+	// 名前は Component に残るので、Blender で名前を戻す・選び直すと、また流れる
+	const std::optional<uint32_t> index = FindClip(component.animationHandle, component.clip.View());
+	if (!index.has_value()) {
 		animator.player = AnimationPlayer{};
 		return;
 	}
-	animator.player.Play(component.animationHandle, static_cast<uint32_t>(component.clipIndex), component.loop);
+	animator.player.Play(component.animationHandle, *index, component.loop);
 	if (!play) {
 		animator.player.Stop(); // アニメーションは覚えたまま、最初の時刻で止まる
 		return;
@@ -113,27 +129,25 @@ void ResetPlayer(AnimatorState& animator, const AnimatorComponent& component, bo
 // 保存の名前はメンバ名にし、Inspector には「表示###保存の名前」で読みやすい名前を出す
 void DescribeAnimator(ComponentUI& ui, AnimatorComponent& value) {
 	ui.Field("Enabled###enabled", value.enabled, Tip("オフにすると動かさない（モデルに入っている形で描く）"));
+	const uint32_t previousAnimation = value.animationHandle;
 	ui.AssetField("Animation###animation", value.animationHandle, AssetType::Animation, Tip("resources の下の .gltf / .glb / .fbx（アニメーションが入っている物）"));
-
-	// --- クリップ：名前で選ぶ・名前で保存する ---
-	// Component は文字を持てないので、中は番号（clipIndex）のまま。保存・Inspector のときだけ名前に直す
-	const uint32_t clipCount = AnimationManager::GetAnimationCount(value.animationHandle); // 未選択なら0
-	std::vector<std::string_view> clipNames;
-	clipNames.reserve(clipCount);
-	for (uint32_t index = 0; index < clipCount; ++index) {
-		clipNames.push_back(AnimationManager::GetAnimation(value.animationHandle, index)->name); // 名前の文字は AnimationManager が持っている
+	// ファイルを選んだとき、まだ Clip を選んでいなければ、先頭のアニメーションを選んでおく（選び直さなくても、すぐ動いて見える）
+	// 読み込みのときも通るが、すぐ下の Clip の欄が JSON の名前で上書きする（JSON に "clip" が無いときだけ、先頭の名前が残る）
+	if (value.animationHandle != previousAnimation && value.clip.Empty() && AnimationManager::GetAnimationCount(value.animationHandle) > 0) {
+		value.clip = AnimationManager::GetAnimation(value.animationHandle, 0)->name;
 	}
-	if (!clipNames.empty()) {
-		// 読み込みのときは、AssetField（1つ上）でファイルを読んだ後なので、名前の一覧はもうできている
-		size_t clipIndex = HasClip(value.animationHandle, value.clipIndex) ? static_cast<size_t>(value.clipIndex) : 0;
-		ui.ChoiceField("Clip###clip", clipIndex, clipNames, Tip("ファイルの中のどのアニメーションか（保存は名前）"));
-		value.clipIndex = static_cast<int>(clipIndex);
+
+	// --- クリップ：名前で持つ・名前で保存する（候補はこの Animator のファイルの中の名前）---
+	// ファイルを差し替えても名前はそのまま。新しいファイルに同じ名前があれば、そのアニメが流れる
+	{
+		const ClipSourceScope clipSource(ui, value.animationHandle);
+		ui.ClipField("Clip###clip", value.clip, Tip("流すアニメーションの名前（Blender ならアクションの名前）。名前で持つので、ファイルの中で並びが変わっても同じアニメが流れる"));
 	}
 
 	// --- 選んでいるアニメーションの長さ（飾りなので保存されない） ---
-	const Animation* clip = HasClip(value.animationHandle, value.clipIndex) ? AnimationManager::GetAnimation(value.animationHandle, static_cast<uint32_t>(value.clipIndex)) : nullptr;
+	const Animation* clip = AnimationManager::FindAnimation(value.animationHandle, value.clip.View());
 	if (clip != nullptr) {
-		const std::string info = std::format("{:.2f} 秒 ／ このファイルに {} 個", clip->duration, clipCount);
+		const std::string info = std::format("{:.2f} 秒 ／ このファイルに {} 個", clip->duration, AnimationManager::GetAnimationCount(value.animationHandle));
 		ui.Label(info.c_str());
 	}
 
@@ -197,7 +211,7 @@ void AnimationSystem::Update(bool isGameRunning, float deltaTime) {
 			animators.push_back({entity});
 			animator = &animators.back();
 			ResetPlayer(*animator, component, isGameRunning && component.playOnStart);
-		} else if (component.animationHandle != animator->animationHandle || component.clipIndex != animator->clipIndex) {
+		} else if (component.animationHandle != animator->animationHandle || component.clip != animator->clip) {
 			// Inspector・ゲームからアニメーションから選び直した → 新しい方を最初から
 			// 再生中のゲームなら、再生していた・Play On Start のときは再生する（未選択から選んでときも動き出すように）
 			ResetPlayer(*animator, component, isGameRunning && (animator->player.IsPlaying() || component.playOnStart));
@@ -248,8 +262,8 @@ const std::vector<Matrix4x4>* AnimationSystem::GetNodeMatrices(Handle<Entity> en
 //=============================================================================
 // ゲームから
 //=============================================================================
-// ===== 番号で流す =====
-bool AnimationSystem::Play(Handle<Entity> entity, int clipIndex, bool loop, float speed) {
+// ===== 名前で流す =====
+bool AnimationSystem::Play(Handle<Entity> entity, std::string_view clip, bool loop, float speed) {
 	MY_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
 	AnimatorComponent* component = EntityManager::Get<AnimatorComponent>(entity);
 	if (component == nullptr) {
@@ -257,7 +271,7 @@ bool AnimationSystem::Play(Handle<Entity> entity, int clipIndex, bool loop, floa
 	}
 	// --- Component に書く ---
 	// Update は毎フレーム、Component の Speed・Loop を AnimationPlayer へ写し、Clip が変わっていたら最初から流す。ここに書かないと Update に戻されてしまう
-	component->clipIndex = clipIndex;
+	component->clip = clip;
 	component->loop = loop;
 	component->speed = speed;
 	if (!EntityManager::IsActiveInHierarchy(entity)) {
@@ -267,10 +281,10 @@ bool AnimationSystem::Play(Handle<Entity> entity, int clipIndex, bool loop, floa
 	// 一覧を見る前に、ゲームが動いている側へ切り替えておく（理由は Restart と同じ）
 	SwitchGameRunning(true);
 	const AnimatorState* animator = FindAnimator(entity);
-	if (animator != nullptr && animator->animationHandle == component->animationHandle && animator->clipIndex == clipIndex && animator->player.IsPlaying()) {
+	if (animator != nullptr && animator->animationHandle == component->animationHandle && animator->clip == component->clip && animator->player.IsPlaying()) {
 		return true;
 	}
-	// --- 番号が違う・止まっている：最初から ---
+	// --- 名前が違う・止まっている：最初から（ファイルに無い名前なら、Restart が警告して false）---
 	return Restart(entity);
 }
 
@@ -291,14 +305,23 @@ bool AnimationSystem::Restart(Handle<Entity> entity) {
 	return animator.player.IsPlaying();
 }
 
-// ===== N 秒で流しきる速さ =====
-float AnimationSystem::CalcSpeedToFit(Handle<Entity> entity, int clipIndex, float seconds) {
+// ===== アニメーションの長さ =====
+float AnimationSystem::GetClipDuration(Handle<Entity> entity, std::string_view clip) {
+	MY_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
 	const AnimatorComponent* component = EntityManager::Get<AnimatorComponent>(entity);
-	if (component == nullptr || seconds <= 0.0f || !HasClip(component->animationHandle, clipIndex)) {
-		return 1.0f;
+	if (component == nullptr) {
+		return 0.0f;
 	}
-	const Animation* clip = AnimationManager::GetAnimation(component->animationHandle, static_cast<uint32_t>(clipIndex));
-	return (clip->duration > 0.0f) ? clip->duration / seconds : 1.0f; // 長さ 0 のアニメ（1枚の形だけ）は、どの速さでも同じ
+	// 名前は、この Entity の Animator のファイルから探す（ファイルに無ければ警告して 0）
+	const std::optional<uint32_t> index = FindClip(component->animationHandle, clip);
+	return index.has_value() ? AnimationManager::GetAnimation(component->animationHandle, *index)->duration : 0.0f;
+}
+
+// ===== N 秒で流しきる速さ =====
+float AnimationSystem::CalcSpeedToFit(Handle<Entity> entity, std::string_view clip, float seconds) {
+	const float duration = GetClipDuration(entity, clip);
+	// 長さ 0 のアニメ（1枚の形だけ）・アニメが無いときは、どの速さでも同じなので等速
+	return (seconds > 0.0f && duration > 0.0f) ? duration / seconds : 1.0f;
 }
 
 // ===== 止めて最初の時刻に戻す =====

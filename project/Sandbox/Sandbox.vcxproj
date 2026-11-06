@@ -30,12 +30,14 @@
     <ClCompile Include="Source\AttackParts\ChaseTarget.cpp" />
     <ClCompile Include="Source\AttackParts\SpinAttack.cpp" />
     <ClCompile Include="Source\Scripts\CharacterKeyboardMover.cpp" />
+    <ClCompile Include="Source\Scripts\ClipCycler.cpp" />
     <ClCompile Include="Source\Scripts\HitboxCycler.cpp" />
     <ClCompile Include="Source\Scripts\HitTestPlayer.cpp" />
     <ClCompile Include="Source\Scripts\TestBullet.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\CharacterKeyboardMover.h" />
+    <ClInclude Include="Source\Scripts\ClipCycler.h" />
     <ClInclude Include="Source\Scripts\HitboxCycler.h" />
     <ClInclude Include="Source\Scripts\HitTestPlayer.h" />
     <ClInclude Include="Source\Scripts\TestBullet.h" />

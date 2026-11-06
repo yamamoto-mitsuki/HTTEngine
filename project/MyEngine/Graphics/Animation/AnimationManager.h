@@ -3,7 +3,9 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <optional>
 #include <filesystem>
+#include <string_view>
 #include <unordered_map>
 
 #include "Animation.h"
@@ -46,6 +48,16 @@ public:
 	/// <param name="index">ファイルの中の何番目か（ふつうは0）</param>
 	/// <returns>見つからなければ nullptr</returns>
 	static const Animation* GetAnimation(uint32_t handle, uint32_t index = 0);
+
+	/// <summary>
+	/// 名前でアニメーションを探す（Blender でアクションを足す・消す・並べ替えても、同じ名前なら同じアニメーション）
+	/// </summary>
+	/// <param name="handle">Load が返したハンドル</param>
+	/// <param name="name">アニメーションの名前（Blender ならアクションの名前）。大文字・小文字も区別する</param>
+	/// <returns>ファイルの中の何番目か。無ければ空（std::nullopt）。同じ名前が2つあれば先の方。警告は出さない（出すのは呼ぶ側）</returns>
+	static std::optional<uint32_t> FindAnimationIndex(uint32_t handle, std::string_view name);
+	// 名前で探したアニメーション（無ければ nullptr。警告は出さない）
+	static const Animation* FindAnimation(uint32_t handle, std::string_view name);
 
 	// ファイルの中のアニメーションの数（見つからなければ0）
 	static uint32_t GetAnimationCount(uint32_t handle);

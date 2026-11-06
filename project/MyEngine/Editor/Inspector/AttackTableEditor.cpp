@@ -73,7 +73,8 @@ void DrawPartCombo(const char* label, AttackPartSlot& slot, const std::vector<st
 // ===== 部品の値 =====
 // 部品を1つ作って、表の値を読み、Fields を描いて、書き戻す（Fields の実体はゲームのクラスの中にあるので、表だけでは描けない）
 // label は警告に出す名前（攻撃の名前・フェーズの名前）
-void DrawPartFields(ComponentUI& ui, AttackPartSlot& slot, std::string_view label) {
+// sampleAnimation は表の Sample Animation（部品の Clip の欄に、このファイルの中の名前を並べる）
+void DrawPartFields(ComponentUI& ui, AttackPartSlot& slot, std::string_view label, uint32_t sampleAnimation) {
 	std::unique_ptr<AttackPart> part = AttackPartRegistry::Create(slot.name);
 	if (part == nullptr) {
 		return;
@@ -83,7 +84,11 @@ void DrawPartFields(ComponentUI& ui, AttackPartSlot& slot, std::string_view labe
 	ComponentSerializer::ReadFields(label, describe, SceneJson::parse(slot.fields, nullptr, false), warnings);
 	// 部品の欄の名前は部品が決めるので、表の欄（Name など）とぶつからないように ID の枠を分ける
 	ImGui::PushID("partFields");
-	part->Fields(ui);
+	{
+		// 部品は表のファイルを知らないので、Clip の候補はここで決める（ClipSourceScope を抜けると元に戻る）
+		const ClipSourceScope clipSource(ui, sampleAnimation);
+		part->Fields(ui);
+	}
 	ImGui::PopID();
 	SceneJson json;
 	ComponentSerializer::WriteFields(label, describe, json, warnings);
@@ -109,7 +114,7 @@ void DrawPhases(ComponentUI& ui, AttackTable& table, bool isLocked) {
 		ImGui::BeginDisabled(isLocked);
 		DrawPartCombo("Idle Part###idlePart", phase.idlePart, partNames, kNoIdlePartDescription);
 		ImGui::EndDisabled();
-		DrawPartFields(ui, phase.idlePart, phase.name);
+		DrawPartFields(ui, phase.idlePart, phase.name, table.sampleAnimation);
 		if (i != 0) {
 			ImGui::BeginDisabled(isLocked);
 			if (ImGui::SmallButton("Remove Phase")) {
@@ -151,7 +156,7 @@ void DrawAttacks(ComponentUI& ui, AttackTable& table, bool isLocked) {
 			ImGui::BeginDisabled(isLocked);
 			DrawPartCombo("Part###part", attack.part, partNames, kNoPartDescription);
 			ImGui::EndDisabled();
-			DrawPartFields(ui, attack.part, attack.name);
+			DrawPartFields(ui, attack.part, attack.name, table.sampleAnimation);
 			ImGui::Spacing();
 			ImGui::BeginDisabled(isLocked);
 			if (ImGui::SmallButton("Duplicate")) {

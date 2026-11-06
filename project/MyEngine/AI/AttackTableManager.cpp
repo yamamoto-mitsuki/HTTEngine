@@ -267,6 +267,8 @@ bool AttackTableManager::CreateNewFile(const std::filesystem::path& filePath) {
 // ===== 表全体 =====
 void AttackTableManager::DescribeTable(ComponentUI& ui, AttackTable& value) {
 	ui.Field("Max Repeat###maxRepeat", value.maxRepeat, AtLeast(0.0f).Tip("同じ攻撃を続けてよい回数。これを超える攻撃は、ほかに使える攻撃がある間は選ばない（0 なら制限なし）"));
+	ui.AssetField("Sample Animation###sampleAnimation", value.sampleAnimation, AssetType::Animation,
+	              Tip("部品の Clip の欄に、このファイルの中のアニメーションの名前を並べる（選ぶためだけ。実際に流すのは、敵の Animator のファイルの同じ名前のアニメーション）"));
 }
 
 // ===== フェーズ1つ =====

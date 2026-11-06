@@ -1,6 +1,7 @@
 {
 	"settings": {
-		"maxRepeat": 0
+		"maxRepeat": 0,
+		"sampleAnimation": "MyEngine/Resources/Model/AnimatedCube/AnimatedCube.gltf"
 	},
 	"phases": [
 		{
@@ -11,7 +12,7 @@
 				"moveSpeed": 3.0,
 				"stopDistance": 2.5,
 				"turnSmoothTime": 0.15,
-				"clipIndex": 0,
+				"clip": "animation_AnimatedCube",
 				"stopAnimSpeed": 0.25
 			}
 		},
@@ -25,7 +26,7 @@
 				"moveSpeed": 6.0,
 				"stopDistance": 2.5,
 				"turnSmoothTime": 0.05,
-				"clipIndex": 0,
+				"clip": "animation_AnimatedCube",
 				"stopAnimSpeed": 0.5
 			}
 		}
@@ -44,7 +45,7 @@
 			"phase1": true,
 			"part": "SpinAttack",
 			"partFields": {
-				"clipIndex": 0
+				"clip": "animation_AnimatedCube"
 			}
 		}
 	]

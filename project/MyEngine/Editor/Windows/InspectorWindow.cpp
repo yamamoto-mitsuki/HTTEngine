@@ -18,6 +18,7 @@
 #include <externals/magic_enum/magic_enum.hpp>
 #include <externals/nlohmann/json.hpp>
 
+#include "MyEngine/Components/Animation/AnimatorComponent.h"
 #include "MyEngine/Core/NameList.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/ComponentUI.h"
@@ -414,6 +415,10 @@ void InspectorWindow::Draw() {
 				// --- フォルダ：Transform も Component も出さない（中身の位置が変わらないように、Transform は原点のまま使う）---
 				ImGui::TextWrapped("フォルダ（Hierarchy を整理する入れ物）。中へは Hierarchy でドラッグして入れる。左上のチェックを外すと、中身ごと無効になる");
 			} else {
+				// Script の値などの Clip の欄（ClipField）は、この Entity の Animator のファイルの中の名前から選ぶ
+				// Animator の欄は、自分のファイルで決め直す（Animator が無ければ、名前を打つ欄）
+				const AnimatorComponent* animator = EntityManager::Get<AnimatorComponent>(handle);
+				const ClipSourceScope clipSource(GetInspectorUI(), (animator != nullptr) ? animator->animationHandle : 0);
 				for (const std::unique_ptr<ComponentEditor>& editor : ComponentEditorRegistry::GetAll()) {
 					DrawComponent(handle, *editor);
 				}

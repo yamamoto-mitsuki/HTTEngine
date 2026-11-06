@@ -12,7 +12,7 @@ public:
 	void Fields(ComponentUI& ui) override;
 
 private:
-	int clipIndex_ = 0; // 流すアニメの番号
+	AnimationClipName clip_; // 流すアニメの名前（攻撃表の Sample Animation の中の名前から選ぶ）
 };
 ATTACK_PART(SpinAttack, "予備動作の間に、アニメをちょうど1回流しきる（Sandbox のテスト用）");
 
@@ -26,12 +26,12 @@ void SpinAttack::OnStage(const AttackPartContext& context) {
 	}
 	// 予備動作の長さで、ちょうど1回（ループしない）
 	const Handle<Entity> self = context.self.handle;
-	AnimationSystem::Play(self, clipIndex_, false, AnimationSystem::CalcSpeedToFit(self, clipIndex_, context.stageDuration));
-	// 待ちの部品が同じ番号のアニメを流していると、Play は速さと loop だけ変える（最初には戻らない）。最初から流したいので Restart
+	AnimationSystem::Play(self, clip_.View(), false, AnimationSystem::CalcSpeedToFit(self, clip_.View(), context.stageDuration));
+	// 待ちの部品が同じ名前のアニメを流していると、Play は速さと loop だけ変える（最初には戻らない）。最初から流したいので Restart
 	AnimationSystem::Restart(self);
 }
 
 //=============================================================================
 // 攻撃表に出す値
 //=============================================================================
-void SpinAttack::Fields(ComponentUI& ui) { ui.Field("Clip Index###clipIndex", clipIndex_, AtLeast(0.0f).Tip("流すアニメの番号（Animator の Clip と同じ番号）")); }
+void SpinAttack::Fields(ComponentUI& ui) { ui.ClipField("Clip###clip", clip_, Tip("流すアニメの名前（敵の Animator のファイルに、同じ名前のアニメーションが要る）")); }

@@ -1,6 +1,8 @@
 #include "AnimationManager.h"
 
 #include <format>
+#include <algorithm>
+#include <unordered_set>
 
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -92,6 +94,11 @@ std::vector<Animation> AnimationManager::LoadAnimationFile(const std::filesystem
 		
 		Animation animation;
 		animation.name = source->mName.C_Str();
+		// 名前の無いアニメーションは名前で選べないので、番号から名前を作る（「#2」）。並びが変わると別のアニメになるので警告する
+		if (animation.name.empty()) {
+			animation.name = std::format("#{}", animationIndex);
+			LogManager::Warning(std::format("名前の無いアニメーションがあります \"{}\"（{} 番目）。「{}」で選べますが、並びが変わると別のアニメになるので、名前を付けてください", utf8Path, animationIndex, animation.name));
+		}
 		animation.duration = static_cast<float>(source->mDuration / ticksPerSecond);
 
 		// --- チャンネル（ノード一つ分の動き） ---
@@ -132,6 +139,15 @@ std::vector<Animation> AnimationManager::LoadAnimationFile(const std::filesystem
 		}
 		animations.push_back(std::move(animation));
 	}
+
+	// --- 同じ名前が2つあると、名前で選ぶときに後の方を選べない（先の方になる）---
+	// unordered_set::insert は、もう入っていたら .second が false
+	std::unordered_set<std::string_view> names;
+	for (const Animation& animation : animations) {
+		if (!names.insert(animation.name).second) {
+			LogManager::Warning(std::format("同じ名前のアニメーションが2つあります \"{}\": 「{}」（名前で選ぶと先の方になります）", utf8Path, animation.name));
+		}
+	}
 	return animations;
 }
 
@@ -157,7 +173,25 @@ const Animation* AnimationManager::GetAnimation(uint32_t handle, uint32_t index)
 	return &file->animations[index];
 }
 
-uint32_t AnimationManager::GetAnimationCount(uint32_t handle) { 
+std::optional<uint32_t> AnimationManager::FindAnimationIndex(uint32_t handle, std::string_view name) {
+	const AnimationFile* file = Find(handle);
+	if (file == nullptr) {
+		return std::nullopt;
+	}
+	// ranges::find の3つ目（&Animation::name）は「何と比べるか」。各アニメーションの name を name と比べる
+	const auto it = std::ranges::find(file->animations, name, &Animation::name);
+	if (it == file->animations.end()) {
+		return std::nullopt;
+	}
+	return static_cast<uint32_t>(it - file->animations.begin());
+}
+
+const Animation* AnimationManager::FindAnimation(uint32_t handle, std::string_view name) {
+	const std::optional<uint32_t> index = FindAnimationIndex(handle, name);
+	return index.has_value() ? &Find(handle)->animations[*index] : nullptr;
+}
+
+uint32_t AnimationManager::GetAnimationCount(uint32_t handle) {
 	const AnimationFile* file = Find(handle);
 	return file ? static_cast<uint32_t>(file->animations.size()) : 0;
 }

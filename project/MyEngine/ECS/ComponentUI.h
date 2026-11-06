@@ -179,8 +179,23 @@ public:
 	// 値を変えずに何かしたいとき（音の試し聞きなど）に使う
 	virtual bool Button(const char* label) = 0;
 
-	// ===== 選択肢を実行中に決める（アニメーションのクリップ名など。enumと同じく、保存は名前で）=====
-	void ChoiceField(const char* label, size_t& index, std::span<const std::string_view> names, FieldStyle style = {}) { EnumField(label, index, names, style); }
+	// ===== アニメーションのクリップの名前（持つのも保存も名前）=====
+	// Inspector では、ClipSourceScope で決めたアニメーションのファイルの中の名前から選ぶ（決めていなければ、名前を打つ欄）
+	// 候補に無い名前も消さずに持つ（Inspector では赤で出す。Blender で名前を戻せば、そのまま直る）
+	// 保存・読み込みの係は、文字の項目と同じに扱う（候補は使わない）
+	virtual void ClipField(const char* label, std::string& clip, FieldStyle style = {}) { Field(label, clip, style); }
+	// 決まった長さまでの文字で持つ版（データの Component・攻撃部品の値）
+	template<size_t N>
+	void ClipField(const char* label, FixedString<N>& clip, FieldStyle style = {}) {
+		std::string text = clip.ToString();
+		ClipField(label, text, style);
+		// 変わったときだけ書き戻す
+		if (clip != text) {
+			clip = text;
+		}
+	}
+	// 今、クリップの候補を出しているアニメーションのファイル（AnimationManager の番号。0 なら決めていない）
+	uint32_t GetClipSource() const { return clipSource_; }
 
 	// ===== Settings の名前の一覧から選ぶ（レイヤー・攻撃の種類。NameList）=====
 	// 保存は番号（名前を付け直しても、選んだ物は変わらない）。名前の選択肢を出すのは Inspector だけで、保存・読み込みの係は int の項目と同じに扱う
@@ -200,6 +215,28 @@ public:
 protected:
 	// enumの中身。何番目の選択肢かで受け渡す（names は選択肢の名前）
 	virtual void EnumField(const char* label, size_t& index, std::span<const std::string_view> names, FieldStyle style) = 0;
+
+private:
+	friend class ClipSourceScope;
+	uint32_t clipSource_ = 0; // ClipField の候補を出すアニメーションのファイル（ClipSourceScope だけが変える）
+};
+
+/// <summary>
+/// この中で描く ClipField の候補を、そのアニメーションのファイルの中の名前にする（抜けると前の値に戻る）
+/// <para>Animator は自分のファイル、攻撃表は見本のファイル（Sample Animation）を渡す。Script の値などを描く側が決める</para>
+/// <para>何を描いているかを知っているのは描く側なので、候補は ClipField の呼び手ではなく、ここで決める（攻撃部品はファイルを知らない）</para>
+/// </summary>
+class ClipSourceScope {
+public:
+	ClipSourceScope(ComponentUI& ui, uint32_t animationHandle) : ui_(ui), previous_(ui.clipSource_) { ui.clipSource_ = animationHandle; }
+	~ClipSourceScope() { ui_.clipSource_ = previous_; }
+	// 写すと、2回戻してしまうので禁止
+	ClipSourceScope(const ClipSourceScope&) = delete;
+	ClipSourceScope& operator=(const ClipSourceScope&) = delete;
+
+private:
+	ComponentUI& ui_;   // 候補を変えた UI
+	uint32_t previous_; // 入る前の候補（入れ子にしても戻せるように）
 };
 
 // Inspectorに描く係（エンジンが1つだけ持っている。ゲームからは触らない）

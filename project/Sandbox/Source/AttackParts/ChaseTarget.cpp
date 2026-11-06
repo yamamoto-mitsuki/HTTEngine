@@ -18,7 +18,7 @@ private:
 	float moveSpeed_ = 3.0f;       // 近づく速さ（m/s）
 	float stopDistance_ = 2.5f;    // 相手とこの距離より近ければ止まる（m。地面に平らに測る）
 	float turnSmoothTime_ = 0.15f; // 向きを合わせる速さ（秒。小さいほど速く向く）
-	int clipIndex_ = 0;            // 流すアニメの番号
+	AnimationClipName clip_;       // 流すアニメの名前（攻撃表の Sample Animation の中の名前から選ぶ）
 	float stopAnimSpeed_ = 0.25f;  // 止まっている間のアニメの速さ
 };
 ATTACK_PART(ChaseTarget, "相手の方を向き、遠ければ Character Controller で近づく（Sandbox のテスト用。Idle Part に選ぶ）");
@@ -53,8 +53,8 @@ void ChaseTarget::OnUpdate(const AttackPartContext& context) {
 	controller->velocity.x = velocity.x;
 	controller->velocity.z = velocity.z;
 
-	// --- アニメ：同じ番号を毎フレーム渡しても、最初には戻らない（速さだけ変わる）---
-	AnimationSystem::Play(context.self.handle, clipIndex_, true, isMoving ? 1.0f : stopAnimSpeed_);
+	// --- アニメ：同じ名前を毎フレーム渡しても、最初には戻らない（速さだけ変わる）---
+	AnimationSystem::Play(context.self.handle, clip_.View(), true, isMoving ? 1.0f : stopAnimSpeed_);
 }
 
 //=============================================================================
@@ -75,6 +75,6 @@ void ChaseTarget::Fields(ComponentUI& ui) {
 	ui.Field("Move Speed###moveSpeed", moveSpeed_, AtLeast(0.0f).Tip("近づく速さ（m/s）"));
 	ui.Field("Stop Distance###stopDistance", stopDistance_, AtLeast(0.0f).Tip("相手とこの距離より近ければ止まる（m。地面に平らに測る）"));
 	ui.Field("Turn Smooth Time###turnSmoothTime", turnSmoothTime_, AtLeast(0.0f).Tip("向きを合わせる速さ（秒。小さいほど速く向く。0 ならすぐ向く）"));
-	ui.Field("Clip Index###clipIndex", clipIndex_, AtLeast(0.0f).Tip("流すアニメの番号（Animator の Clip と同じ番号）"));
+	ui.ClipField("Clip###clip", clip_, Tip("流すアニメの名前（敵の Animator のファイルに、同じ名前のアニメーションが要る）"));
 	ui.Field("Stop Anim Speed###stopAnimSpeed", stopAnimSpeed_, AtLeast(0.0f).Tip("止まっている間のアニメの速さ（歩いている間は 1）"));
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <string_view>
 
 #include "MyEngine/Components/Animation/AnimatorComponent.h"
 #include "MyEngine/Core/Handle.h"
@@ -42,21 +43,25 @@ public:
 	// ===== ゲームから使う =====
 	// Script・攻撃部品から呼ぶ。どれも、呼んだフレームの Update（Script・攻撃表の AI より後に回る）から効く
 	// 流し始めたフレームは時刻を進めないので、そのフレームはアニメの 0 秒の形が見える
+	// アニメーションは名前で選ぶ（Blender ならアクションの名前。ファイルの中で並びが変わっても、同じアニメが流れる）
+	// 名前が Animator のファイルに無いときは、ログに警告を出す（同じファイル・同じ名前は1回だけ）
 
 	/// <summary>
-	/// アニメーションを番号で流す（毎フレーム呼んでよい）。Animator の Clip・Loop・Speed をこの値に書き換える
-	/// <para>番号が違う・止まっている（ループしないアニメが最後まで行った・Stop した）→ そのアニメを最初から</para>
-	/// <para>同じ番号が流れている → 速さと loop だけ変える（最初には戻らない。途中で最初からにしたいときは Restart）</para>
+	/// アニメーションを名前で流す（毎フレーム呼んでよい）。Animator の Clip・Loop・Speed をこの値に書き換える
+	/// <para>名前が違う・止まっている（ループしないアニメが最後まで行った・Stop した）→ そのアニメを最初から</para>
+	/// <para>同じ名前が流れている → 速さと loop だけ変える（最初には戻らない。途中で最初からにしたいときは Restart）</para>
 	/// </summary>
-	/// <param name="clipIndex">ファイルの中の何番目のアニメーションか（Animator の Clip と同じ番号）</param>
+	/// <param name="clip">アニメーションの名前（Animator の Clip と同じ名前）</param>
 	/// <param name="loop">ループするか</param>
 	/// <param name="speed">1 で等速（CalcSpeedToFit で「N 秒で流しきる」速さを作れる）</param>
-	/// <returns>流れているか（Animator が無い・その番号のアニメが無い・Entity が無効なら false）</returns>
-	static bool Play(Handle<Entity> entity, int clipIndex, bool loop, float speed = 1.0f);
-	// 今のアニメーション（Animator の Clip）を最初から流し直す。Animator が無い・アニメーションが未選択なら false
+	/// <returns>流れているか（Animator が無い・その名前のアニメが無い・Entity が無効なら false）</returns>
+	static bool Play(Handle<Entity> entity, std::string_view clip, bool loop, float speed = 1.0f);
+	// 今のアニメーション（Animator の Clip）を最初から流し直す。Animator が無い・アニメーションが未選択・ファイルに無いなら false
 	static bool Restart(Handle<Entity> entity);
+	// そのアニメーションの長さ（秒）。Animator・アニメが無ければ 0
+	static float GetClipDuration(Handle<Entity> entity, std::string_view clip);
 	// そのアニメーションを、ちょうど seconds 秒で流しきる速さ（長さ ÷ seconds）。Animator・アニメが無い・seconds が 0 以下なら 1
-	static float CalcSpeedToFit(Handle<Entity> entity, int clipIndex, float seconds);
+	static float CalcSpeedToFit(Handle<Entity> entity, std::string_view clip, float seconds);
 	// 止めて最初の時刻に戻す
 	static void Stop(Handle<Entity> entity);
 	// 再生中か（ループしないアニメが最後まで行ったら false）

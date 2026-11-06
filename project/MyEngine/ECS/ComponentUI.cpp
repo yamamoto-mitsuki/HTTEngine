@@ -364,6 +364,9 @@ std::string MakeMaskPreview(uint32_t bits, const NameList& names) {
 	return text;
 }
 
+// ===== クリップの名前の欄 =====
+constexpr ImU32 kMissingClipColor = IM_COL32(255, 96, 96, 255); // ファイルに無い名前の色（攻撃表の知らない部品と同じ赤）
+
 
 /// <summary>
 /// Inspectorに描く係。ImGuiを知っているのはここだけ
@@ -530,6 +533,57 @@ public:
 			ImGui::EndCombo();
 		}
 		DrawTooltip(style);
+	}
+
+	// アニメーションのクリップの名前。ClipSourceScope で決めたファイルの中の名前から選ぶ
+	// ファイルが決まっていない（Sample Animation が未選択など）なら、名前を打つ欄にする
+	void ClipField(const char* label, std::string& clip, FieldStyle style) override {
+		const uint32_t source = GetClipSource();
+		const uint32_t count = AnimationManager::GetAnimationCount(source); // 未選択なら 0
+		if (count == 0) {
+			Field(label, clip, style);
+			return;
+		}
+		// --- 欄（ファイルに無い名前は、消さずに赤で出す）---
+		const bool isMissing = !clip.empty() && !AnimationManager::FindAnimationIndex(source, clip).has_value();
+		const std::string preview = clip.empty() ? "(none)" : (isMissing ? std::format("(無い) {}", clip) : clip);
+		if (isMissing) {
+			ImGui::PushStyleColor(ImGuiCol_Text, kMissingClipColor);
+		}
+		const bool isOpen = ImGui::BeginCombo(label, preview.c_str());
+		if (isMissing) {
+			ImGui::PopStyleColor(); // 赤は欄の文字だけ（一覧の中は、いつもの色）
+		}
+		if (isOpen) {
+			// --- 一覧（一番上に、今の無い名前。選び直すまで、そのまま持つ）---
+			if (isMissing) {
+				ImGui::TextColored(ImColor(kMissingClipColor), "(無い) %s", clip.c_str());
+				ImGui::Separator();
+			}
+			if (ImGui::Selectable("(none)", clip.empty())) {
+				clip.clear();
+			}
+			for (uint32_t index = 0; index < count; ++index) {
+				const Animation* animation = AnimationManager::GetAnimation(source, index);
+				const bool isSelected = (animation->name == clip);
+				ImGui::PushID(static_cast<int>(index)); // 同じ名前のアニメーションが2つあっても、別の行として押せるように
+				if (ImGui::Selectable(animation->name.c_str(), isSelected)) {
+					clip = animation->name;
+				}
+				ImGui::SetItemTooltip("%.2f 秒", animation->duration);
+				if (isSelected) {
+					ImGui::SetItemDefaultFocus(); // 開いたときに今の選択へスクロールする
+				}
+				ImGui::PopID();
+			}
+			ImGui::EndCombo();
+		}
+		if (isMissing) {
+			ImGui::SetItemTooltip("「%s」という名前のアニメーションが %s にありません（流さずに、モデルに入っている形で描きます）。名前を戻すか、選び直してください", clip.c_str(),
+			                      AnimationManager::GetPath(source).c_str());
+		} else {
+			DrawTooltip(style);
+		}
 	}
 
 	void ColorField(const char* label, Vector3& rgb, FieldStyle style) override {

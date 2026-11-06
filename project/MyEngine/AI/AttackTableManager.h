@@ -63,7 +63,8 @@ struct AttackData {
 /// 攻撃表（ファイル1つの中身）。フェーズは必ず1つ以上ある
 /// </summary>
 struct AttackTable {
-	int maxRepeat = 2; // 同じ攻撃を続けてよい回数（これを超える攻撃は、ほかに使える攻撃がある間は選ばない。0 なら制限なし）
+	int maxRepeat = 2;            // 同じ攻撃を続けてよい回数（これを超える攻撃は、ほかに使える攻撃がある間は選ばない。0 なら制限なし）
+	uint32_t sampleAnimation = 0; // 部品の Clip の候補を出すためだけのアニメーションのファイル（AnimationManager の番号。保存はパス）。実際に流すのは敵の Animator のファイル
 	std::vector<AttackPhaseData> phases = {
 	    {"Phase 1", 1.0f, 0.0f}
     };
