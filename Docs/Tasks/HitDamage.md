@@ -126,7 +126,7 @@ void PawSlam::OnEnd(const AttackPartContext&, AttackPartEnd) { HitSystem::Deacti
 
 **床に出して自分で進める攻撃（Prefab）**：Hitbox の Phase を Warning、Warning Seconds・Activate After Warning・Active Seconds を入れた Prefab を、プレイヤーの足元などに Instantiate する（Instigator はボスを書く）。予告 → 当たる → 閉じる、は Hitbox が時間で進める。
 
-**弾（COMPONENT / SYSTEM）**：Hitbox（Sphere・Phase は Active・Max Targets は 1・Just Margin は 0）と Damage Source を付けて作る。当てきったら `hitbox.IsSpent()` が true になるので、弾の SYSTEM で消す（E-2 の `TestBullet`）。速くてもすり抜けない。
+**弾（COMPONENT / SYSTEM）**：Hitbox（Sphere・Phase は Active・Max Targets は 1・Just Enabled はオフ）と Damage Source を付けて作る。当てきったら `hitbox.IsSpent()` が true になるので、弾の SYSTEM で消す（E-2 の `TestBullet`）。速くてもすり抜けない。
 
 **ジャスト回避**
 
@@ -222,6 +222,7 @@ Hurtbox はどれも「芯（線分か点）を半径 r で太らせた形」な
 
 - **当たる**：芯の上のどこかで d ≦ r
 - **ジャスト範囲に入る**：芯の上のどこかで d ≦ r ＋ Just Margin（形を Margin だけ太らせたのと同じ）
+- （2026-11-07 追記）Just Margin が 0 なら、ジャスト範囲は形そのもの（d ≦ r）。ジャストにしない当たりは Just Enabled をオフにする（BugFixRenameJustHitStop.md の 2章）
 - **床の予告**（後で）：床の画素ごとに d ≦ 0 を塗る・d ≦ Margin を薄く塗る
 
 3つとも同じ `HitShape` の値を、同じ式で読む。値を3か所に持たないので、予告の円と当たる範囲がずれることがない。
@@ -1541,7 +1542,8 @@ struct HitboxComponent {
 	int maxTargets = 0;         // 1回の攻撃で当てられる相手の数（0 なら何体でも。弾は 1。当てきったら Off になる）
 
 	// --- ジャスト判定（HitSystem::TryConsumeJust）---
-	float justMargin = 0.5f;   // ジャスト判定の範囲：形をこの距離だけ太らせた範囲（m。0 ならジャスト判定は無し）
+	bool justEnabled = true;   // ジャスト判定に使うか（false ならジャストにならない当たり。弾・ジャストを見せたくない攻撃）
+	float justMargin = 0.5f;   // ジャスト判定の範囲：形をこの距離だけ太らせた範囲（m。0 なら形そのものの中だけ）
 	float justLeadTime = 0.3f; // Active になる何秒前から、ジャスト判定の範囲が有効か（Warning の長さが 0 なら、Warning の間ずっと）
 
 	// --- 実行中だけの値（保存しない。HitSystem が書く）---
@@ -2114,7 +2116,7 @@ bool FindJustCandidate(Handle<Entity> receiver, JustCandidate& out, Handle<Entit
 	// --- 有効な Hitbox の中で、Active に一番近い物 ---
 	bool isFound = false;
 	EntityManager::ForEach<HitboxComponent>([&](Handle<Entity> entity, HitboxComponent& hitbox) {
-		if (hitbox.justMargin <= 0.0f || hitbox.phase == HitboxPhase::Off || hitbox.IsSpent()) {
+		if (!hitbox.justEnabled || hitbox.phase == HitboxPhase::Off || hitbox.IsSpent()) {
 			return;
 		}
 		// Warning は、Active になる Just Lead Time 秒前から（Warning の長さが 0 なら、いつ Active になるか分からないので、ずっと）
@@ -2311,7 +2313,9 @@ void DescribeHitbox(ComponentUI& ui, HitboxComponent& value) {
 	ui.Field("Rehit Interval###rehitInterval", value.rehitInterval, AtLeast(0.0f).Tip("同じ相手にもう一度当たるまでの秒（0 なら、1回の攻撃で1回だけ。正なら多段ヒット）"));
 	ui.Field("Max Targets###maxTargets", value.maxTargets, AtLeast(0.0f).Tip("1回の攻撃で当てられる相手の数（0 なら何体でも。弾は 1。当てきったら Off になる）"));
 	ui.Separator("Just");
-	ui.Field("Just Margin###justMargin", value.justMargin, AtLeast(0.0f).Tip("ジャスト判定の範囲：形をこの距離だけ太らせた範囲（m。0 ならジャスト判定は無し）"));
+	// Just Enabled がオフでも、下の2つは出したまま・保存したままにする（オンに戻したとき、前の値が残っているように）
+	ui.Field("Just Enabled###justEnabled", value.justEnabled, Tip("ジャスト判定に使うか（オフならジャストにならない当たり。弾・ジャストを見せたくない攻撃）"));
+	ui.Field("Just Margin###justMargin", value.justMargin, AtLeast(0.0f).Tip("ジャスト判定の範囲：形をこの距離だけ太らせた範囲（m。0 なら形そのものの中だけ。ギズモは形の線がそのままジャストの範囲になる）"));
 	ui.Field("Just Lead Time###justLeadTime", value.justLeadTime, AtLeast(0.0f).Tip("Active になる何秒前から、ジャスト判定の範囲が有効か（Warning の長さが 0 なら、Warning の間ずっと）"));
 }
 
@@ -2547,7 +2551,8 @@ void HitSystem::DrawGizmos(Camera* camera) {
 			break;
 		}
 		PushHitShape(gizmo.lines, shape, 0.0f, color, true);
-		if (hitbox.justMargin > 0.0f) {
+		// ジャスト判定の範囲（Just Margin が 0 なら形の線と重なるので描かない。形の線がそのままジャストの範囲）
+		if (hitbox.justEnabled && hitbox.justMargin > 0.0f) {
 			PushHitShape(gizmo.lines, shape, hitbox.justMargin, (hitbox.phase == HitboxPhase::Off) ? kJustOffColor : kJustColor, false);
 		}
 	});
@@ -3392,7 +3397,7 @@ GameObject SpawnTestBullet(const Vector3& position, const Vector3& velocity, Han
 	hitbox.instigator = EntityManager::RefOf(shooter);
 	hitbox.phase = HitboxPhase::Active;
 	hitbox.maxTargets = 1;
-	hitbox.justMargin = 0.0f; // 弾はジャスト判定に使わない
+	hitbox.justEnabled = false; // 弾はジャスト判定に使わない
 	bullet.AddComponent(hitbox);
 
 	DamageSourceComponent source;
@@ -4008,6 +4013,7 @@ void HitTestPlayer::Fields(ComponentUI& ui) {
 					"activeSeconds": 0.0,
 					"rehitInterval": 0.5,
 					"maxTargets": 0,
+					"justEnabled": false,
 					"justMargin": 0.0,
 					"justLeadTime": 0.3
 				},

@@ -4514,6 +4514,7 @@ HitDamageTest を元に、坂（Slope）・段差（Step）・Decal Renderer の
 					"activeSeconds": 0.0,
 					"rehitInterval": 0.5,
 					"maxTargets": 0,
+					"justEnabled": false,
 					"justMargin": 0.0,
 					"justLeadTime": 0.3
 				},
