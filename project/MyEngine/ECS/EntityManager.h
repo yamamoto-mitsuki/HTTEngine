@@ -171,6 +171,14 @@ public:
 	using DestroyListener = void (*)(Handle<Entity> handle);
 	static void AddDestroyListener(DestroyListener listener);
 
+	// ===== ワールド行列の手直し =====
+	// UpdateTransforms が1つの Entity のワールド行列を作った直後（子に掛ける前）に呼んでほしい関数を登録する
+	// ワールド行列を自分の計算で決める System（UI World Follow：UI を画面の上の決まった所に置く）が使う
+	// parent は親の Transform（親が居なければ nullptr。親のワールド行列はもう決まっている）
+	// UpdateTransforms は1フレームに何度も呼ばれるので、そのたびに同じ手直しが入る（後から呼んでも、手直しが消えない）
+	using TransformAdjuster = void (*)(Handle<Entity> handle, TransformComponent& transform, const TransformComponent* parent);
+	static void AddTransformAdjuster(TransformAdjuster adjuster);
+
 
 private:
 	static constexpr uint32_t kMaxParentDepth = 64; // 親をたどる回数の上限（万一輪になっても止まるように）
@@ -210,6 +218,7 @@ private:
 	std::mt19937_64 idRandom_ = MakeIdRandom(); // 番号を配る乱数（起動するたびに違う並びになる）
 	std::vector<Handle<Entity>> pendingDestroy_;    // 破棄予約
 	std::vector<DestroyListener> destroyListeners_; // 消える直前に呼ぶ関数（AddDestroyListener）
+	std::vector<TransformAdjuster> transformAdjusters_; // ワールド行列を作った直後に呼ぶ関数（AddTransformAdjuster）
 	// 毎フレーム使う作業用の配列（確保し直さないようにメンバで持つ）
 	std::vector<std::pair<uint32_t, Handle<Entity>>> updateOrder_; // (深さ, Handle)
 	std::vector<Handle<Entity>> destroyWork_;

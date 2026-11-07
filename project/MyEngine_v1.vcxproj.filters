@@ -834,6 +834,9 @@
     <ClCompile Include="MyEngine\Systems\UI\UIStateSystem.cpp">
       <Filter>MyEngine\Systems\UI</Filter>
     </ClCompile>
+    <ClCompile Include="MyEngine\Systems\UI\UIWorldFollowSystem.cpp">
+      <Filter>MyEngine\Systems\UI</Filter>
+    </ClCompile>
     <ClCompile Include="MyEngine\Systems\UI\VectorShapeSystem.cpp">
       <Filter>MyEngine\Systems\UI</Filter>
     </ClCompile>
@@ -1061,6 +1064,9 @@
     <ClInclude Include="MyEngine\Components\UI\UIStateComponent.h">
       <Filter>MyEngine\Components\UI</Filter>
     </ClInclude>
+    <ClInclude Include="MyEngine\Components\UI\UIWorldFollowComponent.h">
+      <Filter>MyEngine\Components\UI</Filter>
+    </ClInclude>
     <ClInclude Include="MyEngine\Components\UI\VectorShapeComponent.h">
       <Filter>MyEngine\Components\UI</Filter>
     </ClInclude>
@@ -1068,6 +1074,9 @@
       <Filter>MyEngine\Core</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Core\AssetMoveRegistry.h">
+      <Filter>MyEngine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Core\FixedList.h">
       <Filter>MyEngine\Core</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Core\NameList.h">
@@ -1677,6 +1686,9 @@
       <Filter>MyEngine\Systems\UI</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Systems\UI\UIStateSystem.h">
+      <Filter>MyEngine\Systems\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Systems\UI\UIWorldFollowSystem.h">
       <Filter>MyEngine\Systems\UI</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Systems\UI\VectorShapeSystem.h">

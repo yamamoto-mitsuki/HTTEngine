@@ -290,6 +290,7 @@
     <ClCompile Include="MyEngine\Systems\Physics\WindZoneSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\UI\UIMaskSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\UI\UIStateSystem.cpp" />
+    <ClCompile Include="MyEngine\Systems\UI\UIWorldFollowSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\UI\VectorShapeSystem.cpp" />
     <ClCompile Include="MyEngine\Timeline\Camera\TimelineCameraShakeTrack.cpp" />
     <ClCompile Include="MyEngine\Timeline\Camera\TimelineCameraTrack.cpp" />
@@ -354,8 +355,10 @@
     <ClInclude Include="MyEngine\Components\Gameplay\TriggerActivatorComponent.h" />
     <ClInclude Include="MyEngine\Components\Physics\WindZoneComponent.h" />
     <ClInclude Include="MyEngine\Components\UI\UIStateComponent.h" />
+    <ClInclude Include="MyEngine\Components\UI\UIWorldFollowComponent.h" />
     <ClInclude Include="MyEngine\Components\UI\VectorShapeComponent.h" />
     <ClInclude Include="MyEngine\Core\AssetMoveRegistry.h" />
+    <ClInclude Include="MyEngine\Core\FixedList.h" />
     <ClInclude Include="MyEngine\Core\NameList.h" />
     <ClInclude Include="MyEngine\Curve\Curve.h" />
     <ClInclude Include="MyEngine\Curve\CurveManager.h" />
@@ -574,6 +577,7 @@
     <ClInclude Include="MyEngine\Systems\Physics\WindZoneSystem.h" />
     <ClInclude Include="MyEngine\Systems\UI\UIMaskSystem.h" />
     <ClInclude Include="MyEngine\Systems\UI\UIStateSystem.h" />
+    <ClInclude Include="MyEngine\Systems\UI\UIWorldFollowSystem.h" />
     <ClInclude Include="MyEngine\Systems\UI\VectorShapeSystem.h" />
     <ClInclude Include="MyEngine\Timeline\Camera\TimelineCameraShakeTrack.h" />
     <ClInclude Include="MyEngine\Timeline\Camera\TimelineCameraTrack.h" />

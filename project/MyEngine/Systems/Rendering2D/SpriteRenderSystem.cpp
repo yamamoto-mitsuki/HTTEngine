@@ -22,6 +22,7 @@
 #include "MyEngine/Input/InputManager.h"
 #include "MyEngine/Math/Color.h"
 #include "MyEngine/Systems/UI/UIMaskSystem.h"
+#include "MyEngine/Systems/UI/UIWorldFollowSystem.h"
 
 namespace {
 constexpr float kAlphaClipThreshold = 0.5f;     // Alpha Clip のとき、これより透明なピクセルを捨てる
@@ -351,6 +352,10 @@ bool SpriteRenderSystem::IsMouseOver(Handle<Entity> entity) {
 	if (image == nullptr || transform == nullptr || !image->enabled || !EntityManager::IsActiveInHierarchy(entity) || !InputManager::IsMouseInGame()) {
 		return false;
 	}
+	// UI World Follow が隠している物（描いていない）には当たらない
+	if (UIWorldFollowSystem::IsHiddenInHierarchy(entity)) {
+		return false;
+	}
 	// マウスの位置（GetMousePositionInGame）も、描いた角（CalcImageQuad）も、同じ正規化座標
 	return IsInsideQuad(InputManager::GetMousePositionInGame(), CalcImageQuad(*image, *transform));
 }
@@ -362,10 +367,14 @@ Vector2 SpriteRenderSystem::CalcFrameSize(uint32_t textureHandle, int columns, i
 
 float SpriteRenderSystem::CalcGroupAlpha(Handle<Entity> entity) {
 	// 自分 → 親 → 親の親 … と一番上までたどって、有効な Alpha Group の Alpha を掛けていく（親子は輪にならない。SetParent が断る）
+	// UI World Follow が隠している（画面の外など）なら 0（Image・Text・Vector Shape・Polyline は 0 なら描かない）
 	float alpha = 1.0f;
 	for (Handle<Entity> current = entity; current.IsValid();) {
 		if (const AlphaGroupComponent* group = EntityManager::Get<AlphaGroupComponent>(current); group != nullptr && group->enabled) {
 			alpha *= std::clamp(group->alpha, 0.0f, 1.0f);
+		}
+		if (const UIWorldFollowComponent* follow = EntityManager::Get<UIWorldFollowComponent>(current); follow != nullptr && follow->enabled && follow->isHidden) {
+			return 0.0f;
 		}
 		const Entity* owner = EntityManager::Get(current);
 		current = (owner != nullptr) ? owner->parent : Handle<Entity>{};

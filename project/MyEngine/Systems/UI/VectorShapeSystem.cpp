@@ -18,6 +18,7 @@
 #include "MyEngine/Math/MathUtility.h"
 #include "MyEngine/Systems/Rendering2D/SpriteRenderSystem.h"
 #include "MyEngine/Systems/UI/UIMaskSystem.h"
+#include "MyEngine/Systems/UI/UIWorldFollowSystem.h"
 
 namespace {
 constexpr float kEdgeMargin = 2.0f;      // 四角の板を図形より広げる量（ピクセル。縁のなめらかな所が板の外で切れないように）
@@ -369,6 +370,10 @@ bool VectorShapeSystem::IsMouseOver(Handle<Entity> entity) {
 	const VectorShapeComponent* shape = EntityManager::Get<VectorShapeComponent>(entity);
 	const TransformComponent* transform = EntityManager::Get<TransformComponent>(entity);
 	if (shape == nullptr || transform == nullptr || !shape->enabled || !EntityManager::IsActiveInHierarchy(entity) || !InputManager::IsMouseInGame()) {
+		return false;
+	}
+	// UI World Follow が隠している物（描いていない）には当たらない
+	if (UIWorldFollowSystem::IsHiddenInHierarchy(entity)) {
 		return false;
 	}
 	const ScreenQuad quad = SpriteRenderSystem::CalcScreenQuad(transform->worldMatrix, shape->anchor, shape->pivot, shape->size);

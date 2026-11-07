@@ -57,6 +57,7 @@
 #include "MyEngine/Systems/UI/PolylineSystem.h"
 #include "MyEngine/Systems/UI/TextRenderSystem.h"
 #include "MyEngine/Systems/UI/VectorShapeSystem.h"
+#include "MyEngine/Systems/UI/UIWorldFollowSystem.h"
 
 #include "MyEngine/Time/EngineTime.h"
 #include "MyEngine/UI/UIScreen.h"
@@ -106,6 +107,7 @@ void EngineSystems::Initialize() {
 	VectorShapeSystem::Initialize();      // Vector Shape
 	PolylineSystem::Initialize();         // Polyline
 	UIMaskSystem::Initialize();           // UI Mask
+	UIWorldFollowSystem::Initialize();    // UI World Follow（UI をワールドの物・点に重ねる）
 	FogSystem::Initialize();              // Fog
 	DepthOfFieldSystem::Initialize();     // Depth Of Field
 	TriggerActivatorSystem::Initialize(); // Trigger Activator
@@ -182,6 +184,7 @@ void EngineSystems::Release() {
 	VectorShapeSystem::Release();
 	PolylineSystem::Release();
 	UIMaskSystem::Release();
+	UIWorldFollowSystem::Release();
 	MotionQuery::Release(); // 動き方の System の Release より後
 	EntityManager::Release();
 }
@@ -231,6 +234,7 @@ void EngineSystems::Update(bool isGameRunning, const std::shared_ptr<Camera>& ga
 	}
 
 	CameraSystem::Update(isGameRunning);                         // Camera Component の位置・向きをゲームのカメラへ写す（ワールド行列の後、使う人たちの前）
+	UIWorldFollowSystem::Update(gameCamera.get());               // UI をワールドの物・点に重ねる（カメラをこのフレームの位置にした後。置いたら、ワールド行列を計算し直す）
 	ParticleManager::Update();              // パーティクル更新
 	ParticleSystem::Update(isGameRunning, Time::GetDeltaTime()); // パーティクル（Particle System Component）。停止中は Inspector の Preview の1つだけ動く
 	LightSystem::Update();                  // ライト更新

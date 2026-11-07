@@ -371,10 +371,20 @@ void EntityManager::UpdateTransforms() {
 		// 自分の分（大きさ → 回転 → 位置）
 		transform->worldMatrix = MakeAffineMatrix(transform->scale, transform->rotation, transform->translation);
 		// 親がいれば、親のワールド行列を掛ける（親は先に確定している）
-		if (const TransformComponent* parentTransform = Get<TransformComponent>(entity->parent)) {
+		const TransformComponent* parentTransform = Get<TransformComponent>(entity->parent);
+		if (parentTransform != nullptr) {
 			transform->worldMatrix = transform->worldMatrix * parentTransform->worldMatrix;
 		}
+		// 手直し（子は、手直しした後の行列を掛ける）
+		for (const TransformAdjuster adjuster : self.transformAdjusters_) {
+			adjuster(handle, *transform, parentTransform);
+		}
 	}
+}
+
+void EntityManager::AddTransformAdjuster(TransformAdjuster adjuster) {
+	EnsureInitialized();
+	instance_->transformAdjusters_.push_back(adjuster);
 }
 
 uint32_t EntityManager::CalcDepth(Handle<Entity> handle) {

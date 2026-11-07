@@ -1,0 +1,111 @@
+{
+	"version": 1,
+	"entities": [
+		{
+			"id": 1,
+			"name": "Main Camera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 5.0, -14.0],
+					"rotation": [15.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Camera": {
+					"fovY": 60.0,
+					"nearZ": 0.1,
+					"farZ": 1000.0,
+					"priority": 0
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Directional Light",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 3.0, 0.0],
+					"rotation": [50.0, -30.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Directional Light": {
+					"color": [1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 3,
+			"name": "Target A",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-3.0, 1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.9, 0.4, 0.3, 1.0]
+				}
+			}
+		},
+		{
+			"id": 4,
+			"name": "Target B",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [3.0, 1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.3, 0.5, 0.9, 1.0]
+				}
+			}
+		},
+		{
+			"id": 5,
+			"name": "List Sample",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"ListFieldSampleData": {
+					"stages": [
+						{"maxDistance": 10.0, "damageScale": 1.0},
+						{"maxDistance": 20.0, "damageScale": 1.5}
+					]
+				},
+				"ListFieldSample": {
+					"stages": [
+						{"maxDistance": 10.0, "damageScale": 1.0},
+						{"maxDistance": 20.0, "damageScale": 1.5},
+						{"maxDistance": 40.0, "damageScale": 2.0}
+					],
+					"waves": [
+						{"delay": 0.5, "points": [{"position": [0.0, 0.0, 5.0]}, {"position": [2.0, 0.0, 5.0]}]},
+						{"delay": 2.0, "points": []}
+					],
+					"targets": [
+						{"target": 3},
+						{"target": 4}
+					],
+					"targetDistance": 15.0
+				}
+			}
+		}
+	]
+}

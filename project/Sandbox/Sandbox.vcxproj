@@ -33,6 +33,8 @@
     <ClCompile Include="Source\Scripts\ClipCycler.cpp" />
     <ClCompile Include="Source\Scripts\HitboxCycler.cpp" />
     <ClCompile Include="Source\Scripts\HitTestPlayer.cpp" />
+    <ClCompile Include="Source\Scripts\ListFieldSample.cpp" />
+    <ClCompile Include="Source\Scripts\WorldFollowSamples.cpp" />
     <ClCompile Include="Source\Scripts\TestBullet.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -40,6 +42,8 @@
     <ClInclude Include="Source\Scripts\ClipCycler.h" />
     <ClInclude Include="Source\Scripts\HitboxCycler.h" />
     <ClInclude Include="Source\Scripts\HitTestPlayer.h" />
+    <ClInclude Include="Source\Scripts\ListFieldSample.h" />
+    <ClInclude Include="Source\Scripts\WorldFollowSamples.h" />
     <ClInclude Include="Source\Scripts\TestBullet.h" />
   </ItemGroup>
 

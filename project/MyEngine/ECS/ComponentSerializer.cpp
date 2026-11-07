@@ -60,6 +60,9 @@ std::string_view KeyViewOf(const char* label) {
 
 std::string KeyOf(const char* label) { return std::string(KeyViewOf(label)); }
 
+// 一覧の要素1つの、警告に出す名前（"LockOn.Stages[1]"。どの要素の項目がおかしいか分かるように）
+std::string MakeElementName(std::string_view typeName, const char* label, size_t index) { return std::format("{}.{}[{}]", typeName, KeyViewOf(label), index); }
+
 //=============================================================================
 // 書く係（見せ方の関数に渡すと、ui.Field の1行ごとにJSONの項目を1つ書く）
 //=============================================================================
@@ -114,6 +117,19 @@ protected:
 		if (index < names.size()) {
 			Put(label, std::string(names[index]));
 		}
+	}
+
+	// 一覧は [{...}, {...}] で書く（要素1つの見せ方を、要素ごとに別の書く係へ通す）
+	void ListFieldErased(const char* label, ListAccess& list, FieldStyle) override {
+		SceneJson items = SceneJson::array();
+		for (size_t i = 0; i < list.GetSize(); ++i) {
+			SceneJson fields = SceneJson::object();
+			const std::string elementName = MakeElementName(typeName_, label, i); // 警告に出す名前（"LockOn.Stages[1]"）。書く係より長く持つ
+			JsonWriterUI writer(fields, elementName, warnings_, idMap_);
+			list.DescribeElement(writer, i);
+			items.push_back(std::move(fields));
+		}
+		Put(label, std::move(items));
 	}
 
 private:
@@ -240,6 +256,33 @@ protected:
 		index = static_cast<size_t>(found - names.begin());
 	}
 
+	// 一覧は、ファイルの数に合わせ直してから、要素ごとに別の読む係で読む
+	// 前の中身は残さない（一覧を丸ごと置き換える。要素に無い項目は、その要素の初期値）
+	void ListFieldErased(const char* label, ListAccess& list, FieldStyle) override {
+		const SceneJson* items = Find(label, &SceneJson::is_array);
+		if (items == nullptr) {
+			return; // 無い（後から足した一覧）なら、初期値の一覧のまま
+		}
+		size_t count = items->size();
+		if (count > list.GetCapacity()) {
+			warnings_.insert(std::format("{}: \"{}\" はファイルに {} 個ありますが、{} 個までしか入りません（後ろを捨てます）", typeName_, KeyOf(label), count, list.GetCapacity()));
+			count = list.GetCapacity();
+		}
+		list.Resize(0); // 一度空にしてから増やす（残っていた要素の値を、次の要素の初期値にしないように）
+		list.Resize(count);
+		for (size_t i = 0; i < count; ++i) {
+			const SceneJson& fields = (*items)[i];
+			const std::string elementName = MakeElementName(typeName_, label, i);
+			if (!fields.is_object()) {
+				warnings_.insert(std::format("{}: {{ }} の形ではないので、初期値にします", elementName));
+				continue;
+			}
+			JsonReaderUI reader(fields, elementName, warnings_, idMap_);
+			list.DescribeElement(reader, i);
+			reader.WarnUnused();
+		}
+	}
+
 private:
 	using TypeCheck = bool (SceneJson::*)() const noexcept; // is_number などの「形を調べる関数」
 
@@ -345,6 +388,25 @@ protected:
 		const auto found = std::find(names.begin(), names.end(), item->get_ref<const std::string&>());
 		if (found != names.end()) {
 			index = static_cast<size_t>(found - names.begin());
+		}
+	}
+
+	// 一覧は、要素ごとに別の付け替える係で、要素の {...} の中の参照を付け替える
+	// list は写し（初期値か、使い捨ての Script）なので、ファイルと同じ数に合わせてよい（要素の中で行の分かれ方に使う値も、ファイルから読む）
+	void ListFieldErased(const char* label, ListAccess& list, FieldStyle) override {
+		const auto it = fields_.find(KeyOf(label));
+		if (it == fields_.end() || !it->is_array()) {
+			return;
+		}
+		SceneJson& items = it.value();
+		const size_t count = (std::min)(items.size(), list.GetCapacity());
+		list.Resize(0);
+		list.Resize(count);
+		for (size_t i = 0; i < count; ++i) {
+			if (items[i].is_object()) {
+				RefRemapUI remapper(items[i], map_);
+				list.DescribeElement(remapper, i);
+			}
 		}
 	}
 

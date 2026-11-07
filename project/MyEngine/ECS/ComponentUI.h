@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <bit>
 #include <cfloat>
 #include <cstddef>
@@ -7,9 +8,12 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
 #include <externals/magic_enum/magic_enum.hpp>
 
+#include "MyEngine/Core/FixedList.h"
 #include "MyEngine/ECS/Entity.h"
 #include "MyEngine/Math/Vector2.h"
 #include "MyEngine/Math/Vector3.h"
@@ -19,6 +23,7 @@
 // 前方宣言
 struct GameObject;
 class NameList;
+class ComponentUI;
 
 
 /// <summary>
@@ -107,6 +112,127 @@ bool IsAssetFile(std::string_view path, AssetType type);
 
 
 /// <summary>
+/// 一覧1つを、要素の型を知らずに扱う窓口（ui.ListField の中身。Inspector・保存・読み込みの係が使う）
+/// <para>ゲームは ui.ListField(...) で書くので、これを直接は使わない</para>
+/// <para>ComponentUI の係は virtual 関数なので、テンプレート（要素の型ごとに別の関数）にできない。
+/// そこで「数を変える・要素1つを描く」などの操作だけをこの形にそろえて渡す（ComponentSerializer の RegisterErased と同じ考え方）</para>
+/// </summary>
+class ListAccess {
+public:
+	virtual ~ListAccess() = default;
+
+	// ===== 数 =====
+	virtual size_t GetSize() const = 0;
+	virtual size_t GetCapacity() const = 0; // 入る数の上限（std::vector は上限なし＝SIZE_MAX）
+	virtual void Resize(size_t count) = 0;  // 数を変える（増えた分は初期値）
+
+	// ===== 並びを変える（index は GetSize() より小さいこと。Insert だけは GetSize() と同じでもよい＝最後に足す）=====
+	virtual void Insert(size_t index) = 0;         // index の所に初期値を入れる
+	virtual void Duplicate(size_t index) = 0;      // index の写しを、すぐ後ろに入れる
+	virtual void Erase(size_t index) = 0;          // index を消す
+	virtual void Move(size_t from, size_t to) = 0; // from の要素を to の位置へ（間の要素は1つずつずれる）
+
+	// ===== 要素1つ =====
+	virtual void DescribeElement(ComponentUI& ui, size_t index) = 0; // 要素1つの見せ方を呼ぶ（ui.Field の並び）
+	virtual std::string MakeTitle(size_t index) const = 0;            // Inspector の見出しの、番号の後ろの文字（空なら番号だけ）
+};
+
+namespace ComponentUIDetail {
+// 一覧にできる入れ物か（std::vector と FixedList）
+template<class Container> struct ListTraits : std::false_type {};
+template<class T, class Allocator> struct ListTraits<std::vector<T, Allocator>> : std::true_type {
+	using Element = T;
+	static constexpr bool kIsFixed = false;
+};
+template<class T, size_t N> struct ListTraits<FixedList<T, N>> : std::true_type {
+	using Element = T;
+	static constexpr bool kIsFixed = true;
+};
+
+// 見出しを作らない（ui.ListField に見出しの関数を渡さなかったとき）
+struct NoListTitle {};
+
+/// <summary>
+/// ListAccess の中身。std::vector と FixedList の違い（関数の名前・上限）を、ここで吸収する
+/// </summary>
+template<class Container, class Describe, class Title>
+class ListAccessOf final : public ListAccess {
+	using Traits = ListTraits<Container>;
+	using Element = typename Traits::Element;
+
+public:
+	ListAccessOf(Container& list, Describe& describe, Title& title) : list_(list), describe_(describe), title_(title) {}
+
+	size_t GetSize() const override {
+		if constexpr (Traits::kIsFixed) {
+			return list_.Size();
+		} else {
+			return list_.size();
+		}
+	}
+	size_t GetCapacity() const override {
+		if constexpr (Traits::kIsFixed) {
+			return Container::Capacity();
+		} else {
+			return SIZE_MAX;
+		}
+	}
+	void Resize(size_t count) override {
+		if constexpr (Traits::kIsFixed) {
+			list_.Resize(count);
+		} else {
+			list_.resize(count);
+		}
+	}
+	void Insert(size_t index) override { InsertValue(index, Element{}); }
+	void Duplicate(size_t index) override {
+		const Element copy = list_[index]; // 先に写す（入れると並びが動いて、元の要素の場所が変わることがある）
+		InsertValue(index + 1, copy);
+	}
+	void Erase(size_t index) override {
+		if constexpr (Traits::kIsFixed) {
+			list_.Erase(index);
+		} else {
+			list_.erase(list_.begin() + static_cast<std::ptrdiff_t>(index));
+		}
+	}
+	void Move(size_t from, size_t to) override {
+		// std::rotate(first, middle, last)：[first, last) を、middle が先頭に来るように回す（間の要素が1つずつずれる）
+		const auto at = [this](size_t i) { return list_.begin() + static_cast<std::ptrdiff_t>(i); };
+		if (from < to) {
+			std::rotate(at(from), at(from + 1), at(to + 1)); // from を後ろへ：from+1〜to が1つ前へ
+		} else if (to < from) {
+			std::rotate(at(to), at(from), at(from + 1)); // from を前へ：to〜from-1 が1つ後ろへ
+		}
+	}
+	void DescribeElement(ComponentUI& ui, size_t index) override { describe_(ui, list_[index]); }
+	std::string MakeTitle(size_t index) const override {
+		if constexpr (std::is_same_v<Title, NoListTitle>) {
+			(void)index;
+			return {};
+		} else {
+			return std::string(title_(std::as_const(list_[index])));
+		}
+	}
+
+private:
+	// index の所に value を入れる（一杯なら入れない）
+	void InsertValue(size_t index, const Element& value) {
+		if constexpr (Traits::kIsFixed) {
+			list_.Insert(index, value);
+		} else {
+			list_.insert(list_.begin() + static_cast<std::ptrdiff_t>(index), value);
+		}
+	}
+
+	Container& list_;    // 一覧そのもの
+	Describe& describe_; // 要素1つの見せ方
+	Title& title_;       // 見出しの文字を作る関数（NoListTitle なら作らない）
+};
+} // namespace ComponentUIDetail
+
+
+/// <summary>
 /// Componentの中身の見せ方を書くための道具。ゲーム側にImGuiが出てこないようにするための薄い包み
 /// <para>実体は差し替えられる。Inspectorに描く係・ファイルへ書く係・ファイルから読む係の3つがあり、
 /// COMPONENT(...) に書いた並びが、そのまま「Inspectorの見た目」と「セーブデータの項目」になる（ComponentSerializer.cpp）</para>
@@ -154,6 +280,30 @@ public:
 		if (index != before && index < names.size()) {
 			value = magic_enum::enum_value<E>(index);
 		}
+	}
+
+	// ===== 一覧（Unity の List。Inspector で足す・消す・並べ替える。保存は JSON の配列で、要素1つが {...} 1つ）=====
+	// list は std::vector（Script）か FixedList（データの Component）。describe は要素1つの見せ方（COMPONENT の中と同じ書き方）
+	//   ui.ListField("Stages", stages_, [](ComponentUI& ui, Stage& stage) {
+	//       ui.Field("Max Distance", stage.maxDistance, AtLeast(0.0f).Tip("この段階になる、相手までの距離の上限（m）"));
+	//   });
+	// title を渡すと、Inspector の要素の見出しの番号の後ろに出す（折りたたんだままでも中身が分かるように）
+	//   [](const Stage& stage) { return std::format("〜{:.0f}m", stage.maxDistance); }
+	// Prefab の置いた所ごとの上書きは、一覧を丸ごと（1つでも変えたら、一覧の全部が上書き。足す・消すで上書きが別の要素にずれない）
+	// Timeline の SetValue（値のトラック）からは、一覧の中の値は書けない
+	template<class Container, class Describe>
+	    requires ComponentUIDetail::ListTraits<Container>::value
+	void ListField(const char* label, Container& list, Describe describe, FieldStyle style = {}) {
+		ComponentUIDetail::NoListTitle noTitle;
+		ComponentUIDetail::ListAccessOf<Container, Describe, ComponentUIDetail::NoListTitle> access(list, describe, noTitle);
+		ListFieldErased(label, access, style);
+	}
+	// 見出しの文字を作る関数も渡す版（title は 要素 → 文字。std::string か const char* を返す）
+	template<class Container, class Describe, class Title>
+	    requires ComponentUIDetail::ListTraits<Container>::value && std::is_invocable_v<Title&, const typename ComponentUIDetail::ListTraits<Container>::Element&>
+	void ListField(const char* label, Container& list, Describe describe, Title title, FieldStyle style = {}) {
+		ComponentUIDetail::ListAccessOf<Container, Describe, Title> access(list, describe, title);
+		ListFieldErased(label, access, style);
 	}
 
 	// ===== アセット（モデル・テクスチャの番号。Inspectorではファイルを選ぶ。保存はパスで）=====
@@ -215,6 +365,12 @@ public:
 protected:
 	// enumの中身。何番目の選択肢かで受け渡す（names は選択肢の名前）
 	virtual void EnumField(const char* label, size_t& index, std::span<const std::string_view> names, FieldStyle style) = 0;
+	// 一覧の中身（list で数・並び・要素を扱う）。何もしない係（Timeline の値を書く・集める係）は、そのまま（一覧の中の値は扱わない）
+	virtual void ListFieldErased(const char* label, ListAccess& list, FieldStyle style) {
+		(void)label;
+		(void)list;
+		(void)style;
+	}
 
 private:
 	friend class ClipSourceScope;

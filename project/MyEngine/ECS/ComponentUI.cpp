@@ -367,6 +367,121 @@ std::string MakeMaskPreview(uint32_t bits, const NameList& names) {
 // ===== クリップの名前の欄 =====
 constexpr ImU32 kMissingClipColor = IM_COL32(255, 96, 96, 255); // ファイルに無い名前の色（攻撃表の知らない部品と同じ赤）
 
+// ===== 一覧 =====
+constexpr const char* kListDragType = "MYENGINE_LIST_ITEM"; // 一覧の要素を運ぶドラッグの種類（ImGui の決まりで 32 文字まで）
+constexpr float kListGripWidthRate = 0.75f;                  // 並べ替えのつまみの幅（行の高さに対する割合）
+constexpr float kListGripLineRate = 0.18f;                   // つまみの横線の間隔（行の高さに対する割合）
+
+/// <summary>
+/// ドラッグで運ぶ中身（どの一覧の何番か。ほかの一覧へは落とせないように、一覧の ID も運ぶ）
+/// </summary>
+struct ListDragPayload {
+	ImGuiID listId = 0; // 運び始めた一覧（ImGui の ID。Component・項目の名前で決まる）
+	size_t index = 0;   // 運んでいる要素の番号
+};
+
+/// <summary>
+/// 描き終わってからする操作（描いている途中で並びを変えると、残りの要素の番号がずれて、別の要素を描いてしまう）
+/// </summary>
+struct ListEdit {
+	enum class Kind {
+		None,        // 何もしない
+		Add,         // 最後に足す（最後の要素の写し。空なら初期値）
+		RemoveLast,  // 最後を消す
+		InsertAbove, // index の上に初期値を足す
+		Duplicate,   // index の写しを、すぐ下に足す
+		Remove,      // index を消す
+		Move,        // index を to の位置へ
+	};
+	Kind kind = Kind::None;
+	size_t index = 0; // 対象の要素
+	size_t to = 0;    // Move の行き先
+};
+
+// "表示名##キー" の表示名の所（ImGui と同じく、## から後ろは出さない）
+std::string DisplayLabel(const char* label) {
+	const char* mark = std::strstr(label, "##");
+	return (mark != nullptr) ? std::string(label, mark) : std::string(label);
+}
+
+// 並べ替えのつまみ（横線3本）。押したまま動かすと、要素を運ぶドラッグになる
+void DrawListGrip() {
+	const float height = ImGui::GetFrameHeight();
+	ImGui::InvisibleButton("##grip", ImVec2(height * kListGripWidthRate, height));
+	const ImVec2 min = ImGui::GetItemRectMin();
+	const ImVec2 max = ImGui::GetItemRectMax();
+	const bool isHot = ImGui::IsItemHovered() || ImGui::IsItemActive();
+	const ImU32 color = ImGui::GetColorU32(isHot ? ImGuiCol_Text : ImGuiCol_TextDisabled);
+	const float centerY = (min.y + max.y) * 0.5f;
+	const float gap = height * kListGripLineRate;
+	ImDrawList* drawList = ImGui::GetWindowDrawList();
+	for (int line = -1; line <= 1; ++line) {
+		const float y = centerY + gap * static_cast<float>(line);
+		drawList->AddLine(ImVec2(min.x + 2.0f, y), ImVec2(max.x - 2.0f, y), color, 1.5f);
+	}
+	if (isHot) {
+		ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeNS); // 上下に動かせることが分かるように
+	}
+}
+
+// 次のフレームから、index 番の要素の見出しを開いておく（足した要素の中身がすぐ見えるように）
+// 見出しの開け閉めは、ImGui が ID ごとに覚えている（要素の見出しの ID は、番号の PushID の中の "##element"）
+void OpenListElement(size_t index) {
+	ImGui::PushID(static_cast<int>(index));
+	const ImGuiID id = ImGui::GetID("##element");
+	ImGui::PopID();
+	ImGui::GetStateStorage()->SetInt(id, 1);
+}
+
+// 描き終わってから、頼まれた操作をする
+void ApplyListEdit(ListAccess& list, const ListEdit& edit) {
+	const size_t size = list.GetSize();
+	const bool isFull = size >= list.GetCapacity();
+	switch (edit.kind) {
+	case ListEdit::Kind::None:
+		break;
+	case ListEdit::Kind::Add:
+		if (isFull) {
+			break;
+		}
+		// Unity と同じく、最後の要素を写して足す（段階の一覧のように、前の要素と似た値を続けて入れることが多いので）
+		if (size > 0) {
+			list.Duplicate(size - 1);
+		} else {
+			list.Insert(0);
+		}
+		OpenListElement(size);
+		break;
+	case ListEdit::Kind::RemoveLast:
+		if (size > 0) {
+			list.Erase(size - 1);
+		}
+		break;
+	case ListEdit::Kind::InsertAbove:
+		if (!isFull && edit.index <= size) {
+			list.Insert(edit.index);
+			OpenListElement(edit.index);
+		}
+		break;
+	case ListEdit::Kind::Duplicate:
+		if (!isFull && edit.index < size) {
+			list.Duplicate(edit.index);
+			OpenListElement(edit.index + 1);
+		}
+		break;
+	case ListEdit::Kind::Remove:
+		if (edit.index < size) {
+			list.Erase(edit.index);
+		}
+		break;
+	case ListEdit::Kind::Move:
+		if (edit.index < size && edit.to < size) {
+			list.Move(edit.index, edit.to);
+		}
+		break;
+	}
+}
+
 
 /// <summary>
 /// Inspectorに描く係。ImGuiを知っているのはここだけ
@@ -631,6 +746,103 @@ protected:
 			ImGui::EndCombo();
 		}
 		DrawTooltip(style);
+	}
+
+	// 一覧：見出し（名前と数）を開くと、要素の見出しが並ぶ。要素の見出しを開くと、その要素の項目
+	// 左のつまみをドラッグして並べ替え、要素の見出しの右クリックで上に足す・写す・消す。一番下の ＋ で最後を写して足す、－ で最後を消す
+	void ListFieldErased(const char* label, ListAccess& list, FieldStyle style) override {
+		ImGui::PushID(label); // 同じ区画に一覧が2つあっても、要素の ID がぶつからないように
+		const size_t size = list.GetSize();
+		const size_t capacity = list.GetCapacity();
+		const bool isOpen = ImGui::TreeNodeEx("##list", ImGuiTreeNodeFlags_DefaultOpen, "%s (%zu)", DisplayLabel(label).c_str(), size);
+		DrawTooltip(style);
+		if (!isOpen) {
+			ImGui::PopID();
+			return;
+		}
+		const ImGuiID listId = ImGui::GetID("##items"); // 運んだ要素を、同じ一覧にだけ落とせるようにする印
+		ListEdit edit;
+
+		// --- 要素 ---
+		for (size_t i = 0; i < size; ++i) {
+			ImGui::PushID(static_cast<int>(i));
+			const std::string title = list.MakeTitle(i);
+			const std::string heading = title.empty() ? std::format("{}", i) : std::format("{}  {}", i, title);
+
+			// つまみ（ここから運ぶ）
+			DrawListGrip();
+			if (ImGui::BeginDragDropSource()) {
+				const ListDragPayload payload{listId, i};
+				ImGui::SetDragDropPayload(kListDragType, &payload, sizeof(payload));
+				ImGui::TextUnformatted(heading.c_str()); // 運んでいる間、マウスの横に出す
+				ImGui::EndDragDropSource();
+			}
+			ImGui::SameLine();
+
+			// 見出し（ID は番号だけで決める。見出しの文字が変わっても、開け閉めが変わらないように）
+			const bool isElementOpen = ImGui::TreeNodeEx("##element", ImGuiTreeNodeFlags_SpanAvailWidth, "%s", heading.c_str());
+			// 見出しに落とすと、その位置へ動かす（同じ一覧から運んだ物だけ。ほかの一覧の物は、落とせる色も出さない）
+			if (ImGui::BeginDragDropTarget()) {
+				const ImGuiPayload* dragging = ImGui::GetDragDropPayload();
+				const bool isSameList = dragging != nullptr && dragging->IsDataType(kListDragType) && static_cast<const ListDragPayload*>(dragging->Data)->listId == listId;
+				if (isSameList) {
+					if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload(kListDragType)) {
+						edit = {ListEdit::Kind::Move, static_cast<const ListDragPayload*>(payload->Data)->index, i};
+					}
+				}
+				ImGui::EndDragDropTarget();
+			}
+			// 見出しの右クリック
+			if (ImGui::BeginPopupContextItem("##elementMenu")) {
+				const bool isFull = size >= capacity;
+				if (ImGui::MenuItem("Insert Above", nullptr, false, !isFull)) {
+					edit = {ListEdit::Kind::InsertAbove, i};
+				}
+				if (ImGui::MenuItem("Duplicate", nullptr, false, !isFull)) {
+					edit = {ListEdit::Kind::Duplicate, i};
+				}
+				if (ImGui::MenuItem("Remove")) {
+					edit = {ListEdit::Kind::Remove, i};
+				}
+				ImGui::Separator();
+				if (ImGui::MenuItem("Move Up", nullptr, false, i > 0)) {
+					edit = {ListEdit::Kind::Move, i, i - 1};
+				}
+				if (ImGui::MenuItem("Move Down", nullptr, false, i + 1 < size)) {
+					edit = {ListEdit::Kind::Move, i, i + 1};
+				}
+				ImGui::EndPopup();
+			}
+			// 中身（要素1つの見せ方。ui.Field の並び）
+			if (isElementOpen) {
+				list.DescribeElement(*this, i);
+				ImGui::TreePop();
+			}
+			ImGui::PopID();
+		}
+
+		// --- 足す・消すボタン（上限があれば、今の数と上限も出す）---
+		ImGui::BeginDisabled(size >= capacity);
+		if (EditorWidgets::PlusButton("##add")) {
+			edit = {ListEdit::Kind::Add};
+		}
+		ImGui::SetItemTooltip("最後の要素を写して足す（空なら初期値）");
+		ImGui::EndDisabled();
+		ImGui::SameLine();
+		ImGui::BeginDisabled(size == 0);
+		if (ImGui::Button(" - ")) {
+			edit = {ListEdit::Kind::RemoveLast};
+		}
+		ImGui::SetItemTooltip("最後の要素を消す（途中の要素は、見出しの右クリックの Remove）");
+		ImGui::EndDisabled();
+		if (capacity != SIZE_MAX) {
+			ImGui::SameLine();
+			ImGui::TextDisabled("%zu / %zu", size, capacity);
+		}
+
+		ApplyListEdit(list, edit);
+		ImGui::TreePop();
+		ImGui::PopID();
 	}
 
 	// フォントを選ぶ欄。選択肢ごとに、そのフォントで書いた見本を並べる（見えている行のフォントだけ読む）。欄の下に、選んでいるフォントの見本

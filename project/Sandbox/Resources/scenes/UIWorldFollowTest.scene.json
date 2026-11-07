@@ -1,0 +1,236 @@
+{
+	"version": 1,
+	"entities": [
+		{
+			"id": 1,
+			"name": "Main Camera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 5.0, -12.0],
+					"rotation": [5.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Camera": {
+					"fovY": 60.0,
+					"nearZ": 0.1,
+					"farZ": 1000.0,
+					"priority": 0
+				},
+				"Camera Follow": {
+					"enabled": true,
+					"target": 3,
+					"mode": "Center",
+					"offset": [0.0, 0.0],
+					"deadZone": [0.0, 0.0],
+					"smoothTime": 0.0,
+					"maxLag": [100.0, 100.0],
+					"lookAheadMax": [0.0, 0.0]
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Directional Light",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 3.0, 0.0],
+					"rotation": [50.0, -30.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Directional Light": {
+					"color": [1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 3,
+			"name": "Mover",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 4.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.9, 0.4, 0.3, 1.0]
+				},
+				"CircleMover": {
+					"radius": 3.0,
+					"degreesPerSecond": 90.0
+				}
+			}
+		},
+		{
+			"id": 4,
+			"name": "Behind Box",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [6.0, 1.0, -24.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.3, 0.5, 0.9, 1.0]
+				}
+			}
+		},
+		{
+			"id": 5,
+			"name": "Ground",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, -0.5, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [40.0, 1.0, 40.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.6, 0.6, 0.6, 1.0]
+				}
+			}
+		},
+		{
+			"id": 10,
+			"name": "Lock Mark",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"UI World Follow": {
+					"enabled": true,
+					"target": 3,
+					"worldOffset": [0.0, 1.0, 0.0],
+					"offscreen": "Hide",
+					"edgeMargin": 48.0
+				},
+				"Vector Shape": {
+					"enabled": true,
+					"shape": "Ring",
+					"size": [80.0, 80.0],
+					"ringThickness": 6.0,
+					"color": [1.0, 0.85, 0.2, 1.0]
+				}
+			}
+		},
+		{
+			"id": 11,
+			"name": "Lock Mark Inner",
+			"parent": 10,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Vector Shape": {
+					"enabled": true,
+					"shape": "Ring",
+					"size": [48.0, 48.0],
+					"ringThickness": 4.0,
+					"color": [1.0, 0.4, 0.2, 1.0]
+				}
+			}
+		},
+		{
+			"id": 20,
+			"name": "Edge Marker",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"UI World Follow": {
+					"enabled": true,
+					"target": 4,
+					"worldOffset": [0.0, 0.0, 0.0],
+					"offscreen": "ClampToEdge",
+					"edgeMargin": 48.0
+				},
+				"Vector Shape": {
+					"enabled": true,
+					"shape": "Circle",
+					"size": [28.0, 28.0],
+					"color": [0.3, 0.6, 1.0, 1.0]
+				},
+				"EdgeArrow": {
+					"arrow": 21
+				}
+			}
+		},
+		{
+			"id": 21,
+			"name": "Edge Arrow",
+			"parent": 20,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Vector Shape": {
+					"enabled": true,
+					"shape": "Rectangle",
+					"size": [8.0, 40.0],
+					"pivot": [0.5, 0.0],
+					"color": [0.3, 0.6, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 30,
+			"name": "Float Number",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"UI World Follow": {
+					"enabled": true,
+					"target": 0,
+					"worldOffset": [0.0, 1.0, 0.0],
+					"offscreen": "Keep",
+					"edgeMargin": 48.0
+				},
+				"Text": {
+					"enabled": true,
+					"text": "123",
+					"fontSize": 36.0,
+					"color": [1.0, 1.0, 1.0, 1.0]
+				},
+				"FloatUpText": {
+					"interval": 1.0,
+					"riseSpeed": 60.0,
+					"spawnCenter": [0.0, 1.0, 0.0],
+					"spawnRadius": 2.0
+				}
+			}
+		}
+	]
+}

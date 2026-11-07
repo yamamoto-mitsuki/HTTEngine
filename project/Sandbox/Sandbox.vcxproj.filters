@@ -31,6 +31,12 @@
     <ClCompile Include="Source\Scripts\HitTestPlayer.cpp">
       <Filter>Source\Scripts</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Scripts\ListFieldSample.cpp">
+      <Filter>Source\Scripts</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scripts\WorldFollowSamples.cpp">
+      <Filter>Source\Scripts</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Scripts\TestBullet.cpp">
       <Filter>Source\Scripts</Filter>
     </ClCompile>
@@ -46,6 +52,12 @@
       <Filter>Source\Scripts</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scripts\HitTestPlayer.h">
+      <Filter>Source\Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scripts\ListFieldSample.h">
+      <Filter>Source\Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scripts\WorldFollowSamples.h">
       <Filter>Source\Scripts</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scripts\TestBullet.h">
