@@ -36,6 +36,7 @@
     <ClCompile Include="Source\Scripts\ListFieldSample.cpp" />
     <ClCompile Include="Source\Scripts\WorldFollowSamples.cpp" />
     <ClCompile Include="Source\Scripts\TestBullet.cpp" />
+    <ClCompile Include="Source\Scripts\CursorTrailSamples.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\CharacterKeyboardMover.h" />
@@ -45,6 +46,7 @@
     <ClInclude Include="Source\Scripts\ListFieldSample.h" />
     <ClInclude Include="Source\Scripts\WorldFollowSamples.h" />
     <ClInclude Include="Source\Scripts\TestBullet.h" />
+    <ClInclude Include="Source\Scripts\CursorTrailSamples.h" />
   </ItemGroup>
 
   <!-- ===== プロジェクトの情報 ===== -->

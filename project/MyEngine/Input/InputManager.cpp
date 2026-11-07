@@ -95,6 +95,19 @@ bool InputManager::IsMouseInGame() {
 	return position.x >= -1.0f && position.x <= 1.0f && position.y >= -1.0f && position.y <= 1.0f;
 }
 
+bool InputManager::ShouldHideCursor() {
+	if (GetInstance()->isCursorVisible_) {
+		return false;
+	}
+#ifdef USE_IMGUI
+	// エディタ：Game ビューの絵の上（ほかの窓が重なっている所は出す）
+	return GetInstance()->isGameViewHovered_;
+#else
+	// 製品版：黒帯の内側
+	return IsMouseInGame();
+#endif
+}
+
 long InputManager::GetMouseDeltaX() {
 	if (!IsActive()) return 0;
 	if (IsMouseCapturedByImGui()) return 0;

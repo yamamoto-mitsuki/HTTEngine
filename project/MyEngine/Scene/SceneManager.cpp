@@ -16,6 +16,7 @@
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/ECS/GameComponent.h"
+#include "MyEngine/Input/InputManager.h"
 #include "MyEngine/Particle/ParticleManager.h"
 #include "MyEngine/Scene/DefaultScene.h"
 #include "MyEngine/Scene/SceneSerializer.h"
@@ -23,6 +24,7 @@
 #include "MyEngine/String/FileNameRule.h"
 #include "MyEngine/Systems/Audio/AudioSystem.h"
 #include "MyEngine/Systems/Camera/CameraSystem.h"
+#include "MyEngine/Systems/Effects/TrailSystem.h"
 #include "MyEngine/Systems/Gameplay/ScriptSystem.h"
 #include "MyEngine/Time/EngineTime.h"
 #ifdef USE_IMGUI
@@ -381,6 +383,8 @@ void SceneManager::ChangeScene(std::unique_ptr<IScene> next, bool useSnapshot) {
 	// ===== 1. 古いシーンの片付け（カメラ・IBLなど、Entityではない物）=====
 	// スロー・ヒットストップの途中で Stop・シーン切り替えをしても、次のシーンへ持ち越さない
 	Time::ResetGameTime();
+	// OS のカーソルを隠す頼みも持ち越さない（隠したいシーンが自分で頼む。タイトルへ戻ったら矢印が出ない、という戻し忘れが起きないように）
+	InputManager::SetCursorVisible(true);
 	CameraSystem::ResetOutput(); // 前のシーンのカメラから補間しないように
 	const bool oldUsesFile = currentScene_ && currentScene_->GetSceneFile() != nullptr;
 	if (currentScene_) {
@@ -389,6 +393,9 @@ void SceneManager::ChangeScene(std::unique_ptr<IScene> next, bool useSnapshot) {
 	currentScene_ = std::move(next);
 	// 古いシーンのエミッター（ParticleEmitter）はここで消えたので、その粒のグループも捨てる（新しいシーンのエミッターは、初めて出すときに作り直す）
 	ParticleManager::ClearGroups();
+	// 光の尾（Trail）も全部捨てる。点は前のシーンのワールドの位置なので、持ち主から離れて消えている途中の尾も持ち越さない
+	// この後 Entity を消しても、尾がもう無いので、次の Update で離れた尾にはならない
+	TrailSystem::ClearAll();
 	currentScene_->SetWindowTitle(windowTitle_);
 	// 名前の無い前の書き方のシーン（GetSceneFile を上書きしたシーン）は、シーンファイルの名前を名前にする（Control ウィンドウに出す）
 	if (currentScene_->GetSceneName().empty() && currentScene_->GetSceneFile() != nullptr) {

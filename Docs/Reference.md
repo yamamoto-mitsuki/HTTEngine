@@ -71,7 +71,7 @@ main.cpp                  ゲームの入口。Engine::Initialize してルー�
 | 9.5 | `TriggerActivatorSystem::Update`（再生中だけ。9 の当たりで、範囲に入った・出たを見て Target を出す・消す・フェードを進める） | エンジン |
 | 9.6 | `UIScreen::Update`（再生中だけ。画面の出す・消す動きを進め、ゲームを止める・動かす。止めない時間で動く）→ `SceneTransition::Update`（シーンを切り替える幕を進める。閉じきったら `LoadScene` を頼む） | エンジン |
 | 10 | `AudioSystem::Update`（種類ごとの音量を伝え、消えた・外した・無効の AudioSource の音を止め、初めて見つけた AudioSource を Play On Start で鳴らし、3Dの音の大きさ・左右を更新する。停止中は鳴らさない） | エンジン |
-| 10.5 | `TrailSystem::Update`（消えた・外した Trail の点を捨て、点を古くして寿命の物を消し、Emitting の Trail に今の位置を足す。停止中は点を持たない） | エンジン |
+| 10.5 | `TrailSystem::Update`（持ち主の Entity・Trail が消えた尾を持ち主から離し〈Fade Out After Owner なら写した設定で消えきるまで描く。新しい点は足さない〉、点を古くして寿命の物を消し、Emitting の Trail に今の位置を足す。停止中は点を持たない。シーンを変えたら `TrailSystem::ClearAll` で全部捨てる） | エンジン |
 | 11 | `WindowManager::DrawAll` → **`IScene::Draw`** → `ModelRenderSystem::Draw` → パーティクル → `TrailSystem::Draw`（軌跡の帯）→ ポストエフェクト | **ゲーム** |
 | 12 | `Engine::EndFrame`（Present。GPUを待った後、返してもらったSRVスロットを使い回せるようにする） | エンジン |
 

@@ -7,6 +7,7 @@
 // 軌跡（通った跡・描いた線を、帯にして描く）。Entityに付けるComponent（カテゴリ：Rendering3D）
 // 点の列は TrailSystem が持つ。Component に可変長の配列は入れられない
 // ここは「どう描くか」の設定だけ。AudioSource と鳴っている音の関係と同じ
+// 持ち主が消えた後も消えきるまで描く（Fade Out After Owner）ときは、TrailSystem がこの設定を丸ごと写して持つ（なので trivially copyable のままにする）
 
 /// <summary>
 /// 帯の向き
@@ -33,6 +34,7 @@ struct TrailComponent {
 	bool emitting = true;                            // true：Entityが動いたら自動で点を足す（動いた跡）／false：TrailSystem::AddPoint で足す（描いた線）
 	float minVertexDistance = 0.1f;                  // 自動で足すとき、この距離動くたびに1点足す
 	float lifeTime = 0.5f;                           // 点が消えるまでの秒（0 で消えない。Clear か Entityを消すまで残る）
+	bool fadeOutAfterOwner = true;                   // true：持ち主（Entity かこの Component）が消えても、点が寿命で消えきるまで描く（新しい点は足さない）／false：消えたフレームに捨てる
 	int maxPoints = 256;                             // 点の上限（超えたら古い方から消す）
 	float width = 0.3f;                              // 太さ（新しい方の端）
 	float endWidthRate = 0.0f;                       // 古い方の端の太さ（width に掛ける。1 でずっと同じ太さ、0 で先が細くなる）

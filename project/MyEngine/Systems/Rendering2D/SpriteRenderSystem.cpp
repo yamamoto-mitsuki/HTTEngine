@@ -103,7 +103,7 @@ Vector2 AnchorPosition(ScreenAnchor anchor) {
 	const int index = static_cast<int>(anchor);
 	const float column = static_cast<float>(index % 3 - 1); // -1=左 0=真ん中 1=右
 	const float row = static_cast<float>(1 - index / 3);    //  1=上 0=真ん中 -1=下
-	return {column * GameScreen::GetWidth() * 0.5f, row * GameScreen::GetHeight() * 0.5f};
+	return GameScreen::NdcToPixel({column, row});           // 画面の端（±1）をピクセルに
 }
 
 // Image の4つの角を、画面の正規化座標で出す（描くのにも、マウスが乗ったかを調べるのにも使う）。Fill の分だけ右の端を縮める
@@ -384,12 +384,12 @@ float SpriteRenderSystem::CalcGroupAlpha(Handle<Entity> entity) {
 
 Vector2 SpriteRenderSystem::CalcScreenPoint(const Matrix4x4& worldMatrix, ScreenAnchor anchor, const Vector2& local) {
 	// --- 1. Transform のワールド行列で回す・大きくする・動かす（x・y だけ使う。親子も効く）---
-	// --- 2. アンカーの場所を足して、ピクセル → 正規化座標（基準の画面の半分で割る）---
+	// --- 2. アンカーの場所を足して、ピクセル → 画面の位置（端が ±1）---
 	const Matrix4x4& m = worldMatrix;
 	const Vector2 anchorPosition = AnchorPosition(anchor);
 	const float pixelX = local.x * m.m[0][0] + local.y * m.m[1][0] + m.m[3][0] + anchorPosition.x;
 	const float pixelY = local.x * m.m[0][1] + local.y * m.m[1][1] + m.m[3][1] + anchorPosition.y;
-	return {pixelX / (GameScreen::GetWidth() * 0.5f), pixelY / (GameScreen::GetHeight() * 0.5f)};
+	return GameScreen::PixelToNdc({pixelX, pixelY});
 }
 
 ScreenQuad SpriteRenderSystem::CalcScreenQuad(const Matrix4x4& worldMatrix, ScreenAnchor anchor, const Vector2& pivot, const Vector2& size, float fill) {

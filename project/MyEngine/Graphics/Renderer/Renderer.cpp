@@ -489,11 +489,11 @@ void Renderer::DrawSprite(const SpriteConfig& config) {
 		rt = RotateAround2d(rt, origin, config.rotate);
 	}
 	// 中心へ移動してから正規化座標へ
-	Vector2 center = NdcToBasePixel(config.position);
-	lb = BasePixelToNdc(lb + center);
-	lt = BasePixelToNdc(lt + center);
-	rb = BasePixelToNdc(rb + center);
-	rt = BasePixelToNdc(rt + center);
+	Vector2 center = GameScreen::NdcToPixel(config.position);
+	lb = GameScreen::PixelToNdc(lb + center);
+	lt = GameScreen::PixelToNdc(lt + center);
+	rb = GameScreen::PixelToNdc(rb + center);
+	rt = GameScreen::PixelToNdc(rt + center);
 	PushSprite(config, lb, lt, rb, rt, {0.0f, 1.0f}, {0.0f, 0.0f}, {1.0f, 1.0f}, {1.0f, 0.0f});
 }
 
@@ -503,13 +503,13 @@ void Renderer::DrawQuad2d(const Quad2dConfig& config) {
 	Vector2 lb = config.lb, lt = config.lt, rb = config.rb, rt = config.rt;
 	if (config.rotate != 0.0f) {
 		// 正規化座標のまま回すと歪むので、ピクセル空間に直してから回す
-		Vector2 lbPx = NdcToBasePixel(lb), ltPx = NdcToBasePixel(lt);
-		Vector2 rbPx = NdcToBasePixel(rb), rtPx = NdcToBasePixel(rt);
+		Vector2 lbPx = GameScreen::NdcToPixel(lb), ltPx = GameScreen::NdcToPixel(lt);
+		Vector2 rbPx = GameScreen::NdcToPixel(rb), rtPx = GameScreen::NdcToPixel(rt);
 		Vector2 center = {(lbPx.x + ltPx.x + rbPx.x + rtPx.x) * 0.25f, (lbPx.y + ltPx.y + rbPx.y + rtPx.y) * 0.25f};
-		lb = BasePixelToNdc(RotateAround2d(lbPx, center, config.rotate));
-		lt = BasePixelToNdc(RotateAround2d(ltPx, center, config.rotate));
-		rb = BasePixelToNdc(RotateAround2d(rbPx, center, config.rotate));
-		rt = BasePixelToNdc(RotateAround2d(rtPx, center, config.rotate));
+		lb = GameScreen::PixelToNdc(RotateAround2d(lbPx, center, config.rotate));
+		lt = GameScreen::PixelToNdc(RotateAround2d(ltPx, center, config.rotate));
+		rb = GameScreen::PixelToNdc(RotateAround2d(rbPx, center, config.rotate));
+		rt = GameScreen::PixelToNdc(RotateAround2d(rtPx, center, config.rotate));
 	}
 	PushSprite(config, lb, lt, rb, rt, config.uvLb, config.uvLt, config.uvRb, config.uvRt);
 }

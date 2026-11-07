@@ -68,14 +68,13 @@ PolylineShape MakeShape(const PolylineComponent& polyline, const Vector2& scale,
 // SpriteRenderSystem::CalcScreenPoint と同じ写し方（回転・移動・アンカー・ピクセル → 正規化座標）を、行列1つにまとめる
 // メッシュには Scale を掛けてあるので、行列の x 軸・y 軸は Scale で割って、回転と大きさの向きだけにする
 Matrix4x4 MakeToScreen(const Matrix4x4& world, ScreenAnchor anchor, const Vector2& scale) {
-	const float toNdcX = 1.0f / (GameScreen::GetWidth() * 0.5f);
-	const float toNdcY = 1.0f / (GameScreen::GetHeight() * 0.5f);
+	const Vector2 toNdc = GameScreen::PixelToNdc({1.0f, 1.0f}); // 1 ピクセルの量が、画面の位置でいくつか（横・縦）
 	const Vector2 origin = SpriteRenderSystem::CalcScreenPoint(world, anchor, {0.0f, 0.0f});
 	Matrix4x4 m = MakeIdentity4x4();
-	m.m[0][0] = world.m[0][0] / scale.x * toNdcX;
-	m.m[0][1] = world.m[0][1] / scale.x * toNdcY;
-	m.m[1][0] = world.m[1][0] / scale.y * toNdcX;
-	m.m[1][1] = world.m[1][1] / scale.y * toNdcY;
+	m.m[0][0] = world.m[0][0] / scale.x * toNdc.x;
+	m.m[0][1] = world.m[0][1] / scale.x * toNdc.y;
+	m.m[1][0] = world.m[1][0] / scale.y * toNdc.x;
+	m.m[1][1] = world.m[1][1] / scale.y * toNdc.y;
 	m.m[3][0] = origin.x;
 	m.m[3][1] = origin.y;
 	return m;

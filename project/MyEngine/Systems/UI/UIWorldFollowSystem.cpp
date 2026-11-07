@@ -51,39 +51,35 @@ struct ScreenProjection {
 //=============================================================================
 // 写す・寄せる
 //=============================================================================
-// ===== 画面の半分の大きさ（ピクセル）=====
-Vector2 HalfScreen() { return {GameScreen::GetWidth() * 0.5f, GameScreen::GetHeight() * 0.5f}; }
-
 // ===== ワールドの点を画面に写す =====
 ScreenProjection Project(const Camera& camera, const Vector3& world) {
 	ScreenProjection result;
-	const Vector2 half = HalfScreen();
 	Vector2 ndc;
 	if (camera.WorldToScreenPoint(world, &ndc)) {
-		// 正規化座標（端が ±1）→ UI のピクセル（画面の真ん中から。Image の Transform と同じ数え方）
-		result.pixel = {ndc.x * half.x, ndc.y * half.y};
+		// 画面の位置（端が ±1）→ UI のピクセル（画面の真ん中から。Image の Transform と同じ数え方）
+		result.pixel = GameScreen::NdcToPixel(ndc);
 		result.direction = result.pixel;
 		return result;
 	}
 	// --- カメラの後ろ：w で割ると裏返るので、カメラから見た向き（ビュー空間の x・y）を使う ---
-	// 投影行列の [0][0]・[1][1] は、横・縦の広がりの倍率（画角と縦横の比）。掛けておくと、画面の上での向きと同じ比になる
+	// 投影行列の [0][0]・[1][1] は、横・縦の広がりの倍率（画角と縦横の比）。掛けておくと、画面の位置の量になる。それをピクセルの量に直すと、画面の上での向きと同じ比になる
 	result.isBehind = true;
 	const Vector3 view = TransformPoint(world, camera.GetViewMatrix());
 	const Matrix4x4& projection = camera.GetProjectionMatrix();
-	result.direction = {view.x * projection.m[0][0] * half.x, view.y * projection.m[1][1] * half.y};
+	result.direction = GameScreen::NdcToPixel({view.x * projection.m[0][0], view.y * projection.m[1][1]});
 	return result;
 }
 
 // ===== 点が、端から margin だけ内側の四角の中か =====
 bool IsInside(const Vector2& pixel, float margin) {
-	const Vector2 half = HalfScreen();
+	const Vector2 half = GameScreen::GetHalfSize();
 	return std::abs(pixel.x) <= half.x - margin && std::abs(pixel.y) <= half.y - margin;
 }
 
 // ===== 向きの先の、端から margin だけ内側の四角の縁の点 =====
 // 真ん中から direction の向きへ伸ばして、四角の縁に当たった所（横の縁と縦の縁の、先に当たる方）
 Vector2 ClampToEdge(Vector2 direction, float margin) {
-	const Vector2 half = HalfScreen();
+	const Vector2 half = GameScreen::GetHalfSize();
 	const Vector2 inner = {(std::max)(half.x - margin, 0.0f), (std::max)(half.y - margin, 0.0f)};
 	if (Length(direction) < kMinDirectionLength) {
 		direction = {0.0f, -1.0f}; // 真後ろ：下の端

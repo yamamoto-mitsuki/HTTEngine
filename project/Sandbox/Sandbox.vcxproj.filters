@@ -40,6 +40,9 @@
     <ClCompile Include="Source\Scripts\TestBullet.cpp">
       <Filter>Source\Scripts</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Scripts\CursorTrailSamples.cpp">
+      <Filter>Source\Scripts</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\CharacterKeyboardMover.h">
@@ -61,6 +64,9 @@
       <Filter>Source\Scripts</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scripts\TestBullet.h">
+      <Filter>Source\Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scripts\CursorTrailSamples.h">
       <Filter>Source\Scripts</Filter>
     </ClInclude>
   </ItemGroup>

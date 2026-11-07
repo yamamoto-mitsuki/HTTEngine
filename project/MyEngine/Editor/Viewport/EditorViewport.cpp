@@ -92,6 +92,7 @@ void EditorViewport::Render(const Camera* gameCamera, const std::wstring& window
 	const ImVec2& gameMin = gameView_.GetImageMin();
 	const ImVec2& gameSize = gameView_.GetImageSize();
 	InputManager::SetGameViewRect({gameMin.x, gameMin.y}, {gameSize.x, gameSize.y});
+	InputManager::SetGameViewHovered(gameView_.IsHovered()); // OS のカーソルを隠すのは、絵の上（ほかの窓に隠れていない所）だけ
 
 	// --- Scene ---
 	sceneView_.Draw(sceneRT, [this] {

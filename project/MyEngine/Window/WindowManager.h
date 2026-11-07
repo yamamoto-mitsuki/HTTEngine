@@ -105,6 +105,9 @@ private:
 	// カメラを持っている最初のシーン（無ければ nullptr）
 	IScene* FindGameScene() const;
 
+	// OS のカーソルを隠すかを、メインのウィンドウへ渡す（UpdateAll の最後に呼ぶ）
+	void UpdateCursor();
+
 #ifdef USE_IMGUI
 	std::wstring imguiTargetWindow_;
 	void RenderImGui();

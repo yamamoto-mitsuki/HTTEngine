@@ -133,7 +133,27 @@ void WindowManager::UpdateAll() {
 	}
 	EngineSystems::Update(isGameRunning, gameCamera);
 
+	// OS のカーソル（このフレームの Play 中かと、Script・SYSTEM の頼みがそろった後）
+	UpdateCursor();
+
 	InputManager::SetActiveWindow(nullptr); // 入力をリセット
+}
+
+
+//=============================================================================
+// OS のカーソル
+//=============================================================================
+// 隠すのは「メインのウィンドウのシーンが Play 中（一時停止・停止中は出す）」で「ゲームが隠すと頼んでいて、マウスがゲーム画面の上」のときだけ
+// ゲーム画面（エディタは Game ビューの絵、製品版は黒帯の内側）は、メインのウィンドウの中にある
+// 頼みと場所は InputManager、Play 中かは SceneManager、OS のカーソルは Win32Window が持つ。SceneManager と Win32Window を組で持っているのはここなので、ここでつなぐ
+// エディタの「Game ビューの絵の上か」は描画（PreRenderAll の EditorViewport::Render）で決まるので、ここで読むのは前のフレームの値（1フレーム遅れは目に見えない）
+void WindowManager::UpdateCursor() {
+	if (windows_.empty()) {
+		return;
+	}
+	const WindowSet& main = windows_[0];
+	const bool isPlaying = main.sceneManager && main.sceneManager->GetPlayState() == PlayState::Playing;
+	main.window->SetCursorHidden(isPlaying && InputManager::ShouldHideCursor());
 }
 
 

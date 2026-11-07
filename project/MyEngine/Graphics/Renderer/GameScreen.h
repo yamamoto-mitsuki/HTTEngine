@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 
+#include "MyEngine/Math/Vector2.h"
+
 // ゲームの画面の大きさ。縦横比と、UI の位置・大きさのピクセルの基準を決める
 // main.cpp の WindowConfig（gameWidth・gameHeight）で決めて、起動の後は変えない（描画先のテクスチャの大きさがこの比率で決まるので）
 //   横長（既定）：config.gameWidth = 1280; config.gameHeight = 720;
@@ -37,6 +39,22 @@ public:
 	static float GetWidth() { return width_; }                 // 幅（UI のピクセル）
 	static float GetHeight() { return height_; }               // 高さ（UI のピクセル）
 	static float GetAspectRatio() { return width_ / height_; } // 縦横比（幅 ÷ 高さ）
+	static Vector2 GetHalfSize() { return {width_ * 0.5f, height_ * 0.5f}; } // 幅・高さの半分（UI のピクセル。画面の真ん中から端まで）
+
+	// ===== 画面の位置 ↔ UI のピクセル =====
+	// 画面の位置：真ん中が 0、右と上が＋、端が ±1（InputManager::GetMousePositionInGame・Camera::ScreenPointToRay と同じ数え方）
+	// UI のピクセル：真ん中が 0、右と上が＋（Anchor が Center の UI の Translation と同じ数え方）
+	// どちらも真ん中が 0 なので、位置にも量（動いた分・大きさ）にもそのまま使える
+
+	/// <summary>
+	/// 画面の位置（端が ±1）→ UI のピクセル（真ん中が 0、上が＋）。量にも使える
+	/// </summary>
+	static Vector2 NdcToPixel(const Vector2& ndc) { return {ndc.x * width_ * 0.5f, ndc.y * height_ * 0.5f}; }
+
+	/// <summary>
+	/// UI のピクセル（真ん中が 0、上が＋）→ 画面の位置（端が ±1）。量にも使える
+	/// </summary>
+	static Vector2 PixelToNdc(const Vector2& pixel) { return {pixel.x / (width_ * 0.5f), pixel.y / (height_ * 0.5f)}; }
 
 	/// <summary>
 	/// 長い方の辺を longSide ピクセルにした、画面と同じ比率の大きさ（ポストエフェクトの描画先に使う）

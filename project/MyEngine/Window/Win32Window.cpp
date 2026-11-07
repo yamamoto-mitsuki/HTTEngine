@@ -109,6 +109,19 @@ void Win32Window::SetFullscreen(bool enable) {
 	}
 }
 
+void Win32Window::SetCursorHidden(bool hidden) {
+	if (hidden == isCursorHidden_) {
+		return;
+	}
+	isCursorHidden_ = hidden;
+	// WM_SETCURSOR はマウスが動くまで来ないので、マウスがこのウィンドウの上なら、すぐ形を変える
+	// （ほかのアプリの窓の上にいるときに変えると、その窓のカーソルを消してしまうので、上にいるか確かめる）
+	POINT point{};
+	if (GetCursorPos(&point) && WindowFromPoint(point) == hwnd_) {
+		SetCursor(hidden ? nullptr : wc_.hCursor);
+	}
+}
+
 LRESULT CALLBACK Win32Window::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	// SetWindowLongPtrで保存した値を取り出す（ウィンドウを作っている途中はまだnullptr）
 	Win32Window* self = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
@@ -143,6 +156,16 @@ LRESULT CALLBACK Win32Window::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPA
 		if (self && wparam == VK_RETURN && isAlt && !isRepeat) {
 			self->ToggleFullscreen();
 			return 0; // DefWindowProc に渡すとシステムメニューが開いてしまう
+		}
+		break;
+	}
+
+	// マウスが動いた（カーソルの形を決める）。クライアント領域の上で、隠すと決まっていれば隠す
+	// ImGui は NoMouseCursorChange でカーソルを触らないので、ここまで届く
+	case WM_SETCURSOR: {
+		if (self && self->isCursorHidden_ && LOWORD(lparam) == HTCLIENT) {
+			SetCursor(nullptr);
+			return TRUE; // DefWindowProc に渡すと、ウィンドウクラスの矢印に戻される
 		}
 		break;
 	}

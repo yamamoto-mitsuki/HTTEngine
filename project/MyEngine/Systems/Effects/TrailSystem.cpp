@@ -4,6 +4,7 @@
 #include <memory>
 #include <utility>
 #include <vector>
+#include <optional>
 #include <algorithm>
 
 #include "MyEngine/Camera/Camera.h"
@@ -24,23 +25,33 @@ constexpr Vector3 kGroundNormal = {0.0f, 1.0f, 0.0f}; // Ground の帯の面の�
 
 /// <summary>
 /// Trail 1つ分の、実行中だけの状態（保存しない。Play / Stop で作り直すと消える）
+/// <para>持ち主（Entity か TrailComponent）が消えたら「離れた尾」になる：entity を無効にして、写しておいた設定で、点が寿命で消えきるまで描く</para>
 /// </summary>
 struct TrailState {
-	Handle<Entity> entity;          // 持ち主
-	std::vector<TrailPoint> points; // 点の列（古い方 → 新しい方）
+	Handle<Entity> entity;                  // 持ち主（離れた尾は無効な Handle。同じ Entity に Trail を付け直しても、新しい尾は別に始まる）
+	std::vector<TrailPoint> points;         // 点の列（古い方 → 新しい方）
+	std::optional<TrailComponent> settings; // 描く設定の写し（毎フレーム持ち主の Component から写す。離れた後はこれで描く。まだ一度も写していなければ空）
+	std::optional<Vector3> head;            // 帯の先（Emitting の持ち主の今の位置。離れるときに最後の点にする。前のフレームに描いた帯の先と同じ所）
+	bool isShown = false;                   // 今描いているか（Enabled で、持ち主が有効）。描いていなかった尾は、離れるときに捨てる（急に出てこないように）
 };
 
 /// <summary>
 /// TrailSystem が持つ物（Initialize で作り、Release で消す）
 /// </summary>
 struct TrailSystemState {
-	std::vector<TrailState> trails; // 点を持っている Trail の一覧（Trail の数しか無いので、順に見れば足りる）
+	std::vector<TrailState> trails; // 点を持っている Trail の一覧（離れた尾も入る。Trail の数しか無いので、順に見れば足りる）
 	std::vector<Vector3> path;      // 描くときの点の置き場（Draw の中だけで使う。配列のメモリを使い回す）
 };
 std::unique_ptr<TrailSystemState> state;
 
-// Entityの状態を探す（無ければ nullptr）
+// 持ち主から離れた尾か
+bool IsDetached(const TrailState& trail) { return !trail.entity.IsValid(); }
+
+// Entityの状態を探す（無ければ nullptr。離れた尾は持ち主がいないので、探しても見つからない）
 TrailState* FindTrail(Handle<Entity> entity) {
+	if (!entity.IsValid()) {
+		return nullptr;
+	}
 	const auto it = std::ranges::find(state->trails, entity, &TrailState::entity);
 	return (it != state->trails.end()) ? &*it : nullptr;
 }
@@ -50,8 +61,40 @@ TrailState& FindOrAddTrail(Handle<Entity> entity) {
 	if (TrailState* trail = FindTrail(entity)) {
 		return *trail;
 	}
-	state->trails.push_back({entity, {}});
+	state->trails.push_back({.entity = entity});
 	return state->trails.back();
+}
+
+// 持ち主がまだいるか（Entity が生きていて、TrailComponent が付いているか、付ける予約がある）
+// 予約を見るのは、RequestAdd したばかり（次のフレームに付く）の Trail に、同じフレームに AddPoint した点を捨てないため
+bool HasOwner(const TrailState& trail) {
+	if (!EntityManager::IsAlive(trail.entity)) {
+		return false;
+	}
+	return EntityManager::Get<TrailComponent>(trail.entity) != nullptr || EntityManager::IsAddPending<TrailComponent>(trail.entity);
+}
+
+// 持ち主から離す。残す設定で、描いていた尾なら、帯の先を最後の点にして残す。残さないなら点を捨てる（点が無くなった尾は Update が捨てる）
+// 残さないのは：Fade Out After Owner を外した・描いていなかった（Enabled を外していた・持ち主が無効）・Life Time 0（消えないので、いつまでも残ってしまう）・設定を一度も写していない
+void Detach(TrailState& trail) {
+	const bool canFadeOut = trail.settings.has_value() && trail.settings->fadeOutAfterOwner && trail.isShown && trail.settings->lifeTime > 0.0f;
+	if (!canFadeOut) {
+		trail.points.clear();
+	} else if (trail.head.has_value() && (trail.points.empty() || Distance(trail.points.back().position, *trail.head) > kSamePointDistance)) {
+		trail.points.push_back({*trail.head, 0.0f}); // 前のフレームに描いた帯の先で終わらせる（Emitting は先を持ち主にくっつけて描いていたので）
+	}
+	trail.entity = {};
+	trail.head.reset();
+}
+
+// 点を古くして、寿命が来た物を消す（Life Time 0 は消えない）
+void AgePoints(std::vector<TrailPoint>& points, float lifeTime, float deltaTime) {
+	for (TrailPoint& point : points) {
+		point.age += deltaTime;
+	}
+	if (lifeTime > 0.0f) {
+		std::erase_if(points, [lifeTime](const TrailPoint& point) { return point.age >= lifeTime; });
+	}
 }
 
 // 上限を超えた分を、古い方から消す
@@ -136,6 +179,7 @@ void DescribeTrail(ComponentUI& ui, TrailComponent& value) {
 	ui.Field("Emitting###emitting", value.emitting, Tip("動いたら自動で点を足す。外すと TrailSystem::AddPoint で足した点だけ（描いた線）"));
 	ui.Field("Min Vertex Distance###minVertexDistance", value.minVertexDistance, AtLeast(0.0f).Tip("自動で足すとき、この距離動くたびに1点"));
 	ui.Field("Life Time###lifeTime", value.lifeTime, AtLeast(0.0f).Tip("点が消えるまでの秒。0 で消えない"));
+	ui.Field("Fade Out After Owner###fadeOutAfterOwner", value.fadeOutAfterOwner, Tip("true：持ち主（Entity かこの Component）が消えても、点が寿命で消えきるまで描く（新しい点は足さない）／false：消えたフレームに捨てる"));
 	ui.Field("Max Points###maxPoints", value.maxPoints, AtLeast(static_cast<float>(kMinPoints)).Tip("超えたら古い方から消す"));
 	ui.Separator("Appearance");
 	ui.Field("Width###width", value.width, AtLeast(0.0f).Tip("新しい方の端の太さ"));
@@ -177,44 +221,55 @@ void TrailSystem::Update(bool isGameRunning, float deltaTime) {
 		return;
 	}
 
-	// ===== 1. 消えた・外した Trail の点を捨てる =====
-	// RequestAdd したばかり（次のフレームに付く）の Trail は残す（同じフレームに AddPoint した点を捨てないように）
-	std::erase_if(trails, [](const TrailState& trail) {
-		if (!EntityManager::IsAlive(trail.entity)) {
-			return true;
+	// ===== 1. 持ち主（Entity か TrailComponent）が消えた尾を、持ち主から離す =====
+	// 離れた尾は、写しておいた設定で点が寿命で消えきるまで描く（残さない設定なら、ここで点を捨てる）。新しい点は足さない
+	for (TrailState& trail : trails) {
+		if (!IsDetached(trail) && !HasOwner(trail)) {
+			Detach(trail);
 		}
-		return EntityManager::Get<TrailComponent>(trail.entity) == nullptr && !EntityManager::IsAddPending<TrailComponent>(trail.entity);
-	});
+	}
 
-	// ===== 2. 点を古くして、寿命が来た物を消す。Emitting なら今の位置を足す =====
+	// ===== 2. 離れた尾を古くして、寿命が来た点を消す。帯にならなくなった尾を捨てる =====
+	for (TrailState& trail : trails) {
+		if (IsDetached(trail) && trail.settings.has_value()) {
+			AgePoints(trail.points, trail.settings->lifeTime, deltaTime);
+		}
+	}
+	std::erase_if(trails, [](const TrailState& trail) { return IsDetached(trail) && trail.points.size() < static_cast<size_t>(kMinPoints); });
+
+	// ===== 3. 持ち主のいる尾：設定を写し、点を古くして寿命が来た物を消す。Emitting なら今の位置を足す =====
 	EntityManager::ForEach<TrailComponent>([deltaTime](Handle<Entity> entity, const TrailComponent& component) {
 		TrailState* trail = FindTrail(entity);
+		const bool isActive = EntityManager::IsActiveInHierarchy(entity);
 		// --- 古くする・消す ---
 		if (trail != nullptr) {
-			for (TrailPoint& point : trail->points) {
-				point.age += deltaTime;
-			}
-			if (component.lifeTime > 0.0f) {
-				std::erase_if(trail->points, [&component](const TrailPoint& point) { return point.age >= component.lifeTime; });
-			}
+			AgePoints(trail->points, component.lifeTime, deltaTime);
 		}
-		// --- 動いた分だけ足す（無効な Entity は足さない） ---
-		if (component.emitting && EntityManager::IsActiveInHierarchy(entity)) {
-			const TransformComponent* transform = EntityManager::Get<TransformComponent>(entity);
-			if (transform != nullptr) {
-				const Vector3 position = GetWorldPosition(*transform);
-				TrailState& emitter = (trail != nullptr) ? *trail : FindOrAddTrail(entity);
-				if (emitter.points.empty() || Distance(emitter.points.back().position, position) >= component.minVertexDistance) {
-					emitter.points.push_back({position, 0.0f});
-				}
-				trail = &emitter;
+		// --- 動いた分だけ足す（無効な Entity は足さない）。今の位置は帯の先として覚えておく ---
+		const TransformComponent* transform = EntityManager::Get<TransformComponent>(entity);
+		if (component.emitting && isActive && transform != nullptr) {
+			const Vector3 position = GetWorldPosition(*transform);
+			TrailState& emitter = (trail != nullptr) ? *trail : FindOrAddTrail(entity);
+			if (emitter.points.empty() || Distance(emitter.points.back().position, position) >= component.minVertexDistance) {
+				emitter.points.push_back({position, 0.0f});
 			}
+			emitter.head = position;
+			trail = &emitter;
+		} else if (trail != nullptr) {
+			trail->head.reset(); // 帯の先を持ち主にくっつけていない（Emitting でない・無効）
 		}
-		// --- 上限 ---
+		// --- 上限・設定の写し（持ち主が消えたら、この写しで描く）---
 		if (trail != nullptr) {
 			TrimPoints(trail->points, component.maxPoints);
+			trail->settings = component;
+			trail->isShown = component.enabled && isActive;
 		}
 	});
+}
+
+void TrailSystem::ClearAll() {
+	MY_ASSERT_MSG(state != nullptr, "TrailSystem::Initialize()を先に呼んでください");
+	state->trails.clear();
 }
 
 //=============================================================================
@@ -224,17 +279,22 @@ void TrailSystem::Draw(Camera* camera) {
 	MY_ASSERT_MSG(state != nullptr, "TrailSystem::Initialize()を先に呼んでください");
 	std::vector<Vector3>& path = state->path;
 	for (const TrailState& trail : state->trails) {
-		const TrailComponent* component = EntityManager::Get<TrailComponent>(trail.entity);
-		if (component == nullptr || !component->enabled || !EntityManager::IsActiveInHierarchy(trail.entity)) {
+		// --- 描く設定（離れた尾は写しておいた設定。持ち主のいる尾は、Inspector で変えた値がすぐ出るように Component を読む） ---
+		const bool isDetached = IsDetached(trail);
+		const TrailComponent* component = isDetached ? (trail.settings.has_value() ? &*trail.settings : nullptr) : EntityManager::Get<TrailComponent>(trail.entity);
+		if (component == nullptr) {
 			continue;
 		}
+		if (!isDetached && (!component->enabled || !EntityManager::IsActiveInHierarchy(trail.entity))) {
+			continue; // 離れた尾は、描いていた物だけ残しているので、ここは見ない
+		}
 
-		// --- 描く点を並べる（Emitting なら、最後に今の位置を足して、帯の先を Entity にくっつける） ---
+		// --- 描く点を並べる（持ち主のいる Emitting の尾は、最後に今の位置を足して、帯の先を Entity にくっつける） ---
 		path.clear();
 		for (const TrailPoint& point : trail.points) {
 			path.push_back(point.position);
 		}
-		if (component->emitting) {
+		if (!isDetached && component->emitting) {
 			if (const TransformComponent* transform = EntityManager::Get<TransformComponent>(trail.entity)) {
 				const Vector3 head = GetWorldPosition(*transform);
 				if (path.empty() || Distance(path.back(), head) > kSamePointDistance) {

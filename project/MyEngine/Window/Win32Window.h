@@ -56,6 +56,12 @@ public:
 	void SetOnResize(std::function<void(int, int)> callback) { onResize_ = std::move(callback); }
 	void SetPositionLock(bool isLocked) { isPositionLocked_ = isLocked; }
 
+	/// <summary>
+	/// このウィンドウの中（クライアント領域）で、OS のカーソルを隠すか。WindowManager が毎フレーム渡す（隠す所かは InputManager::ShouldHideCursor が決める）
+	/// <para>変わったとき、マウスがこのウィンドウの上なら、マウスが動くのを待たずにすぐ形を変える</para>
+	/// </summary>
+	void SetCursorHidden(bool hidden);
+
 	void ClearPendingResize() { pendingResize_ = false; }
 
 	// ウィンドウシステム
@@ -78,5 +84,6 @@ private:
 	bool pendingResize_ = false;
 	bool isImGuiTarget_ = false;
 	bool isFullscreen_ = false;
+	bool isCursorHidden_ = false; // クライアント領域で OS のカーソルを隠すか（WM_SETCURSOR で見る）
 	WindowConfig config_;
 };

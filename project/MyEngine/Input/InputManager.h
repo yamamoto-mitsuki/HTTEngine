@@ -78,6 +78,22 @@ public:
 	/// <summary>マウスがゲーム画面の上にあるか（エディタでは Game ビューの絵の上）</summary>
 	static bool IsMouseInGame();
 
+	/// <summary>
+	/// ゲーム画面の上で OS のカーソル（Windows の矢印）を出すか。false で隠す（照準などの UI をカーソルの代わりに出すとき）
+	/// <para>隠れるのは、マウスがゲーム画面の上にいる間だけ（エディタは Play 中に Game ビューの絵の上。一時停止中は出す。製品版は黒帯の内側）。ほかの窓・ゲームの外では出す</para>
+	/// <para>シーンを変えると（Stop も）true に戻る。隠したいシーンが、自分で頼む</para>
+	/// </summary>
+	static void SetCursorVisible(bool visible) { GetInstance()->isCursorVisible_ = visible; }
+
+	/// <summary>SetCursorVisible で頼んだ値（今本当に隠れているかではない。ゲーム画面の外では false でも出ている）</summary>
+	static bool IsCursorVisible() { return GetInstance()->isCursorVisible_; }
+
+	/// <summary>
+	/// 今 OS のカーソルを隠す所か（SetCursorVisible(false) を頼まれていて、マウスがゲーム画面の上。Play 中かは見ない）
+	/// <para>WindowManager が毎フレーム（UpdateAll の最後）見て、メインのウィンドウに渡す</para>
+	/// </summary>
+	static bool ShouldHideCursor();
+
 	/// <summary>前フレームからのX移動量 (右が正)。</summary>
 	static long GetMouseDeltaX();
 
@@ -167,6 +183,8 @@ public:
 		GetInstance()->gameViewTopLeft_ = topLeft;
 		GetInstance()->gameViewSize_ = size;
 	}
+	// マウスが Game ビューの絵の上か（ほかの窓に隠れていない所だけ）。EditorViewport が毎フレーム渡す（OS のカーソルを隠すかに使う）
+	static void SetGameViewHovered(bool hovered) { GetInstance()->isGameViewHovered_ = hovered; }
 #endif
 
 private:
@@ -186,12 +204,14 @@ private:
 
 	HWND activeHwnd_ = nullptr;
 	HWND mainHwnd_ = nullptr; // Initialize で受け取ったウィンドウ（製品版のゲーム画面＝このウィンドウの中）
+	bool isCursorVisible_ = true; // ゲーム画面の上で OS のカーソルを出すか（SetCursorVisible で頼んだ値）
 
 #ifdef USE_IMGUI
 	bool mouseInViewport_ = false;           // マウスがViewportにあるか
 	bool viewportFocused_ = false;           // Viewportがフォーカスされてるか
 	Vector2 gameViewTopLeft_ = {0.0f, 0.0f}; // Game ビューの絵の左上（クライアント座標）
 	Vector2 gameViewSize_ = {0.0f, 0.0f};    // Game ビューの絵の大きさ（0なら、まだ描いていない）
+	bool isGameViewHovered_ = false;         // マウスが Game ビューの絵の上か（ほかの窓に隠れていない所だけ）
 #endif
 
 	// DirectInput8 インターフェース。キーボードとマウスで共有する。
