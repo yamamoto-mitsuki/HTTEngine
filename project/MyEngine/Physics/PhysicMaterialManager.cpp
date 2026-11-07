@@ -10,6 +10,7 @@
 
 #include <externals/nlohmann/json.hpp>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
@@ -111,6 +112,16 @@ public:
 
 	void Save(const std::filesystem::path& filePath) override { PhysicMaterialManager::Save(PhysicMaterialManager::Load(filePath)); }
 };
+
+// ===== 名前を変えた・動かしたファイル：覚えているパスを付け替える（番号はそのまま。保存は新しいパスへ）=====
+void OnAssetMoved(const MovedPath& moved) {
+	if (state == nullptr) {
+		return;
+	}
+	for (PhysicMaterialAsset& asset : state->assets) {
+		moved.Apply(asset.path);
+	}
+}
 } // namespace
 
 
@@ -122,6 +133,8 @@ void PhysicMaterialManager::Initialize() {
 	state = std::make_unique<PhysicMaterialState>();
 	// Project ウィンドウで .physmat を選んだら、Inspector で直せるようにする
 	AssetInspector::Register(std::make_unique<PhysicMaterialEditor>());
+	AssetMoveRegistry::AddListener(&OnAssetMoved);
+	AssetMoveRegistry::AddReferenceFileType(kFileExtension); // 今は中にパスを書かないが、エンジンが書く JSON のファイルなので入れておく（項目が増えても忘れないように）
 }
 
 void PhysicMaterialManager::Release() { state.reset(); }

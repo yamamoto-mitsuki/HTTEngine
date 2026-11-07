@@ -63,6 +63,7 @@
 #ifdef USE_IMGUI
 #include "MyEngine/Editor/Gizmos/CameraGizmo.h"
 #include "MyEngine/Editor/History/EditorHistory.h"
+#include "MyEngine/Editor/Inspector/AssetInspector.h"
 #include "MyEngine/Editor/Inspector/AttackTableEditor.h"
 #include "MyEngine/Editor/Inspector/CurveAssetEditor.h"
 #include "MyEngine/Editor/Inspector/MaterialAssetEditor.h"
@@ -121,6 +122,7 @@ void EngineSystems::Initialize() {
 	UIScreen::Initialize();               // UI Screen・UI Screen Element
 	UIStateSystem::Initialize();          // UI State（要素の状態で Timeline を再生する）
 #ifdef USE_IMGUI
+	AssetInspector::Initialize(); // Project で名前を変えたファイルを、Inspector が新しいパスで直し続けるように
 	UIScreenEditor::Initialize(); // .uiscreen のファイルを Inspector に出す（Edit UI Screen のボタン）
 	AttackTableEditor::Initialize(); // .attacktable のファイルを Inspector で直す
 	CurveAssetEditor::Initialize();  // .curve のファイルを Inspector で直す

@@ -20,6 +20,7 @@
 #include <assimp/GltfMaterial.h>
 
 #include "MyEngine/Camera/Camera.h"
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Graphics/GPU/DirectXCommon.h"
@@ -288,7 +289,22 @@ ModelManager& ModelManager::GetInstance() {
 // 初期化 / 解放
 //======================================================================================================
 // ===== 初期化 =====
-void ModelManager::Initialize() {}
+void ModelManager::Initialize() { AssetMoveRegistry::AddListener(&OnAssetMoved); }
+
+// ===== 名前を変えた・動かしたファイル =====
+// モデルのファイルの中（.mtl・.gltf）に書いてあるテクスチャの名前は、外のツールの形なので書き換えない（読み直すと、前の名前を探す）
+void ModelManager::OnAssetMoved(const MovedPath& moved) {
+	ModelManager& inst = GetInstance();
+	moved.ApplyToKeys(inst.pathToHandle_);
+	for (auto& [handle, model] : inst.models_) {
+		for (ImportedMaterial& material : model.materials) {
+			moved.Apply(material.baseColorTexturePath);
+			moved.Apply(material.ambientTexFilePath);
+			moved.Apply(material.specularTexFilePath);
+			moved.Apply(material.bumpTexFilePath);
+		}
+	}
+}
 
 // ===== 解放 =====
 void ModelManager::Release() {

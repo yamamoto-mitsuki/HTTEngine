@@ -163,6 +163,8 @@ private:
 	static void Register(const ShaderDefinition& def);
 	// 描画プログラムを1つ登録（同じ組み合わせは上書き）
 	static void AddProgram(const ShaderDefinition& def);
+	// 名前を変えた・動かした .shader：パスで引く表と、覚えているパスを付け替える（番号はそのまま。AssetMoveRegistry から呼ばれる）
+	static void OnAssetMoved(const struct MovedPath& moved);
 	static std::string_view Trim(std::string_view s);  // 空白を削除
 	static std::string Require(const std::unordered_map<std::string, std::string>& kv, std::string_view key, std::string_view src); // 一致しているか
 	static std::wstring DefaultProfile(ShaderMeta::Stage s); // ShaderのProfileのデフォルト設定

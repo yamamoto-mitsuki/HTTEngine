@@ -8,6 +8,7 @@
 
 #include <externals/nlohmann/json.hpp>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/ECS/ComponentUI.h"
@@ -51,6 +52,16 @@ bool WriteFile(const std::string& path, const Curve& curve) {
 	}
 	return true;
 }
+
+// ===== 名前を変えた・動かしたファイル：覚えているパスを付け替える（番号はそのまま。保存は新しいパスへ）=====
+void OnAssetMoved(const MovedPath& moved) {
+	if (state == nullptr) {
+		return;
+	}
+	for (CurveAsset& asset : state->assets) {
+		moved.Apply(asset.path);
+	}
+}
 } // namespace
 
 
@@ -60,6 +71,8 @@ bool WriteFile(const std::string& path, const Curve& curve) {
 void CurveManager::Initialize() {
 	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<CurveStorage>();
+	AssetMoveRegistry::AddListener(&OnAssetMoved);
+	AssetMoveRegistry::AddReferenceFileType(kFileExtension); // 今は中にパスを書かないが、エンジンが書く JSON のファイルなので入れておく（項目が増えても忘れないように）
 }
 
 void CurveManager::Release() { state.reset(); }

@@ -14,6 +14,10 @@ namespace ProjectFiles {
 
 // 出すフォルダの一覧（resources/ と Source/。エンジンの MyEngine/Resources/ は出さない）
 const std::array<std::filesystem::path, 2>& GetRootFolders();
+// ゲームのアセットのフォルダ（resources/）
+const std::filesystem::path& GetResourceFolder();
+// ゲームのコードのフォルダ（Source/）
+const std::filesystem::path& GetSourceFolder();
 // path が folder の中にあるか（folder そのものも含む）
 bool IsInside(const std::filesystem::path& path, const std::filesystem::path& folder);
 // path が、出しているフォルダ（resources/ か Source/）の中にあるか

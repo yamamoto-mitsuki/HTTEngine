@@ -3,8 +3,10 @@
 
 #include <format>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/ECS/ComponentUI.h"
+#include "MyEngine/Editor/Assets/AssetMover.h"
 #include "MyEngine/Editor/Assets/ProjectFiles.h"
 #include "MyEngine/Editor/Inspector/AssetInspector.h"
 #include "MyEngine/Editor/Timeline/TimelineWindow.h"
@@ -385,21 +387,14 @@ void ProjectWindow::ApplyRename(const Item& item) {
 		return;
 	}
 	const std::filesystem::path newPath = ProjectFiles::RenamedPath(item.path, item.icon, item.isFolder, renameBuffer_);
-	std::error_code error;
-	// 同じ名前がもうあるならやめる（大文字・小文字だけ変えるときは、Windows では同じファイルなので通す）
-	if (std::filesystem::exists(newPath, error) && !std::filesystem::equivalent(item.path, newPath, error)) {
-		LogManager::Warning(std::format("同じ名前がもうあります: {}", ToUtf8(newPath)));
+	// ディスク・読み込み済みの物・ほかのファイルの中のパスまで、まとめて新しい名前にする（同じ名前がもうあるときは、警告を出して何もしない）
+	if (!AssetMover::Move(item.path, newPath)) {
 		return;
 	}
-	std::filesystem::rename(item.path, newPath, error);
-	if (error) {
-		LogManager::Warning(std::format("名前を変えられませんでした: {}（{}）", ToUtf8(item.path), error.message()));
-		return;
-	}
-	LogManager::Log(std::format("名前を変えました: {} → {}", ToUtf8(item.path), ToUtf8(newPath)));
-	if (selected_ == item.path) {
-		selected_ = newPath;
-	}
+	// --- この窓が覚えているパス（選んでいる物・右に出しているフォルダ。フォルダの名前を変えると、中の物も変わる）---
+	const MovedPath moved{ToPathKey(item.path), ToPathKey(newPath)};
+	moved.Apply(selected_);
+	moved.Apply(currentFolder_);
 	rescanRequest_ = true;
 }
 

@@ -115,12 +115,13 @@ void ResetPlayer(AnimatorState& animator, const AnimatorComponent& component, bo
 		animator.player = AnimationPlayer{};
 		return;
 	}
+	animator.player.SetSpeed(component.speed); // 先に速さを渡す（Play は速さの向きで、流し始める時刻を決める）
 	animator.player.Play(component.animationHandle, *index, component.loop);
 	if (!play) {
 		animator.player.Stop(); // アニメーションは覚えたまま、最初の時刻で止まる
 		return;
 	}
-	// 流し始めたフレームは 0 秒の形を見せる（Update で進めると、最初の形が1フレームも見えず、呼んだ側の「段階に入ってからの秒」とも1フレームずれる）
+	// 流し始めたフレームは始まりの形を見せる（Update で進めると、最初の形が1フレームも見えず、呼んだ側の「段階に入ってからの秒」とも1フレームずれる）
 	animator.isJustStarted = true;
 }
 

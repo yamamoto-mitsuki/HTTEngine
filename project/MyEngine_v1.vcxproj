@@ -112,12 +112,14 @@
     <ClCompile Include="MyEngine\AI\AttackPart.cpp" />
     <ClCompile Include="MyEngine\AI\AttackTableManager.cpp" />
     <ClCompile Include="MyEngine\Combat\DamageTypes.cpp" />
+    <ClCompile Include="MyEngine\Core\AssetMoveRegistry.cpp" />
     <ClCompile Include="MyEngine\Core\NameList.cpp" />
     <ClCompile Include="MyEngine\Curve\Curve.cpp" />
     <ClCompile Include="MyEngine\Curve\CurveManager.cpp" />
     <ClCompile Include="MyEngine\ECS\GameObject.cpp" />
     <ClCompile Include="MyEngine\ECS\Layers.cpp" />
     <ClCompile Include="MyEngine\Editor\Assets\AssetIcons.cpp" />
+    <ClCompile Include="MyEngine\Editor\Assets\AssetMover.cpp" />
     <ClCompile Include="MyEngine\Editor\Assets\AssetThumbnails.cpp" />
     <ClCompile Include="MyEngine\Editor\Assets\ProjectFiles.cpp" />
     <ClCompile Include="MyEngine\Editor\Gizmos\ArrowStripGizmo.cpp" />
@@ -353,6 +355,7 @@
     <ClInclude Include="MyEngine\Components\Physics\WindZoneComponent.h" />
     <ClInclude Include="MyEngine\Components\UI\UIStateComponent.h" />
     <ClInclude Include="MyEngine\Components\UI\VectorShapeComponent.h" />
+    <ClInclude Include="MyEngine\Core\AssetMoveRegistry.h" />
     <ClInclude Include="MyEngine\Core\NameList.h" />
     <ClInclude Include="MyEngine\Curve\Curve.h" />
     <ClInclude Include="MyEngine\Curve\CurveManager.h" />
@@ -360,6 +363,7 @@
     <ClInclude Include="MyEngine\ECS\Layers.h" />
     <ClInclude Include="MyEngine\ECS\Script.h" />
     <ClInclude Include="MyEngine\Editor\Assets\AssetIcons.h" />
+    <ClInclude Include="MyEngine\Editor\Assets\AssetMover.h" />
     <ClInclude Include="MyEngine\Editor\Assets\AssetThumbnails.h" />
     <ClInclude Include="MyEngine\Editor\Assets\ProjectFiles.h" />
     <ClInclude Include="MyEngine\Editor\Gizmos\ArrowStripGizmo.h" />

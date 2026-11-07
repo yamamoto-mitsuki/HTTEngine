@@ -11,6 +11,7 @@
 #include <externals/nlohmann/json.hpp>
 
 #include "MyEngine/Components/Core/PrefabInstanceComponent.h"
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
 #include "MyEngine/ECS/EntityManager.h"
 #include "MyEngine/Diagnostics/LogManager.h"
@@ -377,6 +378,24 @@ const SceneJson* SceneSerializer::FindEntities(const SceneJson& root) {
 		return nullptr;
 	}
 	return &*entitiesIt;
+}
+
+//=============================================================================
+// 名前を変えた・動かしたアセット
+//=============================================================================
+// ===== JSON の中のパスを付け替える =====
+// {...} と [...] は中へ入って、文字の値だけを見る（パスは文字の値にしか書かない。数・項目の名前はパスにならない）
+bool SceneSerializer::RemapPaths(SceneJson& json, const MovedPath& moved) {
+	if (json.is_string()) {
+		return moved.Apply(json.get_ref<std::string&>()); // get_ref：中の文字そのものを指す（写さずに書き換えられる）
+	}
+	bool isChanged = false;
+	if (json.is_object() || json.is_array()) {
+		for (SceneJson& child : json) {
+			isChanged |= RemapPaths(child, moved); // || だと、1つ書き換えた後の物を見なくなるので |= にする
+		}
+	}
+	return isChanged;
 }
 
 //=============================================================================

@@ -4,6 +4,7 @@
 
 #include <externals/DirectXTex/d3dx12.h>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/String/ConvertString.h"
@@ -20,7 +21,15 @@ void TextureManager::Initialize() {
 	MY_ASSERT_MSG(instance_ == nullptr, "Initialize()を2回以上呼び出しています");
 	instance_ = std::make_unique<TextureManager>(ConstructorKey());
 	instance_->whiteTextureHandle_ = Load("MyEngine/Resources/Textures/white.png");
+	AssetMoveRegistry::AddListener(&OnAssetMoved);
 	LogManager::Log("Initialized");
+}
+
+// ===== 名前を変えた・動かしたファイル =====
+void TextureManager::OnAssetMoved(const MovedPath& moved) {
+	if (instance_ != nullptr) {
+		moved.ApplyToKeys(instance_->textures_);
+	}
 }
 
 //=============================================================================

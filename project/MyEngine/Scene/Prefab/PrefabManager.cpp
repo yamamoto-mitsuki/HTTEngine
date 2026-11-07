@@ -14,6 +14,7 @@
 
 #include "MyEngine/Components/Core/PrefabInstanceComponent.h"
 #include "MyEngine/Components/Core/TransformComponent.h"
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
@@ -276,6 +277,35 @@ const PrefabAsset* FindAssetOf(Handle<Entity> root) {
 	const PrefabAsset* asset = (link != nullptr) ? Find(link->prefab) : nullptr;
 	return (asset != nullptr && asset->entities != nullptr) ? asset : nullptr;
 }
+
+//=============================================================================
+// 名前を変えた・動かしたファイル
+//=============================================================================
+// ===== 覚えているパスを付け替える（番号はそのまま。保存は新しいパスへ）=====
+void OnAssetMoved(const MovedPath& moved) {
+	if (state == nullptr) {
+		return;
+	}
+	// --- 読み込んだ Prefab：ファイルのパスと、中身の JSON に書いてあるパス（入れ子の Prefab・Component のアセット）---
+	// 中身は JSON のまま持っていて、置くたびにそこからアセットを読むので、付け替えないと前のパスを読みに行ってしまう
+	for (PrefabAsset& asset : state->assets) {
+		moved.Apply(asset.path);
+		if (asset.entities == nullptr) {
+			continue;
+		}
+		auto entities = std::make_shared<SceneJson>(*asset.entities); // 中身は置いた物と分け合っているので、写しを直して差し替える
+		if (SceneSerializer::RemapPaths(*entities, moved)) {
+			SetEntities(asset, std::move(entities));
+		}
+	}
+	// --- シーンに置いた物の印（シーンに保存するのはこのパス）---
+	EntityManager::ForEach<PrefabInstanceComponent>([&moved](Handle<Entity>, PrefabInstanceComponent& link) {
+		std::string path = link.path.ToString();
+		if (moved.Apply(path)) {
+			link.path = std::string_view(path);
+		}
+	});
+}
 } // namespace
 
 
@@ -285,6 +315,8 @@ const PrefabAsset* FindAssetOf(Handle<Entity> root) {
 void PrefabManager::Initialize() {
 	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<PrefabState>();
+	AssetMoveRegistry::AddListener(&OnAssetMoved);
+	AssetMoveRegistry::AddReferenceFileType(kPrefabFileExtension); // 中の Component のアセット・入れ子の Prefab のパスを書く
 }
 
 void PrefabManager::Release() { state.reset(); }

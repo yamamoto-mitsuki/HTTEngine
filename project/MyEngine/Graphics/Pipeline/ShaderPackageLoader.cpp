@@ -7,6 +7,7 @@
 
 #include <externals/magic_enum/magic_enum.hpp>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/String/ConvertString.h"
 
@@ -50,7 +51,22 @@ bool MatchPropertyType(ShaderPropertyType type, const ShaderConstantVariable& va
 // ===== 初期化 =====
 void ShaderPackageLoader::Initialize() {
 	instance_ = std::make_unique<ShaderPackageLoader>(ConstructorKey());
+	AssetMoveRegistry::AddListener(&OnAssetMoved);
 	LogManager::Log("Initialized");
+}
+
+// ===== 名前を変えた・動かした .shader =====
+void ShaderPackageLoader::OnAssetMoved(const MovedPath& moved) {
+	if (instance_ == nullptr) {
+		return;
+	}
+	moved.ApplyToKeys(instance_->programIndexByPath_);
+	for (ProgramEntry& program : instance_->programs_) {
+		moved.Apply(program.assetPath);
+	}
+	for (auto& [name, shader] : instance_->shadersByName_) {
+		moved.Apply(shader.assetPath);
+	}
 }
 
 // ===== 解放 =====

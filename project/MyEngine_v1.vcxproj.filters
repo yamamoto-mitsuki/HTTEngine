@@ -306,6 +306,9 @@
     <ClCompile Include="MyEngine\Components\EngineComponents.cpp">
       <Filter>MyEngine\Components</Filter>
     </ClCompile>
+    <ClCompile Include="MyEngine\Core\AssetMoveRegistry.cpp">
+      <Filter>MyEngine\Core</Filter>
+    </ClCompile>
     <ClCompile Include="MyEngine\Core\NameList.cpp">
       <Filter>MyEngine\Core</Filter>
     </ClCompile>
@@ -340,6 +343,9 @@
       <Filter>MyEngine\ECS</Filter>
     </ClCompile>
     <ClCompile Include="MyEngine\Editor\Assets\AssetIcons.cpp">
+      <Filter>MyEngine\Editor\Assets</Filter>
+    </ClCompile>
+    <ClCompile Include="MyEngine\Editor\Assets\AssetMover.cpp">
       <Filter>MyEngine\Editor\Assets</Filter>
     </ClCompile>
     <ClCompile Include="MyEngine\Editor\Assets\AssetThumbnails.cpp">
@@ -1061,6 +1067,9 @@
     <ClInclude Include="MyEngine\Core\Handle.h">
       <Filter>MyEngine\Core</Filter>
     </ClInclude>
+    <ClInclude Include="MyEngine\Core\AssetMoveRegistry.h">
+      <Filter>MyEngine\Core</Filter>
+    </ClInclude>
     <ClInclude Include="MyEngine\Core\NameList.h">
       <Filter>MyEngine\Core</Filter>
     </ClInclude>
@@ -1110,6 +1119,9 @@
       <Filter>MyEngine\ECS</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Editor\Assets\AssetIcons.h">
+      <Filter>MyEngine\Editor\Assets</Filter>
+    </ClInclude>
+    <ClInclude Include="MyEngine\Editor\Assets\AssetMover.h">
       <Filter>MyEngine\Editor\Assets</Filter>
     </ClInclude>
     <ClInclude Include="MyEngine\Editor\Assets\AssetThumbnails.h">

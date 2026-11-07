@@ -44,6 +44,9 @@ public:
 /// </summary>
 class AssetInspector {
 public:
+	// 名前を変えた・動かしたファイルの知らせを頼む（選んでいるファイル・まだ保存していないファイルのパスを付け替えるため。エディタの初期化で1回）
+	static void Initialize();
+
 	// ファイルの種類を足す（各 Manager の Initialize から）
 	static void Register(std::unique_ptr<AssetEditor> editor);
 

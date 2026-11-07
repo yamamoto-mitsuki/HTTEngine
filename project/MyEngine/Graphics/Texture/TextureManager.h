@@ -10,6 +10,8 @@
 #include "MyEngine/Math/MathIncludes.h"
 #include "MyEngine/String/ConvertString.h"
 
+// 前方宣言
+struct MovedPath;
 
 /// <summary>
 /// テクスチャの読み込み、登録
@@ -85,6 +87,9 @@ private:
 	/// SRVをSRVDescriptorHeapに登録する
 	/// </summary>
 	static void RegisterSRV(ID3D12DescriptorHeap* srvHeap, TextureData& textureData, const DirectX::TexMetadata& metadata);
+
+	// 名前を変えた・動かしたファイル：キーのパスを付け替える（番号＝SRV の場所はそのまま。AssetMoveRegistry から呼ばれる）
+	static void OnAssetMoved(const MovedPath& moved);
 
 	// 画像のファイルパス（ToPathKey でそろえた UTF-8 の文字）をキー、TextureDataを値とするマップ
 	std::unordered_map<std::string, TextureData> textures_;

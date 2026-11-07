@@ -1,5 +1,8 @@
 #include "MyEngine/String/ConvertString.h"
 
+#include <cctype>
+#include <algorithm>
+
 #include <windows.h>
 
 std::wstring ConvertString(const std::string& str) {
@@ -43,4 +46,11 @@ std::filesystem::path ToPath(const std::string& utf8) {
 std::string ToPathKey(const std::filesystem::path& path) {
 	// lexically_normal：「.」「..」を消して一番短い形にする（ファイルを見に行かず、文字だけで直すので、無いファイルでも動く）
 	return ToUtf8(path.lexically_normal());
+}
+
+std::string ToLowerAscii(std::string_view text) {
+	std::string result(text);
+	// unsigned char で渡す（char のまま渡すと、日本語の UTF-8 の文字（負の値）で std::tolower が壊れる）
+	std::ranges::transform(result, result.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+	return result;
 }

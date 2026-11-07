@@ -405,7 +405,7 @@ bool FindJustCandidate(Handle<Entity> receiver, JustCandidate& out, Handle<Entit
 	// --- 有効な Hitbox の中で、Active に一番近い物 ---
 	bool isFound = false;
 	EntityManager::ForEach<HitboxComponent>([&](Handle<Entity> entity, HitboxComponent& hitbox) {
-		if (hitbox.justMargin <= 0.0f || hitbox.phase == HitboxPhase::Off || hitbox.IsSpent()) {
+		if (!hitbox.justEnabled || hitbox.phase == HitboxPhase::Off || hitbox.IsSpent()) {
 			return;
 		}
 		// Warning は、Active になる Just Lead Time 秒前から（Warning の長さが 0 なら、いつ Active になるか分からないので、ずっと）
@@ -602,7 +602,9 @@ void DescribeHitbox(ComponentUI& ui, HitboxComponent& value) {
 	ui.Field("Rehit Interval###rehitInterval", value.rehitInterval, AtLeast(0.0f).Tip("同じ相手にもう一度当たるまでの秒（0 なら、1回の攻撃で1回だけ。正なら多段ヒット）"));
 	ui.Field("Max Targets###maxTargets", value.maxTargets, AtLeast(0.0f).Tip("1回の攻撃で当てられる相手の数（0 なら何体でも。弾は 1。当てきったら Off になる）"));
 	ui.Separator("Just");
-	ui.Field("Just Margin###justMargin", value.justMargin, AtLeast(0.0f).Tip("ジャスト判定の範囲：形をこの距離だけ太らせた範囲（m。0 ならジャスト判定は無し）"));
+	// Just Enabled がオフでも、下の2つは出したまま・保存したままにする（オンに戻したとき、前の値が残っているように）
+	ui.Field("Just Enabled###justEnabled", value.justEnabled, Tip("ジャスト判定に使うか（オフならジャストにならない当たり。弾・ジャストを見せたくない攻撃）"));
+	ui.Field("Just Margin###justMargin", value.justMargin, AtLeast(0.0f).Tip("ジャスト判定の範囲：形をこの距離だけ太らせた範囲（m。0 なら形そのものの中だけ。ギズモは形の線がそのままジャストの範囲になる）"));
 	ui.Field("Just Lead Time###justLeadTime", value.justLeadTime, AtLeast(0.0f).Tip("Active になる何秒前から、ジャスト判定の範囲が有効か（Warning の長さが 0 なら、Warning の間ずっと）"));
 }
 
@@ -838,7 +840,8 @@ void HitSystem::DrawGizmos(Camera* camera) {
 			break;
 		}
 		PushHitShape(gizmo.lines, shape, 0.0f, color, true);
-		if (hitbox.justMargin > 0.0f) {
+		// ジャスト判定の範囲（Just Margin が 0 なら形の線と重なるので描かない。形の線がそのままジャストの範囲）
+		if (hitbox.justEnabled && hitbox.justMargin > 0.0f) {
 			PushHitShape(gizmo.lines, shape, hitbox.justMargin, (hitbox.phase == HitboxPhase::Off) ? kJustOffColor : kJustColor, false);
 		}
 	});

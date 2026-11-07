@@ -7,6 +7,7 @@
 #include <string_view>
 #include <utility>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/ECS/ComponentUI.h"
 #include "MyEngine/ECS/EntityManager.h"
@@ -85,7 +86,14 @@ public:
 //=============================================================================
 // 初期化
 //=============================================================================
-void UIScreenEditor::Initialize() { AssetInspector::Register(std::make_unique<UIScreenAssetEditor>()); }
+void UIScreenEditor::Initialize() {
+	AssetInspector::Register(std::make_unique<UIScreenAssetEditor>());
+	// 編集中・開く予約の画面の名前を変えたら、新しいパスに保存する（Done で前の名前のファイルを作り直さないように）
+	AssetMoveRegistry::AddListener([](const MovedPath& moved) {
+		moved.Apply(edit.filePath);
+		moved.Apply(edit.openRequest);
+	});
+}
 
 //=============================================================================
 // 入る・出る

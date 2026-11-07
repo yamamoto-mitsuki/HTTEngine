@@ -8,6 +8,7 @@
 
 #include <externals/nlohmann/json.hpp>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
@@ -175,6 +176,41 @@ bool WriteFile(const std::string& path, const AttackTable& table) {
 	}
 	return true;
 }
+
+//=============================================================================
+// 名前を変えた・動かしたファイル
+//=============================================================================
+// ===== 部品の値の中のパス =====
+// 部品の Fields にアセット（Prefab など）があると、値の JSON の文字にパスが入っている。書き換えたら true
+bool RemapPartSlot(AttackPartSlot& slot, const MovedPath& moved) {
+	SceneJson fields = SceneJson::parse(slot.fields, nullptr, false);
+	if (fields.is_discarded() || !SceneSerializer::RemapPaths(fields, moved)) {
+		return false;
+	}
+	slot.fields = fields.dump();
+	return true;
+}
+
+// ===== 覚えているパスを付け替える（番号はそのまま。保存は新しいパスへ）=====
+void OnAssetMoved(const MovedPath& moved) {
+	if (state == nullptr) {
+		return;
+	}
+	for (AttackTableAsset& asset : state->assets) {
+		moved.Apply(asset.path);
+		// --- 部品の値（攻撃の行・フェーズの待ちの部品）---
+		bool isChanged = false;
+		for (AttackPhaseData& phase : asset.table.phases) {
+			isChanged |= RemapPartSlot(phase.idlePart, moved);
+		}
+		for (AttackData& attack : asset.table.attacks) {
+			isChanged |= RemapPartSlot(attack.part, moved);
+		}
+		if (isChanged) {
+			++asset.revision; // 版を上げて、AttackTableSystem に部品の値を読み直させる
+		}
+	}
+}
 } // namespace
 
 
@@ -184,6 +220,8 @@ bool WriteFile(const std::string& path, const AttackTable& table) {
 void AttackTableManager::Initialize() {
 	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<AttackTableStorage>();
+	AssetMoveRegistry::AddListener(&OnAssetMoved);
+	AssetMoveRegistry::AddReferenceFileType(kFileExtension); // Sample Animation・部品の値にパスを書く
 }
 
 void AttackTableManager::Release() { state.reset(); }

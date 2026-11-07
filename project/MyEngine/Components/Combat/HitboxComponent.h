@@ -41,7 +41,8 @@ struct HitboxComponent {
 	int maxTargets = 0;         // 1回の攻撃で当てられる相手の数（0 なら何体でも。弾は 1。当てきったら Off になる）
 
 	// --- ジャスト判定（HitSystem::TryConsumeJust）---
-	float justMargin = 0.5f;   // ジャスト判定の範囲：形をこの距離だけ太らせた範囲（m。0 ならジャスト判定は無し）
+	bool justEnabled = true;   // ジャスト判定に使うか（false ならジャストにならない当たり。弾・ジャストを見せたくない攻撃）
+	float justMargin = 0.5f;   // ジャスト判定の範囲：形をこの距離だけ太らせた範囲（m。0 なら形そのものの中だけ）
 	float justLeadTime = 0.3f; // Active になる何秒前から、ジャスト判定の範囲が有効か（Warning の長さが 0 なら、Warning の間ずっと）
 
 	// --- 実行中だけの値（保存しない。HitSystem が書く）---

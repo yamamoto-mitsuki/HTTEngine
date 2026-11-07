@@ -34,7 +34,8 @@ Quaternion ExtractRotation(const Matrix4x4& matrix, const Vector3& scale) {
 void AnimationPlayer::Play(uint32_t animationHandle, uint32_t index, bool loop) {
 	// 見つからなければ nullptr
 	animation_ = AnimationManager::GetAnimation(animationHandle, index);
-	time_ = 0.0f;
+	// 流す向きの始まりから（前に流すなら 0 秒、逆に流す（speed が負）なら終わりから。逆に流すのに 0 秒から始めると、すぐ終わってしまう）
+	time_ = (animation_ != nullptr && speed_ < 0.0f) ? animation_->duration : 0.0f;
 	loop_ = loop;
 	isPaused_ = false;
 	isPlaying_ = (animation_ != nullptr);
@@ -69,7 +70,8 @@ void AnimationPlayer::Update(float deltaTime) {
 		return;
 	}
 
-	time_ += deltaTime * speed_;
+	const float step = deltaTime * speed_; // このフレームに進める秒（負なら戻る。一時停止・ヒットストップで deltaTime が 0 なら 0）
+	time_ += step;
 
 	if (loop_) {
 		// --- ループ ---
@@ -80,8 +82,13 @@ void AnimationPlayer::Update(float deltaTime) {
 		return;
 	} else {
 		// --- ループしない ---
-		if (time_ >= duration || time_ <= 0.0f) {
-			time_ = std::clamp(time_, 0.0f, duration);
+		// 進む向きの終わりに着いたときだけ止める（前に流すなら duration、逆に流すなら 0）
+		// 進めない（step が 0）ときは止めない。流し始め（0 秒）に 0 秒進めても「0 以下」になるので、向きを見ないと止まってしまう
+		if (step > 0.0f && time_ >= duration) {
+			time_ = duration;
+			isPlaying_ = false;
+		} else if (step < 0.0f && time_ <= 0.0f) {
+			time_ = 0.0f;
 			isPlaying_ = false;
 		}
 	}

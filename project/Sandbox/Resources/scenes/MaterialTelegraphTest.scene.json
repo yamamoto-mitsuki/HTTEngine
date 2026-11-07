@@ -404,6 +404,7 @@
 					"activeSeconds": 0.0,
 					"rehitInterval": 0.5,
 					"maxTargets": 0,
+					"justEnabled": false,
 					"justMargin": 0.0,
 					"justLeadTime": 0.3
 				},

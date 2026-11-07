@@ -32,6 +32,10 @@ namespace ProjectFiles {
 // ===== 出すフォルダの一覧 =====
 const std::array<std::filesystem::path, 2>& GetRootFolders() { return kRootFolders; }
 
+// ===== アセットのフォルダ・コードのフォルダ =====
+const std::filesystem::path& GetResourceFolder() { return kResourceFolder; }
+const std::filesystem::path& GetSourceFolder() { return kSourceFolder; }
+
 // ===== path が folder の中にあるか（folder そのものも含む） =====
 bool IsInside(const std::filesystem::path& path, const std::filesystem::path& folder) {
 	auto it = path.begin();

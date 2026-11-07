@@ -3,6 +3,9 @@
 
 #include "MyEngine/ECS/ComponentSerializer.h"
 
+// 前方宣言
+struct MovedPath;
+
 // シーンファイルを読んだ結果
 enum class SceneLoadResult {
 	Loaded,   // 読めた
@@ -48,4 +51,9 @@ public:
 	static bool WriteFile(const std::string& path, const SceneJson& root);
 	// {"version", "entities"} の版を確かめて、entities の配列を返す（読めない版・形なら、ログに出して nullptr）
 	static const SceneJson* FindEntities(const SceneJson& root);
+
+	// ===== 名前を変えた・動かしたアセット =====
+	// JSON の中の文字の値で、動いた物のパスを全部新しいパスにする（項目の名前は見ない）。1つでも書き換えたら true
+	// エディタの AssetMover（ファイルの中）と、JSON のまま覚えている所（Prefab の中身・攻撃部品の値）が使う
+	static bool RemapPaths(SceneJson& json, const MovedPath& moved);
 };

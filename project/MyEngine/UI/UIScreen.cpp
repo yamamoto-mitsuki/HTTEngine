@@ -11,6 +11,7 @@
 #include "MyEngine/Components/Core/TransformComponent.h"
 #include "MyEngine/Components/UI/AlphaGroupComponent.h"
 #include "MyEngine/Components/UI/UIScreenComponent.h"
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/ECS/ComponentSerializer.h"
@@ -379,6 +380,8 @@ void DescribeUIScreenElement(ComponentUI& ui, UIScreenElementComponent& value) {
 void UIScreen::Initialize() {
 	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<UIScreenState>();
+	// 画面のファイルは、中身が Prefab と同じ形（Component のアセットのパスを書く）。名前を変えたときに、中のパスも書き換えてもらう
+	AssetMoveRegistry::AddReferenceFileType(kUIScreenFileExtension);
 	// UI Screen・UI Screen Element の置き場所・保存・Inspector を登録する（見せ方は Describe〜 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<UIScreenComponent>();
 	ComponentSerializer::Register<UIScreenComponent>("UI Screen", &DescribeUIScreen);

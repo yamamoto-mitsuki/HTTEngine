@@ -19,6 +19,7 @@
 
 #include <externals/imgui/imgui.h>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Editor/Widgets/EditorWidgets.h"
 #include "MyEngine/String/ConvertString.h"
@@ -491,6 +492,14 @@ void DrawCode(CodeFile& file) {
 // 初期化（コード用のフォント）
 //=============================================================================
 void CodeWindow::Initialize() {
+	// 開いているファイル（.shader など）の名前を変えたら、タブを新しいパスにする（前のパスのままだと、読み直せずに中身が消える）
+	AssetMoveRegistry::AddListener([](const MovedPath& moved) {
+		for (CodeFile& file : files) {
+			if (moved.Apply(file.path)) {
+				file.title = ToUtf8(file.path.filename());
+			}
+		}
+	});
 	ImGuiIO& io = ImGui::GetIO();
 	std::error_code error;
 	if (!std::filesystem::exists(kCodeFontPath, error)) {

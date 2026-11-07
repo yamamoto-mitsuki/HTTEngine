@@ -6,6 +6,7 @@
 
 #include <externals/nlohmann/json.hpp>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/ECS/ComponentUI.h"
@@ -103,6 +104,23 @@ void ReadTrack(const SceneJson& json, Timeline& timeline, std::set<std::string>&
 	}
 	timeline.tracks.push_back(std::move(track));
 }
+
+// ===== 名前を変えた・動かしたファイル：覚えているパスを付け替える（番号はそのまま。保存は新しいパスへ）=====
+// 知らない種類のトラックは JSON の文字のまま持っているので、その中のパスも付け替える（保存でそのまま書き戻すため）
+void OnAssetMoved(const MovedPath& moved) {
+	if (state == nullptr) {
+		return;
+	}
+	for (const std::unique_ptr<TimelineAsset>& asset : state->assets) {
+		moved.Apply(asset->path);
+		for (std::string& text : asset->timeline.unknownTracks) {
+			SceneJson track = SceneJson::parse(text, nullptr, false);
+			if (!track.is_discarded() && SceneSerializer::RemapPaths(track, moved)) {
+				text = track.dump();
+			}
+		}
+	}
+}
 } // namespace
 
 //=============================================================================
@@ -154,6 +172,8 @@ bool TimelineStates::Prepare(uint32_t handle) {
 void TimelineManager::Initialize() {
 	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<TimelineStorage>();
+	AssetMoveRegistry::AddListener(&OnAssetMoved);
+	AssetMoveRegistry::AddReferenceFileType(kFileExtension); // クリップの Curve・Preset のパスを書く
 }
 
 void TimelineManager::Release() { state.reset(); }

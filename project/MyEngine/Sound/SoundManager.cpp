@@ -9,6 +9,7 @@
 
 #include <externals/magic_enum/magic_enum.hpp>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/String/ConvertString.h"
@@ -136,6 +137,14 @@ void SoundManager::Initialize() {
 	MY_ASSERT_MSG(instance_ == nullptr, "Initialize()を2回呼んでいます");
 	instance_ = std::make_unique<SoundManager>(ConstructorKey());
 	instance_->InitInternal();
+	AssetMoveRegistry::AddListener(&OnAssetMoved);
+}
+
+// ===== 名前を変えた・動かしたファイル =====
+void SoundManager::OnAssetMoved(const MovedPath& moved) {
+	if (instance_ != nullptr) {
+		moved.ApplyToKeys(instance_->pathID_);
+	}
 }
 
 void SoundManager::Release() {

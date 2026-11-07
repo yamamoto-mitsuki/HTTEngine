@@ -18,6 +18,7 @@
 #define STB_TRUETYPE_IMPLEMENTATION
 #include <externals/imgui/imstb_truetype.h>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/Graphics/GPU/DirectXCommon.h"
@@ -182,6 +183,17 @@ Glyph MakeGlyph(Font& font, char32_t codepoint) {
 	stbtt_FreeSDF(sdf, nullptr); // stb_truetype が作った絵を返す
 	return glyph;
 }
+
+// ===== 名前を変えた・動かしたファイル：覚えているパスを付け替える（番号はそのまま。AssetMoveRegistry から呼ばれる）=====
+void OnAssetMoved(const MovedPath& moved) {
+	if (state == nullptr) {
+		return;
+	}
+	moved.ApplyToKeys(state->handleByPath);
+	for (const std::unique_ptr<Font>& font : state->fonts) {
+		moved.Apply(font->path);
+	}
+}
 }; // namespace
 
 
@@ -191,6 +203,7 @@ Glyph MakeGlyph(Font& font, char32_t codepoint) {
 void FontManager::Initialize() {
 	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<FontState>();
+	AssetMoveRegistry::AddListener(&OnAssetMoved);
 	LogManager::Log("Initialized");
 }
 

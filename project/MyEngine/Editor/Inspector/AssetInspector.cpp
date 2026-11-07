@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/ECS/ComponentUI.h"
 #include "MyEngine/String/ConvertString.h"
 
@@ -37,7 +38,16 @@ void SaveUnsaved() {
 	}
 	unsaved.clear();
 }
+
+// 名前を変えた・動かしたファイル：選んでいる・まだ保存していないファイルのパスを付け替える
+// 付け替えないと、Inspector が前のパスで中身を読み・保存して、前の名前のファイルを作り直してしまう
+void OnAssetMoved(const MovedPath& moved) {
+	moved.Apply(selected);
+	moved.Apply(unsaved);
+}
 } // namespace
+
+void AssetInspector::Initialize() { AssetMoveRegistry::AddListener(&OnAssetMoved); }
 
 void AssetInspector::Register(std::unique_ptr<AssetEditor> editor) { editors.push_back(std::move(editor)); }
 

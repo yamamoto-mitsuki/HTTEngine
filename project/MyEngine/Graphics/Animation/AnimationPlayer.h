@@ -15,7 +15,7 @@ class AnimationPlayer {
 public:
 	// ===== 再生の操作 =====
 	/// <summary>
-	/// 最初から再生する
+	/// 最初から再生する（逆に流す（SetSpeed が負）なら終わりから。速さは先に SetSpeed で決めておく）
 	/// </summary>
 	/// <param name="index">ファイルの中の何番目か（ふつうの0）</param>
 	void Play(uint32_t animationHandle, uint32_t index = 0, bool loop = true);

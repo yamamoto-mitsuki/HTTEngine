@@ -7,6 +7,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/String/ConvertString.h"
@@ -27,7 +28,19 @@ constexpr double kDefaultTicksPerSecond = 25.0;
 void AnimationManager::Initialize() { 
 	MY_ASSERT_MSG(instance_ == nullptr, "Initialize()が2回以上呼び出されています");
 	instance_ = std::make_unique<AnimationManager>(ConstructorKey());
+	AssetMoveRegistry::AddListener(&OnAssetMoved);
 	LogManager::Log("Initialized");
+}
+
+// ===== 名前を変えた・動かしたファイル =====
+void AnimationManager::OnAssetMoved(const MovedPath& moved) {
+	if (instance_ == nullptr) {
+		return;
+	}
+	moved.ApplyToKeys(instance_->pathToHandle_);
+	for (auto& [handle, file] : instance_->files_) {
+		moved.Apply(file.path);
+	}
 }
 
 // ===== 解放 =====

@@ -11,6 +11,7 @@
 
 #include <externals/nlohmann/json.hpp>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/ECS/EntityManager.h"
@@ -94,6 +95,8 @@ void SceneManager::Initialize(SceneFactory openScene) {
 	if (main_ == nullptr) {
 		main_ = this;
 	}
+	// シーンのファイルは中に Component のアセット・置いた Prefab のパスを書く。名前を変えたときに、中のパスも書き換えてもらう（同じ物は1回だけ入る）
+	AssetMoveRegistry::AddReferenceFileType(kSceneFileExtension);
 	openSceneFactory_ = std::move(openScene);
 	ChangeScene(openSceneFactory_(), false);
 	openSceneName_ = currentScene_->GetSceneName();

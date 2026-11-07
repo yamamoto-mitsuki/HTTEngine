@@ -11,6 +11,7 @@
 
 #include <externals/nlohmann/json.hpp>
 
+#include "MyEngine/Core/AssetMoveRegistry.h"
 #include "MyEngine/Curve/CurveManager.h"
 #include "MyEngine/Diagnostics/LogManager.h"
 #include "MyEngine/Diagnostics/MyAssert.h"
@@ -171,6 +172,16 @@ void WriteFloats(std::vector<std::byte>& constants, uint32_t offset, const Vecto
 	std::memcpy(constants.data() + offset, &value.x, sizeof(float) * components); // Vector4 は x・y・z・w が並んでいる
 }
 void WriteUint(std::vector<std::byte>& constants, uint32_t offset, uint32_t value) { std::memcpy(constants.data() + offset, &value, sizeof(uint32_t)); }
+
+// ===== 名前を変えた・動かしたファイル：覚えているパスを付け替える（番号はそのまま。中のテクスチャ・Curve は番号で持つので、それぞれの Manager が付け替える）=====
+void OnAssetMoved(const MovedPath& moved) {
+	if (state == nullptr) {
+		return;
+	}
+	for (MaterialAsset& asset : state->assets) {
+		moved.Apply(asset.path);
+	}
+}
 } // namespace
 
 
@@ -180,6 +191,8 @@ void WriteUint(std::vector<std::byte>& constants, uint32_t offset, uint32_t valu
 void MaterialManager::Initialize() {
 	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<MaterialState>();
+	AssetMoveRegistry::AddListener(&OnAssetMoved);
+	AssetMoveRegistry::AddReferenceFileType(kFileExtension); // Shader・テクスチャ・Curve のパスを書く
 }
 
 void MaterialManager::Release() { state.reset(); }

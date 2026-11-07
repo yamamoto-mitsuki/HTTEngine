@@ -78,6 +78,9 @@ private:
 	/// <returns></returns>
 	static std::vector<Animation> LoadAnimationFile(const std::filesystem::path& path);
 
+	// 名前を変えた・動かしたファイル：キーと覚えているパスを付け替える（番号はそのまま。AssetMoveRegistry から呼ばれる）
+	static void OnAssetMoved(const struct MovedPath& moved);
+
 
 	// ハンドルからファイルを探す（無ければ nullptr）
 	static const AnimationFile* Find(uint32_t handle);

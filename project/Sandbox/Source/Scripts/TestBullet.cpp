@@ -46,7 +46,7 @@ GameObject SpawnTestBullet(const Vector3& position, const Vector3& velocity, Han
 	hitbox.instigator = EntityManager::RefOf(shooter);
 	hitbox.phase = HitboxPhase::Active;
 	hitbox.maxTargets = 1;
-	hitbox.justMargin = 0.0f; // 弾はジャスト判定に使わない
+	hitbox.justEnabled = false; // 弾はジャスト判定に使わない
 	bullet.AddComponent(hitbox);
 
 	DamageSourceComponent source;

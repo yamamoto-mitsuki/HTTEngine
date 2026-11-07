@@ -278,6 +278,8 @@ private:
 	void InitInternal();
 	void ReleaseInternal();
 	uint32_t LoadInternal(const std::filesystem::path& filename);
+	// 名前を変えた・動かしたファイル：キーのパスを付け替える（番号はそのまま。AssetMoveRegistry から呼ばれる）
+	static void OnAssetMoved(const struct MovedPath& moved);
 	uint32_t PlayInternal(uint32_t soundHandle, bool loop, float volume, float pitch, AudioBus bus);
 	void SetVolumeInternal(uint32_t playHandle, float volume);
 	void SetPitchInternal(uint32_t playHandle, float pitch);

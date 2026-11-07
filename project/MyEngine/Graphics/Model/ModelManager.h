@@ -194,6 +194,9 @@ private:
 	/// <param name="bufferName">バッファの名前の頭（「ファイル名/マテリアル名」。PIX などで見分ける）</param>
 	static void MakeMeshBuffer(SubMesh& mesh, const std::string& bufferName);
 
+	// 名前を変えた・動かしたファイル：キーのパスと、マテリアルのテクスチャのパスを付け替える（番号はそのまま。AssetMoveRegistry から呼ばれる）
+	static void OnAssetMoved(const struct MovedPath& moved);
+
 	std::unordered_map<uint32_t, ModelAsset> models_;        // キー → ModelAsset
 	std::unordered_map<std::string, uint32_t> pathToHandle_; // ファイルパス → キー（重複防止）
 	uint32_t modelsKey_ = 1;
