@@ -146,6 +146,12 @@ void SceneManager::Update() {
 	UpdateDirty();
 #endif
 
+	// ===== フレームの頭の最後：ワールド行列を、今の Transform から作り直す =====
+	// 決まり：Script・SYSTEM が回る前には、全部の Entity のワールド行列が、そのときの Transform から作られている
+	// フレームの頭（ここまでと EngineSystems::FlushPending）で Entity を作った・戻した（シーンを読む・作り直す・開く・Undo・エディタから Prefab を置く）ので、
+	// 作り直さないと、その Entity の行列はまだ無い（単位行列＝原点）か、古いまま
+	EntityManager::UpdateTransforms();
+
 	// 一時停止は時間を0にする。Updateは走るので ApplyGV が効く
 	// ゲームのスロー（Time::SetGameTimeScale）は別に持っているので、ここで書き直しても消えない
 	// 停止中も書く（一時停止のまま Stop したとき、停止中の時間が0のまま残らないように）

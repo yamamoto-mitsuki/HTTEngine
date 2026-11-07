@@ -160,7 +160,9 @@ public:
 	// ===== フレーム更新 =====
 	// 更新の最初に1回呼ぶ。Componentの追加・取り外しの予約をまとめて反映する
 	static void FlushComponentChanges();
-	// 更新順序2：ワールド行列を親→子の順で計算する。シーンのUpdateの後に呼ぶ
+	// 更新順序2：ワールド行列を親→子の順で計算する
+	// フレームの頭の最後（SceneManager::Update。Script・SYSTEM の前）と、Script・SYSTEM の後（EngineSystems::Update）に呼ぶ
+	// なので Script・SYSTEM が読むワールド行列は、フレームの頭の時点の Transform から作った物（そのフレームの中で動かした分は、次に呼ぶまで入らない）
 	static void UpdateTransforms();
 	// 更新順序6：破棄予約をまとめて反映する。フレームの最後に呼ぶ
 	static void FlushDestroy();

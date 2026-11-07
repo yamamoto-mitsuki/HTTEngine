@@ -59,7 +59,7 @@ main.cpp                  ゲームの入口。Engine::Initialize してルー�
 | 1 | `Engine::BeginFrame`（時間の更新、ImGuiの開始） | エンジン |
 | 2 | `EntityManager::FlushComponentChanges`（前フレームに予約したComponentの追加・削除を反映） | エンジン |
 | 3 | `EditorHistory::Flush`（Undo・削除・貼り付けの予約を実行） | エンジン |
-| 4 | `SceneManager::Update`：頭で作り直し（Play / Stop / Restart）・シーン切り替え（前のフレームの `LoadScene`）・保存 → **`IScene::Update`**（停止中は呼ばれない） | **ゲーム** |
+| 4 | `SceneManager::Update`：頭で作り直し（Play / Stop / Restart）・シーン切り替え（前のフレームの `LoadScene`）・保存 → `EntityManager::UpdateTransforms`（頭で作った・戻した Entity の `worldMatrix` も作る）→ **`IScene::Update`**（停止中は呼ばれない） | **ゲーム** |
 | 5 | **`GameComponentRegistry::UpdateAll`（`SYSTEM(...)` で書いた処理）** | **ゲーム** |
 | 6 | `EntityManager::UpdateTransforms`（親→子の順に `worldMatrix` を計算） | エンジン |
 | 6.2 | `WindZoneSystem::Update`（Wind Zone の範囲を集め直す。再生中は範囲の中の Rigidbody を押す・画面の風の線の値を LensPass へ書く）→ `PhysicsSystem::Update`（再生中だけ） | エンジン |
@@ -78,7 +78,7 @@ main.cpp                  ゲームの入口。Engine::Initialize してルー�
 **覚えておくこと：**
 
 - **追加・削除は必ず「予約 → 次のフレームの頭で反映」**。`ForEach` で回している最中に配列が動かないようにするため
-- `worldMatrix` は 6 で計算されるので、**Updateの中で読むと1フレーム前の値**
+- `worldMatrix` は 4 の頭の最後と 6 で計算されるので、**Updateの中で読むと、フレームの頭の時点の値**（シーンを読んだ最初のフレームでも正しい。そのフレームの中で動かした分は 6 まで入らない）
 - 当たり（`CollisionSystem::GetHits`）も 9 で作られるので、**SYSTEM で読むのは前のフレームの判定結果**（動かした後の位置で調べた物）。消すと決めた Entity は 8 で消えているので、もう当たらない
 - 停止中（Stop）は 4 の `IScene::Update` と 5 が飛ぶ（4 の頭の作り直し・保存は動く）。Pause中は `Time::GetDeltaTime()` が 0 になり、音も止まる
 
@@ -637,7 +637,7 @@ transform->rotation.y += 90.0f;            // ✗ クォータニオンの数字
 transform->worldMatrix = MakeIdentity4x4(); // ✗ 自分で書いても次のフレームに上書きされる
 ```
 
-> **`worldMatrix` はフレームの中盤（`UpdateTransforms`）で計算される。** シーンの `Update` で読むと1フレーム前の値。位置を正確に使いたいときは `translation` から計算するか、`Draw` で読む。今すぐ正しい値が欲しいときは `EntityManager::CalcWorldMatrix(entity)`（親をたどって計算し直す）。
+> **`worldMatrix` はフレームの頭の最後（Script・SYSTEM の前）と、フレームの中盤（`UpdateTransforms`）で計算される。** シーンの `Update`・Script・SYSTEM で読むと、フレームの頭の時点の値（そのフレームの中で動かした分は入っていない）。位置を正確に使いたいときは `translation` から計算するか、`Draw` で読む。今すぐ正しい値が欲しいときは `EntityManager::CalcWorldMatrix(entity)`（親をたどって計算し直す）。
 
 - **ワールド座標で動かす**なら `EntityManager::TranslateWorld(entity, move)`（親の下なら、親から見た量に直して `translation` に足す）。物理の押し戻し・カメラの追いかけもこれを使う。
 - **子を名前で探す**なら `gameObject.FindChild("Body")`（自分の子だけを見る。孫は見ない。Unity の `transform.Find`）。シーン全体から探す `GameObject::Find` と違い、Prefab を何個置いても、それぞれの子が見つかる。
