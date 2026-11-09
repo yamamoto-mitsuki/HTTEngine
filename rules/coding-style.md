@@ -82,6 +82,7 @@ void SoundDecoder::Finalize() {
 
 ## 分岐
 - 値が 3 つ以上ある enum で分けるときは `switch` を使う（`default` は書いてよい）。1つの値だけ聞くなら `if (x == A)` のままでよい。
+- enum の個数・名前・全部の値は、自分で数えたり文字列で書いたりせず magic_enum を使う（`magic_enum::enum_count<T>()`・`enum_name(value)`・`enum_values<T>()`・`enum_cast<T>("名前")`。include は `<externals/magic_enum/magic_enum.hpp>`）。数える用の `Count` を enum の最後に足さない（それも値の1つとして数えられる）。
 
 ## ImGui
 - 数値の入力は Slider ではなく Drag を使う（細かい値を打ち込めるように）。
@@ -89,4 +90,5 @@ void SoundDecoder::Finalize() {
 ## 見直すこと
 - 同じコードのコピペが増えていないか。
 - メモリの持ち主がはっきりしているか（unique_ptr・shared_ptr・weak_ptr の使い分け）。
+- 1ファイルは 1000 行以内。500 行を超えたら、コピペのコード・別のクラスや関数に分けられる所が無いかを見直す。
 - 1つのフォルダのファイルが 15 を超えたら、フォルダ分けを考える。
