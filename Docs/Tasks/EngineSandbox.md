@@ -10,14 +10,14 @@
 
 # エンジンの Sandbox（起動確認・機能テスト用の exe）
 
-エンジン（`MyEngine_v1.vcxproj`）はスタティックライブラリなので、それだけでは起動できない。今までは個人のゲーム AL4_01 で起動して確かめていたが、エンジンのリポジトリの中に **起動確認・テスト用の exe（Sandbox）** を持つ。
+エンジン（`HTTEngine.vcxproj`）はスタティックライブラリなので、それだけでは起動できない。今までは個人のゲーム AL4_01 で起動して確かめていたが、エンジンのリポジトリの中に **起動確認・テスト用の exe（Sandbox）** を持つ。
 
 - **場所**：`project/Sandbox/`。エンジンと同じリポジトリの中のふつうのフォルダ（サブモジュールではない）
 - **中身**：`main.cpp`・`Sandbox.vcxproj`・**ふつうのシーン**（カメラ・平行光源・地面・箱だけの `SampleScene`）
 - **エンジンのソリューションに足して、スタートアップにする**。F5 でエンジンをビルドして Sandbox が起動する
 - **AL4_01 にあるエンジンのテスト**（Script と、テストのシーン・Timeline・UI 画面など）を Sandbox へ移す。AL4_01 は個人のゲームだけに戻る
 - エンジンの機能を足したときは、**エンジンの直しとテストのシーンを同じコミットに入れられる**
-- **clone → `project/MyEngine_v1.slnx` を開く → F5 で Sandbox が起動する**。手で写す・置く物は無い（0.6）。exe は git に入れない（ビルドすれば作られる）
+- **clone → `project/HTTEngine.slnx` を開く → F5 で Sandbox が起動する**。手で写す・置く物は無い（0.6）。exe は git に入れない（ビルドすれば作られる）
 
 > **2026-11-04：パートA は写経せず、本体に直接入れた**（md のコードそのまま）。**パートB はやらない**（AL4_01 にあるテストはもう確かめ終わった物なので、Sandbox にはふつうのシーンだけを置く。AL4_01 のテストのファイルはそのまま）。パートC は、チームのゲームを始めるときに使う。0章の B に関わる行（テストを移す・BossTest など）は、その前提で書いた物として読む。
 
@@ -26,14 +26,14 @@
 ### 0.1 流れ
 
 ```
-エンジンのリポジトリ（MyEngine_v1）
+エンジンのリポジトリ（HTTEngine）
 ├─ .gitignore                    ← Sandbox が書くファイルを外す（パートA）
 ├─ .github/workflows/*.yml       ← .sln → .slnx（パートA）
 └─ project/
-   ├─ MyEngine_v1.slnx           ← .sln をやめて .slnx に。Sandbox を足してスタートアップに（パートA）
-   ├─ MyEngine.props             ← そのまま（Sandbox もゲームと同じくこれを読む）
-   ├─ MyEngine_v1.vcxproj        ← そのまま
-   ├─ MyEngine/・Resources/      ← エンジン
+   ├─ HTTEngine.slnx           ← .sln をやめて .slnx に。Sandbox を足してスタートアップに（パートA）
+   ├─ HTTEngine.props             ← そのまま（Sandbox もゲームと同じくこれを読む）
+   ├─ HTTEngine.vcxproj        ← そのまま
+   ├─ HTTEngine/・Resources/      ← エンジン
    └─ Sandbox/                   ← 新しい
       ├─ Sandbox.vcxproj(.filters)
       ├─ main.cpp
@@ -41,7 +41,7 @@
       ├─ Resources/scenes/SampleScene.scene.json  ← ふつうのシーン
       ├─ Resources/…             ← AL4_01 から移すテストのシーン・Timeline など（パートB）
       ├─ Parameters/PostEffect/ToneMap.json  ← トーンマップを ACES に（ほかは起動すると作られる。Editor/ は git に入れない）
-      └─ MyEngine/               ← ビルドのたびにエンジンの Resources・.shader を写す先（git に入れない）
+      └─ HTTEngine/               ← ビルドのたびにエンジンの Resources・.shader を写す先（git に入れない）
 ```
 
 1. **パートA**（エンジン側）：Sandbox を作り、ソリューションに足す。ふつうのシーンが開くところまで。
@@ -53,11 +53,11 @@
 | ファイル | 何をするか |
 |---|---|
 | `project/Sandbox/main.cpp`（新しい） | `Engine::Initialize(config, "SampleScene")` とループだけ（AL4_01 の `main.cpp` と同じ形） |
-| `project/Sandbox/Sandbox.vcxproj`（新しい） | exe。`..\MyEngine.props` を読む。3構成。ビルドの後にエンジンの Resources・.shader を写す |
+| `project/Sandbox/Sandbox.vcxproj`（新しい） | exe。`..\HTTEngine.props` を読む。3構成。ビルドの後にエンジンの Resources・.shader を写す |
 | `project/Sandbox/Sandbox.vcxproj.filters`（新しい） | ソリューション エクスプローラーのフォルダ分け |
 | `project/Sandbox/Resources/scenes/SampleScene.scene.json`（新しい） | ふつうのシーン |
 | `project/Sandbox/Parameters/PostEffect/ToneMap.json`（新しい） | トーンマップを ACES に（無いと空が白く飛ぶ） |
-| `project/MyEngine_v1.sln` → `project/MyEngine_v1.slnx` | 構成を3つにして1対1に。Sandbox を足して `DefaultStartup` |
+| `project/HTTEngine.sln` → `project/HTTEngine.slnx` | 構成を3つにして1対1に。Sandbox を足して `DefaultStartup` |
 | `.github/workflows/DebugBuild.yml`・`ReleaseBuild.yml` | ビルドするファイルを `.slnx` に |
 | `.gitignore` | Sandbox が起動中に書くファイル・エディタの `.bak` などを外す |
 | `README.md` | 「`.slnx` を開いて F5 で Sandbox が起動する」を足す |
@@ -65,7 +65,7 @@
 
 ### 0.3 使い方
 
-1. `project/MyEngine_v1.slnx` を Visual Studio で開く。
+1. `project/HTTEngine.slnx` を Visual Studio で開く。
 2. 構成（Debug・Development・Release）を選んで F5。エンジン → Sandbox の順にビルドされ、Sandbox が起動する。
 3. エディタ（Debug・Development）は、前回最後に開いていたシーンから始まる。初めては `SampleScene`。
 4. 機能を足したら、Sandbox にテストのシーン・Script を足して確かめ、エンジンの直しと一緒にコミットする。
@@ -74,14 +74,14 @@
 
 | 項目 | 決めたこと | 理由 |
 |---|---|---|
-| 名前・場所 | `project/Sandbox/`。プロジェクト名も `Sandbox` | `MyEngine.props` を `..\MyEngine.props` で読める。`project/MyEngine/` の外なので、props の「MyEngine の下のフォルダを全部 include に足す」に入らない |
+| 名前・場所 | `project/Sandbox/`。プロジェクト名も `Sandbox` | `HTTEngine.props` を `..\HTTEngine.props` で読める。`project/HTTEngine/` の外なので、props の「HTTEngine の下のフォルダを全部 include に足す」に入らない |
 | 起動するフォルダ | `project/Sandbox/`（vcxproj のフォルダ。Visual Studio の既定のまま） | ゲームと同じに、`resources/…`・`Parameters/…` を起動したフォルダから読む。`.vcxproj.user` を作らなくてよい |
-| エンジンの Resources・.shader | Sandbox のビルドの後に `project/Sandbox/MyEngine/` へ写す（`xcopy /D`） | エンジンはアイコン・グリッド・空などを `MyEngine/Resources/…` で読む（起動したフォルダから見た場所）。エンジンのビルドの後の写しは、エンジンのソリューションでは動かない（1.1） |
+| エンジンの Resources・.shader | Sandbox のビルドの後に `project/Sandbox/HTTEngine/` へ写す（`xcopy /D`） | エンジンはアイコン・グリッド・空などを `HTTEngine/Resources/…` で読む（起動したフォルダから見た場所）。エンジンのビルドの後の写しは、エンジンのソリューションでは動かない（1.1） |
 | ソリューション | `.sln` をやめて `.slnx` にする | 構成を3つにして1対1に直す必要がある（1.2）。`.slnx` は短く手で書けて、`DefaultStartup` でスタートアップを決められる。AL4_01 も `.slnx` |
 | 構成 | Debug・Development・Release を、全部のプロジェクトで同じ名前の構成に | 今の `.sln` は「Debug」でエンジンの Development をビルドしていた。Sandbox の Debug と混ぜるとリンクできない（1.2） |
 | ImGui の Release | ビルドしない（`.sln` と同じ） | Release は ImGui を使わない（props の参照も Release 以外だけ） |
 | トーンマップ | Sandbox の `Parameters/PostEffect/ToneMap.json` で ACES（Mode 2）・露出 1。エンジンの既定（None）は変えない | 既定の None だと、空（HDR）の明るい所が白く飛んで、地面との境も見えにくい（D の表）。AL4_01 も同じ値を `Parameters/` に置いていた。既定はエンジンを使う全部のゲームの見た目を変えるので触らない |
-| include の書き方 | `#include <MyEngine/Engine.h>`（`<>`） | Sandbox はエンジンを「使う側」。ゲームと同じ書き方にすると、パートC でそのまま写せる |
+| include の書き方 | `#include <HTTEngine/Engine.h>`（`<>`） | Sandbox はエンジンを「使う側」。ゲームと同じ書き方にすると、パートC でそのまま写せる |
 | vcxproj の共通の設定 | 条件の無い `ItemDefinitionGroup` に1回だけ書く | AL4_01 の vcxproj は同じ設定（ビルドの後のコピーなど）を3構成に3回書いている。1か所なら直し忘れが無い（1.4） |
 | テストを移すか | 移す。AL4_01 は個人のゲームだけに戻す | エンジンの直しとテストを同じコミットに入れられる。AL4_01 のテストのファイルは全部 git に入っていない（なくすと戻せない）ので、エンジンの git に入れて守る |
 | BossTest | Sandbox へ移す。シーンは `BossTest` という名前に | 攻撃表（Attack Table）のテスト。2本目の課題でボスを作るときは、ゲームの Script として作り直す |
@@ -91,15 +91,15 @@
 
 ### 0.5 ゲームがエンジンをサブモジュールで読むとき
 
-AL4_01 のように、ゲームのリポジトリがエンジンをサブモジュールで読むと、`MyEngine_v1/project/Sandbox/` もいっしょに入ってくる。邪魔にならないかを調べた。
+AL4_01 のように、ゲームのリポジトリがエンジンをサブモジュールで読むと、`HTTEngine/project/Sandbox/` もいっしょに入ってくる。邪魔にならないかを調べた。
 
 | 心配 | どうなるか |
 |---|---|
 | Sandbox がビルドされる | されない。ゲームの `.slnx` に並ぶのはエンジン・DirectXTex・ImGui の vcxproj だけ。Sandbox の vcxproj はだれも参照しない |
-| include の場所が増える | 増えない。props が include に足すのは `project/MyEngine/` の下だけ。Sandbox は `project/Sandbox/` |
+| include の場所が増える | 増えない。props が include に足すのは `project/HTTEngine/` の下だけ。Sandbox は `project/Sandbox/` |
 | Sandbox の Script がゲームに入る | 入らない。Script は Sandbox の exe のソースで、エンジンの lib には入らない。ゲームの Add Component にも出ない |
 | 大きいファイル | 入れない。テストのファイルは全部で 0.3 MB くらい（Timeline・シーン・UI 画面の JSON と、小さい画像1枚）。モデルを足すときは、エンジンの `project/Resources/Model/` にある物を使う |
-| `project/Sandbox/MyEngine/`（エンジンの Resources の写し） | Sandbox をビルドしたときだけできる。`.gitignore` で外すので、サブモジュールの中身にも入らない |
+| `project/Sandbox/HTTEngine/`（エンジンの Resources の写し） | Sandbox をビルドしたときだけできる。`.gitignore` で外すので、サブモジュールの中身にも入らない |
 | `project/Directory.Build.props` | DirectXTex だけに効く（Sandbox にもゲームにも関係ない） |
 
 ### 0.6 clone してビルドするだけで動くか
@@ -108,12 +108,12 @@ AL4_01 のように、ゲームのリポジトリがエンジンをサブモジ�
 
 | 要る物 | どう用意されるか |
 |---|---|
-| assimp の lib・ヘッダー | vcpkg が最初のビルドで作る（`externals/vcpkg.json`・`MyEngine.props` の `InstallVcpkgPackages`。Vcpkg.md で入れた物）。手でのコピーはもう要らない |
+| assimp の lib・ヘッダー | vcpkg が最初のビルドで作る（`externals/vcpkg.json`・`HTTEngine.props` の `InstallVcpkgPackages`。Vcpkg.md で入れた物）。手でのコピーはもう要らない |
 | `grid.obj`（エディタのグリッド） | git に入っている（`.gitignore` の `*.obj` の後の `!/project/Resources/**/*.obj` で外さない）。ほかのエンジンの Resources も全部 git にある |
 | `cube.obj` | エンジンは使っていない（AL4_01 の物だった）。Sandbox のシーンは Primitive Renderer の箱なので、モデルのファイルは要らない |
-| .shader | git に入っている（`project/MyEngine/Shader/Data`） |
+| .shader | git に入っている（`project/HTTEngine/Shader/Data`） |
 | DirectXTex・ImGui・spdlog・magic_enum・nlohmann | `project/externals` に git で入っている。DirectXTex のシェーダーはビルドのときに作られる |
-| エンジンの Resources・.shader の写し（`project/Sandbox/MyEngine/`） | Sandbox のビルドの後に写す（1.1） |
+| エンジンの Resources・.shader の写し（`project/Sandbox/HTTEngine/`） | Sandbox のビルドの後に写す（1.1） |
 | `dxcompiler.dll`・`dxil.dll` | Sandbox のビルドの後に、Windows SDK から exe の隣へ写す |
 | ふつうのシーン・トーンマップ | `SampleScene.scene.json`・`ToneMap.json` を git に入れる（A-4・A-5） |
 | `Parameters/Editor/`・`imgui.ini` | 無くてよい（起動すると作る。初めはエディタのウィンドウが重なって出る） |
@@ -128,36 +128,36 @@ AL4_01 のように、ゲームのリポジトリがエンジンをサブモジ�
 
 | 読む物 | 場所（コードに書いてある） | 例 |
 |---|---|---|
-| アイコン・グリッド・白の画像・空 | `MyEngine/Resources/…` | `TextureManager.cpp` の `"MyEngine/Resources/Textures/white.png"` |
-| .shader（Release） | `MyEngine/Shader/Data`（`kShaderDataDir`） | Release 以外は、props の `MYENGINE_ROOT_DIR` からエンジンの .shader を直接読む |
-| .shader から作った .hlsl | `MyEngine/Shader/Generated/`（`kShaderGeneratedDir`） | 起動のたびに書く |
+| アイコン・グリッド・白の画像・空 | `HTTEngine/Resources/…` | `TextureManager.cpp` の `"HTTEngine/Resources/Textures/white.png"` |
+| .shader（Release） | `HTTEngine/Shader/Data`（`kShaderDataDir`） | Release 以外は、props の `HTTENGINE_ROOT_DIR` からエンジンの .shader を直接読む |
+| .shader から作った .hlsl | `HTTEngine/Shader/Generated/`（`kShaderGeneratedDir`） | 起動のたびに書く |
 | ゲームのシーン・Timeline など | `resources/…` | `resources/scenes/SampleScene.scene.json` |
 
-ゲーム（AL4_01）では、**エンジンのビルドの後** に `$(SolutionDir)MyEngine\` へ Resources と .shader を写している（`MyEngine_v1.vcxproj` のビルド後のイベント）。AL4_01 の `.slnx` は `AL4_01/project/` にあるので、写し先は `AL4_01/project/MyEngine/`＝起動するフォルダの `MyEngine/`。
+ゲーム（AL4_01）では、**エンジンのビルドの後** に `$(SolutionDir)HTTEngine\` へ Resources と .shader を写している（`HTTEngine.vcxproj` のビルド後のイベント）。AL4_01 の `.slnx` は `AL4_01/project/` にあるので、写し先は `AL4_01/project/HTTEngine/`＝起動するフォルダの `HTTEngine/`。
 
 ```bat
 if /I "$(SolutionDir)"=="$(ProjectDir)" exit /b 0
-xcopy /Y /S /I "$(ProjectDir)MyEngine\Shader\*" "$(SolutionDir)MyEngine\Shader\"
-xcopy /Y /S /I "$(ProjectDir)Resources" "$(SolutionDir)MyEngine\Resources\"
+xcopy /Y /S /I "$(ProjectDir)HTTEngine\Shader\*" "$(SolutionDir)HTTEngine\Shader\"
+xcopy /Y /S /I "$(ProjectDir)Resources" "$(SolutionDir)HTTEngine\Resources\"
 ```
 
 エンジンのソリューションでは、`$(SolutionDir)`（`project/`）と `$(ProjectDir)`（`project/`）が同じなので、1行目で何もせずに終わる（自分の上に写さないため）。だから Sandbox は、**自分のビルドの後に、自分のフォルダへ写す**。
 
 ```bat
-xcopy /Y /S /I /D "$(MyEngineRoot)MyEngine\Shader\Data" "$(ProjectDir)MyEngine\Shader\Data\"
-xcopy /Y /S /I /D "$(MyEngineRoot)Resources" "$(ProjectDir)MyEngine\Resources\"
+xcopy /Y /S /I /D "$(HTTEngineRoot)HTTEngine\Shader\Data" "$(ProjectDir)HTTEngine\Shader\Data\"
+xcopy /Y /S /I /D "$(HTTEngineRoot)Resources" "$(ProjectDir)HTTEngine\Resources\"
 ```
 
-- `$(MyEngineRoot)` は `MyEngine.props` が決める「props のあるフォルダ」（`project/`）。
+- `$(HTTEngineRoot)` は `HTTEngine.props` が決める「props のあるフォルダ」（`project/`）。
 - `/D` は「写し先より新しいファイルだけ写す」。エンジンの Resources は 35 MB あるので、2回目からは変わった物だけになる。
 - 写すのは `Shader\Data`（.shader）だけ。`Generated` は起動するたびに Sandbox の中に作られる。
-- **消したファイルは写しに残る**（`/D` は足す・上書きするだけ）。エンジンの .shader を消した・名前を変えたときに Release がおかしくなったら、`project/Sandbox/MyEngine/` を消してビルドし直す。
+- **消したファイルは写しに残る**（`/D` は足す・上書きするだけ）。エンジンの .shader を消した・名前を変えたときに Release がおかしくなったら、`project/Sandbox/HTTEngine/` を消してビルドし直す。
 
 ### 1.2 今の .sln の「Debug」は、エンジンの Development をビルドしていた
 
-今の `MyEngine_v1.sln` は、ソリューションの構成が Debug・Release の2つで、こう対応付けていた。
+今の `HTTEngine.sln` は、ソリューションの構成が Debug・Release の2つで、こう対応付けていた。
 
-| ソリューションの構成 | MyEngine_v1 | DirectXTex | imgui |
+| ソリューションの構成 | HTTEngine | DirectXTex | imgui |
 |---|---|---|---|
 | Debug | **Development** | **Development** | **Development** |
 | Release | Release | Release | （ビルドしない） |
@@ -188,14 +188,14 @@ xcopy /Y /S /I /D "$(MyEngineRoot)Resources" "$(ProjectDir)MyEngine\Resources\"
 ```
 
 - 構成の対応付けを書かなければ、**同じ名前の構成** をビルドする。
-- `Id` はプロジェクトの GUID（vcxproj の `ProjectGuid` と同じ）。`MyEngine.props` の参照（`ProjectReference`）が同じ GUID を書いているので、そろえておく。
+- `Id` はプロジェクトの GUID（vcxproj の `ProjectGuid` と同じ）。`HTTEngine.props` の参照（`ProjectReference`）が同じ GUID を書いているので、そろえておく。
 - `.sln` のときは「一番上に書いたプロジェクト」がスタートアップになり、Visual Studio が `.vs/` に覚えた物があればそちらが勝つ。`.slnx` は `DefaultStartup` で決まる。
 
 ### 1.4 条件の無い ItemDefinitionGroup
 
 vcxproj の設定は、`<ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">` のように構成ごとに書くのが Visual Studio の作る形。全部の構成で同じ物（警告のレベル・SubSystem・ビルドの後のイベントなど）を3回書くことになる。
 
-`Condition` を書かない `ItemDefinitionGroup` は、**全部の構成に効く**。後に書いた構成ごとの `ItemDefinitionGroup` は、そこへ足す・上書きする。Sandbox はこの形で、構成ごとの所には違う物（`_DEBUG`・最適化）だけを書く。`MyEngine.props` も同じ書き方をしている。
+`Condition` を書かない `ItemDefinitionGroup` は、**全部の構成に効く**。後に書いた構成ごとの `ItemDefinitionGroup` は、そこへ足す・上書きする。Sandbox はこの形で、構成ごとの所には違う物（`_DEBUG`・最適化）だけを書く。`HTTEngine.props` も同じ書き方をしている。
 
 > Visual Studio のプロパティ ページで値を変えると、Visual Studio は構成ごとの所に書き足す。そのときは、共通の所と二重になっていないか見る。
 
@@ -204,7 +204,7 @@ vcxproj の設定は、`<ItemDefinitionGroup Condition="'$(Configuration)|$(Plat
 ### A-1 `project/Sandbox/main.cpp`（新しいファイル）
 
 ```cpp
-#include <MyEngine/Engine.h>
+#include <HTTEngine/Engine.h>
 
 
 //=============================================================================
@@ -214,7 +214,7 @@ vcxproj の設定は、`<ItemDefinitionGroup Condition="'$(Configuration)|$(Plat
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// --- ウィンドウの設定 ---
 	WindowConfig config;
-	config.title = L"MyEngine Sandbox"; // タイトルバーの文字
+	config.title = L"HTTEngine Sandbox"; // タイトルバーの文字
 	config.width = 1280;                // ウィンドウの幅（ピクセル）
 	config.height = 720;                // ウィンドウの高さ（ピクセル）
 #ifdef USE_IMGUI
@@ -250,7 +250,7 @@ Visual Studio の「新しいプロジェクト」で作らずに、このファ
 =============================================================================
  Sandbox.vcxproj
  エンジンの起動確認・機能テスト用の exe（エンジンはスタティックライブラリなので、動かすには exe が要る）
- ゲームと同じく MyEngine.props を読む。エンジン・DirectXTex・ImGui の参照とライブラリは props が全部決める
+ ゲームと同じく HTTEngine.props を読む。エンジン・DirectXTex・ImGui の参照とライブラリは props が全部決める
 =============================================================================
 -->
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -309,7 +309,7 @@ Visual Studio の「新しいプロジェクト」で作らずに、このファ
   <!-- ===== プロパティシート ===== -->
   <ImportGroup Label="PropertySheets">
     <!-- エンジンの場所・include・ライブラリ・参照（同じリポジトリの中なので、1つ上のフォルダ） -->
-    <Import Project="..\MyEngine.props" />
+    <Import Project="..\HTTEngine.props" />
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -333,14 +333,14 @@ Visual Studio の「新しいプロジェクト」で作らずに、このファ
     </Manifest>
     <!-- ビルドの後 -->
     <!-- 1・2行目：シェーダーのコンパイラ（dxcompiler.dll・dxil.dll）を exe の隣へ -->
-    <!-- 3・4行目：エンジンの .shader と Resources（アイコン・グリッド・白の画像・空）を、起動するフォルダ（このフォルダ）の MyEngine\ へ -->
+    <!-- 3・4行目：エンジンの .shader と Resources（アイコン・グリッド・白の画像・空）を、起動するフォルダ（このフォルダ）の HTTEngine\ へ -->
     <!--           /D は「写し先より新しいファイルだけ」写す（2回目からは速い）。写し先は .gitignore で git に入れない -->
     <PostBuildEvent>
       <Command>
 copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
 copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir)dxil.dll"
-xcopy /Y /S /I /D "$(MyEngineRoot)MyEngine\Shader\Data" "$(ProjectDir)MyEngine\Shader\Data\"
-xcopy /Y /S /I /D "$(MyEngineRoot)Resources" "$(ProjectDir)MyEngine\Resources\"
+xcopy /Y /S /I /D "$(HTTEngineRoot)HTTEngine\Shader\Data" "$(ProjectDir)HTTEngine\Shader\Data\"
+xcopy /Y /S /I /D "$(HTTEngineRoot)Resources" "$(ProjectDir)HTTEngine\Resources\"
       </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
@@ -490,11 +490,11 @@ xcopy /Y /S /I /D "$(MyEngineRoot)Resources" "$(ProjectDir)MyEngine\Resources\"
 - `Mode` はトーンマップの曲線の番号（`LensPass.h` の `ToneMapMode`：0 None・1 Reinhard・**2 ACES**・3 GT）。
 - エディタの Settings（PostEffect → ToneMap）で変えて保存しても、このファイルに書かれる。Bloom・Lens はエンジンの既定のままでよいので、ファイルを置かない。
 
-### A-6 `project/MyEngine_v1.sln` を消して、`project/MyEngine_v1.slnx` を作る
+### A-6 `project/HTTEngine.sln` を消して、`project/HTTEngine.slnx` を作る
 
 Visual Studio を閉じてから行う。
 
-1. `project/MyEngine_v1.slnx` を作る（新しいファイル）。
+1. `project/HTTEngine.slnx` を作る（新しいファイル）。
 
 ```xml
 <Solution>
@@ -510,15 +510,15 @@ Visual Studio を閉じてから行う。
       <Build Solution="Release|*" Project="false" />
     </Project>
   </Folder>
-  <Project Path="MyEngine_v1.vcxproj" Id="1d0f63d3-16bb-43b8-985e-6bb516a1d662" />
+  <Project Path="HTTEngine.vcxproj" Id="1d0f63d3-16bb-43b8-985e-6bb516a1d662" />
   <Project Path="Sandbox/Sandbox.vcxproj" Id="fceff50c-6fda-43ab-89da-b5e1efce7dc8" DefaultStartup="true" />
 </Solution>
 ```
 
-2. `project/MyEngine_v1.sln` を git から消す。
+2. `project/HTTEngine.sln` を git から消す。
 
 ```bash
-git rm project/MyEngine_v1.sln
+git rm project/HTTEngine.sln
 ```
 
 > `.slnx` に XML のコメントは書かない。Visual Studio はソリューションを保存するとき（プロジェクトを足した・フォルダを動かしたなど）に、`.slnx` を書き直してコメントを消す。説明はこの md と 1.3 に置く。
@@ -533,14 +533,14 @@ git rm project/MyEngine_v1.sln
 
 ```yaml
 env:
-  SOLUTION_FILE_PATH: project\MyEngine_v1.slnx # ビルドするソリューション（リポジトリのルートから見た場所）
+  SOLUTION_FILE_PATH: project\HTTEngine.slnx # ビルドするソリューション（リポジトリのルートから見た場所）
   CONFIGURATION: Debug                         # 構成（エンジンも Sandbox も Debug でビルドされる）
 ```
 
 **ReleaseBuild.yml**（`env:` の1行目）
 
 ```yaml
-  SOLUTION_FILE_PATH: project\MyEngine_v1.slnx # ビルドするソリューション（リポジトリのルートから見た場所）
+  SOLUTION_FILE_PATH: project\HTTEngine.slnx # ビルドするソリューション（リポジトリのルートから見た場所）
 ```
 
 > `windows-2025-vs2026` の MSBuild は `.slnx` をそのまま読める。
@@ -552,7 +552,7 @@ env:
 ```gitignore
 
 # Sandbox（エンジンのテスト用の exe）が書くファイル
-/project/Sandbox/MyEngine/
+/project/Sandbox/HTTEngine/
 /project/Sandbox/imgui.ini
 /project/Sandbox/imgui_style.ini
 /project/Sandbox/saves/
@@ -565,7 +565,7 @@ env:
 
 | 行 | 何か |
 |---|---|
-| `/project/Sandbox/MyEngine/` | ビルドの後に写すエンジンの Resources・.shader と、起動のたびに作る .hlsl |
+| `/project/Sandbox/HTTEngine/` | ビルドの後に写すエンジンの Resources・.shader と、起動のたびに作る .hlsl |
 | `imgui.ini`・`imgui_style.ini` | ImGui のウィンドウの位置・見た目（人ごとに違う。CheckUnwantedFiles でも失敗になる） |
 | `saves/` | ゲームの進み具合の記録（GameProgress） |
 | 下の3行 | PrefabInstance.md 2.1 の3行と同じ。`Parameters/Editor/` だけ場所を Sandbox に合わせた |
@@ -578,7 +578,7 @@ env:
 1行目の説明の下に1行足す。
 
 ```markdown
-# MyEngine_v1
+# HTTEngine
 DirectX 12 で作っている自作ゲームエンジン（静的ライブラリ）。ゲームは別のリポジトリから参照して使う。
 エンジンの起動確認・機能テストは、同じリポジトリの `project/Sandbox/`（exe）で行う。
 ```
@@ -589,17 +589,17 @@ DirectX 12 で作っている自作ゲームエンジン（静的ライブラリ
 ## 取ってくるとき
 外部ライブラリは `project/externals` にまとめている。assimp は vcpkg で用意する（`project/externals/vcpkg.json`）。clone してビルドするだけでよい。
 
-1. `project/MyEngine_v1.slnx` を Visual Studio で開く
+1. `project/HTTEngine.slnx` を Visual Studio で開く
 2. 構成（Debug・Development・Release）を選んで F5。エンジンと Sandbox がビルドされ、Sandbox が起動する（最初のシーンは `SampleScene`）
 ```
 
 ### A-10 確かめる
 
-1. `project/MyEngine_v1.slnx` を開く。ソリューション エクスプローラーに `externals`（DirectXTex・imgui）・`MyEngine_v1`・`Sandbox` が並び、`Sandbox` が太字（スタートアップ）。
+1. `project/HTTEngine.slnx` を開く。ソリューション エクスプローラーに `externals`（DirectXTex・imgui）・`HTTEngine`・`Sandbox` が並び、`Sandbox` が太字（スタートアップ）。
 2. 構成のリストに Debug・Development・Release の3つがある。
 3. Development で F5。エンジン → Sandbox の順にビルドされ、エディタが開く。Hierarchy に Main Camera・Directional Light・Ground・Cube の4つ。Game ビューに灰色の地面とオレンジの箱が出る。
 4. Debug・Release でも F5。Release はエディタ無しで、Game ビューと同じ絵がウィンドウに出る。
-5. `git status` に `project/Sandbox/MyEngine/`・`imgui.ini`・`Parameters/Editor/`・`logs/` が出ない。
+5. `git status` に `project/Sandbox/HTTEngine/`・`imgui.ini`・`Parameters/Editor/`・`logs/` が出ない。
 
 > **初めての起動は、エディタのウィンドウが重なって出る**（並びを覚える `imgui.ini` がまだ無いため。エンジンの前からの動き）。ドラッグして並べれば、次からは `project/Sandbox/imgui.ini` に覚える。AL4_01 の `project/imgui.ini` を `project/Sandbox/` へ写すと、AL4_01 と同じ並びで始まる。
 >
@@ -626,7 +626,7 @@ AL4_01 のテストのファイルは **全部 git に入っていない**（`gi
 
 ```powershell
 $game = "C:\Users\K025G\source\repos\AL4_01\project"
-$sandbox = "C:\Users\K025G\source\repos\MyEngine_v1\project\Sandbox"
+$sandbox = "C:\Users\K025G\source\repos\HTTEngine\project\Sandbox"
 # Script（フォルダごと）
 robocopy "$game\Source\Scripts" "$sandbox\Source\Scripts" /E
 # Resources（/XF *.bak で .bak を外す）
@@ -666,7 +666,7 @@ powershell -ExecutionPolicy Bypass -File ..\Tools\UpdateFilters.ps1 Sandbox.vcxp
 
 `8 files, 6 filters -> …\Sandbox.vcxproj.filters` と出る（フォルダ `Source`・`Source\Scripts`・その下の4つ）。
 
-> Script の .cpp はエンジンのヘッダーを `<MyEngine/…>` で読んでいるので、中身は直さなくてよい。
+> Script の .cpp はエンジンのヘッダーを `<HTTEngine/…>` で読んでいるので、中身は直さなくてよい。
 
 ### B-4 Sandbox で確かめる
 
@@ -692,11 +692,11 @@ Sandbox で確かめてから行う。
 2. `AL4_01.vcxproj` の `ClCompile` から、`Source\Scripts\…` の7行を消す（`main.cpp` だけ残す）。フィルタも作り直す（`AL4_01/project` で）。
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File ..\MyEngine_v1\project\Tools\UpdateFilters.ps1 AL4_01.vcxproj
+powershell -ExecutionPolicy Bypass -File ..\HTTEngine\project\Tools\UpdateFilters.ps1 AL4_01.vcxproj
 ```
 
 3. `Resources/scenes/GameScene.scene.json` を、A-4 の `SampleScene.scene.json` と同じ中身にする（ボスの BossTestController が無くなるので、そのままだと読めない Component が残る）。AL4_01 の `Parameters/PostEffect/` は 10-31 に消してある（未コミット）ので、同じ見た目にしたいときは A-5 の `ToneMap.json` も `Parameters/PostEffect/` に置く。
-4. エンジンのコミットを push した後、AL4_01 のサブモジュールを新しくする（`git -C MyEngine_v1 pull` など、いつもの手順）。サブモジュールに `project/Sandbox/` が入ってくるが、AL4_01 のビルドには関係しない（0.5）。
+4. エンジンのコミットを push した後、AL4_01 のサブモジュールを新しくする（`git -C HTTEngine pull` など、いつもの手順）。サブモジュールに `project/Sandbox/` が入ってくるが、AL4_01 のビルドには関係しない（0.5）。
 5. AL4_01 を Development でビルドして起動し、ふつうのシーンが開くのを見る。
 
 > `Parameters/Editor/LastScene.json` が消したシーンを指していても、起動すると `GameScene` から始まる（`SceneManager::GetLastOpenedScene` が、無いシーンなら最初のシーンにする）。
@@ -711,7 +711,7 @@ powershell -ExecutionPolicy Bypass -File ..\MyEngine_v1\project\Tools\UpdateFilt
 Game/                         ← チームのリポジトリ
 ├─ .gitignore
 ├─ .gitmodules
-├─ MyEngine_v1/               ← エンジン（サブモジュール）
+├─ HTTEngine/               ← エンジン（サブモジュール）
 └─ project/
    ├─ Game.slnx
    ├─ Game.vcxproj(.filters)  ← Sandbox.vcxproj を写して直す
@@ -725,18 +725,18 @@ Game/                         ← チームのリポジトリ
 1. 空のリポジトリにエンジンを足す。
 
 ```bash
-git submodule add -b develop https://github.com/yamamoto-mitsuki/MyEngine_v1.git MyEngine_v1
+git submodule add -b develop https://github.com/yamamoto-mitsuki/HTTEngine.git HTTEngine
 ```
 
-2. `MyEngine_v1/project/Sandbox/` から `main.cpp`・`Sandbox.vcxproj`・`Sandbox.vcxproj.filters`・`Resources/scenes/SampleScene.scene.json`・`Parameters/PostEffect/ToneMap.json` を `project/` へ写す（`Source/Scripts/`・テストのシーン・`MyEngine/`・`Parameters/Editor/` は写さない）。vcxproj と `.filters` の `ClCompile` は `main.cpp` だけにする。
+2. `HTTEngine/project/Sandbox/` から `main.cpp`・`Sandbox.vcxproj`・`Sandbox.vcxproj.filters`・`Resources/scenes/SampleScene.scene.json`・`Parameters/PostEffect/ToneMap.json` を `project/` へ写す（`Source/Scripts/`・テストのシーン・`HTTEngine/`・`Parameters/Editor/` は写さない）。vcxproj と `.filters` の `ClCompile` は `main.cpp` だけにする。
 3. vcxproj の名前を `Game.vcxproj`（`.filters` も）に変えて、中を直す。
 
 | 所 | 直し方 |
 |---|---|
 | `ProjectGuid` | 新しい番号（PowerShell で `[guid]::NewGuid()`） |
 | `RootNamespace` | ゲームの名前 |
-| `<Import Project="..\MyEngine.props" />` | `<Import Project="..\MyEngine_v1\project\MyEngine.props" />` |
-| ビルドの後の `xcopy` の2行 | 消す（ゲームのソリューションでは、エンジンのビルドの後の写しが `project/MyEngine/` へ写す。1.1）。上の「3・4行目」のコメント2行も消す |
+| `<Import Project="..\HTTEngine.props" />` | `<Import Project="..\HTTEngine\project\HTTEngine.props" />` |
+| ビルドの後の `xcopy` の2行 | 消す（ゲームのソリューションでは、エンジンのビルドの後の写しが `project/HTTEngine/` へ写す。1.1）。上の「3・4行目」のコメント2行も消す |
 | 一番上のコメント | ゲームの説明に |
 
 4. `project/Game.slnx` を作る（`Path` はサブモジュールの中を指す）。
@@ -750,12 +750,12 @@ git submodule add -b develop https://github.com/yamamoto-mitsuki/MyEngine_v1.git
     <Platform Name="x64" />
   </Configurations>
   <Folder Name="/externals/">
-    <Project Path="../MyEngine_v1/project/externals/DirectXTex/DirectXTex_Desktop_2022_Win10.vcxproj" Id="371b9fa9-4c90-4ac6-a123-aced756d6c77" />
-    <Project Path="../MyEngine_v1/project/externals/imgui/imgui.vcxproj" Id="86a1cafe-73b6-4e0a-8c54-ef98278a3806">
+    <Project Path="../HTTEngine/project/externals/DirectXTex/DirectXTex_Desktop_2022_Win10.vcxproj" Id="371b9fa9-4c90-4ac6-a123-aced756d6c77" />
+    <Project Path="../HTTEngine/project/externals/imgui/imgui.vcxproj" Id="86a1cafe-73b6-4e0a-8c54-ef98278a3806">
       <Build Solution="Release|*" Project="false" />
     </Project>
   </Folder>
-  <Project Path="../MyEngine_v1/project/MyEngine_v1.vcxproj" Id="1d0f63d3-16bb-43b8-985e-6bb516a1d662" />
+  <Project Path="../HTTEngine/project/HTTEngine.vcxproj" Id="1d0f63d3-16bb-43b8-985e-6bb516a1d662" />
   <Project Path="Game.vcxproj" Id="（3 で作った番号）" DefaultStartup="true" />
 </Solution>
 ```
@@ -767,7 +767,7 @@ git submodule add -b develop https://github.com/yamamoto-mitsuki/MyEngine_v1.git
 /generated/
 
 # エンジンのビルドの後に写される、エンジンの Resources・.shader
-/project/MyEngine/
+/project/HTTEngine/
 
 # ImGui のウィンドウの位置・見た目、遊んだ記録（人ごとに違う）
 /project/imgui.ini
@@ -792,8 +792,8 @@ git submodule add -b develop https://github.com/yamamoto-mitsuki/MyEngine_v1.git
 ### D-1 clone し直して、ビルドするだけで動くか（0.6）
 
 1. このリポジトリ（a93c6b8。PrefabInstance.md 入り）を一時フォルダに clone して、パートA・B のとおりにファイルを置き、その写しの中でコミットした。
-2. それを **もう一度 clone した**（git に入っている物だけになる。`vcpkg_installed`・`generated`・`project/Sandbox/MyEngine/` は無い）。
-3. 何も写さずに、MSBuild で `MyEngine_v1.slnx` を Development → Debug → Release の順にビルドした。vcpkg のキャッシュも使わない（`VCPKG_BINARY_SOURCES=clear`。新しい PC と同じ）。
+2. それを **もう一度 clone した**（git に入っている物だけになる。`vcpkg_installed`・`generated`・`project/Sandbox/HTTEngine/` は無い）。
+3. 何も写さずに、MSBuild で `HTTEngine.slnx` を Development → Debug → Release の順にビルドした。vcpkg のキャッシュも使わない（`VCPKG_BINARY_SOURCES=clear`。新しい PC と同じ）。
 
 | 確かめたこと | 結果 |
 |---|---|
@@ -805,7 +805,7 @@ git submodule add -b develop https://github.com/yamamoto-mitsuki/MyEngine_v1.git
 
 ### D-2 最初の写しで確かめたこと
 
-写し（このリポジトリを 44a36b3 で clone した物。PrefabInstance.md はまだ入っていない。vcpkg_installed だけは本体から写した）に、パートA・B のとおりにファイルを置いて、MSBuild で `MyEngine_v1.slnx` をビルドし、`project/Sandbox` を作業フォルダにして起動した。md のコード（A-1〜A-6・A-8・B-3）は、確かめたファイルと1文字ずつ同じ。
+写し（このリポジトリを 44a36b3 で clone した物。PrefabInstance.md はまだ入っていない。vcpkg_installed だけは本体から写した）に、パートA・B のとおりにファイルを置いて、MSBuild で `HTTEngine.slnx` をビルドし、`project/Sandbox` を作業フォルダにして起動した。md のコード（A-1〜A-6・A-8・B-3）は、確かめたファイルと1文字ずつ同じ。
 
 | 確かめたこと | 結果 |
 |---|---|
@@ -816,8 +816,8 @@ git submodule add -b develop https://github.com/yamamoto-mitsuki/MyEngine_v1.git
 | `ToneMap.json` が無いとき | Scene ビューの空と地面が白く飛ぶ。置くと飛ばない（0.4 のトーンマップ） |
 | パートB を入れて3構成のビルド | エラー 0・DirectXTex 以外の警告 0（Script 7 つがコンパイルされる） |
 | 移したシーン 11 個と SampleScene を、Development で1つずつ開く（`LastScene.json` を書き換えて起動） | 全部開けた。読めない Component などの警告・エラーは 0。開いて閉じただけでは、どのファイルも書き換わらない |
-| 起動した後の `git status` | 出るのは `.gitignore`・`.sln` の削除・`.slnx`・Sandbox の vcxproj／.filters／main.cpp／ToneMap.json と、パートB の 54 ファイルだけ。`MyEngine/`・`imgui.ini`・`logs/`・`Parameters/Editor/` は出ない |
-| パートC（ひな形）を写しで作る（`Game/MyEngine_v1` にエンジン、`Game/project/` に C-2 の直しをした vcxproj・`.slnx`）。Development のビルドと起動 | エラー 0・DirectXTex 以外の警告 0。エンジンのビルドの後の写しが `Game/project/MyEngine/` へ 35 ファイル写し、`SampleScene` が開く（ログの警告は imgui_style.ini だけ）。ゲームのソリューションでは Sandbox はビルドされない（0.5） |
+| 起動した後の `git status` | 出るのは `.gitignore`・`.sln` の削除・`.slnx`・Sandbox の vcxproj／.filters／main.cpp／ToneMap.json と、パートB の 54 ファイルだけ。`HTTEngine/`・`imgui.ini`・`logs/`・`Parameters/Editor/` は出ない |
+| パートC（ひな形）を写しで作る（`Game/HTTEngine` にエンジン、`Game/project/` に C-2 の直しをした vcxproj・`.slnx`）。Development のビルドと起動 | エラー 0・DirectXTex 以外の警告 0。エンジンのビルドの後の写しが `Game/project/HTTEngine/` へ 35 ファイル写し、`SampleScene` が開く（ログの警告は imgui_style.ini だけ）。ゲームのソリューションでは Sandbox はビルドされない（0.5） |
 
 **確かめていない物：**
 
@@ -832,7 +832,7 @@ git submodule add -b develop https://github.com/yamamoto-mitsuki/MyEngine_v1.git
 
 | 確かめたこと | 結果 |
 |---|---|
-| 本体で `MyEngine_v1.slnx` を Development・Debug・Release でビルド | エラー 0・DirectXTex 以外の警告 0 |
+| 本体で `HTTEngine.slnx` を Development・Debug・Release でビルド | エラー 0・DirectXTex 以外の警告 0 |
 | 本体の3構成の Sandbox を `project/Sandbox` で起動して閉じる | 全部終了コード 0。`SampleScene`（4個）を読んだ |
 | 本体の変更を入れた写しを clone し直し、Development でビルド・起動（vcpkg のキャッシュはあり） | ビルド成功・起動して `SampleScene` を読み、終了コード 0。ログの警告は imgui_style.ini（初めての起動）だけ。起動の後の `git status` は何も出ない |
 
@@ -841,4 +841,4 @@ git submodule add -b develop https://github.com/yamamoto-mitsuki/MyEngine_v1.git
 - clone したばかりだと `imgui.ini` が無いので、エディタのウィンドウが重なって出る（D-1）。`imgui.ini` は人ごとの物で、CheckUnwantedFiles でも git に入れられない。エンジンに「`imgui.ini` が無いときの並び」（ドッキングの最初の形）を持たせれば、clone してすぐ見やすくなる。エンジンの直しなので、別の md でやる。
 
 - `Docs/Tasks/` の見本のフォルダ（`TimelineTest/`・`UIAnimationTest/`・`PolylineTest/` など）は、AL4_01 へ写して使う物だった。これからの見本は Sandbox に直接置けば、md から写す手間が無くなる（同じ物は B で Sandbox に入る）。
-- `FolderSplit.md`・`Vcpkg.md` に `project/MyEngine_v1.sln` と書いてある所がある（終わった作業の記録なので、そのままでもよい）。
+- `FolderSplit.md`・`Vcpkg.md` に `project/HTTEngine.sln` と書いてある所がある（終わった作業の記録なので、そのままでもよい）。

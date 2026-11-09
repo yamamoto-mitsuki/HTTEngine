@@ -1,13 +1,13 @@
 #include <format>
 #include <string>
 
-#include <MyEngine/Components/Animation/TimelineComponent.h>
-#include <MyEngine/ECS/Script.h>
-#include <MyEngine/Input/InputManager.h>
-#include <MyEngine/Scene/PrefabManager.h>
-#include <MyEngine/Systems/Animation/TimelineSystem.h>
-#include <MyEngine/Timeline/TimelineTrack.h>
-#include <MyEngine/UI/UIScreen.h>
+#include <HTTEngine/Components/Animation/TimelineComponent.h>
+#include <HTTEngine/ECS/Script.h>
+#include <HTTEngine/Input/InputManager.h>
+#include <HTTEngine/Scene/PrefabManager.h>
+#include <HTTEngine/Systems/Animation/TimelineSystem.h>
+#include <HTTEngine/Timeline/TimelineTrack.h>
+#include <HTTEngine/UI/UIScreen.h>
 
 // Timeline を確かめるための Script。Game Panel に付ける
 // 1：Play / 2：Pause / 3：Stop / 4：1 秒へシーク / 5：Loop の切り替え / 6：速さの切り替え

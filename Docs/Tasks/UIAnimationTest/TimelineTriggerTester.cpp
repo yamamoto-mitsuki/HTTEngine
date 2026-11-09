@@ -1,6 +1,6 @@
-#include <MyEngine/ECS/Script.h>
-#include <MyEngine/Input/InputManager.h>
-#include <MyEngine/Time/EngineTime.h>
+#include <HTTEngine/ECS/Script.h>
+#include <HTTEngine/Input/InputManager.h>
+#include <HTTEngine/Time/EngineTime.h>
 
 // Timeline Trigger の見本（TimelineTriggerTest シーンの Player に付ける）。←→ で自分を横に動かすだけ
 // 範囲に入った・出たときの演出（扉・パネル）は、SignArea の Timeline Trigger と .timeline に書いてあり、ここには書かない

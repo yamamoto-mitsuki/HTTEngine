@@ -129,10 +129,10 @@ Editorの使いやすさとRuntime内部のデータ管理方式を分離し、E
 
 # フォルダの決まり（`Audio.md` の1章）
 名前の終わりで置き場所を決める。覚えることを「表1つ」にするため。
-・〜Component → MyEngine/Components/カテゴリ/（データだけ。カテゴリは Add Component のカテゴリと同じ名前。エンジンの Component の保存の項目 EngineComponents.cpp は Components の直下）
-・〜System → MyEngine/Systems/カテゴリ/（Component を読んで処理する係。カテゴリは、主に扱う Component と同じ。鳴っている音・当たりの一覧など、実行中だけの状態もここが持つ）。全 System の呼び出しの順番は Systems の直下の EngineSystems.cpp にまとめる（System を足したら、ここに1行足す）
-・〜Editor → MyEngine/Editor/Inspector/、〜Gizmo → MyEngine/Editor/Gizmos/
-・Entity と Component の仕組み（EntityManager・ComponentStorage・ComponentUI・ComponentSerializer・GameComponent）→ MyEngine/ECS/
+・〜Component → HTTEngine/Components/カテゴリ/（データだけ。カテゴリは Add Component のカテゴリと同じ名前。エンジンの Component の保存の項目 EngineComponents.cpp は Components の直下）
+・〜System → HTTEngine/Systems/カテゴリ/（Component を読んで処理する係。カテゴリは、主に扱う Component と同じ。鳴っている音・当たりの一覧など、実行中だけの状態もここが持つ）。全 System の呼び出しの順番は Systems の直下の EngineSystems.cpp にまとめる（System を足したら、ここに1行足す）
+・〜Editor → HTTEngine/Editor/Inspector/、〜Gizmo → HTTEngine/Editor/Gizmos/
+・Entity と Component の仕組み（EntityManager・ComponentStorage・ComponentUI・ComponentSerializer・GameComponent）→ HTTEngine/ECS/
 ・〜Manager（ファイルを読む・実体を持つ）と、Component を知らない道具（Collision:: の判定など）→ その分野のフォルダ
 機能ごと（Light/ にライトの全部）にしないのは、どの機能にも入らない物（Transform など）が迷子になるため。
 カテゴリで1段分けるのは、Components・Systems のファイルが 15 を超えたため（2026-10-29。Docs/Tasks/FolderSplit.md）。分けても「名前の終わりで Components か Systems かが決まる」はそのまま。

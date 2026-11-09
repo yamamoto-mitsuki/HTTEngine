@@ -1,4 +1,4 @@
-# MyEngine リファレンス（2026-10-02 時点）
+# HTTEngine リファレンス（2026-10-02 時点）
 
 **今のエンジンで「ゲームを作るとき」に使う物だけをまとめた。** 設計の理由は [ARCHITECTURE.md](ARCHITECTURE.md)、作業手順と写経コードは [Tasks/](Tasks/) にある。
 
@@ -88,20 +88,20 @@ main.cpp                  ゲームの入口。Engine::Initialize してルー�
 
 | 名前 | 置き場所 | 例 |
 |---|---|---|
-| `〜Component` | `MyEngine/Components/` | `TransformComponent.h`・`ColliderComponent.h`・`AudioSourceComponent.h`・`CameraComponent.h`・`TrailComponent.h` |
-| `〜System` | `MyEngine/Systems/` | `ModelRenderSystem`・`LightSystem`・`CollisionSystem`・`AudioSystem`・`CameraSystem`・`TrailSystem` |
-| `〜Editor`（Inspector の区画） | `MyEngine/Editor/Inspector/` | `TransformEditor`・`LightEditor` |
-| `〜Gizmo` | `MyEngine/Editor/Gizmos/` | `LightGizmo` |
-| `〜Window`（エディタのウィンドウ） | `MyEngine/Editor/Windows/` | `HierarchyWindow`・`InspectorWindow`・`ProjectWindow`・`SettingsWindow` |
-| エディタが出すアセットの見た目 | `MyEngine/Editor/Assets/` | `AssetIcons`（アイコン）・`AssetThumbnails`（画像の小さい絵） |
-| エディタのアイコンの画像 | エンジンの `Resources/Editor/Icons/`（ゲームの `MyEngine/Resources/Editor/Icons/` へ写される） | `Folder.png`・`Scene.png`（`SceneFlow.md` の14章） |
-| Entity と Component の仕組み | `MyEngine/ECS/` | `EntityManager`・`ComponentUI`・`GameComponent`（ゲームが読むのはこれ1つ） |
+| `〜Component` | `HTTEngine/Components/` | `TransformComponent.h`・`ColliderComponent.h`・`AudioSourceComponent.h`・`CameraComponent.h`・`TrailComponent.h` |
+| `〜System` | `HTTEngine/Systems/` | `ModelRenderSystem`・`LightSystem`・`CollisionSystem`・`AudioSystem`・`CameraSystem`・`TrailSystem` |
+| `〜Editor`（Inspector の区画） | `HTTEngine/Editor/Inspector/` | `TransformEditor`・`LightEditor` |
+| `〜Gizmo` | `HTTEngine/Editor/Gizmos/` | `LightGizmo` |
+| `〜Window`（エディタのウィンドウ） | `HTTEngine/Editor/Windows/` | `HierarchyWindow`・`InspectorWindow`・`ProjectWindow`・`SettingsWindow` |
+| エディタが出すアセットの見た目 | `HTTEngine/Editor/Assets/` | `AssetIcons`（アイコン）・`AssetThumbnails`（画像の小さい絵） |
+| エディタのアイコンの画像 | エンジンの `Resources/Editor/Icons/`（ゲームの `HTTEngine/Resources/Editor/Icons/` へ写される） | `Folder.png`・`Scene.png`（`SceneFlow.md` の14章） |
+| Entity と Component の仕組み | `HTTEngine/ECS/` | `EntityManager`・`ComponentUI`・`GameComponent`（ゲームが読むのはこれ1つ） |
 | `〜Manager` | その分野のフォルダ | `ModelManager`（`Graphics/Model/`）・`SoundManager`（`Sound/`） |
 | ゲームの Component（データ＋見せ方＋処理の1ファイル） | `CG3_Project/Source/Components/`（約束。どこに置いても動く） | `Spin.cpp` |
 
 - ゲームの Component は、**プロジェクトに入っていればどこに置いても登録される**（`COMPONENT(...)` が起動のときに登録する）。Inspector の見出しにマウスを乗せると、書いたファイルが出る。
-- モデル・テクスチャ・音は、**`resources/` か `MyEngine/Resources/` の下**（深さは自由）に置くと Inspector の一覧に出る。一覧の一番上に探す場所が出る。
-- エンジンのヘッダは、ビルドのたびにゲームの `MyEngine/include/` へ写される（エンジンから消えた物はゲーム側からも消える）。
+- モデル・テクスチャ・音は、**`resources/` か `HTTEngine/Resources/` の下**（深さは自由）に置くと Inspector の一覧に出る。一覧の一番上に探す場所が出る。
+- エンジンのヘッダは、ビルドのたびにゲームの `HTTEngine/include/` へ写される（エンジンから消えた物はゲーム側からも消える）。
 
 ### 名前の決まり
 
@@ -118,7 +118,7 @@ main.cpp                  ゲームの入口。Engine::Initialize してルー�
 `main.cpp` は基本これだけ。触るのはウィンドウの設定と最初のシーンだけ。
 
 ```cpp
-#include <MyEngine/Engine.h>
+#include <HTTEngine/Engine.h>
 
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	WindowConfig wc;
@@ -314,7 +314,7 @@ shape.transform.rotation = ...; // Transform はすぐ使える
 - Prefab の中に、別の Prefab から置いた物（入れ子）を入れてよい。外側の Prefab のファイルにも参照（と、入れ子の上書き）だけが書かれ、内側の Prefab を直すと、外側から作った物も変わる。
 - Play / Stop の退避は中身も全部写すので、Play 中・前に中身を試しに直しても Stop で戻る。
 - 書き換わった Prefab（git pull など）は、シーンを開くときに読み直す。
-- コードで読むなら `PrefabManager::Load(ToPath("resources/prefabs/Box.prefab"))`（同じファイルは1回だけ読む。`#include <MyEngine/Scene/Prefab/PrefabManager.h>`）。
+- コードで読むなら `PrefabManager::Load(ToPath("resources/prefabs/Box.prefab"))`（同じファイルは1回だけ読む。`#include <HTTEngine/Scene/Prefab/PrefabManager.h>`）。
 - 仕組みの解説は `Docs/Tasks/PrefabInstance.md`（参照で置く・番号）・`PrefabNested.md`（入れ子）・`PrefabOverride.md`（上書き）。コードは `Scene/Prefab/` の4つ：`PrefabManager`（読み込み・保存・作る・持ち主）・`PrefabRecords`（中身を JSON で並べる・上書きを当てる）・`PrefabDiff`（JSON の違い）・`PrefabOverrides`（上書きを作る）。
 
 ---
@@ -391,7 +391,7 @@ EntityManager::ForEach<Enemy>([](Handle<Entity> entity, Enemy& enemy) {
 **1ファイル＝1Component。** `CG3_Project/Source/Components/` に `.cpp` を置いて、VSのプロジェクトに追加する。書くのは「①データ ②見せ方 ③処理」だけ。
 
 ```cpp
-#include <MyEngine/ECS/GameComponent.h>
+#include <HTTEngine/ECS/GameComponent.h>
 
 // ① データ
 struct Spin {
@@ -1019,8 +1019,8 @@ CameraSystem::AddImpulse(0.4f, {1.0f, 0.0f, 0.0f}); // ワールドの +X へ。
 画面の位置から、カメラの奥へ向かうレイを作る（Unity の `Camera.ScreenPointToRay`）。地面（y=0）や壁との交点を取るのに使う。透視でも正射影でも動く。
 
 ```cpp
-#include <MyEngine/Camera/Camera.h>
-#include <MyEngine/Collision/Collision.h>
+#include <HTTEngine/Camera/Camera.h>
+#include <HTTEngine/Collision/Collision.h>
 
 const Ray ray = CameraSystem::GetMainCamera()->ScreenPointToRay(InputManager::GetMousePositionInGame()); // 始点は近クリップ面、向きは長さ1
 float t = 0.0f;
@@ -1180,7 +1180,7 @@ void EnemyDeath(Handle<Entity> entity, Enemy& enemy) {
 }
 ```
 
-`SoundManager` を直接呼んでもよい（Entity に付かない音。シーンをまたいで鳴らし続けたい BGM など。`#include <MyEngine/Sound/SoundManager.h>`）。
+`SoundManager` を直接呼んでもよい（Entity に付かない音。シーンをまたいで鳴らし続けたい BGM など。`#include <HTTEngine/Sound/SoundManager.h>`）。
 
 ```cpp
 const uint32_t bgm = SoundManager::Load("resources/sounds/bgm.wav");                  // 読む（番号が返る）
@@ -1237,7 +1237,7 @@ transform->translation.z += 5.0f * Time::GetDeltaTime();
 ## 14. 数学と当たり判定
 
 ```cpp
-#include <MyEngine/Math/MathIncludes.h>
+#include <HTTEngine/Math/MathIncludes.h>
 
 const float r = RandomEngine::GetFloat(0.0f, 1.0f);
 const int n = RandomEngine::GetInt(0, 10);
@@ -1250,7 +1250,7 @@ const Vector3 p = MathUtility::Lerp(from, to, 0.5f);
 velocity.x = MathUtility::MoveTowards(velocity.x, target, accel * deltaTime); // target へ最大 accel*deltaTime だけ近づける（行き過ぎない）
 ```
 
-当たり判定は形どうしの関数。**`Collision::` を付けて呼ぶ**（`#include <MyEngine/Collision/CollisionIncludes.h>`）。
+当たり判定は形どうしの関数。**`Collision::` を付けて呼ぶ**（`#include <HTTEngine/Collision/CollisionIncludes.h>`）。
 
 ```cpp
 const Sphere sphere{GetWorldPosition(*transform), 1.0f};   // 中心, 半径
@@ -1271,7 +1271,7 @@ if (Collision::RaySphere(ray, sphere, &t)) { … } // 当たった距離が t �
 
 ### 時間で値を変えるカーブ（Curve）
 
-時間に対して値がどう変わるかを、キーでつないだカーブで表す（`#include <MyEngine/Curve/CurveManager.h>`）。補間はキーごとに Constant・Linear・Bezier。カーブの端より外は端のキーの値。
+時間に対して値がどう変わるかを、キーでつないだカーブで表す（`#include <HTTEngine/Curve/CurveManager.h>`）。補間はキーごとに Constant・Linear・Bezier。カーブの端より外は端のキーの値。
 
 ```cpp
 const Curve* curve = CurveManager::Get(handle);   // .curve のファイルの番号から（選んでいなければ nullptr）
@@ -1287,7 +1287,7 @@ Curve bounce = Curve::FromEase(Ease::Type::OutBounce); // Ease と同じ形（�
 
 ### 時間に沿って動かす（Timeline）
 
-`.timeline` のファイルに、トラック → クリップ → キーの形で動きを書き、Entity の **Timeline** Component で再生する（Add Component → Animation。`#include <MyEngine/Systems/Animation/TimelineSystem.h>`）。同じファイルを何体でも同時に再生できる。
+`.timeline` のファイルに、トラック → クリップ → キーの形で動きを書き、Entity の **Timeline** Component で再生する（Add Component → Animation。`#include <HTTEngine/Systems/Animation/TimelineSystem.h>`）。同じファイルを何体でも同時に再生できる。
 
 ```cpp
 TimelineSystem::Play(entity);       // 止まっていれば最初から、一時停止中なら続きから
@@ -1316,7 +1316,7 @@ Inspector の **Add Component → Physics → Collider** で付ける（コー�
 当たったかどうかは、SYSTEM の中で **`CollisionSystem::GetHits(entity)`** を読む（`GameComponent.h` だけで使える）。
 
 ```cpp
-#include <MyEngine/ECS/GameComponent.h>
+#include <HTTEngine/ECS/GameComponent.h>
 
 // ===== 弾：まっすぐ進む =====
 struct Bullet {
@@ -1545,7 +1545,7 @@ ElasticSurfaceSystem::AddImpulse(floor, x, -20.0f, 2.0f);                // 一�
 - 押されるのは **Rigidbody の Wind Scale**（初期値 1）の倍率。0 なら押さない。Script で速さを毎フレーム目標へ近づけている物（プレイヤーなど）は、押した分がすぐ消されるので、Wind Scale を 0 にして、自分で風を読む：
 
 ```cpp
-#include <MyEngine/Systems/Physics/WindZoneSystem.h>
+#include <HTTEngine/Systems/Physics/WindZoneSystem.h>
 
 // その位置の風（重なった範囲は足す。範囲の外なら全部 0）
 const WindZoneSystem::WindSample wind = WindZoneSystem::Sample(GetWorldPosition(transform));
@@ -1628,7 +1628,7 @@ UIScreen::CloseContaining(entity); // entity が入っている画面を消す
 | Renderer | Texture・Blend・Space・Use Fog・Use Depth Of Field | 無ければ**丸いぼかし**（白。色は Color で）／Add（光る）・Normal（奥から順には並べない）／World（出た所に残る）・Local（Entity と一緒に動く）／霧を混ぜるか（初めは ✓）／被写界深度でぼかすか（初めは外す。ぼけ方は粒の後ろにある物の距離で決まるので、奥の層の葉・湯気に） |
 
 ```cpp
-#include "MyEngine/Systems/Effects/ParticleSystem.h" // GameComponent.h を include していれば要らない
+#include "HTTEngine/Systems/Effects/ParticleSystem.h" // GameComponent.h を include していれば要らない
 
 // 子の「Burst」（Play On Start・Looping を外した、使ったら飛び散る物）を最初から
 GameObject burst = gameObject.FindChild("Burst");
@@ -1713,7 +1713,7 @@ LogManager::Log("Push!");            // logs/日付.log に残る
 LogManager::Warning("敵が多すぎる");
 LogManager::Error("モデルが読めない");
 
-MY_ASSERT_MSG(handle != 0, "モデルを読み込んでから呼んでください"); // Debugだけ。通知が出てログにも残る
+HTT_ASSERT_MSG(handle != 0, "モデルを読み込んでから呼んでください"); // Debugだけ。通知が出てログにも残る
 ```
 
 数値の調整は `GlobalVariables`（Settings ウィンドウで触って、jsonに保存される）。**登録する関数と、読み戻す関数の2つを書く**のが決まり。
@@ -1807,7 +1807,7 @@ void GameScene::ApplyGV() {
 | `RenderTexture` を作り直すクラスで、SRVスロットを自分で `AllocateSRVSlot` したまま返さない | 作り直すたびに減り、256個で落ちる | もらったら、持ち主のデストラクタで `DirectXCommon::FreeSRVSlot` |
 | 消す Entity の音を `AudioSystem::Play` で鳴らす | 消した瞬間に音が止まる | `AudioSystem::PlayOneShot` |
 | コードで鳴らす Audio Source に Play On Start を付けたまま | Play を押した瞬間にも鳴る | Play On Start の印を外す |
-| 古いパス（`MyEngine/Entity/`・`Component/`・`Light/`）をインクルードする | C1083（ファイルが無い） | 「1. ファイルの置き場所」の表のパス |
+| 古いパス（`HTTEngine/Entity/`・`Component/`・`Light/`）をインクルードする | C1083（ファイルが無い） | 「1. ファイルの置き場所」の表のパス |
 | アセットのファイル名に日本語を使う | 読めない（Inspector の一覧に出ない・Console に警告。前は選ぶと止まった） | 英数字にする |
 | パスを文字にするのに `path.string()` / `generic_string()` を使う | 日本語の Windows では Shift-JIS になる（ImGui で文字化け・UTF-8 のつもりの所で読めない）。C++26 で非推奨 | `ToUtf8(path)`（`String/ConvertString.h`。UTF-8・区切りは `/`） |
 | `GlobalVariables` の `SettingsSection` を、そのグループを最初に作る `Group(...)` 以外に渡す | 効かない（見出しは最初の `Group` で決まる）。Editor のつもりが Project の下に出て、`Parameters/<グループ>/` に保存される | 最初に呼ぶ `Group("名前", SettingsSection::Editor)` に渡す（`SceneFlow.md` の18章） |

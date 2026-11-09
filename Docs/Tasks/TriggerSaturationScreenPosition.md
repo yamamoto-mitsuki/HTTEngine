@@ -45,11 +45,11 @@
 | B | `Graphics/Renderer/SceneRenderer.cpp` | `Prepare`・`Composite` に mode を渡す |
 | B | `Graphics/PostEffect/PostOverride.h` | `PostParam::Saturation` |
 | B | `Components/Camera/CameraVolumeComponent.h`・`Systems/Camera/CameraVolume.cpp` | `saturation` と Inspector・上書きを作る所 |
-| B | `MyEngine_v1.vcxproj`・`.filters` | ColorAdjust.hlsli.shader を足す |
+| B | `HTTEngine.vcxproj`・`.filters` | ColorAdjust.hlsli.shader を足す |
 | C | `Components/Camera/CameraLookAtComponent.h` | `Vector2 screenPosition` |
 | C | `Systems/Camera/CameraLookAt.h`・`.cpp`（新しい） | Look At の Inspector・見る点・**画面の位置に写る向き**（`CalcRotation`） |
 | C | `Systems/Camera/CameraSystem.cpp` | Look At の中身を CameraLookAt へ移し、`CalcRotation` を使う |
-| C | `MyEngine_v1.vcxproj`・`.filters` | CameraLookAt.h・.cpp を足す |
+| C | `HTTEngine.vcxproj`・`.filters` | CameraLookAt.h・.cpp を足す |
 | D | `Sandbox/Source/Scripts/TriggerCameraSamples.h`・`.cpp`（新しい） | `TriggerCameraSwitcher`・`SideSwing` |
 | D | `Sandbox/Sandbox.vcxproj`・`.filters` | 上の2つを足す |
 | D | `Sandbox/Resources/scenes/TriggerSaturationLookAtTest.scene.json`（新しい） | テストシーン |
@@ -596,19 +596,19 @@ float32_t3 ApplySaturation(float32_t3 color, float saturation)
 
 （前は `color = ApplyToneMap(color * gLens.exposure, gLens.toneMap);` の1行。）
 
-### B-3 `MyEngine_v1.vcxproj`・`MyEngine_v1.vcxproj.filters`
+### B-3 `HTTEngine.vcxproj`・`HTTEngine.vcxproj.filters`
 
-Visual Studio のソリューションエクスプローラーで `MyEngine/Shader/Data/Post` に ColorAdjust.hlsli.shader を足す（既存の項目の追加）。手で書くなら、`BloomUp.PS.shader` の下に：
+Visual Studio のソリューションエクスプローラーで `HTTEngine/Shader/Data/Post` に ColorAdjust.hlsli.shader を足す（既存の項目の追加）。手で書くなら、`BloomUp.PS.shader` の下に：
 
 `.vcxproj`：
 ```xml
-    <None Include="MyEngine\Shader\Data\Post\ColorAdjust.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\ColorAdjust.hlsli.shader" />
 ```
 
 `.vcxproj.filters`：
 ```xml
-    <None Include="MyEngine\Shader\Data\Post\ColorAdjust.hlsli.shader">
-      <Filter>MyEngine\Shader\Data\Post</Filter>
+    <None Include="HTTEngine\Shader\Data\Post\ColorAdjust.hlsli.shader">
+      <Filter>HTTEngine\Shader\Data\Post</Filter>
     </None>
 ```
 
@@ -656,7 +656,7 @@ Visual Studio のソリューションエクスプローラーで `MyEngine/Shad
 
 ```cpp
 void LensPass::Render(RenderTexture& source, const ViewRect& rect, bool useLens, bool useColorAdjust) {
-	MY_ASSERT_MSG(slot_ < kMaxPassPerFrame, "1フレームのレンズパス数が上限を超えました");
+	HTT_ASSERT_MSG(slot_ < kMaxPassPerFrame, "1フレームのレンズパス数が上限を超えました");
 	auto* cmdList = DirectXCommon::GetCommandList();
 
 	// --- パラメータを作る。切ってあるときはレンズの値が全部0・彩度が1＝露出・トーンマップだけ掛けたコピーになる ---
@@ -807,9 +807,9 @@ void PostProcess::Composite(const ViewRect& rect, PostEffectMode mode) {
 #pragma once
 #include <type_traits>
 
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Vector2.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Vector2.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // カメラに注視点を見させる。Camera Component と同じ Entity に付けるComponent（カテゴリ：Camera）
 // 変えるのは写す向きだけで、Transform の向きは変えない（Camera Look At を外すと、置いた向きに戻る）
@@ -840,10 +840,10 @@ static_assert(std::is_trivially_copyable_v<CameraLookAtComponent>);
 #pragma once
 #include <optional>
 
-#include "MyEngine/Components/Camera/CameraLookAtComponent.h"
-#include "MyEngine/Math/Quaternion.h"
-#include "MyEngine/Math/Vector2.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Components/Camera/CameraLookAtComponent.h"
+#include "HTTEngine/Math/Quaternion.h"
+#include "HTTEngine/Math/Vector2.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // 前方宣言
 class ComponentUI;
@@ -885,11 +885,11 @@ std::optional<Quaternion> CalcRotation(const Vector3& position, const Vector3& p
 #include <cmath>
 #include <numbers>
 
-#include "MyEngine/Components/Camera/CameraComponent.h"
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Math/MathUtility.h"
+#include "HTTEngine/Components/Camera/CameraComponent.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Math/MathUtility.h"
 
 namespace {
 constexpr float kMinLookDistanceSq = 1e-6f; // 見る点がカメラとほとんど同じ位置なら、向きが決まらないので Transform の向きのままにする
@@ -1006,9 +1006,9 @@ std::optional<Quaternion> CameraLookAt::CalcRotation(const Vector3& position, co
 **include に足す**（CameraFollow の下）：
 
 ```cpp
-#include "MyEngine/Systems/Camera/CameraFollow.h"
-#include "MyEngine/Systems/Camera/CameraLookAt.h"
-#include "MyEngine/Systems/Camera/CameraShake.h"
+#include "HTTEngine/Systems/Camera/CameraFollow.h"
+#include "HTTEngine/Systems/Camera/CameraLookAt.h"
+#include "HTTEngine/Systems/Camera/CameraShake.h"
 ```
 
 **無名 namespace の頭の `kMinLookDistanceSq` の行を消す**（CameraLookAt.cpp へ移した）：
@@ -1054,27 +1054,27 @@ constexpr float kMinLookDistanceSq = 1e-6f;            // 見る点がカメラ�
 	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraLookAtComponent>>("Camera Look At", "Camera", &CameraLookAt::Describe));
 ```
 
-### C-5 `MyEngine_v1.vcxproj`・`MyEngine_v1.vcxproj.filters`
+### C-5 `HTTEngine.vcxproj`・`HTTEngine.vcxproj.filters`
 
-ソリューションエクスプローラーで `MyEngine/Systems/Camera` に CameraLookAt.h・.cpp を足す。手で書くなら CameraFollow の下に：
+ソリューションエクスプローラーで `HTTEngine/Systems/Camera` に CameraLookAt.h・.cpp を足す。手で書くなら CameraFollow の下に：
 
 `.vcxproj`：
 ```xml
-    <ClCompile Include="MyEngine\Systems\Camera\CameraLookAt.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Camera\CameraLookAt.cpp" />
 ```
 ```xml
-    <ClInclude Include="MyEngine\Systems\Camera\CameraLookAt.h" />
+    <ClInclude Include="HTTEngine\Systems\Camera\CameraLookAt.h" />
 ```
 
 `.vcxproj.filters`：
 ```xml
-    <ClCompile Include="MyEngine\Systems\Camera\CameraLookAt.cpp">
-      <Filter>MyEngine\Systems\Camera</Filter>
+    <ClCompile Include="HTTEngine\Systems\Camera\CameraLookAt.cpp">
+      <Filter>HTTEngine\Systems\Camera</Filter>
     </ClCompile>
 ```
 ```xml
-    <ClInclude Include="MyEngine\Systems\Camera\CameraLookAt.h">
-      <Filter>MyEngine\Systems\Camera</Filter>
+    <ClInclude Include="HTTEngine\Systems\Camera\CameraLookAt.h">
+      <Filter>HTTEngine\Systems\Camera</Filter>
     </ClInclude>
 ```
 
@@ -1086,9 +1086,9 @@ constexpr float kMinLookDistanceSq = 1e-6f;            // 見る点がカメラ�
 
 ```cpp
 #pragma once
-#include "MyEngine/ECS/GameObject.h"
-#include "MyEngine/ECS/Script.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/ECS/GameObject.h"
+#include "HTTEngine/ECS/Script.h"
+#include "HTTEngine/Math/Vector3.h"
 
 //=============================================================================
 // トリガーでカメラを切り替える（Sandbox のテスト用）
@@ -1151,10 +1151,10 @@ private:
 #include <format>
 #include <numbers>
 
-#include "MyEngine/Components/Camera/CameraComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Input/InputManager.h"
-#include "MyEngine/Time/EngineTime.h"
+#include "HTTEngine/Components/Camera/CameraComponent.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Input/InputManager.h"
+#include "HTTEngine/Time/EngineTime.h"
 
 SCRIPT(TriggerCameraSwitcher, "Test");
 SCRIPT(SideSwing, "Test");
@@ -1487,6 +1487,6 @@ include に `#include "Post/Dither.hlsli"`（ColorAdjust の下）、`LensParam`
 	lens_.dither = (kDitherEnabled != 0);
 ```
 
-### E-5 `MyEngine_v1.vcxproj`・`.filters`
+### E-5 `HTTEngine.vcxproj`・`.filters`
 
-ColorAdjust.hlsli.shader の下に `MyEngine\Shader\Data\Post\Dither.hlsli.shader` を同じ形で足す。
+ColorAdjust.hlsli.shader の下に `HTTEngine\Shader\Data\Post\Dither.hlsli.shader` を同じ形で足す。

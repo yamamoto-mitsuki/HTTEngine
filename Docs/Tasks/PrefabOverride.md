@@ -516,7 +516,7 @@ SceneJson SaveComponents(Handle<Entity> handle, std::set<std::string>& warnings)
 
 ```cpp
 SceneJson PrefabManager::MakeInstanceEntry(Handle<Entity> root, std::set<std::string>& warnings) {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	const Entity* entity = EntityManager::Get(root);
 	const PrefabInstanceComponent* link = EntityManager::Get<PrefabInstanceComponent>(root);
 	if (entity == nullptr || link == nullptr) {
@@ -636,7 +636,7 @@ bool PrefabManager::HasOverrides(Handle<Entity> root) {
 SceneJson PrefabManager::ShiftEntry(SceneJson entry, EntityId shift, const EntityIdMap& map) { return ShiftEntryIds(std::move(entry), shift, map); }
 
 void PrefabManager::KeepUnreadEntry(const SceneJson& entry) {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	state->unreadEntries[entry.value("id", EntityId{0})] = entry;
 }
 ```
@@ -721,14 +721,14 @@ include を足す。
 
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/Components/Core/PrefabInstanceComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Editor/Windows/HierarchyWindow.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Scene/PrefabManager.h"
-#include "MyEngine/Systems/Gameplay/ScriptSystem.h"
+#include "HTTEngine/Components/Core/PrefabInstanceComponent.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Editor/Windows/HierarchyWindow.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Scene/PrefabManager.h"
+#include "HTTEngine/Systems/Gameplay/ScriptSystem.h"
 ```
 
 `Restore` の、作って戻す繰り返しを2つに分ける。
@@ -906,8 +906,8 @@ include を2つ足す。
 #include <externals/magic_enum/magic_enum.hpp>
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/EntityManager.h"
 ```
 
 無名の名前空間の頭（色と覚え）を書き換える。

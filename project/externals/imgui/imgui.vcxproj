@@ -4,7 +4,7 @@
  imgui.vcxproj
  Dear ImGui（＋ImGuizmo）を静的ライブラリ imgui.lib にするプロジェクト
  ImGui のソースコードは書き換えず、同じフォルダにあるファイルを指すだけにする
- ゲームは MyEngine.props の ProjectReference で、この lib を自動でリンクする
+ ゲームは HTTEngine.props の ProjectReference で、この lib を自動でリンクする
 =============================================================================
 -->
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">

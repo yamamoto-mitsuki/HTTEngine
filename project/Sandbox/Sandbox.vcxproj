@@ -3,7 +3,7 @@
 =============================================================================
  Sandbox.vcxproj
  エンジンの起動確認・機能テスト用の exe（エンジンはスタティックライブラリなので、動かすには exe が要る）
- ゲームと同じく MyEngine.props を読む。エンジン・DirectXTex・ImGui の参照とライブラリは props が全部決める
+ ゲームと同じく HTTEngine.props を読む。エンジン・DirectXTex・ImGui の参照とライブラリは props が全部決める
 =============================================================================
 -->
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -86,7 +86,7 @@
   <!-- ===== プロパティシート ===== -->
   <ImportGroup Label="PropertySheets">
     <!-- エンジンの場所・include・ライブラリ・参照（同じリポジトリの中なので、1つ上のフォルダ） -->
-    <Import Project="..\MyEngine.props" />
+    <Import Project="..\HTTEngine.props" />
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -109,7 +109,7 @@
       <EnableSegmentHeap>true</EnableSegmentHeap>
     </Manifest>
     <!-- ビルドの後：シェーダーのコンパイラ（dxcompiler.dll・dxil.dll）を exe の隣へ -->
-    <!-- エンジンの .shader と Resources を起動するフォルダ（このフォルダ）の MyEngine\ へ写すのは、MyEngine.props の CopyMyEngineRuntimeFiles（ゲームと同じ） -->
+    <!-- エンジンの .shader と Resources を起動するフォルダ（このフォルダ）の HTTEngine\ へ写すのは、HTTEngine.props の CopyHTTEngineRuntimeFiles（ゲームと同じ） -->
     <PostBuildEvent>
       <Command>
 copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"

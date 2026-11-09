@@ -7,7 +7,7 @@
 
 # LogManager.h から spdlog を外す
 
-Release の `MyEngine_v1.lib` が **1.5GB** あった。中身を調べると、エンジンの .cpp 197 個のうち **134 個が spdlog の実装を丸ごと持っていた**。
+Release の `HTTEngine.lib` が **1.5GB** あった。中身を調べると、エンジンの .cpp 197 個のうち **134 個が spdlog の実装を丸ごと持っていた**。
 原因は `LogManager.h` が spdlog を include していたこと。spdlog は「ヘッダーだけで使う形」なので、include した .cpp には spdlog（と同梱の fmt）の実装が全部入る。
 
 spdlog を使っているのは `LogManager.cpp` だけ。`LogManager.h` を読む側は `LogManager::Log(...)` などを呼ぶだけで、spdlog を知らなくてよい。
@@ -25,7 +25,7 @@ spdlog を使っているのは `LogManager.cpp` だけ。`LogManager.h` を読�
 LogManager.h ──include──→ spdlog/spdlog.h・async.h（実装も全部ヘッダー）
      ↑                         └→ fmt（同梱・これも実装ごと）・<Windows.h>・<thread>・<chrono> …
      │
-  134 個の .cpp（MyAssert.h・Engine.h などを通して読む）
+  134 個の .cpp（HTTAssert.h・Engine.h などを通して読む）
      → 1 つ 1 つの obj に spdlog の実装が入る
      → Release（/GL）は obj に「中間コード」を全部持つので、1 つで約 6MB 増える
 ```
@@ -39,7 +39,7 @@ LogManager.h ──include──→ spdlog/spdlog.h・async.h（実装も全部�
 | `#include <externals/spdlog/spdlog.h>` だけの .cpp | 5.9MB |
 | `#include <string>` だけの .cpp | 0.5MB |
 
-全部写した後の `MyEngine_v1.lib`（写しで確認した値）：
+全部写した後の `HTTEngine.lib`（写しで確認した値）：
 
 | 構成 | 前 | 後 |
 |---|---|---|
@@ -63,7 +63,7 @@ Release だけ大きく減るのは、/GL の obj が「使っていない inlin
   - `std::unique_ptr<T>` だと、**消す所（デストラクタ）で T の中身が要る**。LogManager のデストラクタはヘッダーで `= default` なので、unique_ptr だとこの形ではビルドできない。今の shared_ptr のままでよい（spdlog の関数も shared_ptr で渡す作り）。
 - **Pimpl（中身を全部 .cpp の構造体に入れる形）にしなかった理由**：ヘッダーに出ている spdlog の名前は `async_logger` 1つだけで、前方宣言1行で隠せる。Pimpl は、ヘッダーに出したくない型が増えたときに考える。
 - **ImGui 用の重さを自分の enum（`LogLevel`）にした理由**：spdlog の `level_enum` も前方宣言はできる（`enum level_enum : int;`）が、元の宣言と型（`: int`）が少しでも違うとビルドが止まり、spdlog を入れ替えたときにヘッダーまで直すことになる。色分けに要るのは3つだけなので、エンジンの型にした。
-- **MyAssert.h が `LogManager::Flush()` を呼んでいる**：Flush を .cpp へ移しても、呼ぶ側は「関数を呼ぶ」だけなので何も変えなくてよい。
+- **HTTAssert.h が `LogManager::Flush()` を呼んでいる**：Flush を .cpp へ移しても、呼ぶ側は「関数を呼ぶ」だけなので何も変えなくてよい。
 
 ## パートA LogManager.h
 
@@ -191,7 +191,7 @@ void LogManager::Flush() {
 include の並び（CLAUDE.md の決まり）にもそろえる。
 
 ```cpp
-#include "MyEngine/UI/GameNotification.h"
+#include "HTTEngine/UI/GameNotification.h"
 
 #include <string_view>
 #include <format>
@@ -206,14 +206,14 @@ include の並び（CLAUDE.md の決まり）にもそろえる。
 #include <winrt/Windows.UI.Notifications.h>
 #pragma comment(lib, "windowsapp.lib")
 
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/String/ConvertString.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/String/ConvertString.h"
 ```
 
 ## 確かめること
 
 1. 3構成（Debug・Development・Release）でビルドが通る。警告が増えていない
-2. `generated/outputs/Release/MyEngine_v1.lib` が 1GB を切る（写しでは 950MB）
+2. `generated/outputs/Release/HTTEngine.lib` が 1GB を切る（写しでは 950MB）
 3. Sandbox を起動して、`project/Sandbox/logs/` の新しい .log に `[LogManager::Initialize] Initialized` が出る（Release・Debug とも）
 4. Debug で Console ウィンドウの色：warning が黄・error が赤・ほかは白（写しでは見ていない）
 5. AL4_01：サブモジュールを進めてビルドする。ゲームの .cpp が spdlog 経由の include（`<Windows.h>`・`<mutex>`・`<thread>`・`<chrono>`・`<format>` など）に頼っていたら、そこで「定義されていない識別子」が出る。出たら、その .cpp に要るヘッダーを自分で include する（パートC と同じ直し方）
@@ -226,12 +226,12 @@ include の並び（CLAUDE.md の決まり）にもそろえる。
 
 Release のリンクで `LNK4020（型レコードの破損）` が出続けていた件の直し。写経は無し。
 
-- `MyEngine.props` の Release：`LinkTimeCodeGeneration` を `UseLinkTimeCodeGeneration`（増分なしの `/LTCG`）、`LinkTimeCodeGenerationObjectFile` を空（`.iobj` を書かない）
-- ゲームのプロジェクトには何も足さなくてよい（MyEngine.props を読めば、上の設定も入る）
+- `HTTEngine.props` の Release：`LinkTimeCodeGeneration` を `UseLinkTimeCodeGeneration`（増分なしの `/LTCG`）、`LinkTimeCodeGenerationObjectFile` を空（`.iobj` を書かない）
+- ゲームのプロジェクトには何も足さなくてよい（HTTEngine.props を読めば、上の設定も入る）
 
 ### 64 ビット版のツールについて（設定は要らない）
 
 - VS の既定は「MSBuild 自身が 64 ビットなら、コンパイラ・リンカーも 64 ビット版（`bin\HostX64\x64`）」
 - Visual Studio 本体（64 ビット）からのビルドと、GitHub Actions（`Bin\amd64\MSBuild.exe` を探して使う）は、何もしなくても 64 ビット版になる
-- コマンドからビルドするときは **`MSBuild\Current\Bin\amd64\MSBuild.exe` を使う**。`MSBuild\Current\Bin\MSBuild.exe` は 32 ビット版で、ツールも 32 ビット版になる。Release の大きい MyEngine_v1.lib をメモリに写せず、毎回 64 ビット版でリンクをやり直す（`LINK : 32 ビット リンカー … 64 ビット リンカーとのリンクを再開しています` と出る）
-- 一度、`PreferredToolArchitecture=x64` を props に入れた（ae5e586）が、上の既定で足りるので外した。この設定は Microsoft.Cpp.props より前に読む必要があり、MyEngine.props では遅い。ゲームごとに `Directory.Build.props` を書くことになるので、やめた
+- コマンドからビルドするときは **`MSBuild\Current\Bin\amd64\MSBuild.exe` を使う**。`MSBuild\Current\Bin\MSBuild.exe` は 32 ビット版で、ツールも 32 ビット版になる。Release の大きい HTTEngine.lib をメモリに写せず、毎回 64 ビット版でリンクをやり直す（`LINK : 32 ビット リンカー … 64 ビット リンカーとのリンクを再開しています` と出る）
+- 一度、`PreferredToolArchitecture=x64` を props に入れた（ae5e586）が、上の既定で足りるので外した。この設定は Microsoft.Cpp.props より前に読む必要があり、HTTEngine.props では遅い。ゲームごとに `Directory.Build.props` を書くことになるので、やめた

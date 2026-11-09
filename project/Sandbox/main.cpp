@@ -1,4 +1,4 @@
-#include <MyEngine/Engine.h>
+#include <HTTEngine/Engine.h>
 
 
 //=============================================================================
@@ -8,7 +8,7 @@
 int WINAPI WinMain(_In_ HINSTANCE, _In_opt_ HINSTANCE, _In_ LPSTR, _In_ int) {
 	// --- ウィンドウの設定 ---
 	WindowConfig config;
-	config.title = L"MyEngine Sandbox"; // タイトルバーの文字
+	config.title = L"HTTEngine Sandbox"; // タイトルバーの文字
 	config.width = 1280;                // ウィンドウの幅（ピクセル）
 	config.height = 720;                // ウィンドウの高さ（ピクセル）
 #ifdef USE_IMGUI

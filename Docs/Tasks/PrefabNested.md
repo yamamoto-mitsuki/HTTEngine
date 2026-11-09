@@ -331,10 +331,10 @@ void ComponentSerializer::RemapFields(const std::function<void(ComponentUI&)>& d
 include に `ComponentSerializer.h` を足す（`SceneJson` を使うので）。
 
 ```cpp
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Vector3.h"
 ```
 
 クラスの説明（`/// <summary>` の中）の最後の `<para>` の次に足す。
@@ -395,14 +395,14 @@ include に `ComponentSerializer.h` を足す（`SceneJson` を使うので）�
 
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/Components/Core/PrefabInstanceComponent.h"
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Scene/SceneSerializer.h"
-#include "MyEngine/String/ConvertString.h"
+#include "HTTEngine/Components/Core/PrefabInstanceComponent.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Scene/SceneSerializer.h"
+#include "HTTEngine/String/ConvertString.h"
 
 
 namespace {
@@ -826,7 +826,7 @@ SceneJson ComponentsWithoutTransform(const SceneJson& item) {
 // 初期化 / 解放
 //=============================================================================
 void PrefabManager::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<PrefabState>();
 }
 
@@ -836,7 +836,7 @@ void PrefabManager::Release() { state.reset(); }
 // 読み込み
 //=============================================================================
 uint32_t PrefabManager::Load(const std::filesystem::path& filePath) {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	// --- 読み込み済みなら、同じ番号を返す ---
 	const std::string key = ToPathKey(filePath);
 	const auto cached = std::ranges::find(state->assets, key, &PrefabAsset::path);
@@ -866,7 +866,7 @@ const std::string& PrefabManager::GetPath(uint32_t handle) {
 }
 
 void PrefabManager::ReloadChangedFiles() {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	for (PrefabAsset& asset : state->assets) {
 		const std::filesystem::file_time_type time = WriteTimeOf(asset.path);
 		if (time == asset.writeTime) {
@@ -885,7 +885,7 @@ void PrefabManager::ReloadChangedFiles() {
 // 保存
 //=============================================================================
 bool PrefabManager::Save(Handle<Entity> root, const std::string& path) {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	const Entity* rootEntity = EntityManager::Get(root);
 	if (rootEntity == nullptr) {
 		return false;
@@ -939,7 +939,7 @@ bool PrefabManager::IsOtherPrefabFile(Handle<Entity> root, const std::string& pa
 // 作る
 //=============================================================================
 Handle<Entity> PrefabManager::Instantiate(uint32_t prefab, const Vector3& position, Handle<Entity> parent) {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	if (Find(prefab) == nullptr) {
 		LogManager::Warning(std::format("読み込んでいない Prefab の番号 {} から作ろうとしました（Inspector で Prefab を選んでいるか確かめてください）", prefab));
 		return {};
@@ -972,7 +972,7 @@ Handle<Entity> PrefabManager::Instantiate(uint32_t prefab, const Vector3& positi
 }
 
 Handle<Entity> PrefabManager::InstantiateNow(uint32_t prefab, const SceneJson& entry, std::set<std::string>& warnings) {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	// --- 中身を並べ、ファイルの項目（一番上の名前・有効・Transform など）を当てる ---
 	std::vector<uint32_t> stack;
 	EntityRecords records = Expand(prefab, entry.value("id", EntityId{0}), stack, warnings);
@@ -1000,7 +1000,7 @@ Handle<Entity> PrefabManager::InstantiateNow(uint32_t prefab, const SceneJson& e
 }
 
 void PrefabManager::RequestPlace(uint32_t prefab) {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	state->placeRequests.push_back(prefab);
 }
 
@@ -1008,7 +1008,7 @@ void PrefabManager::RequestPlace(uint32_t prefab) {
 // フレームの頭
 //=============================================================================
 void PrefabManager::Flush() {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	// ===== エディタから置く予約（作るだけ。Component は下でまとめて付く）=====
 	// 取り出してから回す（回している間に予約が足されても壊れないように）
 	const std::vector<uint32_t> places = std::exchange(state->placeRequests, {});

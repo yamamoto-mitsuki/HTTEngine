@@ -385,7 +385,7 @@ void ResetPlayer(AnimatorState& animator, const AnimatorComponent& component, bo
 ```cpp
 // ===== 番号で流す =====
 bool AnimationSystem::Play(Handle<Entity> entity, int clipIndex, bool loop, float speed) {
-	MY_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
 	AnimatorComponent* component = EntityManager::Get<AnimatorComponent>(entity);
 	if (component == nullptr) {
 		return false; // Animator が無い（RequestAdd した直後は、次のフレームまで付いていない）
@@ -411,7 +411,7 @@ bool AnimationSystem::Play(Handle<Entity> entity, int clipIndex, bool loop, floa
 
 // ===== 最初から流し直す =====
 bool AnimationSystem::Restart(Handle<Entity> entity) {
-	MY_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
 	// Restart を呼ぶのはゲーム（Script・SYSTEM。ゲームが動いている間だけ回る）なので、ここで切り替えておく
 	// ゲームが動き出した最初のフレームは、Script が AnimationSystem::Update より先に回るので、切り替えないと後の Update がこの Restart を捨てる
 	SwitchGameRunning(true);
@@ -1064,10 +1064,10 @@ void DrawPhases(ComponentUI& ui, AttackTable& table, bool isLocked) {
 相手の方を向き、遠ければ Character Controller で近づき、近ければ止まる待ちの部品。パートA の角度の関数と、パートB の Play を使う。
 
 ```cpp
-#include "MyEngine/AI/AttackPart.h"
-#include "MyEngine/Components/Physics/CharacterControllerComponent.h"
-#include "MyEngine/Math/MathUtility.h"
-#include "MyEngine/Systems/Animation/AnimationSystem.h"
+#include "HTTEngine/AI/AttackPart.h"
+#include "HTTEngine/Components/Physics/CharacterControllerComponent.h"
+#include "HTTEngine/Math/MathUtility.h"
+#include "HTTEngine/Systems/Animation/AnimationSystem.h"
 
 
 /// <summary>
@@ -1151,8 +1151,8 @@ void ChaseTarget::Fields(ComponentUI& ui) {
 予備動作の間に、アニメをちょうど1回流しきる攻撃部品。`CalcSpeedToFit` と、同じ番号を最初から流す `Restart` を使う。
 
 ```cpp
-#include "MyEngine/AI/AttackPart.h"
-#include "MyEngine/Systems/Animation/AnimationSystem.h"
+#include "HTTEngine/AI/AttackPart.h"
+#include "HTTEngine/Systems/Animation/AnimationSystem.h"
 
 
 /// <summary>
@@ -1425,7 +1425,7 @@ Visual Studio のソリューションエクスプローラーで、Sandbox の 
 				},
 				"Model Renderer": {
 					"enabled": true,
-					"model": "MyEngine/Resources/Model/AnimatedCube/AnimatedCube.gltf",
+					"model": "HTTEngine/Resources/Model/AnimatedCube/AnimatedCube.gltf",
 					"shadingType": "HalfLambert",
 					"color": [1.0, 1.0, 1.0, 1.0],
 					"overrideMaterial": false,
@@ -1433,7 +1433,7 @@ Visual Studio のソリューションエクスプローラーで、Sandbox の 
 				},
 				"Animator": {
 					"enabled": true,
-					"animation": "MyEngine/Resources/Model/AnimatedCube/AnimatedCube.gltf",
+					"animation": "HTTEngine/Resources/Model/AnimatedCube/AnimatedCube.gltf",
 					"clip": "animation_AnimatedCube",
 					"speed": 1.0,
 					"loop": true,

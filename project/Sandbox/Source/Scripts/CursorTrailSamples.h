@@ -1,7 +1,7 @@
 #pragma once
-#include "MyEngine/Components/Effects/TrailComponent.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/ECS/Script.h"
+#include "HTTEngine/Components/Effects/TrailComponent.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/ECS/Script.h"
 
 //=============================================================================
 // 照準の UI と OS のカーソル（Sandbox のテスト用）

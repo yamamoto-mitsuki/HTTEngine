@@ -902,7 +902,7 @@ void Win32Window::ReleaseCursorClip() {
 // マウスを見るか
 //=============================================================================
 void ImGuiManager::SetMouseEnabled(bool enabled) {
-	MY_ASSERT_MSG(instance_, "Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(instance_, "Initialize()を先に呼んでください");
 	// NoMouse の間、ImGui はどの窓もホバーしない（マウスの位置は覚え続けるので、戻したフレームから今の位置で動く）
 	ImGuiIO& io = ImGui::GetIO();
 	if (enabled) {
@@ -990,7 +990,7 @@ void WindowManager::UpdateCursor() {
 
 #include <string_view>
 
-#include "MyEngine/Camera/Camera.h"
+#include "HTTEngine/Camera/Camera.h"
 ```
 
 `.cpp`：`Render` の Game の所
@@ -1071,9 +1071,9 @@ void EditorViewport::DrawCursorConfineHint() {
 
 ```cpp
 #pragma once
-#include "MyEngine/Components/Effects/TrailComponent.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/ECS/Script.h"
+#include "HTTEngine/Components/Effects/TrailComponent.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/ECS/Script.h"
 
 //=============================================================================
 // 照準の UI と OS のカーソル（Sandbox のテスト用）
@@ -1150,10 +1150,10 @@ struct TrailFadeBullet {
 
 #include <algorithm>
 
-#include "MyEngine/Components/Effects/TrailComponent.h"
-#include "MyEngine/Components/Rendering3D/PrimitiveRendererComponent.h"
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
-#include "MyEngine/Input/InputManager.h"
+#include "HTTEngine/Components/Effects/TrailComponent.h"
+#include "HTTEngine/Components/Rendering3D/PrimitiveRendererComponent.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Input/InputManager.h"
 
 SCRIPT(AimCursorSample, "Test");
 
@@ -1308,7 +1308,7 @@ SYSTEM(TrailFadeBulletUpdate);
 #pragma once
 #include <cstdint>
 
-#include "MyEngine/ECS/GameComponent.h"
+#include "HTTEngine/ECS/GameComponent.h"
 
 //=============================================================================
 // 出し終わったら消える、飛び散る物（Sandbox のテスト用）
@@ -1331,9 +1331,9 @@ struct BurstSpawner {
 ```cpp
 #include "Source/Scripts/BurstEffectSamples.h"
 
-#include "MyEngine/Components/Effects/ParticleSystemComponent.h"
-#include "MyEngine/ECS/GameObject.h"
-#include "MyEngine/Math/RandomEngine.h"
+#include "HTTEngine/Components/Effects/ParticleSystemComponent.h"
+#include "HTTEngine/ECS/GameObject.h"
+#include "HTTEngine/Math/RandomEngine.h"
 
 namespace {
 // ===== コードで作るときの、飛び散る物の見た目 =====
@@ -1765,7 +1765,7 @@ InputManager::SetCursorConfined(true);   // OS のカーソルをゲーム画面
 
 ## 2章 AL4_01 で差し替える所（公開した物の一覧）
 
-### 2.1 光の尾（`#include <MyEngine/Components/Effects/TrailComponent.h>`）
+### 2.1 光の尾（`#include <HTTEngine/Components/Effects/TrailComponent.h>`）
 
 ```cpp
 enum class TrailAfterOwner { Discard, Shrink, Fade };
@@ -1780,7 +1780,7 @@ struct TrailComponent {
 - 弾の Prefab（`PlayerBullet.prefab`）の Trail で **After Owner を Fade** にして、Fade Seconds を決めて保存する。JSON のキーは `afterOwner`（`"Fade"`）・`fadeSeconds`。前の `"fadeOutAfterOwner": true` は読み飛ばされるので、消してよい（保存し直すと消える）
 - 弾のコードは何も変えない（当たって消える・着いて消えるのは、今までどおり Destroy）
 
-### 2.2 飛び散る物（`#include <MyEngine/Components/Effects/ParticleSystemComponent.h>`）
+### 2.2 飛び散る物（`#include <HTTEngine/Components/Effects/ParticleSystemComponent.h>`）
 
 ```cpp
 enum class ParticleStopAction { None, Destroy };
@@ -1794,7 +1794,7 @@ struct ParticleSystemComponent {
 - 飛び散る物の Prefab を作る：一番上の Entity に Particle System（Looping なし・Play On Start・Stop Action を Destroy）
 - 弾の当たった所で `GameObject::Instantiate(hitEffectPrefab_, position)`。後は何も書かない
 
-### 2.3 OS のカーソル（`#include <MyEngine/Input/InputManager.h>`）
+### 2.3 OS のカーソル（`#include <HTTEngine/Input/InputManager.h>`）
 
 ```cpp
 class InputManager {

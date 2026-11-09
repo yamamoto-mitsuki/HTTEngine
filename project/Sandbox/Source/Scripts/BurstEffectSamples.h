@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 
-#include "MyEngine/ECS/GameComponent.h"
+#include "HTTEngine/ECS/GameComponent.h"
 
 //=============================================================================
 // 出し終わったら消える、飛び散る物（Sandbox のテスト用）

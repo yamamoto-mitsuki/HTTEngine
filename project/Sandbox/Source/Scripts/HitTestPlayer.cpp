@@ -2,9 +2,9 @@
 
 #include <format>
 
-#include "MyEngine/Components/Combat/HealthComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Input/InputManager.h"
+#include "HTTEngine/Components/Combat/HealthComponent.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Input/InputManager.h"
 #include "Source/Scripts/TestBullet.h"
 
 SCRIPT(HitTestPlayer, "Test");

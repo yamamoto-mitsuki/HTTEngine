@@ -442,7 +442,7 @@ std::string EntityManager::MakeBindingPath(Handle<Entity> root, Handle<Entity> e
 include に足す。
 
 ```cpp
-#include "MyEngine/Time/EngineTime.h"
+#include "HTTEngine/Time/EngineTime.h"
 ```
 
 `target` のコメントを直す。
@@ -499,7 +499,7 @@ struct TimelineClipFade {
 #pragma once
 #include <type_traits>
 
-#include "MyEngine/ECS/Entity.h"
+#include "HTTEngine/ECS/Entity.h"
 
 // カメラを線に沿って動かす。Camera Component と同じ Entity に付けるComponent（カテゴリ：Camera）
 // 線は Path の Entity の子を上から順に通る、なめらかな線（PathCurve）。点が Entity なので、Scene ビューのギズモで動かせて、Prefab にもそのまま入る
@@ -532,10 +532,10 @@ static_assert(std::is_trivially_copyable_v<CameraPathComponent>);
 
 ```cpp
 #pragma once
-#include "MyEngine/Components/Camera/CameraPathComponent.h"
-#include "MyEngine/Math/Geometry/PathCurve.h"
-#include "MyEngine/Math/Quaternion.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Components/Camera/CameraPathComponent.h"
+#include "HTTEngine/Math/Geometry/PathCurve.h"
+#include "HTTEngine/Math/Quaternion.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // 前方宣言
 class ComponentUI;
@@ -563,9 +563,9 @@ void Apply(const CameraPathComponent& path, Vector3& position, Quaternion& rotat
 #include <algorithm>
 #include <vector>
 
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
 
 namespace {
 constexpr float kDirectionSpan = 0.25f; // 向きを測る前後の長さ（m）。細かい折れ線の1本で測ると、線の継ぎ目で向きがカクカク変わる
@@ -626,17 +626,17 @@ void CameraPath::Apply(const CameraPathComponent& path, Vector3& position, Quate
 include を直す。
 
 ```cpp
-#include "MyEngine/Components/Camera/CameraComponent.h"
-#include "MyEngine/Components/Camera/CameraFollowComponent.h"
-#include "MyEngine/Components/Camera/CameraLookAtComponent.h"
-#include "MyEngine/Components/Camera/CameraPathComponent.h"
-#include "MyEngine/Components/Camera/CameraShakeComponent.h"
-#include "MyEngine/Components/Camera/CameraVolumeComponent.h"
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Easing.h"
-#include "MyEngine/Math/Vector3.h"
-#include "MyEngine/Time/EngineTime.h"
+#include "HTTEngine/Components/Camera/CameraComponent.h"
+#include "HTTEngine/Components/Camera/CameraFollowComponent.h"
+#include "HTTEngine/Components/Camera/CameraLookAtComponent.h"
+#include "HTTEngine/Components/Camera/CameraPathComponent.h"
+#include "HTTEngine/Components/Camera/CameraShakeComponent.h"
+#include "HTTEngine/Components/Camera/CameraVolumeComponent.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Easing.h"
+#include "HTTEngine/Math/Vector3.h"
+#include "HTTEngine/Time/EngineTime.h"
 ```
 
 `struct TransformComponent;` の下に足す。
@@ -704,7 +704,7 @@ struct CameraOverride {
 include に足す。
 
 ```cpp
-#include "MyEngine/Systems/Camera/CameraPath.h"
+#include "HTTEngine/Systems/Camera/CameraPath.h"
 ```
 
 `PendingImpulse` の下に足す。
@@ -843,7 +843,7 @@ CameraOutput ApplyOverride(const CameraOverride& request, const CameraOutput& no
 
 ```cpp
 void CameraSystem::Update(bool isGameRunning) {
-	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
 
 	// ===== 1. 通常のカメラを選ぶ（有効な物の中で priority が一番大きい物。同じなら先に見つけた物）=====
 	Handle<Entity> best;
@@ -922,7 +922,7 @@ void CameraSystem::ResetOutput() {
 
 ```cpp
 bool CameraSystem::IsBlending() {
-	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
 	return state->blend.isActive || (state->lastOverride.has_value() && state->lastOverride->weight < 1.0f);
 }
 
@@ -947,17 +947,17 @@ Vector3 CameraSystem::CalcCameraPosition(Handle<Entity> entity) {
 // Timeline から使う
 //=============================================================================
 void CameraSystem::RequestOverride(const CameraOverride& request) {
-	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
 	state->overrideRequest = request;
 }
 
 void CameraSystem::BeginPreviewShake(float time) {
-	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
 	state->previewShake = PreviewShake{.time = time};
 }
 
 void CameraSystem::AddPreviewImpulse(float strength, const Vector3& direction, bool isWorldDirection, float age) {
-	MY_ASSERT_MSG(state != nullptr && state->previewShake.has_value(), "BeginPreviewShake を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr && state->previewShake.has_value(), "BeginPreviewShake を先に呼んでください");
 	state->previewShake->impulses.push_back({
 	    {strength, direction, isWorldDirection},
         age
@@ -972,8 +972,8 @@ void CameraSystem::AddPreviewImpulse(float strength, const Vector3& direction, b
 #include <set>
 #include <string>
 
-#include "MyEngine/Math/Easing.h"
-#include "MyEngine/Timeline/TimelineTrack.h"
+#include "HTTEngine/Math/Easing.h"
+#include "HTTEngine/Timeline/TimelineTrack.h"
 
 /// <summary>
 /// クリップが終わった後のカメラの戻し方
@@ -1053,9 +1053,9 @@ public:
 
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Systems/Camera/CameraSystem.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Systems/Camera/CameraSystem.h"
 
 namespace {
 constexpr const char* kCameraKey = "camera"; // ファイルのカメラの項目の名前
@@ -1257,8 +1257,8 @@ std::string TimelineCameraTrack::FindClipProblem(Handle<Entity> owner) const {
 
 ```cpp
 #pragma once
-#include "MyEngine/Math/Vector3.h"
-#include "MyEngine/Timeline/TimelineTrack.h"
+#include "HTTEngine/Math/Vector3.h"
+#include "HTTEngine/Timeline/TimelineTrack.h"
 
 /// <summary>
 /// 衝撃のクリップ（長さは無い。start の時間ちょうどの1点）
@@ -1293,8 +1293,8 @@ public:
 ```cpp
 #include "TimelineCameraShakeTrack.h"
 
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/Systems/Camera/CameraSystem.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Systems/Camera/CameraSystem.h"
 
 namespace {
 const Vector3 kPreviewDirection = {1.0f, 1.0f, 0.0f}; // プレビューでの、ランダムの代わりの向き（カメラの右上。動かすたびに絵が変わらないように）
@@ -1349,9 +1349,9 @@ void TimelineCameraShakeTrack::Evaluate(const TimelineFrame& frame, TimelineTrac
 include に足す。
 
 ```cpp
-#include "MyEngine/Systems/Camera/CameraSystem.h"
-#include "MyEngine/Timeline/Camera/TimelineCameraShakeTrack.h"
-#include "MyEngine/Timeline/Camera/TimelineCameraTrack.h"
+#include "HTTEngine/Systems/Camera/CameraSystem.h"
+#include "HTTEngine/Timeline/Camera/TimelineCameraShakeTrack.h"
+#include "HTTEngine/Timeline/Camera/TimelineCameraTrack.h"
 ```
 
 `EvaluateTracks` を差し替える。
@@ -1490,12 +1490,12 @@ public:
 #include <cstdint>
 #include <span>
 
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Graphics/Renderer/Renderer.h"
-#include "MyEngine/Graphics/Texture/TextureManager.h"
-#include "MyEngine/Math/Geometry/PathCurve.h"
-#include "MyEngine/Systems/Camera/CameraPath.h"
-#include "MyEngine/Systems/Camera/CameraSystem.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Graphics/Renderer/Renderer.h"
+#include "HTTEngine/Graphics/Texture/TextureManager.h"
+#include "HTTEngine/Math/Geometry/PathCurve.h"
+#include "HTTEngine/Systems/Camera/CameraPath.h"
+#include "HTTEngine/Systems/Camera/CameraSystem.h"
 
 namespace {
 constexpr float kNoFadeStart = 10000.0f;                     // 距離でフェードさせないための値
@@ -1543,7 +1543,7 @@ void PushPath(Handle<Entity> entity, const CameraPathComponent& path) {
 // 初期化
 //=============================================================================
 void CameraGizmo::Initialize() {
-	iconTextureHandle = TextureManager::Load("MyEngine/Resources/Textures/Camera.png");
+	iconTextureHandle = TextureManager::Load("HTTEngine/Resources/Textures/Camera.png");
 	lines.fadeStartDistance = kNoFadeStart;
 	lines.fadeEndDistance = kNoFadeEnd;
 	lines.layer = DrawLayer::EditorGizmo;
@@ -1587,7 +1587,7 @@ bool& CameraGizmo::GetShowPaths() { return isShowPaths; }
 include に足す。
 
 ```cpp
-#include "MyEngine/Editor/Gizmos/CameraGizmo.h"
+#include "HTTEngine/Editor/Gizmos/CameraGizmo.h"
 ```
 
 `LightGizmo::Initialize();` の下に足す。
@@ -1603,7 +1603,7 @@ include に足す。
 `#ifdef USE_IMGUI` の中の include に足す。
 
 ```cpp
-#include "MyEngine/Editor/Gizmos/CameraGizmo.h"
+#include "HTTEngine/Editor/Gizmos/CameraGizmo.h"
 ```
 
 `Draw` の `LightSystem::DrawGizmos` の下に足す。
@@ -1617,8 +1617,8 @@ include に足す。
 include に足す。
 
 ```cpp
-#include "MyEngine/Editor/Gizmos/CameraGizmo.h"
-#include "MyEngine/Systems/Camera/CameraSystem.h"
+#include "HTTEngine/Editor/Gizmos/CameraGizmo.h"
+#include "HTTEngine/Systems/Camera/CameraSystem.h"
 ```
 
 `PickIcons` の頭を直す（`float t = 0.0f;` から下は今のまま）。
@@ -1658,7 +1658,7 @@ bool IsCameraIconShown(const CameraComponent&) { return CameraGizmo::GetShowIcon
 include に足す。
 
 ```cpp
-#include "MyEngine/Editor/Gizmos/CameraGizmo.h"
+#include "HTTEngine/Editor/Gizmos/CameraGizmo.h"
 ```
 
 `DrawViewMenu` の `Light Ranges` の下に足す。
@@ -1681,14 +1681,14 @@ include に足す。
 include を直す（`LogManager.h` は使わなくなるので消す）。
 
 ```cpp
-#include "MyEngine/Components/Camera/CameraComponent.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Editor/Timeline/TimelineEditorState.h"
-#include "MyEngine/Editor/Windows/HierarchyWindow.h"
-#include "MyEngine/Timeline/Camera/TimelineCameraTrack.h"
-#include "MyEngine/Timeline/TimelineEdit.h"
-#include "MyEngine/Timeline/TimelineValueTrack.h"
+#include "HTTEngine/Components/Camera/CameraComponent.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Editor/Timeline/TimelineEditorState.h"
+#include "HTTEngine/Editor/Windows/HierarchyWindow.h"
+#include "HTTEngine/Timeline/Camera/TimelineCameraTrack.h"
+#include "HTTEngine/Timeline/TimelineEdit.h"
+#include "HTTEngine/Timeline/TimelineValueTrack.h"
 ```
 
 `ChannelName` の下に足す。
@@ -1802,9 +1802,9 @@ void SetTimelineTarget(TimelineEditorState& state, TimelineTrack& track, Handle<
 include に足す。
 
 ```cpp
-#include "MyEngine/Components/Camera/CameraComponent.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Timeline/Camera/TimelineCameraTrack.h"
+#include "HTTEngine/Components/Camera/CameraComponent.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Timeline/Camera/TimelineCameraTrack.h"
 ```
 
 定数に足す。
@@ -2134,7 +2134,7 @@ A・B を写して AL4_01 で動かしたときに見つかったバグを直す
 include に足す（`EntityManager.h` の上）。
 
 ```cpp
-#include "MyEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
 ```
 
 `kPositionColor` のコメントを直す。
@@ -2190,7 +2190,7 @@ void PushPath(Handle<Entity> entity, const CameraPathComponent& path, const Tran
 B-9 で足した include のうち、`CameraSystem.h` を消す（`CameraGizmo.h` は残す）。
 
 ```cpp
-#include "MyEngine/Systems/Camera/CameraSystem.h" // ← この行を消す
+#include "HTTEngine/Systems/Camera/CameraSystem.h" // ← この行を消す
 ```
 
 `PickIcons` の頭を、B-9 の前の形に戻す（`float t = 0.0f;` から下は今のまま）。位置を選ぶ引数が要らなくなる。

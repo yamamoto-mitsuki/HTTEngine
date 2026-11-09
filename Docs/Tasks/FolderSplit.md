@@ -14,7 +14,7 @@
 - 確かめた環境：本体の develop（37e57d3）を一時フォルダに写して、このスクリプトを動かし、エンジンを Debug・Development・Release でビルドした（5章）。
 
 ## 作業する場所
-- **MyEngine_v1 の `project/MyEngine_v1.sln`**（この本体のリポジトリ）。AL4_01 の中のサブモジュールではない。
+- **HTTEngine の `project/HTTEngine.sln`**（この本体のリポジトリ）。AL4_01 の中のサブモジュールではない。
 - AL4_01 のサブモジュールはコミット `58dd708` に止めてあるので、こちらでいくら動かしても **AL4_01 は壊れない**（6章）。
 - エンジンは静的ライブラリなので、ここで確かめられるのは「ビルドが通るか」まで。ファイルを動かすだけなので、それで足りる。
 
@@ -67,7 +67,7 @@
 <#
 =============================================================================
 FolderSplit.ps1
-MyEngine/Components と MyEngine/Systems の中を、カテゴリのフォルダに分ける。
+HTTEngine/Components と HTTEngine/Systems の中を、カテゴリのフォルダに分ける。
 ファイルの中身（コード）は変えない。変えるのは「パス」だけ。
   1. ファイルを git mv で動かす（履歴が続く）
   2. include・vcxproj・Docs の md に書いてあるパスを、新しい場所に書き換える
@@ -83,7 +83,7 @@ $ErrorActionPreference = "Stop"
 # ===== 場所 =====
 $projectDir = Split-Path -Parent $PSScriptRoot   # Tools の1つ上＝project フォルダ
 $rootDir = Split-Path -Parent $projectDir        # Git のルート（Docs がある所）
-$engineDir = Join-Path $projectDir "MyEngine"
+$engineDir = Join-Path $projectDir "HTTEngine"
 
 # ===== どのカテゴリに入れるか =====
 # カテゴリ名は Inspector の Add Component のカテゴリと同じ（ComponentEditor.cpp の kTopLevelOrder）
@@ -160,7 +160,7 @@ foreach ($move in $moves) {
     if (-not (Test-Path $toDir)) {
         New-Item -ItemType Directory $toDir | Out-Null
     }
-    git -C $projectDir mv "MyEngine/$($move.Folder)/$($move.File)" "MyEngine/$($move.Folder)/$($move.Category)/$($move.File)"
+    git -C $projectDir mv "HTTEngine/$($move.Folder)/$($move.File)" "HTTEngine/$($move.Folder)/$($move.Category)/$($move.File)"
     if ($LASTEXITCODE -ne 0) {
         throw "git mv に失敗：$($move.Folder)/$($move.File)"
     }
@@ -191,7 +191,7 @@ foreach ($move in $moves) {
 # エンジンのコード・プロジェクトファイル・Docs の md（externals と generated は触らない）
 $targets = @()
 $targets += Get-ChildItem $engineDir -Recurse -File -Include *.h, *.cpp
-$targets += Get-Item (Join-Path $projectDir "MyEngine_v1.vcxproj")
+$targets += Get-Item (Join-Path $projectDir "HTTEngine.vcxproj")
 $targets += Get-ChildItem (Join-Path $rootDir "Docs") -Recurse -File -Include *.md
 
 # ===== 書き換える（文字コードと BOM はそのまま残す） =====
@@ -222,7 +222,7 @@ Write-Host "$changedCount files rewritten"
 # 3. フィルタを作り直す
 #=============================================================================
 
-& (Join-Path $PSScriptRoot "UpdateFilters.ps1") (Join-Path $projectDir "MyEngine_v1.vcxproj")
+& (Join-Path $PSScriptRoot "UpdateFilters.ps1") (Join-Path $projectDir "HTTEngine.vcxproj")
 ```
 
 ### 解説：スクリプトの分かりにくい所
@@ -239,7 +239,7 @@ Write-Host "$changedCount files rewritten"
 **`(?<![A-Za-z])` と `(?![A-Za-z0-9_])`（正規表現の「前後を見る」）**
 - `(?<!X)` は「すぐ前が X ではない」、`(?!X)` は「すぐ後が X ではない」。どちらも文字は食べずに、条件だけを見る。
 - 置き換える文字は「Systems/」＋ファイル名。前が英字なら、`OldSystems/` のような別の名前の一部なので書き換えない。後ろが英数字なら、`CameraSystem.hpp` のような別のファイルなので書き換えない。
-- include の `"MyEngine/` の後ろ・vcxproj の `MyEngine\` の後ろ・md の `` ` `` の後ろは、どれも英字ではないので書き換わる。
+- include の `"HTTEngine/` の後ろ・vcxproj の `HTTEngine\` の後ろ・md の `` ` `` の後ろは、どれも英字ではないので書き換わる。
 
 **BOM をそのまま残す**
 - エンジンの .h・.cpp は BOM 無し、vcxproj は BOM 付き、と混ざっている。`Get-Content`・`Set-Content` で書くと、PowerShell 5.1 は文字コードを勝手に変えてしまう。
@@ -254,7 +254,7 @@ Write-Host "$changedCount files rewritten"
 ## 3. 動かす
 
 1. **Visual Studio を閉じる**（開いたままだと、Visual Studio が古い vcxproj を書き戻すことがある）。
-2. 今の変更が全部コミットしてあることを確かめる（`git status` が空）。こうしておくと、失敗しても `git reset --hard` と `git clean -fd project/MyEngine` で戻せる。
+2. 今の変更が全部コミットしてあることを確かめる（`git status` が空）。こうしておくと、失敗しても `git reset --hard` と `git clean -fd project/HTTEngine` で戻せる。
 3. project フォルダで動かす。
 
 ```bash
@@ -265,7 +265,7 @@ powershell -ExecutionPolicy Bypass -File Tools\FolderSplit.ps1
 ```
 66 files moved
 70 files rewritten
-395 files, 80 filters -> ...\project\MyEngine_v1.vcxproj.filters
+395 files, 80 filters -> ...\project\HTTEngine.vcxproj.filters
 ```
 
 ---
@@ -275,8 +275,8 @@ powershell -ExecutionPolicy Bypass -File Tools\FolderSplit.ps1
 スクリプトはパスだけを書き換えるので、決まりの文は手で直す。`Docs/ARCHITECTURE.md` の「# フォルダの決まり」の最初の2行を、下に書き換える。
 
 ```
-・〜Component → MyEngine/Components/カテゴリ/（データだけ。カテゴリは Add Component のカテゴリと同じ名前。エンジンの Component の保存の項目 EngineComponents.cpp は Components の直下）
-・〜System → MyEngine/Systems/カテゴリ/（Component を読んで処理する係。カテゴリは、主に扱う Component と同じ。鳴っている音・当たりの一覧など、実行中だけの状態もここが持つ）
+・〜Component → HTTEngine/Components/カテゴリ/（データだけ。カテゴリは Add Component のカテゴリと同じ名前。エンジンの Component の保存の項目 EngineComponents.cpp は Components の直下）
+・〜System → HTTEngine/Systems/カテゴリ/（Component を読んで処理する係。カテゴリは、主に扱う Component と同じ。鳴っている音・当たりの一覧など、実行中だけの状態もここが持つ）
 ```
 
 その下の「機能ごと（Light/ にライトの全部）にしないのは〜」の行の後ろに、1行足す。
@@ -289,15 +289,15 @@ powershell -ExecutionPolicy Bypass -File Tools\FolderSplit.ps1
 
 ## 5. 確かめること
 
-1. Visual Studio で `project/MyEngine_v1.sln` を開き、ソリューション エクスプローラーで MyEngine → Components・Systems の下にカテゴリのフォルダが出ている。
+1. Visual Studio で `project/HTTEngine.sln` を開き、ソリューション エクスプローラーで HTTEngine → Components・Systems の下にカテゴリのフォルダが出ている。
 2. **ビルドが通る**（エラー 0）。sln の構成は Debug と Release の2つで、**sln の Debug はエンジンの Development をビルドする**（sln の構成の対応がそうなっている）。なので Visual Studio では「Debug」と「Release」の2回でよい。
    - エンジンの Debug 構成も確かめたいときは、vcxproj を直接ビルドする（Claude はこれで確かめた）。
 3. `git status` で、動かしたファイルが「renamed」になっている（「deleted」と「new file」に分かれていない＝履歴が続く）。
    - 中身を変えていないので、git は名前の変更として扱う。
 4. コミットして、`Tools/FolderSplit.ps1` は消す（1回しか使わない。中身はこの md にある）。
 
-### 注意：`project/MyEngine/Resources` ができたとき（2026-10-30 に直した）
-- ビルド後の処理（vcxproj の PostBuildEvent）は、`Resources` を `$(SolutionDir)MyEngine\Resources\` に xcopy する。ゲームの sln からビルドしたときにゲームの側へ写すための物。
+### 注意：`project/HTTEngine/Resources` ができたとき（2026-10-30 に直した）
+- ビルド後の処理（vcxproj の PostBuildEvent）は、`Resources` を `$(SolutionDir)HTTEngine\Resources\` に xcopy する。ゲームの sln からビルドしたときにゲームの側へ写すための物。
 - 最初の行の `if /I "$(SolutionDir)"=="$(ProjectDir)" exit /b 0` で、**エンジンの sln からのビルドでは写さない**ようになっている（2026-10-30 に sln でビルドして、できないことを確かめた）。
 - 2026-10-29 にできたのは、Claude が vcxproj を直接ビルドしたとき `SolutionDir` を `project\\`（終わりの `\` が2つ）で渡し、上の比べが合わなかったため。エンジンの作りの問題ではなかった。
 - もしできたら、git に入れずにフォルダごと消してよい（中身は `project/Resources` の写し）。
@@ -312,7 +312,7 @@ Claude が確かめたこと（2026-10-29、本体の develop 37e57d3 の写し�
 ## 6. ゲーム（AL4_01）への影響
 
 - **今は何も起きない**。AL4_01 のサブモジュールはコミット `58dd708` に止まっていて、こちらの変更を読まない。
-- 起きるのは、AL4_01 でサブモジュールを進めたとき（`git submodule update --remote` など）。ゲームの include（**23 ファイル・36 か所**。`#include <MyEngine/Components/...>` のように山かっこで書いてある）が古いパスのままなので、**ビルドが通らなくなる**（2026-10-30 に写しで確かめた）。
+- 起きるのは、AL4_01 でサブモジュールを進めたとき（`git submodule update --remote` など）。ゲームの include（**23 ファイル・36 か所**。`#include <HTTEngine/Components/...>` のように山かっこで書いてある）が古いパスのままなので、**ビルドが通らなくなる**（2026-10-30 に写しで確かめた）。
   - そのときは、このスクリプトの「2. パスを書き換える」と同じ置き換えを、AL4_01 の `project/Source` に掛ければ直る（ゲームの CLAUDE.md は「Engine 層を変えない」だが、これはゲーム側の include の直し）。include のほかに直す所は無かった。
 - シーンファイル（.scene・.prefab）は Component を**名前**（"Transform" など）で保存しているので、フォルダを動かしても読める。
 

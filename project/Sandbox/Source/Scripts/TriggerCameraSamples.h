@@ -1,7 +1,7 @@
 #pragma once
-#include "MyEngine/ECS/GameObject.h"
-#include "MyEngine/ECS/Script.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/ECS/GameObject.h"
+#include "HTTEngine/ECS/Script.h"
+#include "HTTEngine/Math/Vector3.h"
 
 //=============================================================================
 // トリガーでカメラを切り替える（Sandbox のテスト用）

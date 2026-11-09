@@ -1,7 +1,7 @@
 #pragma once
 #include <random>
 
-#include "MyEngine/ECS/Script.h"
+#include "HTTEngine/ECS/Script.h"
 
 /// <summary>
 /// 円を描いて動く（Sandbox のテスト用。UI World Follow の相手・Camera Follow の相手にする）

@@ -626,10 +626,10 @@ static_assert(std::is_trivially_copyable_v<UIMaskComponent>);
 #include <array>
 #include <cstdint>
 
-#include "MyEngine/Components/UI/UIMaskComponent.h"
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Graphics/Pipeline/RenderStates.h"
+#include "HTTEngine/Components/UI/UIMaskComponent.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Graphics/Pipeline/RenderStates.h"
 
 /// <summary>
 /// 画面に重ねる UI の種類（同じ Order のときに重ねる順。UIDrawKeyPart::kind に入れる）
@@ -703,13 +703,13 @@ public:
 #include <memory>
 #include <algorithm>
 
-#include "MyEngine/Components/UI/PolylineComponent.h"
-#include "MyEngine/Components/UI/VectorShapeComponent.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Components/UI/PolylineComponent.h"
+#include "HTTEngine/Components/UI/VectorShapeComponent.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
 
 namespace {
 constexpr uint32_t kMaxMaskDepth = static_cast<uint32_t>(UIDrawKey::kMaxDepth) - 1; // マスクの入れ子の上限（キーの段の1つは自分の分）
@@ -975,7 +975,7 @@ static const uint kPartMaskRegion = 3;
 
 ### B-8 `Systems/Rendering2D/SpriteRenderSystem.cpp`
 
-1. include の `#include "MyEngine/Systems/Rendering2D/UIDrawOrder.h"` を `#include "MyEngine/Systems/UI/UIMaskSystem.h"` に差し替える。
+1. include の `#include "HTTEngine/Systems/Rendering2D/UIDrawOrder.h"` を `#include "HTTEngine/Systems/UI/UIMaskSystem.h"` に差し替える。
 2. `SpriteRenderState` と `state` を消し（Image を並べる配列は要らなくなった）、定数を1つ足す。
 
 ```cpp
@@ -1054,7 +1054,7 @@ void DrawImage(Handle<Entity> entity, const ImageComponent& image) {
 }
 ```
 
-5. `Initialize` の最初の2行（`MY_ASSERT_MSG` と `state = …`）と空行を消し、`Release`・`Draw` を差し替える。
+5. `Initialize` の最初の2行（`HTT_ASSERT_MSG` と `state = …`）と空行を消し、`Release`・`Draw` を差し替える。
 
 ```cpp
 void SpriteRenderSystem::Release() {} // 持っている物は無い（Image の重ねる順は RenderQueue が並べる）
@@ -1086,7 +1086,7 @@ void SpriteRenderSystem::Draw(Camera* camera) {
 
 ### B-10 `Systems/UI/TextRenderSystem.cpp`
 
-include に `#include "MyEngine/Systems/UI/UIMaskSystem.h"` を足し（`SpriteRenderSystem.h` の下）、`config.order = text.order;` を差し替える。
+include に `#include "HTTEngine/Systems/UI/UIMaskSystem.h"` を足し（`SpriteRenderSystem.h` の下）、`config.order = text.order;` を差し替える。
 
 ```cpp
 		UIMaskSystem::MakeStep(entity, text.order, UIDrawKind::Text).ApplyTo(config); // Image・図形とも Order の順に重なる。マスクの中なら切り抜く
@@ -1094,7 +1094,7 @@ include に `#include "MyEngine/Systems/UI/UIMaskSystem.h"` を足し（`SpriteR
 
 ### B-11 `Systems/UI/VectorShapeSystem.cpp`
 
-1. include の `<vector>`・`MyAssert.h` を消し、`UIDrawOrder.h` を `#include "MyEngine/Systems/UI/UIMaskSystem.h"` に差し替える。
+1. include の `<vector>`・`HTTAssert.h` を消し、`UIDrawOrder.h` を `#include "HTTEngine/Systems/UI/UIMaskSystem.h"` に差し替える。
 2. `VectorShapeState` と `state` を消す。
 3. `DrawShape` を全体差し替え（Entity と Component を受け取る形にして、最後を描く手順のループにした）。
 
@@ -1169,7 +1169,7 @@ void VectorShapeSystem::Draw() {
 
 ### B-12 `Systems/UI/PolylineSystem.cpp`
 
-include に `#include "MyEngine/Systems/UI/UIMaskSystem.h"` を足す（`PolylineMesh.h` の下）。
+include に `#include "HTTEngine/Systems/UI/UIMaskSystem.h"` を足す（`PolylineMesh.h` の下）。
 
 `MakeShape` に引数 `hasFill` を足す（閉じた形のマスクは、塗らなくても塗りの部分を作る）。
 
@@ -1263,7 +1263,7 @@ void DrawPolyline(Handle<Entity> entity, const PolylineComponent& polyline) {
 
 ### B-13 `Editor/Gizmos/UIGizmo.cpp`
 
-include の `<tuple>` を消し、`#include "MyEngine/Systems/UI/UIMaskSystem.h"` を足す（`TextRenderSystem.h` の下）。`PickUI` を全体差し替え（クリックで選ぶ順も、描く順のキーで比べる）。
+include の `<tuple>` を消し、`#include "HTTEngine/Systems/UI/UIMaskSystem.h"` を足す（`TextRenderSystem.h` の下）。`PickUI` を全体差し替え（クリックで選ぶ順も、描く順のキーで比べる）。
 
 ```cpp
 // point の下にある UI のうち、一番手前に描いてある物（描く順と同じ：UIMaskSystem が決める重ねる順のキーが大きい物）
@@ -1293,9 +1293,9 @@ Handle<Entity> PickUI(const Vector2& point) {
 ### B-14 `Systems/EngineSystems.cpp`
 
 ```cpp
-#include "MyEngine/Systems/UI/TextRenderSystem.h"
-#include "MyEngine/Systems/UI/UIMaskSystem.h"
-#include "MyEngine/Systems/UI/VectorShapeSystem.h"
+#include "HTTEngine/Systems/UI/TextRenderSystem.h"
+#include "HTTEngine/Systems/UI/UIMaskSystem.h"
+#include "HTTEngine/Systems/UI/VectorShapeSystem.h"
 ```
 
 `Initialize`（Polyline の下）：

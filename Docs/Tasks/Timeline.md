@@ -279,7 +279,7 @@ public:
 **1. クリップを書く。** `TimelineClip` を継承して、値と `Fields` を足す。`Fields` の並びがファイルの項目になる。
 
 ```cpp
-#include <MyEngine/Timeline/TimelineTrack.h>
+#include <HTTEngine/Timeline/TimelineTrack.h>
 
 struct ImpulseClip : TimelineClip {
 	float strength = 0.5f; // 揺れの強さ
@@ -358,10 +358,10 @@ Evaluate：ForEachStarted で始まったクリップのカメラへ切り替え
 
 ## パートA 土台
 
-新しいファイルは VS で `MyEngine_v1` プロジェクトに追加して、最後に次を実行するとフィルタがフォルダの形になる（`project` フォルダで）。
+新しいファイルは VS で `HTTEngine` プロジェクトに追加して、最後に次を実行するとフィルタがフォルダの形になる（`project` フォルダで）。
 
 ```bash
-powershell -ExecutionPolicy Bypass -File Tools\UpdateFilters.ps1 MyEngine_v1.vcxproj
+powershell -ExecutionPolicy Bypass -File Tools\UpdateFilters.ps1 HTTEngine.vcxproj
 ```
 
 ### A-1 `Time/EngineTime.h`
@@ -393,8 +393,8 @@ enum class TimeMode {
 include に足す。
 
 ```cpp
-#include "MyEngine/Math/Easing.h"
-#include "MyEngine/Time/EngineTime.h"
+#include "HTTEngine/Math/Easing.h"
+#include "HTTEngine/Time/EngineTime.h"
 ```
 
 `enum class CameraTimeMode` を、上の `/// <summary>` ごと消す。`timeMode` の行の型を変える（行の右のコメントはそのまま）。
@@ -677,8 +677,8 @@ Handle<Entity> EntityManager::FindByPath(Handle<Entity> root, std::string_view p
 #pragma once
 #include <string>
 
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
 
 /// <summary>
 /// Timeline のイベント1回分（Script::OnTimelineEvent・TimelineSystem::AddEventListener に渡す）
@@ -697,8 +697,8 @@ struct TimelineEvent {
 include の最後に足す。
 
 ```cpp
-#include "MyEngine/Time/EngineTime.h"
-#include "MyEngine/Timeline/TimelineEvent.h"
+#include "HTTEngine/Time/EngineTime.h"
+#include "HTTEngine/Timeline/TimelineEvent.h"
 ```
 
 `// ===== Inspector に出す・保存する値 =====` の上に足す。
@@ -943,11 +943,11 @@ void TimelinePlayhead::Advance(float deltaTime, float duration, bool isLoop, std
 
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Timeline/TimelineEvent.h"
-#include "MyEngine/Timeline/TimelinePlayhead.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Timeline/TimelineEvent.h"
+#include "HTTEngine/Timeline/TimelinePlayhead.h"
 
 // Timeline のトラックを書くための基底クラス。ゲーム側で新しい種類を足すときは、このヘッダ1つをインクルードする
 //
@@ -1165,9 +1165,9 @@ private:
 #include <format>
 #include <algorithm>
 
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
 
 namespace {
 /// <summary>
@@ -1283,8 +1283,8 @@ const std::string& TimelineTrackRegistry::GetDescription(std::string_view name) 
 #include <set>
 #include <string>
 
-#include "MyEngine/Curve/Curve.h"
-#include "MyEngine/Timeline/TimelineTrack.h"
+#include "HTTEngine/Curve/Curve.h"
+#include "HTTEngine/Timeline/TimelineTrack.h"
 
 /// <summary>
 /// 値のクリップ。成分ごとのカーブを持つ（カーブの時間はクリップの始まりからの秒）
@@ -1324,8 +1324,8 @@ public:
 
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/Curve/CurveManager.h"
-#include "MyEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Curve/CurveManager.h"
+#include "HTTEngine/ECS/ComponentUI.h"
 
 namespace {
 constexpr std::array<const char*, ComponentValue::kChannelCount> kChannelNames = {"x", "y", "z", "w"}; // ファイルの成分の名前
@@ -1412,7 +1412,7 @@ void TimelineValueTrack::Evaluate(const TimelineFrame& frame, TimelineTrackState
 #pragma once
 #include <string>
 
-#include "MyEngine/Timeline/TimelineTrack.h"
+#include "HTTEngine/Timeline/TimelineTrack.h"
 
 /// <summary>
 /// イベントのクリップ（長さは無い。start の時間ちょうどの1点）
@@ -1440,7 +1440,7 @@ public:
 ```cpp
 #include "TimelineEventTrack.h"
 
-#include "MyEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/ComponentUI.h"
 
 //=============================================================================
 // クリップ
@@ -1479,8 +1479,8 @@ void TimelineEventTrack::Evaluate(const TimelineFrame& frame, TimelineTrackState
 #include <string_view>
 #include <filesystem>
 
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/Timeline/TimelineTrack.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/Timeline/TimelineTrack.h"
 
 
 /// <summary>
@@ -1554,11 +1554,11 @@ public:
 
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/Scene/SceneSerializer.h"
-#include "MyEngine/String/ConvertString.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Scene/SceneSerializer.h"
+#include "HTTEngine/String/ConvertString.h"
 
 namespace {
 constexpr std::string_view kTypeName = "Timeline"; // 警告に出す名前
@@ -1668,7 +1668,7 @@ float Timeline::GetDuration() const {
 // 初期化 / 解放
 //=============================================================================
 void TimelineManager::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<TimelineStorage>();
 }
 
@@ -1678,7 +1678,7 @@ void TimelineManager::Release() { state.reset(); }
 // 読み込み
 //=============================================================================
 uint32_t TimelineManager::Load(const std::filesystem::path& filePath) {
-	MY_ASSERT_MSG(state != nullptr, "TimelineManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "TimelineManager::Initialize()を先に呼んでください");
 	// --- 読み込み済みなら、同じ番号を返す ---
 	const std::string key = ToPathKey(filePath);
 	const auto cached = std::ranges::find(state->assets, key, &TimelineAsset::path);
@@ -1815,8 +1815,8 @@ void TimelineManager::DescribeLength(ComponentUI& ui, float& length) {
 include に足す。
 
 ```cpp
-#include "MyEngine/String/FileNameRule.h"
-#include "MyEngine/Timeline/TimelineManager.h"
+#include "HTTEngine/String/FileNameRule.h"
+#include "HTTEngine/Timeline/TimelineManager.h"
 ```
 
 `GetAssetPath` の `switch` に足す。
@@ -1865,7 +1865,7 @@ constexpr std::array<std::string_view, 1> kTimelineExtensions = {TimelineManager
 #include <cstdint>
 #include <type_traits>
 
-#include "MyEngine/Time/EngineTime.h"
+#include "HTTEngine/Time/EngineTime.h"
 
 // Timeline を再生する。Entityに付けるComponent（カテゴリ：Animation）
 // 中身はファイル（.timeline）に書く。ここは「どのファイルをどう再生するか」だけを持つ
@@ -1890,10 +1890,10 @@ static_assert(std::is_trivially_copyable_v<TimelineComponent>);
 
 ```cpp
 #pragma once
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Timeline/TimelineEvent.h"
-#include "MyEngine/Timeline/TimelinePlayhead.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Timeline/TimelineEvent.h"
+#include "HTTEngine/Timeline/TimelinePlayhead.h"
 
 /// <summary>
 /// Entity の今の再生の様子（TimelineSystem::GetStatus）。読むたびに作る写しなので、値は古くなる
@@ -1962,12 +1962,12 @@ private:
 #include <cstdint>
 #include <algorithm>
 
-#include "MyEngine/Components/Animation/TimelineComponent.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Systems/Gameplay/ScriptSystem.h"
-#include "MyEngine/Timeline/TimelineEventTrack.h"
-#include "MyEngine/Timeline/TimelineManager.h"
-#include "MyEngine/Timeline/TimelineValueTrack.h"
+#include "HTTEngine/Components/Animation/TimelineComponent.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Systems/Gameplay/ScriptSystem.h"
+#include "HTTEngine/Timeline/TimelineEventTrack.h"
+#include "HTTEngine/Timeline/TimelineManager.h"
+#include "HTTEngine/Timeline/TimelineValueTrack.h"
 
 namespace {
 //=============================================================================
@@ -2198,13 +2198,13 @@ void TimelineSystem::OnEntityDestroyed(Handle<Entity> entity) {
 include に足す。
 
 ```cpp
-#include "MyEngine/Curve/CurveManager.h"
-#include "MyEngine/Timeline/TimelineManager.h"
+#include "HTTEngine/Curve/CurveManager.h"
+#include "HTTEngine/Timeline/TimelineManager.h"
 ```
 
 ```cpp
-#include "MyEngine/Systems/Animation/AnimationSystem.h"
-#include "MyEngine/Systems/Animation/TimelineSystem.h"
+#include "HTTEngine/Systems/Animation/AnimationSystem.h"
+#include "HTTEngine/Systems/Animation/TimelineSystem.h"
 ```
 
 `Initialize` に足す。
@@ -2264,14 +2264,14 @@ void Run();
 
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Components/UI/ImageComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Timeline/TimelineEventTrack.h"
-#include "MyEngine/Timeline/TimelineManager.h"
-#include "MyEngine/Timeline/TimelineValueTrack.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Components/UI/ImageComponent.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Timeline/TimelineEventTrack.h"
+#include "HTTEngine/Timeline/TimelineManager.h"
+#include "HTTEngine/Timeline/TimelineValueTrack.h"
 
 namespace {
 constexpr float kExact = 0.001f;  // 式で答えが決まる値の許容
@@ -2626,7 +2626,7 @@ void TimelineSelfTest::Run() {
 	EntityManager::Destroy(rootB);
 	EntityManager::FlushDestroy();
 
-	MY_ASSERT_MSG(tester.failed == 0, std::format("Timeline の確認が合いません（{} 項目。ログを見てください）", tester.failed));
+	HTT_ASSERT_MSG(tester.failed == 0, std::format("Timeline の確認が合いません（{} 項目。ログを見てください）", tester.failed));
 	LogManager::Log(std::format("[timeline] self test OK ({} / {})", tester.passed, tester.passed + tester.failed));
 }
 ```
@@ -2636,9 +2636,9 @@ void TimelineSelfTest::Run() {
 include に足す。
 
 ```cpp
-#include "MyEngine/Curve/CurveSelfTest.h"
+#include "HTTEngine/Curve/CurveSelfTest.h"
 // Timeline
-#include "MyEngine/Timeline/TimelineSelfTest.h"
+#include "HTTEngine/Timeline/TimelineSelfTest.h"
 ```
 
 `CurveSelfTest::Run` の下に足す。
@@ -2685,9 +2685,9 @@ public:
 #include <externals/imgui/imgui.h>
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/Editor/Inspector/AssetInspector.h"
-#include "MyEngine/Timeline/TimelineManager.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Editor/Inspector/AssetInspector.h"
+#include "HTTEngine/Timeline/TimelineManager.h"
 
 namespace {
 constexpr std::string_view kTypeName = "Timeline"; // Inspector の見出しに出す名前
@@ -2780,8 +2780,8 @@ void TimelineAssetEditor::Initialize() { AssetInspector::Register(std::make_uniq
 `#ifdef USE_IMGUI` の中の include に足す。
 
 ```cpp
-#include "MyEngine/Editor/Inspector/CurveAssetEditor.h"
-#include "MyEngine/Editor/Inspector/TimelineAssetEditor.h"
+#include "HTTEngine/Editor/Inspector/CurveAssetEditor.h"
+#include "HTTEngine/Editor/Inspector/TimelineAssetEditor.h"
 ```
 
 `Initialize` の `#ifdef USE_IMGUI` の中に足す。
@@ -2796,8 +2796,8 @@ void TimelineAssetEditor::Initialize() { AssetInspector::Register(std::make_uniq
 include に足す。
 
 ```cpp
-#include "MyEngine/Physics/PhysicMaterialManager.h"
-#include "MyEngine/Timeline/TimelineManager.h"
+#include "HTTEngine/Physics/PhysicMaterialManager.h"
+#include "HTTEngine/Timeline/TimelineManager.h"
 ```
 
 `DrawCreateMenu` の Curve の下に足す。

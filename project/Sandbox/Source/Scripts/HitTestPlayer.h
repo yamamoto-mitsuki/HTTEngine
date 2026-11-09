@@ -1,5 +1,5 @@
 #pragma once
-#include "MyEngine/ECS/Script.h"
+#include "HTTEngine/ECS/Script.h"
 
 /// <summary>
 /// 攻撃の当たり・ダメージを手で試すプレイヤー役（Sandbox のテスト用）

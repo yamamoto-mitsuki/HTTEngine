@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+=============================================================================
+ HTTEngine.props
+ HTTEngine を使うプロジェクト（エンジン自身・ゲーム）が読み込む設定ファイル
+ これを読むと、エンジンのヘッダーを"ModelManager.h"のようにファイル名だけで includeできる
+=============================================================================
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+	<!-- ===== 場所 ===== -->
+	<PropertyGroup>
+		<!-- このファイルがあるフォルダ（＝エンジンのリポジトリのルート。末尾に \ が付く） -->
+		<HTTEngineRoot>$(MSBuildThisFileDirectory)</HTTEngineRoot>
+		<!-- vcpkgが外部ライブラリを入れる先（externalsの下。.gitignoreでgitには入らない。末尾に\を付けない）-->
+		<VcpkgInstallRoot>$(HTTEngineRoot)externals\vcpkg_installed</VcpkgInstallRoot>
+		<!-- x64-windows-static：64 ビット・lib に全部入れる形・/MT（エンジンの RuntimeLibrary と同じ）-->
+		<VcpkgPackageDir>$(VcpkgInstallRoot)\x64-windows-static\</VcpkgPackageDir>
+		<!-- HTTEngineフォルダの下のフォルダを全部集める。結果は ;区切りの1つの文字列 -->
+		<HTTEngineSubDirs>$([System.IO.Directory]::GetDirectories('$(HTTEngineRoot)HTTEngine','*',System.IO.SearchOption.AllDirectories))</HTTEngineSubDirs>
+	</PropertyGroup>
+
+	<!-- ===== 出力先 ===== -->
+	<Import Project="OutputDirs.props" />
+
+	<!-- ===== 全部の構成で共通 ===== -->
+	<ItemDefinitionGroup>
+		<ClCompile>
+			<!-- ~~~ インクルードディレクトリ ~~~ -->
+			<!-- $(HTTEngineRoot)        : "HTTEngine/Graphics/Model/ModelManager.h・<externals/imgui/imgui.h> の書き方" -->
+			<!-- $(HTTEngineRoot)HTTEngine: "Engine.h"用（GetDirectories は HTTEngine自身を含まないので別に足す）-->
+			<!-- $(HTTEngineSubDirs)     : "ModelManager.h"のようにファイル名だけで書く用 -->
+			<AdditionalIncludeDirectories>
+				$(HTTEngineRoot);$(HTTEngineRoot)HTTEngine;$(HTTEngineSubDirs);$(HTTEngineRoot)externals;$(HTTEngineRoot)externals\imgui;$(VcpkgPackageDir)include;
+				%(AdditionalIncludeDirectories)
+			</AdditionalIncludeDirectories>
+			<!-- ~~~ エンジンとゲームで合わせる設定 ~~~ -->
+			<LanguageStandard>stdcpp23</LanguageStandard>
+			<AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+			<!-- NOMINMAX : Windows.h の min・max マクロを止める（std::max とぶつかるため）。ファイルごとに #define しない -->
+			<!-- DIRECTINPUT_VERSION : dinput.h の前に決めておく必要があるので、ファイルごとに #define しない -->
+			<PreprocessorDefinitions>NOMINMAX;DIRECTINPUT_VERSION=0x0800;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+		</ClCompile>
+	</ItemDefinitionGroup>
+
+
+	<!-- ===== Debug ===== -->
+	<ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
+		<ClCompile>
+			<RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+			<PreprocessorDefinitions>USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+		</ClCompile>
+		<Link>
+			<AdditionalDependencies>assimp-vc145-mtd.lib;kubazip.lib;minizipsd.lib;poly2tri.lib;polyclipping.lib;pugixml.lib;zsd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalLibraryDirectories>$(VcpkgPackageDir)debug\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+		</Link>
+	</ItemDefinitionGroup>
+
+	<!-- ===== Debug以外 ===== -->
+	<ItemDefinitionGroup Condition= "'$(Configuration)'!='Debug'">
+		<ClCompile>
+			<RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+		</ClCompile>
+		<Link>
+			<AdditionalDependencies>assimp-vc145-mt.lib;kubazip.lib;minizips.lib;poly2tri.lib;polyclipping.lib;pugixml.lib;zs.lib;%(AdditionalDependencies)</AdditionalDependencies>
+			<AdditionalLibraryDirectories>$(VcpkgPackageDir)lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+		</Link>
+
+	</ItemDefinitionGroup>
+
+	<!-- ===== Release ===== -->
+	<ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
+		<Link>
+			<!-- リンク時のコード生成（/LTCG）を、毎回全部の関数でやり直す -->
+			<!-- 既定の /LTCG:incremental は、前回の結果（obj の .iobj・.ipdb）から変わっていない関数を写して速くする -->
+			<!-- その記録が今の pdb と食い違うと LNK4020（型レコードの破損）が出続け、リンクだけやり直しても消えない -->
+			<!-- Release は配る exe なので、速さより毎回同じ結果になる方を選ぶ -->
+			<LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
+			<!-- 増分用の記録（.iobj）は読まないので、書き出しも止める（空にすると /LTCGOUT が付かない） -->
+			<LinkTimeCodeGenerationObjectFile></LinkTimeCodeGenerationObjectFile>
+		</Link>
+	</ItemDefinitionGroup>
+
+    <!-- ===== ゲーム自身が参照するプロジェクト ===== -->
+    <!-- エンジン自身もこの propsを読むので、HTTEngineの時は自分を参照してしまうので外す -->
+    <ItemGroup Condition="'$(MSBuildProjectName)'!='HTTEngine'">
+	  <ProjectReference Include="$(HTTEngineRoot)HTTEngine.vcxproj">
+	    <Project>{1d0f63d3-16bb-43b8-985e-6bb516a1d662}</Project>
+	  </ProjectReference>
+	  <ProjectReference Include="$(HTTEngineRoot)externals\DirectXTex\DirectXTex_Desktop_2022_Win10.vcxproj">
+	    <Project>{371b9fa9-4c90-4ac6-a123-aced756d6c77}</Project>
+	  </ProjectReference>
+	</ItemGroup>
+	<!-- ImGui は Release では使わない（USE_IMGUI が無い）ので、Release 以外だけ -->
+	<ItemGroup Condition="'$(MSBuildProjectName)'!='HTTEngine' and '$(Configuration)'!='Release'">
+	  <ProjectReference Include="$(HTTEngineRoot)externals\imgui\imgui.vcxproj">
+	    <Project>{86a1cafe-73b6-4e0a-8c54-ef98278a3806}</Project>
+	  </ProjectReference>
+	</ItemGroup>
+
+	<!-- ===== Release以外 ===== -->
+	<!-- エンジンのフォルダの場所をコードに渡す -->
+	<ItemDefinitionGroup Condition="'$(Configuration)'!='Release'">
+		<ClCompile>
+			<PreprocessorDefinitions>HTTENGINE_ROOT_DIR=LR"($(HTTEngineRoot))";%(PreprocessorDefinitions)</PreprocessorDefinitions>
+		</ClCompile>
+	</ItemDefinitionGroup>
+
+	<!-- ===== Development ===== -->
+	<ItemDefinitionGroup Condition="'$(Configuration)'=='Development'">
+		<ClCompile>
+			<PreprocessorDefinitions>USE_IMGUI;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+		</ClCompile>
+	</ItemDefinitionGroup>
+
+	<!-- ===== vcpkg ===== -->
+	<!-- vcpkg.jsonに書いたライブラリを、コンパイラの前に入れる。 -->
+	<Target Name="InstallVcpkgPackages" BeforeTargets="ClCompile" 
+	Inputs="$(HTTEngineRoot)externals\vcpkg.json;$(HTTEngineRoot)externals\vcpkg-configuration.json"
+	Outputs="$(VcpkgInstallRoot)\vcpkg\manifest-info.json">
+	    <Error Condition="!Exists('$(VCInstallDir)vcpkg\vcpkg.exe')" Text="Visual Studioに vcpkg がありません。Visual Studio Installerで「vcpkgパッケージマネージャー」を入れてください。"/>
+        <Exec Command="&quot;$(VCInstallDir)vcpkg\vcpkg.exe&quot; install --triplet x64-windows-static --clean-after-build --x-manifest-root=&quot;$(HTTEngineRoot)externals&quot; --x-install-root=&quot;$(VcpkgInstallRoot)&quot;" />
+	</Target>
+
+	<!-- ===== エンジンの実行に要るファイルを、ゲームを起動するフォルダへ写す ===== -->
+	<!-- ゲーム（exe を作るプロジェクト）をビルドした後に、エンジンの .shader と Resources を、起動するフォルダ（ゲームのプロジェクトのフォルダ）の HTTEngine\ へ写す -->
+	<!-- Release とエンジンのフォルダが無い PC は、ここを読む（Debug・Development はエンジンのフォルダの .shader を直接読む。ShaderPackageLoader::FindDataDir） -->
+	<!-- 写し先は、ゲームのリポジトリの .gitignore で git に入れない -->
+	<PropertyGroup>
+		<HTTEngineRuntimeDir>$(MSBuildProjectDirectory)\HTTEngine\</HTTEngineRuntimeDir>
+	</PropertyGroup>
+	<Target Name="CopyHTTEngineRuntimeFiles" AfterTargets="Build" Condition="'$(ConfigurationType)'=='Application'">
+		<!-- ~~~ 写す元（** はフォルダの下を全部。%(RecursiveDir) は ** に当たったフォルダの並び）~~~ -->
+		<ItemGroup>
+			<HTTEngineShaderFile Include="$(HTTEngineRoot)HTTEngine\Shader\Data\**\*" />
+			<HTTEngineResourceFile Include="$(HTTEngineRoot)Resources\**\*" />
+		</ItemGroup>
+
+		<!-- ~~~ .shader：写し先を消してから、全部写す ~~~ -->
+		<!-- ファイル名から Shader の名前を作るので、元と同じ名前にそろえる（上書きで写すと、大文字・小文字だけ変えた名前は写し先の古い方のまま残る） -->
+		<!-- 消した・動かした .shader も残らない（残ると、同じ名前の Shader が2つになって起動時に止まる）。60 個ほどの小さいファイルなので、毎回写しても速い -->
+		<RemoveDir Directories="$(HTTEngineRuntimeDir)Shader\Data" />
+		<Copy SourceFiles="@(HTTEngineShaderFile)" DestinationFiles="@(HTTEngineShaderFile->'$(HTTEngineRuntimeDir)Shader\Data\%(RecursiveDir)%(Filename)%(Extension)')" />
+
+		<!-- ~~~ Resources：変わった物だけ写し、元に無い物を消す（画像・モデルは大きいので、毎回は写さない）~~~ -->
+		<!-- パスで読むので、大文字・小文字の違いは読むときに困らない（Windows のファイルの名前は大文字・小文字を区別しない） -->
+		<Copy SourceFiles="@(HTTEngineResourceFile)" DestinationFiles="@(HTTEngineResourceFile->'$(HTTEngineRuntimeDir)Resources\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+		<ItemGroup>
+			<HTTEngineCopiedResource Include="$(HTTEngineRuntimeDir)Resources\**\*" />
+			<HTTEngineStaleResource Include="@(HTTEngineCopiedResource)" Exclude="@(HTTEngineResourceFile->'$(HTTEngineRuntimeDir)Resources\%(RecursiveDir)%(Filename)%(Extension)')" />
+		</ItemGroup>
+		<Delete Files="@(HTTEngineStaleResource)" />
+	</Target>
+</Project>

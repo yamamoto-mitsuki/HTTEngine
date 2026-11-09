@@ -1,5 +1,5 @@
 {
-	"shader": "MyEngine/Shader/Data/Decal/DecalTexture.PS.shader",
+	"shader": "HTTEngine/Shader/Data/Decal/DecalTexture.PS.shader",
 	"blendOverride": false,
 	"blend": "Normal",
 	"rasterizerOverride": false,

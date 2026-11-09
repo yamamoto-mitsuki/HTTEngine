@@ -50,7 +50,7 @@ lib は git にも LFS にも入れないので、リポジトリは軽いまま
 
 ## パートA：LFS のコミットを取り消す
 
-エンジンのリポジトリ（`C:\Users\K025G\source\repos\MyEngine_v1`）で作業する。
+エンジンのリポジトリ（`C:\Users\K025G\source\repos\HTTEngine`）で作業する。
 
 まず今の状態を見る。`Docs/Tasks/Vcpkg.md`（この md）のほかに変更が無いことを確かめる。
 
@@ -81,7 +81,7 @@ git reset --hard 0817760
 - `.gitattributes` の LFS の 2 行
 - `.gitignore` の assimp の行
 - `README.md` の「取ってくるとき」
-- `MyEngine.props` の `/ignore:4099`
+- `HTTEngine.props` の `/ignore:4099`
 - `Refactor.md` の assimp の行（パートEで書き直す）
 
 Git の管理に入れた `assimp-vc143-mtd.lib` と `assimp-vc143-mt.lib` は、このとき消える。パートDで全部消すので、問題ない。
@@ -134,18 +134,18 @@ project/externals/vcpkg_installed/
 ```
 
 
-## パートC：MyEngine.props を直す
+## パートC：HTTEngine.props を直す
 
-`project/MyEngine.props` を 5 か所直す。
+`project/HTTEngine.props` を 5 か所直す。
 
 ### C-1：場所
 
-`<!-- ===== 場所 ===== -->` の `<MyEngineRoot>` の次の行に足す。
+`<!-- ===== 場所 ===== -->` の `<HTTEngineRoot>` の次の行に足す。
 
 ```xml
-		<MyEngineRoot>$(MSBuildThisFileDirectory)</MyEngineRoot>
+		<HTTEngineRoot>$(MSBuildThisFileDirectory)</HTTEngineRoot>
 		<!-- vcpkg が外部ライブラリを入れる先（externals の下。.gitignore で git には入らない。末尾に \ を付けない）-->
-		<VcpkgInstallRoot>$(MyEngineRoot)externals\vcpkg_installed</VcpkgInstallRoot>
+		<VcpkgInstallRoot>$(HTTEngineRoot)externals\vcpkg_installed</VcpkgInstallRoot>
 		<!-- x64-windows-static：64 ビット・lib に全部入れる形・/MT（エンジンの RuntimeLibrary と同じ）-->
 		<VcpkgPackageDir>$(VcpkgInstallRoot)\x64-windows-static\</VcpkgPackageDir>
 ```
@@ -156,9 +156,9 @@ project/externals/vcpkg_installed/
 
 ```xml
 <!-- 前 -->
-$(MyEngineRoot);$(MyEngineRoot)MyEngine;$(MyEngineSubDirs);$(MyEngineRoot)externals;$(MyEngineRoot)externals\imgui;$(MyEngineRoot)externals\assimp\include;
+$(HTTEngineRoot);$(HTTEngineRoot)HTTEngine;$(HTTEngineSubDirs);$(HTTEngineRoot)externals;$(HTTEngineRoot)externals\imgui;$(HTTEngineRoot)externals\assimp\include;
 <!-- 後 -->
-$(MyEngineRoot);$(MyEngineRoot)MyEngine;$(MyEngineSubDirs);$(MyEngineRoot)externals;$(MyEngineRoot)externals\imgui;$(VcpkgPackageDir)include;
+$(HTTEngineRoot);$(HTTEngineRoot)HTTEngine;$(HTTEngineSubDirs);$(HTTEngineRoot)externals;$(HTTEngineRoot)externals\imgui;$(VcpkgPackageDir)include;
 ```
 
 ### C-3：Debug のリンク
@@ -192,9 +192,9 @@ Debug の `mtd`・`minizipsd`・`zsd` と、Release の `mt`・`minizips`・`zs`
 ```xml
 	<!-- ===== vcpkg ===== -->
 	<!-- vcpkg.json に書いたライブラリを、コンパイルの前に入れる。Inputs・Outputs で、vcpkg.json を変えたときと初回だけ動く -->
-	<Target Name="InstallVcpkgPackages" BeforeTargets="ClCompile" Inputs="$(MyEngineRoot)externals\vcpkg.json;$(MyEngineRoot)externals\vcpkg-configuration.json" Outputs="$(VcpkgInstallRoot)\vcpkg\manifest-info.json">
+	<Target Name="InstallVcpkgPackages" BeforeTargets="ClCompile" Inputs="$(HTTEngineRoot)externals\vcpkg.json;$(HTTEngineRoot)externals\vcpkg-configuration.json" Outputs="$(VcpkgInstallRoot)\vcpkg\manifest-info.json">
 		<Error Condition="!Exists('$(VCInstallDir)vcpkg\vcpkg.exe')" Text="Visual Studio に vcpkg がありません。Visual Studio Installer で「vcpkg パッケージ マネージャー」を入れてください。" />
-		<Exec Command="&quot;$(VCInstallDir)vcpkg\vcpkg.exe&quot; install --triplet x64-windows-static --clean-after-build --x-manifest-root=&quot;$(MyEngineRoot)externals&quot; --x-install-root=&quot;$(VcpkgInstallRoot)&quot;" />
+		<Exec Command="&quot;$(VCInstallDir)vcpkg\vcpkg.exe&quot; install --triplet x64-windows-static --clean-after-build --x-manifest-root=&quot;$(HTTEngineRoot)externals&quot; --x-install-root=&quot;$(VcpkgInstallRoot)&quot;" />
 	</Target>
 </Project>
 ```
@@ -272,7 +272,7 @@ CI は毎回新しい PC で動くので、そのままだと毎回 assimp の�
 
 ### F-1：エンジン
 
-`project/MyEngine_v1.sln` を開いて、`Debug`・`Release` をビルドする。
+`project/HTTEngine.sln` を開いて、`Debug`・`Release` をビルドする。
 
 この PC は試したときのキャッシュがあるので、vcpkg の部分は数秒で終わる。出力に次の行が出れば、vcpkg が動いている。
 
@@ -311,7 +311,7 @@ push したら、GitHub の Actions で `DebugBuild`・`ReleaseBuild` が通る�
 
 手元の AL4_01 のサブモジュールは、パートAで取り消した `17d042d` を指している。push した後の `develop` に合わせ直す。
 
-`C:\Users\K025G\source\repos\AL4_01\MyEngine_v1` で作業する。
+`C:\Users\K025G\source\repos\AL4_01\HTTEngine` で作業する。
 
 ```bash
 git fetch origin
@@ -328,7 +328,7 @@ git reset --hard origin/develop
 確認できたらコミットする。`project/main.cpp` の変更（タイトルの文字列）は、**含めるかどうかを自分で決める**。下のコマンドでは含めない。
 
 ```bash
-git add MyEngine_v1 project/Source
+git add HTTEngine project/Source
 ```
 
 ```bash
@@ -364,7 +364,7 @@ CMake はビルドの手順を書く仕組みで、ライブラリを取って�
 
 - GitHub で見ると、assimp のファイルは出ない。代わりに `externals/vcpkg.json` に「assimp を使っている」と書いてある
 - 手元では `externals/vcpkg_installed` に入るので、自分のコードと混ざらない
-- `MyEngine` の下には、外部の物を置かない
+- `HTTEngine` の下には、外部の物を置かない
 
 
 ## 2章：トリプレット（x64-windows-static）
@@ -376,7 +376,7 @@ vcpkg では、「どの形でビルドするか」を**トリプレット**と�
 | `x64-windows` | 64 ビット | dll | /MD |
 | `x64-windows-static` | 64 ビット | lib | /MT |
 
-エンジンは `MyEngine.props` で `MultiThreaded`（/MT）にしているので、`x64-windows-static` を使う。
+エンジンは `HTTEngine.props` で `MultiThreaded`（/MT）にしているので、`x64-windows-static` を使う。
 
 ここが合わないと、リンクで `LNK2038`（`RuntimeLibrary` が違う）になる。
 
@@ -397,7 +397,7 @@ assimp を新しくしたいときは、`baseline` を新しいコミットに�
 MSBuild の `Target` は、`Inputs` と `Outputs` を書くと、**`Outputs` のファイルが `Inputs` より新しければ飛ばす**。
 
 ```xml
-Inputs="$(MyEngineRoot)externals\vcpkg.json;$(MyEngineRoot)externals\vcpkg-configuration.json"
+Inputs="$(HTTEngineRoot)externals\vcpkg.json;$(HTTEngineRoot)externals\vcpkg-configuration.json"
 Outputs="$(VcpkgInstallRoot)\vcpkg\manifest-info.json"
 ```
 
@@ -421,13 +421,13 @@ assimp は、ほかのライブラリを使っている。今までの lib は 1
 | `poly2tri`・`polyclipping` | 多角形の三角形分割 |
 | `pugixml` | XML の読み込み |
 
-`vc145` は Visual Studio 2026（v145）でビルドしたという意味。VS を新しくしても vcpkg が作り直すが、名前が変わったときは `MyEngine.props` も直す。
+`vc145` は Visual Studio 2026（v145）でビルドしたという意味。VS を新しくしても vcpkg が作り直すが、名前が変わったときは `HTTEngine.props` も直す。
 
 
 ## 6章：ライブラリを足すとき
 
 1. `project/externals/vcpkg.json` の `dependencies` に足す
-2. `MyEngine.props` の C-3・C-4 に lib の名前を足す
+2. `HTTEngine.props` の C-3・C-4 に lib の名前を足す
 
 ヘッダーだけのライブラリなら、2 は要らない。
 

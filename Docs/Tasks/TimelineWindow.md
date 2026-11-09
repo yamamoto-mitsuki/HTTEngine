@@ -274,8 +274,8 @@ inline float CalcNiceStep(float minStep) {
 include に足す。
 
 ```cpp
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/Math/MathUtility.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Math/MathUtility.h"
 ```
 
 無名名前空間の `CalcGridStep`（見出しのコメントごと）を消して、`DrawGridLines` の1行を直す。
@@ -577,9 +577,9 @@ std::optional<std::string> EntityManager::MakePath(Handle<Entity> root, Handle<E
 include に足す。
 
 ```cpp
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/Curve/Curve.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/Curve/Curve.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
 ```
 
 `GetEndTime` の下に足す。
@@ -841,7 +841,7 @@ void TimelineSystem::FinishPreview() {
 #include <algorithm>
 #include <cmath>
 
-#include "MyEngine/Math/MathUtility.h"
+#include "HTTEngine/Math/MathUtility.h"
 
 /// <summary>
 /// Timeline ウィンドウの見ている範囲（時間 ↔ 横のピクセル）。ImGui を知らない計算だけ
@@ -896,8 +896,8 @@ inline float SnapTime(float time, float step) { return (step > 0.0f) ? std::roun
 #include <string_view>
 #include <vector>
 
-#include "MyEngine/Curve/Curve.h"
-#include "MyEngine/Timeline/TimelineManager.h"
+#include "HTTEngine/Curve/Curve.h"
+#include "HTTEngine/Timeline/TimelineManager.h"
 
 /// <summary>
 /// Timeline の中身を直す操作（ImGui を知らない。Timeline ウィンドウと自己テストから使う）
@@ -1068,13 +1068,13 @@ include に足す。
 ```
 
 ```cpp
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Systems/Animation/TimelineSystem.h"
-#include "MyEngine/Timeline/TimelineEdit.h"
-#include "MyEngine/Timeline/TimelineEventTrack.h"
-#include "MyEngine/Timeline/TimelineManager.h"
-#include "MyEngine/Timeline/TimelineTimeView.h"
-#include "MyEngine/Timeline/TimelineValueTrack.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Systems/Animation/TimelineSystem.h"
+#include "HTTEngine/Timeline/TimelineEdit.h"
+#include "HTTEngine/Timeline/TimelineEventTrack.h"
+#include "HTTEngine/Timeline/TimelineManager.h"
+#include "HTTEngine/Timeline/TimelineTimeView.h"
+#include "HTTEngine/Timeline/TimelineValueTrack.h"
 ```
 
 `MakeTestEntities` の上に足す。
@@ -1135,7 +1135,7 @@ void TestCapture(Tester& t, Handle<Entity> title) {
 
 // ===== プレビュー：TimelineSystem を通す =====
 void TestPreview(Tester& t, Handle<Entity> root, Handle<Entity> title) {
-	const std::filesystem::path path = std::filesystem::temp_directory_path() / "MyEngineTimelineSelfTest.timeline";
+	const std::filesystem::path path = std::filesystem::temp_directory_path() / "HTTEngineTimelineSelfTest.timeline";
 	std::filesystem::remove(path);
 	t.Check(TimelineManager::CreateNewFile(path), "確認用のファイルを作る");
 	const uint32_t handle = TimelineManager::Load(path);
@@ -1264,7 +1264,7 @@ void TestEditKeys(Tester& t) {
 
 // ===== Undo の文字 =====
 void TestEditText(Tester& t) {
-	const std::filesystem::path path = std::filesystem::temp_directory_path() / "MyEngineTimelineSelfTest2.timeline";
+	const std::filesystem::path path = std::filesystem::temp_directory_path() / "HTTEngineTimelineSelfTest2.timeline";
 	std::filesystem::remove(path);
 	TimelineManager::CreateNewFile(path);
 	const uint32_t handle = TimelineManager::Load(path);
@@ -1343,7 +1343,7 @@ void TestTimeView(Tester& t) {
 
 ### A-16 プロジェクトに足す
 
-`Timeline/TimelineEdit.cpp`・`.h`、`Timeline/TimelineTimeView.h` を `MyEngine_v1` に足す。
+`Timeline/TimelineEdit.cpp`・`.h`、`Timeline/TimelineTimeView.h` を `HTTEngine` に足す。
 
 ここで Debug をビルドして起動すると、ログに `[timeline] self test OK (162 / 162)` が出る。
 
@@ -1380,12 +1380,12 @@ public:
 #include <string>
 #include <vector>
 
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Editor/Widgets/CurveEditor.h"
-#include "MyEngine/Timeline/TimelineManager.h"
-#include "MyEngine/Timeline/TimelinePlayhead.h"
-#include "MyEngine/Timeline/TimelineTimeView.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Editor/Widgets/CurveEditor.h"
+#include "HTTEngine/Timeline/TimelineManager.h"
+#include "HTTEngine/Timeline/TimelinePlayhead.h"
+#include "HTTEngine/Timeline/TimelineTimeView.h"
 
 // Timeline ウィンドウの部品（TimelineWindow・TimelineRows・TimelineDetails）が一緒に使う物。ほかからはインクルードしない
 
@@ -1500,7 +1500,7 @@ void SetTimelineTarget(TimelineEditorState& state, TimelineTrack& track, Handle<
 
 #include <externals/imgui/imgui.h>
 
-#include "MyEngine/Systems/Animation/TimelineSystem.h"
+#include "HTTEngine/Systems/Animation/TimelineSystem.h"
 
 //=============================================================================
 // 調べる
@@ -1585,16 +1585,16 @@ void TimelineEditorState::ClampSelection() {
 
 #include <externals/imgui/imgui.h>
 
-#include "MyEngine/Components/Animation/TimelineComponent.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Editor/History/EditorHistory.h"
-#include "MyEngine/Editor/Timeline/TimelineEditorState.h"
-#include "MyEngine/Editor/Widgets/ToolIcons.h"
-#include "MyEngine/Editor/Windows/HierarchyWindow.h"
-#include "MyEngine/Editor/Windows/UIScreenEditor.h"
-#include "MyEngine/Scene/SceneManager.h"
-#include "MyEngine/String/ConvertString.h"
-#include "MyEngine/Systems/Animation/TimelineSystem.h"
+#include "HTTEngine/Components/Animation/TimelineComponent.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Editor/History/EditorHistory.h"
+#include "HTTEngine/Editor/Timeline/TimelineEditorState.h"
+#include "HTTEngine/Editor/Widgets/ToolIcons.h"
+#include "HTTEngine/Editor/Windows/HierarchyWindow.h"
+#include "HTTEngine/Editor/Windows/UIScreenEditor.h"
+#include "HTTEngine/Scene/SceneManager.h"
+#include "HTTEngine/String/ConvertString.h"
+#include "HTTEngine/Systems/Animation/TimelineSystem.h"
 
 namespace {
 constexpr float kFirstWidth = 960.0f;       // 最初のウィンドウの幅
@@ -1921,9 +1921,9 @@ void TimelineWindow::Open(const std::filesystem::path& filePath) {
 
 #include <externals/imgui/imgui.h>
 
-#include "MyEngine/Editor/Timeline/TimelineEditorState.h"
-#include "MyEngine/Editor/Windows/HierarchyWindow.h"
-#include "MyEngine/Timeline/TimelineEdit.h"
+#include "HTTEngine/Editor/Timeline/TimelineEditorState.h"
+#include "HTTEngine/Editor/Windows/HierarchyWindow.h"
+#include "HTTEngine/Timeline/TimelineEdit.h"
 
 // Timeline ウィンドウの真ん中（時間の目盛り・トラックの一覧・時間の列・スクロールバー）
 
@@ -2528,12 +2528,12 @@ void DrawTimelineScrollbar(TimelineEditorState& state) {
 #include <externals/imgui/imgui.h>
 #include <externals/imgui/imgui_internal.h>
 
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Editor/Timeline/TimelineEditorState.h"
-#include "MyEngine/Timeline/TimelineEdit.h"
-#include "MyEngine/Timeline/TimelineValueTrack.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Editor/Timeline/TimelineEditorState.h"
+#include "HTTEngine/Timeline/TimelineEdit.h"
+#include "HTTEngine/Timeline/TimelineValueTrack.h"
 
 // Timeline ウィンドウの下の詳細（トラックの結び付け・クリップ・キー・カーブ）
 
@@ -2922,10 +2922,10 @@ public:
 #include <format>
 #include <memory>
 
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/Editor/Inspector/AssetInspector.h"
-#include "MyEngine/Editor/Timeline/TimelineWindow.h"
-#include "MyEngine/Timeline/TimelineManager.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Editor/Inspector/AssetInspector.h"
+#include "HTTEngine/Editor/Timeline/TimelineWindow.h"
+#include "HTTEngine/Timeline/TimelineManager.h"
 
 namespace {
 constexpr std::string_view kTypeName = "Timeline"; // Inspector の見出しに出す名前
@@ -2968,8 +2968,8 @@ void TimelineAssetEditor::Initialize() { AssetInspector::Register(std::make_uniq
 `#ifdef USE_IMGUI` の中の include に足す。
 
 ```cpp
-#include "MyEngine/Editor/Inspector/CurveAssetEditor.h"
-#include "MyEngine/Editor/Inspector/TimelineAssetEditor.h"
+#include "HTTEngine/Editor/Inspector/CurveAssetEditor.h"
+#include "HTTEngine/Editor/Inspector/TimelineAssetEditor.h"
 ```
 
 `Initialize` の `#ifdef USE_IMGUI` の中に足す。
@@ -2984,8 +2984,8 @@ void TimelineAssetEditor::Initialize() { AssetInspector::Register(std::make_uniq
 include に足す。
 
 ```cpp
-#include "MyEngine/Editor/Windows/AttackTableWindow.h"
-#include "MyEngine/Editor/Timeline/TimelineWindow.h"
+#include "HTTEngine/Editor/Windows/AttackTableWindow.h"
+#include "HTTEngine/Editor/Timeline/TimelineWindow.h"
 ```
 
 `ImGuiManager::Begin` の `AttackTableWindow::Draw();` の下に足す。
@@ -3002,13 +3002,13 @@ include に足す。
 include に足す。
 
 ```cpp
-#include "MyEngine/Editor/Inspector/AssetInspector.h"
-#include "MyEngine/Editor/Timeline/TimelineWindow.h"
+#include "HTTEngine/Editor/Inspector/AssetInspector.h"
+#include "HTTEngine/Editor/Timeline/TimelineWindow.h"
 ```
 
 ```cpp
-#include "MyEngine/Physics/PhysicMaterialManager.h"
-#include "MyEngine/Timeline/TimelineManager.h"
+#include "HTTEngine/Physics/PhysicMaterialManager.h"
+#include "HTTEngine/Timeline/TimelineManager.h"
 ```
 
 `DrawCreateMenu` の Curve の下に足す。
@@ -3045,7 +3045,7 @@ include に足す。
 
 ### B-12 プロジェクトに足す
 
-`Editor/Timeline` の6ファイルと `Editor/Inspector/TimelineAssetEditor.h`・`.cpp` を `MyEngine_v1` に足す。
+`Editor/Timeline` の6ファイルと `Editor/Inspector/TimelineAssetEditor.h`・`.cpp` を `HTTEngine` に足す。
 
 ### B-13 `Editor/Timeline/TimelineRows.cpp`（写経の後に見つけた直し）
 

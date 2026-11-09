@@ -1,9 +1,9 @@
 #include "Source/Scripts/TestBullet.h"
 
-#include "MyEngine/Components/Combat/DamageSourceComponent.h"
-#include "MyEngine/Components/Combat/HitboxComponent.h"
-#include "MyEngine/Components/Rendering3D/PrimitiveRendererComponent.h"
-#include "MyEngine/Core/NameList.h"
+#include "HTTEngine/Components/Combat/DamageSourceComponent.h"
+#include "HTTEngine/Components/Combat/HitboxComponent.h"
+#include "HTTEngine/Components/Rendering3D/PrimitiveRendererComponent.h"
+#include "HTTEngine/Core/NameList.h"
 
 namespace {
 constexpr float kBulletRadius = 0.15f; // 弾の当たる形の半径（m）

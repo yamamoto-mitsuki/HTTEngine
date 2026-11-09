@@ -109,7 +109,7 @@ SRVDescriptorHeap は、シェーダーからテクスチャを読むための�
 
 ```cpp
 // 使い方の例（Reference.md・Collision.md に載せるコードのコンパイル確認用）
-#include <MyEngine/Component/GameComponent.h>
+#include <HTTEngine/Component/GameComponent.h>
 
 // ===== 弾：まっすぐ進む =====
 struct Bullet {
@@ -203,7 +203,7 @@ SYSTEM(EnemyHit);
 
 ### A. SRVスロットを返す
 
-#### A-1. `MyEngine/Graphics/GPU/DirectXCommon.h`
+#### A-1. `HTTEngine/Graphics/GPU/DirectXCommon.h`
 
 (1) `AllocateSRVSlot` の宣言（説明のコメントから `static uint32_t AllocateSRVSlot();` まで）を、次で差し替える。説明を1行直して、下に3つ足している。
 
@@ -246,12 +246,12 @@ SYSTEM(EnemyHit);
 	std::vector<uint32_t> pendingFreeSrvSlots_;
 ```
 
-#### A-2. `MyEngine/Graphics/GPU/DirectXCommon.cpp`
+#### A-2. `HTTEngine/Graphics/GPU/DirectXCommon.cpp`
 
 (1) 先頭のインクルードに `<algorithm>` を足す（`std::find` を使う）。
 
 ```cpp
-#include "MyEngine/Graphics/GPU/DirectXCommon.h"
+#include "HTTEngine/Graphics/GPU/DirectXCommon.h"
 
 #include <algorithm>
 #include <cassert>
@@ -267,7 +267,7 @@ SYSTEM(EnemyHit);
 // スロット0はImGui予約済みのため1から開始する
 //=============================================================================
 uint32_t DirectXCommon::AllocateSRVSlot() {
-	MY_ASSERT_MSG(instance_, "DirectXCommon::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(instance_, "DirectXCommon::Initialize()を先に呼んでください");
 	// --- 返してもらったスロットを使い回す ---
 	if (!instance_->freeSrvSlots_.empty()) {
 		const uint32_t slot = instance_->freeSrvSlots_.back();
@@ -275,7 +275,7 @@ uint32_t DirectXCommon::AllocateSRVSlot() {
 		return slot;
 	}
 	// --- 無ければ新しい番号 ---
-	MY_ASSERT_MSG(instance_->nextSrvSlot_ < kSRVDescriptorHeap, "SRVDescriptorHeapのスロットが不足しています");
+	HTT_ASSERT_MSG(instance_->nextSrvSlot_ < kSRVDescriptorHeap, "SRVDescriptorHeapのスロットが不足しています");
 	return instance_->nextSrvSlot_++;
 }
 
@@ -292,10 +292,10 @@ void DirectXCommon::FreeSRVSlot(uint32_t slot) {
 	if (slot == 0) {
 		return;
 	}
-	MY_ASSERT_MSG(slot < instance_->nextSrvSlot_, "配っていないSRVスロットが返されました");
+	HTT_ASSERT_MSG(slot < instance_->nextSrvSlot_, "配っていないSRVスロットが返されました");
 	// 同じスロットを2回返すと、別々の2つに同じスロットが配られてしまう（片方の絵がもう片方に化ける）
 	const auto contains = [slot](const std::vector<uint32_t>& slots) { return std::find(slots.begin(), slots.end(), slot) != slots.end(); };
-	MY_ASSERT_MSG(!contains(instance_->freeSrvSlots_) && !contains(instance_->pendingFreeSrvSlots_), "同じSRVスロットが2回返されました");
+	HTT_ASSERT_MSG(!contains(instance_->freeSrvSlots_) && !contains(instance_->pendingFreeSrvSlots_), "同じSRVスロットが2回返されました");
 	// このフレームのコマンドリストが、まだこのスロットを読むかもしれない。
 	// すぐに配り直して別のテクスチャのSRVで上書きすると、GPUが実行するときには別の絵を読んでしまう
 	instance_->pendingFreeSrvSlots_.push_back(slot);
@@ -306,7 +306,7 @@ void DirectXCommon::FreeSRVSlot(uint32_t slot) {
 // フレームの終わりに WaitForGPU した後に呼ぶ（このフレームのコマンドは、もう全部終わっている）
 //=============================================================================
 void DirectXCommon::RecycleFreedSRVSlots() {
-	MY_ASSERT_MSG(instance_, "DirectXCommon::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(instance_, "DirectXCommon::Initialize()を先に呼んでください");
 	std::vector<uint32_t>& pending = instance_->pendingFreeSrvSlots_;
 	instance_->freeSrvSlots_.insert(instance_->freeSrvSlots_.end(), pending.begin(), pending.end());
 	pending.clear();
@@ -316,7 +316,7 @@ void DirectXCommon::RecycleFreedSRVSlots() {
 // 今使っているSRVスロットの数
 //=============================================================================
 uint32_t DirectXCommon::GetUsedSRVSlotCount() {
-	MY_ASSERT_MSG(instance_, "DirectXCommon::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(instance_, "DirectXCommon::Initialize()を先に呼んでください");
 	// 配った数（1番〜nextSrvSlot_-1番）から、返してもらった数を引く
 	const uint32_t issued = instance_->nextSrvSlot_ - 1;
 	const size_t returned = instance_->freeSrvSlots_.size() + instance_->pendingFreeSrvSlots_.size();
@@ -327,7 +327,7 @@ uint32_t DirectXCommon::GetUsedSRVSlotCount() {
 - `FreeSRVSlot` の assert 2つは、使い方を間違えたときにすぐ気づくため。**同じ番号を2回返すと、別々の2つの描き込み先に同じ番号が配られ、片方の絵がもう片方に化ける**（落ちずに絵だけおかしくなるので、原因を探しにくい）。
 - 番号の数（最大256）が少ないので、`std::find` で列を全部見ても問題にならない。
 
-#### A-3. `MyEngine/Graphics/RenderTarget/RenderTexture.cpp`
+#### A-3. `HTTEngine/Graphics/RenderTarget/RenderTexture.cpp`
 
 空だったデストラクタを差し替える。
 
@@ -337,7 +337,7 @@ uint32_t DirectXCommon::GetUsedSRVSlotCount() {
 RenderTexture::~RenderTexture() { DirectXCommon::FreeSRVSlot(srvSlot_); }
 ```
 
-#### A-4. `MyEngine/Graphics/RenderTarget/RenderTextureCube.h` / `.cpp`
+#### A-4. `HTTEngine/Graphics/RenderTarget/RenderTextureCube.h` / `.cpp`
 
 (1) `.h` の一番下、`faceSrvGPU_` の下に1行足す（面ごとのSRVは、今は GPU ハンドルしか覚えていないので、返すための番号も覚える）。
 
@@ -372,7 +372,7 @@ void RenderTextureCube::EnsureFaceSRVs() {
 		faceSrvSlots_[face] = slot; // 消すときに返すので覚えておく
 ```
 
-#### A-5. `MyEngine/Window/WindowManager.cpp`（`PostRenderAll` の中）
+#### A-5. `HTTEngine/Window/WindowManager.cpp`（`PostRenderAll` の中）
 
 フレームの終わりの `DirectXCommon::WaitForGPU();` の下に2行足す。
 
@@ -383,7 +383,7 @@ void RenderTextureCube::EnsureFaceSRVs() {
 	DirectXCommon::RecycleFreedSRVSlots();
 ```
 
-#### A-6. `MyEngine/Engine.cpp`（`EndFrame` の中）
+#### A-6. `HTTEngine/Engine.cpp`（`EndFrame` の中）
 
 `Frame Upload` のバーの下（`#endif` の前）に足す。
 
@@ -407,11 +407,11 @@ void RenderTextureCube::EnsureFaceSRVs() {
 
 ### B. Collider と CollisionSystem
 
-#### B-1. 新規：`MyEngine/Collision/ColliderComponent.h`
+#### B-1. 新規：`HTTEngine/Collision/ColliderComponent.h`
 
 ```cpp
 #pragma once
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // 当たり判定の形と大きさ。Entityに付けるComponent（カテゴリ：Physics）
 // 位置は持たない。付けたEntityのTransformから取る（ライトと同じ）
@@ -438,15 +438,15 @@ struct ColliderComponent {
 };
 ```
 
-#### B-2. 新規：`MyEngine/Collision/CollisionSystem.h`
+#### B-2. 新規：`HTTEngine/Collision/CollisionSystem.h`
 
 ```cpp
 #pragma once
 #include <span>
 
-#include "MyEngine/Collision/ColliderComponent.h"
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/Entity/Entity.h"
+#include "HTTEngine/Collision/ColliderComponent.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/Entity/Entity.h"
 
 // 前方宣言
 class Camera;
@@ -509,7 +509,7 @@ public:
 - `std::span<const CollisionHit>` は「配列の一部を、写さずに指して渡す」ための型（先頭のポインタと数だけを持つ）。`for (const CollisionHit& hit : CollisionSystem::GetHits(entity))` のように、そのまま `for` で回せる。
 - 一覧などの中身をヘッダに書かないのは、`GameComponent.h` がこのヘッダを読む（＝ゲームの Component のファイルが全部読む）ので、`<vector>` や描画のヘッダを持ち込んでビルドを遅くしないため。
 
-#### B-3. 新規：`MyEngine/Collision/CollisionSystem.cpp`
+#### B-3. 新規：`HTTEngine/Collision/CollisionSystem.cpp`
 
 ```cpp
 #include "CollisionSystem.h"
@@ -522,15 +522,15 @@ public:
 #include <tuple>
 #include <vector>
 
-#include "MyEngine/Collision/Collision.h"
-#include "MyEngine/Component/ComponentSerializer.h"
-#include "MyEngine/Component/ComponentUI.h"
-#include "MyEngine/Component/GameComponent.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Entity/EntityManager.h"
-#include "MyEngine/Entity/TransformComponent.h"
-#include "MyEngine/Graphics/Renderer/Renderer.h"
+#include "HTTEngine/Collision/Collision.h"
+#include "HTTEngine/Component/ComponentSerializer.h"
+#include "HTTEngine/Component/ComponentUI.h"
+#include "HTTEngine/Component/GameComponent.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Entity/EntityManager.h"
+#include "HTTEngine/Entity/TransformComponent.h"
+#include "HTTEngine/Graphics/Renderer/Renderer.h"
 
 namespace {
 constexpr float kPI = std::numbers::pi_v<float>;
@@ -736,7 +736,7 @@ void DescribeCollider(ComponentUI& ui, ColliderComponent& value) {
 // 初期化 / 解放
 //=============================================================================
 void CollisionSystem::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<CollisionState>();
 	// 線は距離でフェードさせない
 	state->gizmoLines.fadeStartDistance = kNoFadeStart;
@@ -755,7 +755,7 @@ void CollisionSystem::Release() { state.reset(); }
 // 判定
 //=============================================================================
 void CollisionSystem::Update() {
-	MY_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
 
 	// ===== 1. 判定に使う形を集める（有効なEntityの、有効な Collider だけ）=====
 	state->colliders.clear();
@@ -818,14 +818,14 @@ void CollisionSystem::Update() {
 // 当たりの一覧
 //=============================================================================
 std::span<const CollisionHit> CollisionSystem::GetHits(Handle<Entity> entity) {
-	MY_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
 	// self の順に並んでいるので、自分の分は1か所にまとまっている。その範囲（最初と最後）を二分探索で探す
 	const auto range = std::ranges::equal_range(state->hits, entity, HandleLess, &CollisionHit::self);
 	return {range.begin(), range.end()};
 }
 
 std::span<const CollisionHit> CollisionSystem::GetAllHits() {
-	MY_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
 	return state->hits;
 }
 
@@ -834,7 +834,7 @@ std::span<const CollisionHit> CollisionSystem::GetAllHits() {
 // ギズモ
 //=============================================================================
 void CollisionSystem::DrawGizmos(Camera* camera) {
-	MY_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
 	if (!state->showGizmos) {
 		return;
 	}
@@ -855,7 +855,7 @@ void CollisionSystem::DrawGizmos(Camera* camera) {
 }
 
 bool& CollisionSystem::GetShowGizmos() {
-	MY_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
 	return state->showGizmos;
 }
 ```
@@ -888,14 +888,14 @@ bool& CollisionSystem::GetShowGizmos() {
 - 中心は `TransformPoint` を自分で書いている。**エンジンの `TransformNormal`（`Matrix4x4.h`）は、名前は「向きの変換」なのに、中で位置も足している（点の変換）。** 最初はこれを使って中心を「位置＋ずれ」で出していたら、位置を2回足していた（テストで見つけた）。`TransformNormal` はどこからも使われていないので、今回は触らない（「7. 未解決」）。
 - `std::max` は `windows.h` の `max` マクロとぶつかるので、一番大きい軸は `if` で選んでいる（CLAUDE.md の方針）。
 
-#### B-4. `MyEngine/Engine.cpp`（3か所）
+#### B-4. `HTTEngine/Engine.cpp`（3か所）
 
 (1) インクルード。`// Collision` の下に1行足す。
 
 ```cpp
 // Collision
-#include "MyEngine/Collision/CollisionSystem.h"
-#include "MyEngine/Collision/Profiling/CollisionProfiler.h"
+#include "HTTEngine/Collision/CollisionSystem.h"
+#include "HTTEngine/Collision/Profiling/CollisionProfiler.h"
 ```
 
 (2) `Initialize` の中、`LightSystem::Initialize();` の下に1行足す。
@@ -916,15 +916,15 @@ bool& CollisionSystem::GetShowGizmos() {
 	EntityManager::Release(); // シーン（ウィンドウ）の破棄より後にする
 ```
 
-#### B-5. `MyEngine/Window/WindowManager.cpp`（3か所）
+#### B-5. `HTTEngine/Window/WindowManager.cpp`（3か所）
 
 (1) インクルード。`LightSystem.h` の下に1行足す。
 
 ```cpp
-#include "MyEngine/Particle/ParticleManager.h"
-#include "MyEngine/Light/LightSystem.h"
-#include "MyEngine/Collision/CollisionSystem.h"
-#include "MyEngine/Entity/EntityManager.h"
+#include "HTTEngine/Particle/ParticleManager.h"
+#include "HTTEngine/Light/LightSystem.h"
+#include "HTTEngine/Collision/CollisionSystem.h"
+#include "HTTEngine/Entity/EntityManager.h"
 ```
 
 (2) `UpdateAll` の中、`EntityManager::FlushDestroy();` の下に1行足す。
@@ -945,14 +945,14 @@ bool& CollisionSystem::GetShowGizmos() {
 #endif
 ```
 
-#### B-6. `MyEngine/Editor/ImGuiManager.cpp`（2か所）
+#### B-6. `HTTEngine/Editor/ImGuiManager.cpp`（2か所）
 
 (1) インクルード。`LightGizmo.h` の下に1行足す。
 
 ```cpp
-#include "MyEngine/Light/LightGizmo.h"
-#include "MyEngine/Collision/CollisionSystem.h"
-#include "MyEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Light/LightGizmo.h"
+#include "HTTEngine/Collision/CollisionSystem.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
 ```
 
 (2) メニューバーの `View` の中、`Light Ranges` の下に1行足す。
@@ -964,17 +964,17 @@ bool& CollisionSystem::GetShowGizmos() {
 			ImGui::MenuItem("Colliders", nullptr, &CollisionSystem::GetShowGizmos()); // Colliderの線
 ```
 
-#### B-7. `MyEngine/Component/GameComponent.h`（2か所）
+#### B-7. `HTTEngine/Component/GameComponent.h`（2か所）
 
 インクルードの先頭に1行、説明のコメントの一番下に2行足す（ゲームは今までどおりこのヘッダ1つで、`CollisionSystem::GetHits` と `ColliderComponent` が使える）。
 
 ```cpp
-#include "MyEngine/Collision/CollisionSystem.h"
-#include "MyEngine/Component/ComponentSerializer.h"
-#include "MyEngine/Component/ComponentUI.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Entity/EntityManager.h"
-#include "MyEngine/Entity/TransformComponent.h"
+#include "HTTEngine/Collision/CollisionSystem.h"
+#include "HTTEngine/Component/ComponentSerializer.h"
+#include "HTTEngine/Component/ComponentUI.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Entity/EntityManager.h"
+#include "HTTEngine/Entity/TransformComponent.h"
 
 // ゲーム固有Componentを書くための道具。ゲーム側はこのヘッダ1つだけをインクルードする
 //
@@ -992,9 +992,9 @@ bool& CollisionSystem::GetShowGizmos() {
 
 ### C. プロジェクトに追加・ビルド、確認用の Component
 
-1. Visual Studio の `MyEngine_v1` プロジェクトに新しい3ファイルを追加する（「既存の項目を追加」。フィルタは `Collision`）。
-   - `MyEngine/Collision/ColliderComponent.h`・`CollisionSystem.h`・`CollisionSystem.cpp`
-   - **足し忘れても、エンジンのビルドは通ってしまう**（静的ライブラリなので）。エラーが出るのはゲームのリンクで、`MyEngine_v1.lib(Engine.obj) : error LNK2019: ... CollisionSystem::Initialize` のように出る。そう出たら、ここを見直す。
+1. Visual Studio の `HTTEngine` プロジェクトに新しい3ファイルを追加する（「既存の項目を追加」。フィルタは `Collision`）。
+   - `HTTEngine/Collision/ColliderComponent.h`・`CollisionSystem.h`・`CollisionSystem.cpp`
+   - **足し忘れても、エンジンのビルドは通ってしまう**（静的ライブラリなので）。エラーが出るのはゲームのリンクで、`HTTEngine.lib(Engine.obj) : error LNK2019: ... CollisionSystem::Initialize` のように出る。そう出たら、ここを見直す。
 2. エンジンをビルド（Debug と Release）。ゲーム側に配るヘッダは、ビルド後の xcopy がフォルダごと拾う。
 3. ゲーム側に確認用の Component を1つ足す（`CG3_Project` の `Source\Components` に、Spin.cpp と同じように追加）。確かめたら消してよい。
 
@@ -1004,8 +1004,8 @@ bool& CollisionSystem::GetShowGizmos() {
 #include <format>
 #include <string>
 
-#include <MyEngine/Component/GameComponent.h>
-#include <MyEngine/Diagnostics/LogManager.h>
+#include <HTTEngine/Component/GameComponent.h>
+#include <HTTEngine/Diagnostics/LogManager.h>
 
 // 付けたEntityの当たりを Log に出す（中身の無い、印だけのComponent）
 struct HitLog {};

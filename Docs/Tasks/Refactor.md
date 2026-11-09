@@ -20,7 +20,7 @@
 ## パートごとの中身
 
 ### A：ビルド後の xcopy → 直す所は無かった
-- フォルダ分けのとき `project/MyEngine/Resources` ができたので、エンジンの sln でビルドすると写ってしまうと思っていたが、**間違いだった**。
+- フォルダ分けのとき `project/HTTEngine/Resources` ができたので、エンジンの sln でビルドすると写ってしまうと思っていたが、**間違いだった**。
 - ビルド後の処理の最初の行（`if /I "$(SolutionDir)"=="$(ProjectDir)" exit /b 0`）で、エンジンの sln からのビルドでは写さないようになっている。
 - できた原因は、Claude が vcxproj を直接ビルドしたとき `SolutionDir` の終わりの `\` を2つにしたこと。[FolderSplit.md](FolderSplit.md) の注意も直した。
 
@@ -31,7 +31,7 @@
 - `GameComponent.h` のグローバルの `kDegToRad`・`kRadToDeg` は**名前を残した**。ゲームのスクリプトが `MathUtility::` を付けずに書くための物で、値は `MathUtility` の物を指す。
 
 ### C：`NOMINMAX` を props に1回・`std::clamp`
-- `#define NOMINMAX` が 15 個のファイルに1行ずつあったので、`MyEngine.props` の「全部の構成で共通」に1回だけ書いた。エンジンもゲームも同じ設定になる。
+- `#define NOMINMAX` が 15 個のファイルに1行ずつあったので、`HTTEngine.props` の「全部の構成で共通」に1回だけ書いた。エンジンもゲームも同じ設定になる。
 - XInputGamepad の `std::max(0.0f, std::min(1.0f, x))` の5か所を `std::clamp(x, 0.0f, 1.0f)` にした。
 
 **`std::clamp` にしなかった所**
@@ -68,7 +68,7 @@
 
 ### G：SoundManager の整理（2026-10-30）
 - 900 行 → 638 行＋ `SoundDecoder.cpp` 122 行。**公開している関数は変えていない**ので、呼ぶ側はそのまま。
-- `SoundManager::Instance()`：`MY_ASSERT_MSG(instance_, ...)` と `instance_->` の組（約 40 か所）をまとめた。
+- `SoundManager::Instance()`：`HTT_ASSERT_MSG(instance_, ...)` と `instance_->` の組（約 40 か所）をまとめた。
 - `SoundManager::FindVoice(playHandle)`：「ハンドルが 0 か → `voices_` から探す → null か」の十数行（14 か所）をまとめた。見つからないときの警告は1か所になった。
 - `SoundManager::DestroyAllVoices()`：StopAll と ReleaseInternal の同じ処理をまとめた。
 - `SoundConfig` 版の関数は、値を渡す版を呼ぶだけにした（9組）。
@@ -125,7 +125,7 @@
 - 呼び出しの順番は変えていない。`ISystem` の基底クラスや自動登録は作らない（`Update` の引数が System ごとに違い、順番を上から読める方が安全なため）。
 
 ### M：残りの不具合を直す（2026-10-30）
-- `DIRECTINPUT_VERSION`：`#define` が5か所にあり、`dinput.h` の後で定義する所もあった（C4005）。`MyEngine.props` の1か所にまとめた。
+- `DIRECTINPUT_VERSION`：`#define` が5か所にあり、`dinput.h` の後で定義する所もあった（C4005）。`HTTEngine.props` の1か所にまとめた。
 - ローパス・ハイパス：`XAUDIO2_VOICE_USEFILTER` が無く、`SetFilterParameters` が `0x88960001` で失敗していた。フラグを足して、失敗をログに出すようにした。
 - ハイパス：`1.0f - cutoff` で逆になっていた（実測で Frequency 0.0 が全部通り、1.0 が無音）。反転をやめた。
 - `FadeOut`：目標 0 のとき `Stop` だけで、`voices_` に残り続けていた。破棄するようにした。

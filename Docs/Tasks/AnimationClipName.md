@@ -124,7 +124,7 @@ Clip の欄の候補は、描く側が決める。
 ```json
 "settings": {
 	"maxRepeat": 0,
-	"sampleAnimation": "MyEngine/Resources/Model/AnimatedCube/AnimatedCube.gltf"
+	"sampleAnimation": "HTTEngine/Resources/Model/AnimatedCube/AnimatedCube.gltf"
 },
 …
 "idlePartFields": {
@@ -300,7 +300,7 @@ uint32_t AnimationManager::GetAnimationCount(uint32_t handle) {
 #include <cstdint>
 #include <type_traits>
 
-#include "MyEngine/String/FixedString.h"
+#include "HTTEngine/String/FixedString.h"
 
 // アニメーション（クリップ）の名前。Blender ならアクションの名前（63 バイトまで）
 // FBX の「Armature|Idle」（アーマチュアの名前｜アクションの名前）の形も入るように、127 バイトまでにする
@@ -462,7 +462,7 @@ constexpr ImU32 kMissingClipColor = IM_COL32(255, 96, 96, 255); // ファイル�
 include を足す（自作のヘッダの所）。
 
 ```cpp
-#include "MyEngine/Components/Animation/AnimatorComponent.h"
+#include "HTTEngine/Components/Animation/AnimatorComponent.h"
 ```
 
 `Draw` の中、Component を並べる所を囲む。
@@ -529,10 +529,10 @@ include（`<set>`・`<utility>`・`<optional>`・`LogManager.h` が増える）�
 #include <algorithm>
 #include <string_view>
 
-#include "MyEngine/Components/Core/TransformComponent.h"  
-#include "MyEngine/Components/Rendering3D/ModelRendererComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"  
+#include "HTTEngine/Components/Rendering3D/ModelRendererComponent.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
 ```
 
 `AnimatorState`（`clipIndex` → `clip`）と `AnimationState`（`warnedClips` が増える）。
@@ -635,7 +635,7 @@ void ResetPlayer(AnimatorState& animator, const AnimatorComponent& component, bo
 ```cpp
 // ===== 名前で流す =====
 bool AnimationSystem::Play(Handle<Entity> entity, std::string_view clip, bool loop, float speed) {
-	MY_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
 	AnimatorComponent* component = EntityManager::Get<AnimatorComponent>(entity);
 	if (component == nullptr) {
 		return false; // Animator が無い（RequestAdd した直後は、次のフレームまで付いていない）
@@ -665,7 +665,7 @@ bool AnimationSystem::Play(Handle<Entity> entity, std::string_view clip, bool lo
 ```cpp
 // ===== アニメーションの長さ =====
 float AnimationSystem::GetClipDuration(Handle<Entity> entity, std::string_view clip) {
-	MY_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
 	const AnimatorComponent* component = EntityManager::Get<AnimatorComponent>(entity);
 	if (component == nullptr) {
 		return 0.0f;
@@ -696,8 +696,8 @@ float AnimationSystem::CalcSpeedToFit(Handle<Entity> entity, std::string_view cl
 `Sandbox/Source/AttackParts/SpinAttack.cpp`
 
 ```cpp
-#include "MyEngine/AI/AttackPart.h"
-#include "MyEngine/Systems/Animation/AnimationSystem.h"
+#include "HTTEngine/AI/AttackPart.h"
+#include "HTTEngine/Systems/Animation/AnimationSystem.h"
 
 
 /// <summary>
@@ -738,10 +738,10 @@ void SpinAttack::Fields(ComponentUI& ui) { ui.ClipField("Clip###clip", clip_, Ti
 `Sandbox/Source/AttackParts/ChaseTarget.cpp`
 
 ```cpp
-#include "MyEngine/AI/AttackPart.h"
-#include "MyEngine/Components/Physics/CharacterControllerComponent.h"
-#include "MyEngine/Math/MathUtility.h"
-#include "MyEngine/Systems/Animation/AnimationSystem.h"
+#include "HTTEngine/AI/AttackPart.h"
+#include "HTTEngine/Components/Physics/CharacterControllerComponent.h"
+#include "HTTEngine/Math/MathUtility.h"
+#include "HTTEngine/Systems/Animation/AnimationSystem.h"
 
 
 /// <summary>
@@ -898,7 +898,7 @@ void DrawPartFields(ComponentUI& ui, AttackPartSlot& slot, std::string_view labe
 {
 	"settings": {
 		"maxRepeat": 0,
-		"sampleAnimation": "MyEngine/Resources/Model/AnimatedCube/AnimatedCube.gltf"
+		"sampleAnimation": "HTTEngine/Resources/Model/AnimatedCube/AnimatedCube.gltf"
 	},
 	"phases": [
 		{
@@ -957,7 +957,7 @@ void DrawPartFields(ComponentUI& ui, AttackPartSlot& slot, std::string_view labe
 
 ```json
 {
-	"asset": {"version": "2.0", "generator": "MyEngine Sandbox (hand written)"},
+	"asset": {"version": "2.0", "generator": "HTTEngine Sandbox (hand written)"},
 	"scene": 0,
 	"scenes": [{"nodes": [0]}],
 	"nodes": [{"name": "ClipNames", "mesh": 0}],
@@ -1002,7 +1002,7 @@ D-1 と同じ箱で、アニメーションの並びを変えて Bounce を抜�
 
 ```json
 {
-	"asset": {"version": "2.0", "generator": "MyEngine Sandbox (hand written)"},
+	"asset": {"version": "2.0", "generator": "HTTEngine Sandbox (hand written)"},
 	"scene": 0,
 	"scenes": [{"nodes": [0]}],
 	"nodes": [{"name": "ClipNames", "mesh": 0}],
@@ -1049,8 +1049,8 @@ D-1 と同じ箱で、アニメーションの並びを変えて Bounce を抜�
 #include <array>
 #include <cstddef>
 
-#include "MyEngine/ECS/Script.h"
-#include "MyEngine/Systems/Animation/AnimationSystem.h"
+#include "HTTEngine/ECS/Script.h"
+#include "HTTEngine/Systems/Animation/AnimationSystem.h"
 
 /// <summary>
 /// アニメを名前で順に流す（Sandbox のテスト用。AnimationSystem::Play・CalcSpeedToFit を名前で呼ぶ見本）
@@ -1423,11 +1423,11 @@ include とアニメの名前（番号の3つを置き換え。Animator と Anim
 #include <cmath>
 #include <string_view>
 
-#include <MyEngine/Curve/Curve.h>
-#include <MyEngine/Curve/CurveManager.h>
-#include <MyEngine/Input/InputManager.h>
-#include <MyEngine/Systems/Animation/AnimationSystem.h>
-#include <MyEngine/Systems/Physics/PhysicsSystem.h>
+#include <HTTEngine/Curve/Curve.h>
+#include <HTTEngine/Curve/CurveManager.h>
+#include <HTTEngine/Input/InputManager.h>
+#include <HTTEngine/Systems/Animation/AnimationSystem.h>
+#include <HTTEngine/Systems/Physics/PhysicsSystem.h>
 
 SCRIPT(PlayerController, "Player");
 

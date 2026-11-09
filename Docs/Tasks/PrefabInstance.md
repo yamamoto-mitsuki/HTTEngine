@@ -367,14 +367,14 @@ EntityId MakeIdShift(const EntityTree& tree) {
 
 ### B-1 `Components/Core/PrefabInstanceComponent.h`（新しい）
 
-vcxproj に足す（`FolderComponent.h` の次。filters も `MyEngine\Components\Core`）。
+vcxproj に足す（`FolderComponent.h` の次。filters も `HTTEngine\Components\Core`）。
 
 ```cpp
 #pragma once
 #include <cstdint>
 #include <type_traits>
 
-#include "MyEngine/String/FixedString.h"
+#include "HTTEngine/String/FixedString.h"
 
 // Prefab から置いた物の一番上に付く印（Unity の Prefab インスタンス）。Add Component には出さない
 // PrefabManager::Instantiate（Project の Place in Scene・Script の Instantiate）と、Hierarchy の Save As Prefab で付く
@@ -399,8 +399,8 @@ static_assert(std::is_trivially_copyable_v<PrefabInstanceComponent>);
 ### B-2 `ECS/EntityManager.cpp`（型の登録）
 
 ```cpp
-#include "MyEngine/Components/Core/FolderComponent.h"
-#include "MyEngine/Components/Core/PrefabInstanceComponent.h"
+#include "HTTEngine/Components/Core/FolderComponent.h"
+#include "HTTEngine/Components/Core/PrefabInstanceComponent.h"
 ```
 
 `Initialize` の中：
@@ -415,13 +415,13 @@ static_assert(std::is_trivially_copyable_v<PrefabInstanceComponent>);
 include に3つ足す。
 
 ```cpp
-#include "MyEngine/Components/Core/FolderComponent.h"
-#include "MyEngine/Components/Core/PrefabInstanceComponent.h"
-#include "MyEngine/Components/Rendering3D/ModelRendererComponent.h"
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Components/Lighting/LightComponent.h"
-#include "MyEngine/Scene/PrefabManager.h"
-#include "MyEngine/String/ConvertString.h"
+#include "HTTEngine/Components/Core/FolderComponent.h"
+#include "HTTEngine/Components/Core/PrefabInstanceComponent.h"
+#include "HTTEngine/Components/Rendering3D/ModelRendererComponent.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Components/Lighting/LightComponent.h"
+#include "HTTEngine/Scene/PrefabManager.h"
+#include "HTTEngine/String/ConvertString.h"
 ```
 
 `DescribeFolder` の次に足す。
@@ -520,12 +520,12 @@ void ComponentSerializer::Save(Handle<Entity> entity, SceneJson& out, std::set<s
 `.cpp` の include に2つ足し、namespace の頭に名前を3つ置く（`kTransformName`・`kPrefabKey` はパートC で使う）。
 
 ```cpp
-#include "MyEngine/Components/Core/PrefabInstanceComponent.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Scene/PrefabManager.h"
-#include "MyEngine/String/ConvertString.h"
+#include "HTTEngine/Components/Core/PrefabInstanceComponent.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Scene/PrefabManager.h"
+#include "HTTEngine/String/ConvertString.h"
 
 namespace {
 constexpr const char* kTransformName = "Transform";            // Transform の保存の名前（Prefab から置いた物は、これだけシーンに書く）
@@ -605,9 +605,9 @@ SceneJson SceneSerializer::SaveTree(Handle<Entity> root, EntityId shift) {
 #include <string>
 #include <filesystem>
 
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // Prefab の置き場所と、名前の後ろに付く部分（"resources/prefabs/Box.prefab" の Prefab の名前は "Box"）
 inline constexpr const char* kPrefabFolder = "resources/prefabs/";
@@ -701,14 +701,14 @@ public:
 
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/Components/Core/PrefabInstanceComponent.h"
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Scene/SceneSerializer.h"
-#include "MyEngine/String/ConvertString.h"
+#include "HTTEngine/Components/Core/PrefabInstanceComponent.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Scene/SceneSerializer.h"
+#include "HTTEngine/String/ConvertString.h"
 
 
 namespace {
@@ -949,7 +949,7 @@ SceneJson ComponentsWithoutTransform(const SceneJson& item) {
 // 初期化 / 解放
 //=============================================================================
 void PrefabManager::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<PrefabState>();
 }
 
@@ -959,7 +959,7 @@ void PrefabManager::Release() { state.reset(); }
 // 読み込み
 //=============================================================================
 uint32_t PrefabManager::Load(const std::filesystem::path& filePath) {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	// --- 読み込み済みなら、同じ番号を返す ---
 	const std::string key = ToPathKey(filePath);
 	const auto cached = std::ranges::find(state->assets, key, &PrefabAsset::path);
@@ -989,7 +989,7 @@ const std::string& PrefabManager::GetPath(uint32_t handle) {
 }
 
 void PrefabManager::ReloadChangedFiles() {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	for (PrefabAsset& asset : state->assets) {
 		const std::filesystem::file_time_type time = WriteTimeOf(asset.path);
 		if (time == asset.writeTime) {
@@ -1008,7 +1008,7 @@ void PrefabManager::ReloadChangedFiles() {
 // 保存
 //=============================================================================
 bool PrefabManager::Save(Handle<Entity> root, const std::string& path) {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	const Entity* rootEntity = EntityManager::Get(root);
 	if (rootEntity == nullptr) {
 		return false;
@@ -1052,7 +1052,7 @@ bool PrefabManager::Save(Handle<Entity> root, const std::string& path) {
 // 作る
 //=============================================================================
 Handle<Entity> PrefabManager::Instantiate(uint32_t prefab, const Vector3& position, Handle<Entity> parent) {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	const PrefabAsset* asset = Find(prefab);
 	if (asset == nullptr) {
 		LogManager::Warning(std::format("読み込んでいない Prefab の番号 {} から作ろうとしました（Inspector で Prefab を選んでいるか確かめてください）", prefab));
@@ -1077,7 +1077,7 @@ Handle<Entity> PrefabManager::Instantiate(uint32_t prefab, const Vector3& positi
 }
 
 Handle<Entity> PrefabManager::InstantiateNow(uint32_t prefab, EntityId rootId, std::set<std::string>& warnings) {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	const PrefabAsset* asset = Find(prefab);
 	if (asset == nullptr) {
 		return {};
@@ -1098,7 +1098,7 @@ Handle<Entity> PrefabManager::InstantiateNow(uint32_t prefab, EntityId rootId, s
 }
 
 void PrefabManager::RequestPlace(uint32_t prefab) {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	state->placeRequests.push_back(prefab);
 }
 
@@ -1106,7 +1106,7 @@ void PrefabManager::RequestPlace(uint32_t prefab) {
 // フレームの頭
 //=============================================================================
 void PrefabManager::Flush() {
-	MY_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	// ===== エディタから置く予約（作るだけ。Component は下でまとめて付く）=====
 	// 取り出してから回す（回している間に予約が足されても壊れないように）
 	const std::vector<uint32_t> places = std::exchange(state->placeRequests, {});
@@ -1349,9 +1349,9 @@ include を2つ足す。
 ```
 
 ```cpp
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Scene/PrefabManager.h"
-#include "MyEngine/Systems/Gameplay/ScriptSystem.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Scene/PrefabManager.h"
+#include "HTTEngine/Systems/Gameplay/ScriptSystem.h"
 ```
 
 `RequestReparent` の中の、`oldParentId == parentId` の `return` の次に足す。
@@ -1415,11 +1415,11 @@ const ImVec4 kPrefabContentColor = ImVec4(0.65f, 0.80f, 0.95f, 1.0f);
 include に2つ足す。
 
 ```cpp
-#include "MyEngine/Components/Core/FolderComponent.h"
-#include "MyEngine/Components/Core/PrefabInstanceComponent.h"
-#include "MyEngine/Editor/Windows/HierarchyWindow.h"
-#include "MyEngine/Scene/PrefabManager.h"
-#include "MyEngine/String/ConvertString.h"
+#include "HTTEngine/Components/Core/FolderComponent.h"
+#include "HTTEngine/Components/Core/PrefabInstanceComponent.h"
+#include "HTTEngine/Editor/Windows/HierarchyWindow.h"
+#include "HTTEngine/Scene/PrefabManager.h"
+#include "HTTEngine/String/ConvertString.h"
 ```
 
 namespace の頭に足す。
@@ -1611,7 +1611,7 @@ Save As Prefab の所を書き換える。
 | `*.broken` | 読めなかったシーンの写し |
 | `project/Parameters/Editor/` | エディタだけの設定（最後に開いたシーン・Scene ビューのカメラ） |
 
-git が見ないファイルは、リポジトリの `.gitignore` で決まる。プロパティシート（`MyEngine.props`）はビルドの設定なので、git には効かない。チームのリポジトリを作るときに、いつもの Visual Studio 用の `.gitignore`（ビルドの出力・`.vs/` を外す物）の最後に足す。
+git が見ないファイルは、リポジトリの `.gitignore` で決まる。プロパティシート（`HTTEngine.props`）はビルドの設定なので、git には効かない。チームのリポジトリを作るときに、いつもの Visual Studio 用の `.gitignore`（ビルドの出力・`.vs/` を外す物）の最後に足す。
 
 ```gitignore
 # エディタが書く、人ごとに違うファイル（git に入れると、保存するたびにぶつかる）

@@ -344,9 +344,9 @@ std::ranges::find(state->assets, key, [](const std::unique_ptr<TimelineAsset>& a
 include に足す。
 
 ```cpp
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Vector4.h"
-#include "MyEngine/Time/EngineTime.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Vector4.h"
+#include "HTTEngine/Time/EngineTime.h"
 ```
 
 `TimelineFrame` を、上に3つの struct を足した形に差し替え、下に `TimelinePropertyBinding` を足す（`TimelineFrame` に `overrides` が1行増えて、コメントの位置がそろった）。
@@ -645,12 +645,12 @@ bool TimelineStates::Prepare(uint32_t handle) {
 #include <cstdint>
 #include <string_view>
 
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Vector4.h"
-#include "MyEngine/Time/EngineTime.h"
-#include "MyEngine/Timeline/TimelineEvent.h"
-#include "MyEngine/Timeline/TimelinePlayhead.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Vector4.h"
+#include "HTTEngine/Time/EngineTime.h"
+#include "HTTEngine/Timeline/TimelineEvent.h"
+#include "HTTEngine/Timeline/TimelinePlayhead.h"
 
 /// <summary>
 /// 再生の層。同じ Entity の同じ層で再生できるのは1つだけ（もう一度頼むと置き換わる）
@@ -785,17 +785,17 @@ private:
 #include <optional>
 #include <algorithm>
 
-#include "MyEngine/Components/Animation/TimelineComponent.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Systems/Camera/CameraSystem.h"
-#include "MyEngine/Systems/Gameplay/ScriptSystem.h"
-#include "MyEngine/Timeline/TimelineEventTrack.h"
-#include "MyEngine/Timeline/TimelineManager.h"
-#include "MyEngine/Timeline/TimelineValueTrack.h"
-#include "MyEngine/Timeline/Camera/TimelineCameraShakeTrack.h"
-#include "MyEngine/Timeline/Camera/TimelineCameraTrack.h"
-#include "MyEngine/Timeline/Tween/TimelinePresetTrack.h"
-#include "MyEngine/Timeline/Tween/TimelineTweenTrack.h"
+#include "HTTEngine/Components/Animation/TimelineComponent.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Systems/Camera/CameraSystem.h"
+#include "HTTEngine/Systems/Gameplay/ScriptSystem.h"
+#include "HTTEngine/Timeline/TimelineEventTrack.h"
+#include "HTTEngine/Timeline/TimelineManager.h"
+#include "HTTEngine/Timeline/TimelineValueTrack.h"
+#include "HTTEngine/Timeline/Camera/TimelineCameraShakeTrack.h"
+#include "HTTEngine/Timeline/Camera/TimelineCameraTrack.h"
+#include "HTTEngine/Timeline/Tween/TimelinePresetTrack.h"
+#include "HTTEngine/Timeline/Tween/TimelineTweenTrack.h"
 
 namespace {
 //=============================================================================
@@ -1178,7 +1178,7 @@ void TimelineSystem::OnEntityDestroyed(Handle<Entity> entity) {
 
 ## パートB Tween と Preset のトラック
 
-新しいフォルダ `Timeline/Tween` に4つのファイルを作る。ソリューションエクスプローラーで MyEngine_v1 に足す（前の段階の `Timeline/Camera` と同じやり方）。B まで写したら Debug をビルドする。
+新しいフォルダ `Timeline/Tween` に4つのファイルを作る。ソリューションエクスプローラーで HTTEngine に足す（前の段階の `Timeline/Camera` と同じやり方）。B まで写したら Debug をビルドする。
 
 ### B-1 `Timeline/Tween/TimelineTweenTrack.h`（新しいファイル）
 
@@ -1188,12 +1188,12 @@ void TimelineSystem::OnEntityDestroyed(Handle<Entity> entity) {
 #include <memory>
 #include <string>
 
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/Curve/Curve.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Vector4.h"
-#include "MyEngine/Timeline/TimelineTrack.h"
-#include "MyEngine/Timeline/TimelineValueTrack.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/Curve/Curve.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Vector4.h"
+#include "HTTEngine/Timeline/TimelineTrack.h"
+#include "HTTEngine/Timeline/TimelineValueTrack.h"
 
 /// <summary>
 /// Tween の端（From・To）の値の決め方
@@ -1272,8 +1272,8 @@ public:
 #include <externals/magic_enum/magic_enum.hpp>
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/Curve/CurveManager.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/Curve/CurveManager.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
 
 namespace {
 constexpr const char* kFromKey = "from";     // ファイルの From の項目の名前
@@ -1498,7 +1498,7 @@ void TimelineTweenTrack::ClearBaseValues() { baseValues.clear(); }
 #include <string>
 #include <cstdint>
 
-#include "MyEngine/Timeline/TimelineTrack.h"
+#include "HTTEngine/Timeline/TimelineTrack.h"
 
 /// <summary>
 /// Preset のクリップ。別の Timeline のファイル（プリセット）を、トラックの対象の上で再生する
@@ -1535,9 +1535,9 @@ public:
 #include <vector>
 #include <algorithm>
 
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/String/ConvertString.h"
-#include "MyEngine/Timeline/TimelineManager.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/String/ConvertString.h"
+#include "HTTEngine/Timeline/TimelineManager.h"
 
 namespace {
 int depth = 0; // 今、何段目のプリセットの中を動かしているか（自分を入れたときに止めるため）
@@ -1633,8 +1633,8 @@ include に足して、頭のコメントの3行目を2行に差し替える。
 #include <cstdint>
 #include <type_traits>
 
-#include "MyEngine/Math/Easing.h"
-#include "MyEngine/Time/EngineTime.h"
+#include "HTTEngine/Math/Easing.h"
+#include "HTTEngine/Time/EngineTime.h"
 
 // 画面（ポーズ画面・クリア画面など）の出し方・消し方。resources/ui/〇〇.uiscreen の一番上の Entity に付ける（カテゴリ：UI）
 // 動かすのは UIScreen（UI/UIScreen.h）。UIScreen::Open で出して、UIScreen::Close で消す
@@ -1688,23 +1688,23 @@ include に足して、頭のコメントの3行目を2行に差し替える。
 
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/Components/UI/AlphaGroupComponent.h"
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Components/UI/UIScreenComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentStorage.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Scene/PrefabManager.h"
-#include "MyEngine/Scene/SceneManager.h"
-#include "MyEngine/Scene/SceneSerializer.h"
-#include "MyEngine/String/ConvertString.h"
-#include "MyEngine/Systems/Animation/TimelineSystem.h"
-#include "MyEngine/Time/EngineTime.h"
+#include "HTTEngine/Components/UI/AlphaGroupComponent.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Components/UI/UIScreenComponent.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentStorage.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Scene/PrefabManager.h"
+#include "HTTEngine/Scene/SceneManager.h"
+#include "HTTEngine/Scene/SceneSerializer.h"
+#include "HTTEngine/String/ConvertString.h"
+#include "HTTEngine/Systems/Animation/TimelineSystem.h"
+#include "HTTEngine/Time/EngineTime.h"
 
 namespace {
 /// <summary>
@@ -2057,7 +2057,7 @@ void DescribeUIScreenElement(ComponentUI& ui, UIScreenElementComponent& value) {
 // 初期化 / 解放
 //=============================================================================
 void UIScreen::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<UIScreenState>();
 	// UI Screen・UI Screen Element の置き場所・保存・Inspector を登録する（見せ方は Describe〜 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<UIScreenComponent>();
@@ -2074,7 +2074,7 @@ void UIScreen::Release() { state.reset(); }
 // ゲームから使う
 //=============================================================================
 bool UIScreen::Open(const std::string& name) {
-	MY_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
 	// 停止中はゲームのコードが動かないので、ふつうは来ない（エディタで開いているシーンに、勝手に Entity を足さないように）
 	const SceneManager* main = SceneManager::GetMain();
 	if (main == nullptr || main->GetPlayState() == PlayState::Editing) {
@@ -2099,7 +2099,7 @@ bool UIScreen::Open(const std::string& name) {
 }
 
 bool UIScreen::Close(const std::string& name) {
-	MY_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
 	const auto it = FindScreen(name);
 	if (it == state->screens.end() || it->phase == UIScreenPhase::Hiding) {
 		return false;
@@ -2117,19 +2117,19 @@ bool UIScreen::Close(const std::string& name) {
 }
 
 bool UIScreen::CloseContaining(Handle<Entity> entity) {
-	MY_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
 	const auto it = std::ranges::find_if(state->screens, [entity](const OpenUIScreen& screen) { return entity == screen.root || EntityManager::IsDescendantOf(entity, screen.root); });
 	return it != state->screens.end() && Close(std::string(it->name)); // Close が screens を書き換えるので、名前は写して渡す
 }
 
 bool UIScreen::IsOpen(const std::string& name) {
-	MY_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
 	const auto it = FindScreen(name);
 	return it != state->screens.end() && it->phase != UIScreenPhase::Hiding;
 }
 
 Handle<Entity> UIScreen::GetRoot(const std::string& name) {
-	MY_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
 	const auto it = FindScreen(name);
 	return (it != state->screens.end()) ? it->root : Handle<Entity>{};
 }
@@ -2142,7 +2142,7 @@ bool UIScreen::IsInsideOpenScreen(Handle<Entity> entity) {
 }
 
 void UIScreen::Flush() {
-	MY_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
 	for (OpenUIScreen& screen : state->screens) {
 		// Open した次のフレームの頭：PrefabManager::Flush で Component が付いたので、出し始める
 		if (screen.phase == UIScreenPhase::Waiting && EntityManager::IsAlive(screen.root)) {
@@ -2153,7 +2153,7 @@ void UIScreen::Flush() {
 }
 
 void UIScreen::Update(bool isGameRunning) {
-	MY_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "UIScreen::Initialize()を先に呼んでください");
 	// 停止中：全部忘れる（Stop でシーンが Play を押した瞬間に戻るので、画面の Entity も無くなる）
 	if (!isGameRunning) {
 		state->screens.clear();
@@ -2212,8 +2212,8 @@ bool UIScreen::CreateNewFile(const std::filesystem::path& path) {
 
 #include <externals/magic_enum/magic_enum.hpp>
 
-#include "MyEngine/String/FixedString.h"
-#include "MyEngine/Time/EngineTime.h"
+#include "HTTEngine/String/FixedString.h"
+#include "HTTEngine/Time/EngineTime.h"
 
 // UI の要素の状態（マウスが乗った・押した・選んだ・使えない・出す・消す）で、Timeline を再生する。Entityに付けるComponent（カテゴリ：UI）
 // 動かすのは UIStateSystem（Systems/UI/UIStateSystem.h）。マウスの当たりは、同じ Entity の Vector Shape か Image の形
@@ -2265,9 +2265,9 @@ static_assert(std::is_trivially_copyable_v<UIStateComponent>);
 
 ```cpp
 #pragma once
-#include "MyEngine/Components/UI/UIStateComponent.h"
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
+#include "HTTEngine/Components/UI/UIStateComponent.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
 
 
 /// <summary>
@@ -2314,19 +2314,19 @@ private:
 #include <vector>
 #include <algorithm>
 
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Input/InputManager.h"
-#include "MyEngine/Scene/SceneManager.h"
-#include "MyEngine/Systems/Animation/TimelineSystem.h"
-#include "MyEngine/Systems/Rendering2D/SpriteRenderSystem.h"
-#include "MyEngine/Systems/UI/VectorShapeSystem.h"
-#include "MyEngine/Time/EngineTime.h"
-#include "MyEngine/UI/UIScreen.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Input/InputManager.h"
+#include "HTTEngine/Scene/SceneManager.h"
+#include "HTTEngine/Systems/Animation/TimelineSystem.h"
+#include "HTTEngine/Systems/Rendering2D/SpriteRenderSystem.h"
+#include "HTTEngine/Systems/UI/VectorShapeSystem.h"
+#include "HTTEngine/Time/EngineTime.h"
+#include "HTTEngine/UI/UIScreen.h"
 
 namespace {
 constexpr int kLeftButton = 0; // マウスの左ボタン
@@ -2533,7 +2533,7 @@ void DescribeUIState(ComponentUI& ui, UIStateComponent& value) {
 // 初期化 / 解放
 //=============================================================================
 void UIStateSystem::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<UIStateState>();
 	// UI State の置き場所・保存・Inspector を登録する（見せ方は DescribeUIState 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<UIStateComponent>();
@@ -2548,7 +2548,7 @@ void UIStateSystem::Release() { state.reset(); }
 // 毎フレーム
 //=============================================================================
 void UIStateSystem::Update(bool isGameRunning) {
-	MY_ASSERT_MSG(state != nullptr, "UIStateSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "UIStateSystem::Initialize()を先に呼んでください");
 	// 停止中：全部忘れる（Play を押すと、また最初の状態から）
 	if (!isGameRunning) {
 		state->runtimes.clear();
@@ -2617,9 +2617,9 @@ void UIStateSystem::OnEntityDestroyed(Handle<Entity> entity) {
 include（UI のかたまり）に足す。
 
 ```cpp
-#include "MyEngine/Systems/UI/TextRenderSystem.h"
-#include "MyEngine/Systems/UI/UIStateSystem.h"
-#include "MyEngine/Systems/UI/VectorShapeSystem.h"
+#include "HTTEngine/Systems/UI/TextRenderSystem.h"
+#include "HTTEngine/Systems/UI/UIStateSystem.h"
+#include "HTTEngine/Systems/UI/VectorShapeSystem.h"
 ```
 
 `Initialize` の `UIScreen::Initialize` の下に足す。
@@ -2660,11 +2660,11 @@ include に2つ足す。
 #include <cstdint>
 #include <functional>
 
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Editor/Widgets/CurveEditor.h"
-#include "MyEngine/Systems/Animation/TimelineSystem.h"
-#include "MyEngine/Timeline/TimelineManager.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Editor/Widgets/CurveEditor.h"
+#include "HTTEngine/Systems/Animation/TimelineSystem.h"
+#include "HTTEngine/Timeline/TimelineManager.h"
 ```
 
 `TimelineDrag` の下に2つ足す。
@@ -2744,16 +2744,16 @@ struct TimelineBackItem {
 #include <externals/imgui/imgui.h>
 #include <externals/imgui/imgui_internal.h>
 
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Editor/Timeline/TimelineEditorState.h"
-#include "MyEngine/Editor/Windows/HierarchyWindow.h"
-#include "MyEngine/Timeline/TimelineEdit.h"
-#include "MyEngine/Timeline/TimelineValueTrack.h"
-#include "MyEngine/Timeline/Camera/TimelineCameraTrack.h"
-#include "MyEngine/Timeline/Tween/TimelinePresetTrack.h"
-#include "MyEngine/Timeline/Tween/TimelineTweenTrack.h"
-#include "MyEngine/Components/Camera/CameraComponent.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Editor/Timeline/TimelineEditorState.h"
+#include "HTTEngine/Editor/Windows/HierarchyWindow.h"
+#include "HTTEngine/Timeline/TimelineEdit.h"
+#include "HTTEngine/Timeline/TimelineValueTrack.h"
+#include "HTTEngine/Timeline/Camera/TimelineCameraTrack.h"
+#include "HTTEngine/Timeline/Tween/TimelinePresetTrack.h"
+#include "HTTEngine/Timeline/Tween/TimelineTweenTrack.h"
+#include "HTTEngine/Components/Camera/CameraComponent.h"
 
 
 // Timeline ウィンドウの下の詳細（トラックの結び付け・クリップ・キー・カーブ）
@@ -3304,19 +3304,19 @@ void SetTimelineTarget(TimelineEditorState& state, TimelineTrack& track, Handle<
 #include <externals/imgui/imgui.h>
 #include <externals/magic_enum/magic_enum.hpp>
 
-#include "MyEngine/Components/Animation/TimelineComponent.h"
-#include "MyEngine/Components/UI/UIScreenComponent.h"
-#include "MyEngine/Components/UI/UIStateComponent.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Editor/History/EditorHistory.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Editor/Timeline/TimelineEditorState.h"
-#include "MyEngine/Editor/Widgets/ToolIcons.h"
-#include "MyEngine/Editor/Windows/HierarchyWindow.h"
-#include "MyEngine/Editor/Windows/UIScreenEditor.h"
-#include "MyEngine/Scene/SceneManager.h"
-#include "MyEngine/String/ConvertString.h"
-#include "MyEngine/Systems/Animation/TimelineSystem.h"
+#include "HTTEngine/Components/Animation/TimelineComponent.h"
+#include "HTTEngine/Components/UI/UIScreenComponent.h"
+#include "HTTEngine/Components/UI/UIStateComponent.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Editor/History/EditorHistory.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Editor/Timeline/TimelineEditorState.h"
+#include "HTTEngine/Editor/Widgets/ToolIcons.h"
+#include "HTTEngine/Editor/Windows/HierarchyWindow.h"
+#include "HTTEngine/Editor/Windows/UIScreenEditor.h"
+#include "HTTEngine/Scene/SceneManager.h"
+#include "HTTEngine/String/ConvertString.h"
+#include "HTTEngine/Systems/Animation/TimelineSystem.h"
 
 namespace {
 constexpr float kFirstWidth = 960.0f;       // 最初のウィンドウの幅
@@ -3862,11 +3862,11 @@ Debug・Development は `Parameters/Editor/LastScene.json` を `UIAnimationTest`
 ゲージと Pulse は「いつ・どの値で」再生するかだけをコードで決める例。メニューの開け閉めはボタン（UI State）だけでできるので、コードは要らない。
 
 ```cpp
-#include <MyEngine/ECS/EntityManager.h>
-#include <MyEngine/ECS/Script.h>
-#include <MyEngine/Input/InputManager.h>
-#include <MyEngine/Systems/Animation/TimelineSystem.h>
-#include <MyEngine/UI/UIScreen.h>
+#include <HTTEngine/ECS/EntityManager.h>
+#include <HTTEngine/ECS/Script.h>
+#include <HTTEngine/Input/InputManager.h>
+#include <HTTEngine/Systems/Animation/TimelineSystem.h>
+#include <HTTEngine/UI/UIScreen.h>
 
 // UI アニメーションの見本を、キーで動かす Script（UIAnimationTest シーンの Tester に付ける）
 // 1 / 2 / 3：HP のゲージを 100% / 50% / 15% へ動かす（Tween の Parameter "hp" に渡す）
@@ -4037,9 +4037,9 @@ Collider の範囲に入ったら・出たら、指定の Timeline を再生す�
 include に足す。
 
 ```cpp
-#include "MyEngine/Components/Gameplay/TriggerActivatorComponent.h"
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
+#include "HTTEngine/Components/Gameplay/TriggerActivatorComponent.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
 ```
 
 `Update` の下に足す。
@@ -4101,9 +4101,9 @@ bool TriggerActivatorSystem::IsSourceInside(Handle<Entity> entity, TriggerSource
 #include <cstdint>
 #include <type_traits>
 
-#include "MyEngine/Components/Gameplay/TriggerActivatorComponent.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Time/EngineTime.h"
+#include "HTTEngine/Components/Gameplay/TriggerActivatorComponent.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Time/EngineTime.h"
 
 // 同じ Entity の Collider の範囲に入ったら・出たら、Timeline を再生する。Entityに付けるComponent（カテゴリ：Gameplay）
 // 範囲・誰が入ったら反応するかは Trigger Activator と同じ（Collider は Is Trigger にする）。Script を書かずに、エディタだけで演出を置ける
@@ -4136,7 +4136,7 @@ static_assert(std::is_trivially_copyable_v<TimelineTriggerComponent>);
 
 ```cpp
 #pragma once
-#include "MyEngine/Components/Gameplay/TimelineTriggerComponent.h"
+#include "HTTEngine/Components/Gameplay/TimelineTriggerComponent.h"
 
 /// <summary>
 /// Timeline Trigger を登録し、範囲に入った・出たを見て、Timeline の再生を頼む
@@ -4165,13 +4165,13 @@ public:
 
 #include <memory>
 
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Systems/Animation/TimelineSystem.h"
-#include "MyEngine/Systems/Gameplay/TriggerActivatorSystem.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Systems/Animation/TimelineSystem.h"
+#include "HTTEngine/Systems/Gameplay/TriggerActivatorSystem.h"
 
 namespace {
 //=============================================================================
@@ -4260,9 +4260,9 @@ void TimelineTriggerSystem::Update(bool isGameRunning) {
 include（Gameplay のかたまり）に足す。
 
 ```cpp
-#include "MyEngine/Systems/Gameplay/AttackTableSystem.h"
-#include "MyEngine/Systems/Gameplay/TimelineTriggerSystem.h"
-#include "MyEngine/Systems/Gameplay/TriggerActivatorSystem.h"
+#include "HTTEngine/Systems/Gameplay/AttackTableSystem.h"
+#include "HTTEngine/Systems/Gameplay/TimelineTriggerSystem.h"
+#include "HTTEngine/Systems/Gameplay/TriggerActivatorSystem.h"
 ```
 
 `Initialize`・`Release` の Trigger Activator の下に足す。
@@ -4284,7 +4284,7 @@ include（Gameplay のかたまり）に足す。
 	TimelineTriggerSystem::Update(isGameRunning);                        // 範囲に入った・出たで、Timeline の再生を頼む（当たり判定の後。値が動くのは次のフレームの TimelineSystem::Update から）
 ```
 
-新しい3つのファイルは、ソリューションエクスプローラーで MyEngine_v1 に足す。
+新しい3つのファイルは、ソリューションエクスプローラーで HTTEngine に足す。
 
 ### J-9 見本（ゲーム側）
 
@@ -4311,9 +4311,9 @@ SignEnter・SignExit は、再生する Entity が SignArea なので、扉と�
 | SignExit | `/Door` の位置 Current → Add (0, 0, 0)・`/SignPanel` の透明度 Current → Value 0・大きさ Current → Multiply 0.9 |
 
 ```cpp
-#include <MyEngine/ECS/Script.h>
-#include <MyEngine/Input/InputManager.h>
-#include <MyEngine/Time/EngineTime.h>
+#include <HTTEngine/ECS/Script.h>
+#include <HTTEngine/Input/InputManager.h>
+#include <HTTEngine/Time/EngineTime.h>
 
 // Timeline Trigger の見本（TimelineTriggerTest シーンの Player に付ける）。←→ で自分を横に動かすだけ
 // 範囲に入った・出たときの演出（扉・パネル）は、SignArea の Timeline Trigger と .timeline に書いてあり、ここには書かない

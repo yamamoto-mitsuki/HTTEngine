@@ -2,10 +2,10 @@
 
 #include <algorithm>
 
-#include "MyEngine/Components/Effects/TrailComponent.h"
-#include "MyEngine/Components/Rendering3D/PrimitiveRendererComponent.h"
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
-#include "MyEngine/Input/InputManager.h"
+#include "HTTEngine/Components/Effects/TrailComponent.h"
+#include "HTTEngine/Components/Rendering3D/PrimitiveRendererComponent.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Input/InputManager.h"
 
 SCRIPT(AimCursorSample, "Test");
 

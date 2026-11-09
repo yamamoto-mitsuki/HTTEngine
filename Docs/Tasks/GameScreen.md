@@ -171,14 +171,14 @@ private:
 #include <algorithm>
 #include <cmath>
 
-#include "MyEngine/Diagnostics/MyAssert.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
 
 
 //=============================================================================
 // 初期化
 //=============================================================================
 void GameScreen::Initialize(int width, int height) {
-	MY_ASSERT_MSG(width > 0 && height > 0, "WindowConfig の gameWidth・gameHeight は 1 以上にしてください");
+	HTT_ASSERT_MSG(width > 0 && height > 0, "WindowConfig の gameWidth・gameHeight は 1 以上にしてください");
 	width_ = static_cast<float>(width);
 	height_ = static_cast<float>(height);
 }
@@ -229,8 +229,8 @@ include を足す。
 変更後：
 
 ```cpp
-#include "MyEngine/Graphics/RenderTarget/RenderTextureManager.h"
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Graphics/RenderTarget/RenderTextureManager.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
 ```
 
 初期化の見出しの前に足す。
@@ -274,8 +274,8 @@ include を足す。
 変更後：
 
 ```cpp
-#include "MyEngine/Graphics/Pipeline/ShaderConstants.h"
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Graphics/Pipeline/ShaderConstants.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
 ```
 
 次の所は全部消す。
@@ -327,8 +327,8 @@ include を足して、定数 `kAspectRatio` の行を消す。
 変更後：
 
 ```cpp
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
 ```
 
 変更後：
@@ -358,9 +358,9 @@ include を足して、定数 `kViewWidth`・`kViewHeight` の行を消す。
 変更後：
 
 ```cpp
-#include "MyEngine/Graphics/RenderTarget/RenderWindow.h"
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
-#include "MyEngine/Graphics/Renderer/SceneRenderer.h"
+#include "HTTEngine/Graphics/RenderTarget/RenderWindow.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Graphics/Renderer/SceneRenderer.h"
 ```
 
 変更後：
@@ -384,13 +384,13 @@ void EditorViewport::Initialize() {
 変更前：
 
 ```cpp
-#include "MyEngine/Graphics/Renderer/Renderer.h"
+#include "HTTEngine/Graphics/Renderer/Renderer.h"
 ```
 
 変更後：
 
 ```cpp
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
 ```
 
 変更後：
@@ -449,8 +449,8 @@ struct ViewRect;
 変更後：
 
 ```cpp
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
-#include "MyEngine/Graphics/Renderer/RenderContext.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Graphics/Renderer/RenderContext.h"
 ```
 
 `BindRenderTarget` の実装の下に足す。
@@ -500,8 +500,8 @@ void RenderWindow::ClearBars(const ViewRect& inner, float windowWidth, float win
 変更後：
 
 ```cpp
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
-#include "MyEngine/Graphics/RenderTarget/RenderTexture.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Graphics/RenderTarget/RenderTexture.h"
 ```
 
 変更後：
@@ -592,8 +592,8 @@ include を足す。
 変更後：
 
 ```cpp
-#include "MyEngine/Graphics/RenderTarget/RenderWindow.h"
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Graphics/RenderTarget/RenderWindow.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
 ```
 
 `SetViewportAndScissor` の全体。
@@ -680,7 +680,7 @@ void SceneRenderer::RenderUI(const std::wstring& windowTitle, const ViewRect& re
 
 ```cpp
 void SceneRenderer::RenderToWindow(const Camera* camera, RenderWindow* window, const std::wstring& windowTitle, float windowWidth, float windowHeight) {
-	MY_ASSERT_MSG(instance_->postProcess_ != nullptr, "InitializePost を先に呼んでください（3D は HDR の絵に描いてから画面へ写すので、その置き場が要る）");
+	HTT_ASSERT_MSG(instance_->postProcess_ != nullptr, "InitializePost を先に呼んでください（3D は HDR の絵に描いてから画面へ写すので、その置き場が要る）");
 	ApplyViewOptions({}); // ウィンドウ（製品版のゲーム）は全部掛ける
 	RenderTexture* scene = RenderWorldForPost(camera, windowTitle);
 
@@ -702,8 +702,8 @@ include を足す。
 変更後：
 
 ```cpp
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
 ```
 
 `GetGameViewRect` の製品版の所。
@@ -752,8 +752,8 @@ include を足す。
 変更後：
 
 ```cpp
-#include "MyEngine/Editor/Windows/HierarchyWindow.h"
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Editor/Windows/HierarchyWindow.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
 ```
 
 変更後：
@@ -776,7 +776,7 @@ include を足す。
 
 ### C-2 残りの言葉
 
-Visual Studio の「フォルダーを指定して置換」（Ctrl+Shift+H）で、`MyEngine` フォルダの中を置き換える。
+Visual Studio の「フォルダーを指定して置換」（Ctrl+Shift+H）で、`HTTEngine` フォルダの中を置き換える。
 
 | 検索 | 置換 |
 |---|---|

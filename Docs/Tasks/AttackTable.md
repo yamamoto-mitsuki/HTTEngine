@@ -72,17 +72,17 @@ Selecting ─→ Attacking ─────────────────�
 | D | エディタ（表の編集・Attack Table ウィンドウ） | 4 | **ここで通る** |
 | E | テスト用のボス（ゲーム側） | 2 | **ここで動く** |
 
-新しいファイルは、Visual Studio の「既存の項目を追加」で `MyEngine_v1` プロジェクトに入れる。全部入れた後に次を実行すると、件数が **11 files、1 filter 増える**（この md を書いた時点の develop なら 417 files, 81 filters）。静的ライブラリは足し忘れてもビルドが通るので、件数で確かめる。
+新しいファイルは、Visual Studio の「既存の項目を追加」で `HTTEngine` プロジェクトに入れる。全部入れた後に次を実行すると、件数が **11 files、1 filter 増える**（この md を書いた時点の develop なら 417 files, 81 filters）。静的ライブラリは足し忘れてもビルドが通るので、件数で確かめる。
 
 ```bash
-powershell -ExecutionPolicy Bypass -File Tools\UpdateFilters.ps1 MyEngine_v1.vcxproj
+powershell -ExecutionPolicy Bypass -File Tools\UpdateFilters.ps1 HTTEngine.vcxproj
 ```
 
 ---
 
 ## パートA：Component と攻撃部品の基底
 
-### A-1 `MyEngine/Components/Gameplay/AttackTableComponent.h`（新しいファイル）
+### A-1 `HTTEngine/Components/Gameplay/AttackTableComponent.h`（新しいファイル）
 
 `healthRatio` と `enabled` はゲームが直接書いてよい。Component に実行中の値を入れないのは、攻撃の数だけ大きさが変わる値を、バイト列で写す Component に持てないため。
 
@@ -91,7 +91,7 @@ powershell -ExecutionPolicy Bypass -File Tools\UpdateFilters.ps1 MyEngine_v1.vcx
 #include <cstdint>
 #include <type_traits>
 
-#include "MyEngine/ECS/Entity.h"
+#include "HTTEngine/ECS/Entity.h"
 
 // 攻撃表の AI。Entityに付けるComponent（カテゴリ：Gameplay）
 // 何をするかは攻撃表のファイル（.attacktable）に書く。ここは「どの表を使うか」と、ゲームから書く値だけを持つ
@@ -132,9 +132,9 @@ struct AttackTableComponent {
 static_assert(std::is_trivially_copyable_v<AttackTableComponent>);
 ```
 
-### A-2 `MyEngine/AI/AttackPart.h`（新しいファイル）
+### A-2 `HTTEngine/AI/AttackPart.h`（新しいファイル）
 
-`MyEngine/AI` フォルダを新しく作る。
+`HTTEngine/AI` フォルダを新しく作る。
 
 部品の実体は敵1体の攻撃1行につき1つできる。だからメンバ変数に、攻撃の途中の値（走る向きなど）を持ってよい。
 
@@ -147,9 +147,9 @@ static_assert(std::is_trivially_copyable_v<AttackTableComponent>);
 #include <type_traits>
 #include <vector>
 
-#include "MyEngine/Components/Gameplay/AttackTableComponent.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/ECS/GameObject.h"
+#include "HTTEngine/Components/Gameplay/AttackTableComponent.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/ECS/GameObject.h"
 
 // 敵の攻撃の中身（攻撃部品）を書くための基底クラス。ゲーム側はこのヘッダ1つをインクルードする
 //
@@ -249,7 +249,7 @@ private:
 #define ATTACK_PART(Type, ...) inline const AttackPartRegistrar<Type> attackPartRegistrarOf_##Type(#Type, "" __VA_ARGS__)
 ```
 
-### A-3 `MyEngine/AI/AttackPart.cpp`（新しいファイル）
+### A-3 `HTTEngine/AI/AttackPart.cpp`（新しいファイル）
 
 ```cpp
 #include "AttackPart.h"
@@ -257,7 +257,7 @@ private:
 #include <format>
 #include <map>
 
-#include "MyEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
 
 namespace {
 // 表の1行
@@ -307,7 +307,7 @@ const std::string& AttackPartRegistry::GetDescription(std::string_view name) {
 
 ## パートB：攻撃表（`.attacktable`）
 
-### B-1 `MyEngine/AI/AttackTableManager.h`（新しいファイル）
+### B-1 `HTTEngine/AI/AttackTableManager.h`（新しいファイル）
 
 ```cpp
 #pragma once
@@ -420,7 +420,7 @@ public:
 
 **`constexpr` の `MakeAllPhases`：** `std::array` の `fill` はコンパイル時にも動くので、`{true, true, ...}` と8個並べずに済む。`kMaxAttackPhases` を変えても初期値を直さなくてよい。
 
-### B-2 `MyEngine/AI/AttackTableManager.cpp`（新しいファイル）
+### B-2 `HTTEngine/AI/AttackTableManager.cpp`（新しいファイル）
 
 ファイルの形はこうなる。
 
@@ -445,12 +445,12 @@ public:
 
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/Scene/SceneSerializer.h"
-#include "MyEngine/String/ConvertString.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Scene/SceneSerializer.h"
+#include "HTTEngine/String/ConvertString.h"
 
 namespace {
 constexpr std::string_view kTypeName = "Attack Table"; // 警告に出す名前
@@ -592,7 +592,7 @@ bool WriteFile(const std::string& path, const AttackTable& table) {
 // 初期化 / 解放
 //=============================================================================
 void AttackTableManager::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<AttackTableStorage>();
 }
 
@@ -602,7 +602,7 @@ void AttackTableManager::Release() { state.reset(); }
 // 読み込み
 //=============================================================================
 uint32_t AttackTableManager::Load(const std::filesystem::path& filePath) {
-	MY_ASSERT_MSG(state != nullptr, "AttackTableManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "AttackTableManager::Initialize()を先に呼んでください");
 	// --- 読み込み済みなら、同じ番号を返す ---
 	const std::string key = ToPathKey(filePath);
 	const auto cached = std::ranges::find(state->assets, key, &AttackTableAsset::path);
@@ -709,7 +709,7 @@ void AttackTableManager::DescribeAttack(ComponentUI& ui, AttackData& value, cons
 }
 ```
 
-### B-3 `MyEngine/ECS/ComponentUI.h`
+### B-3 `HTTEngine/ECS/ComponentUI.h`
 
 変更前：
 
@@ -726,23 +726,23 @@ void AttackTableManager::DescribeAttack(ComponentUI& ui, AttackData& value, cons
 };
 ```
 
-### B-4 `MyEngine/ECS/ComponentUI.cpp`（5か所）
+### B-4 `HTTEngine/ECS/ComponentUI.cpp`（5か所）
 
 include：
 
 変更前：
 
 ```cpp
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/ECS/EntityManager.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/ECS/EntityManager.h"
 ```
 
 変更後：
 
 ```cpp
-#include "MyEngine/AI/AttackTableManager.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/ECS/EntityManager.h"
+#include "HTTEngine/AI/AttackTableManager.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/ECS/EntityManager.h"
 ```
 
 `GetAssetPath`：
@@ -824,7 +824,7 @@ constexpr std::array<std::string_view, 1> kAttackTableExtensions = {AttackTableM
 
 ## パートC：`AttackTableSystem` と組み込み
 
-### C-1 `MyEngine/Systems/Gameplay/AttackTableSystem.h`（新しいファイル）
+### C-1 `HTTEngine/Systems/Gameplay/AttackTableSystem.h`（新しいファイル）
 
 ```cpp
 #pragma once
@@ -832,9 +832,9 @@ constexpr std::array<std::string_view, 1> kAttackTableExtensions = {AttackTableM
 #include <string_view>
 #include <vector>
 
-#include "MyEngine/Components/Gameplay/AttackTableComponent.h"
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
+#include "HTTEngine/Components/Gameplay/AttackTableComponent.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
 
 /// <summary>
 /// 敵の今の様子（AttackTableSystem::GetStatus）。読むたびに作る写しなので、持ち続けても壊れないが、値は古くなる
@@ -919,7 +919,7 @@ private:
 };
 ```
 
-### C-2 `MyEngine/Systems/Gameplay/AttackTableSystem.cpp`（新しいファイル）
+### C-2 `HTTEngine/Systems/Gameplay/AttackTableSystem.cpp`（新しいファイル）
 
 読むときの要点は4つ。
 
@@ -942,11 +942,11 @@ private:
 
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/AI/AttackTableManager.h"
-#include "MyEngine/AI/AttackPart.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/Math/RandomEngine.h"
+#include "HTTEngine/AI/AttackTableManager.h"
+#include "HTTEngine/AI/AttackPart.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/Math/RandomEngine.h"
 
 namespace {
 constexpr int kNoAttack = -1; // 攻撃を指していない番号
@@ -1474,40 +1474,40 @@ void AttackTableSystem::OnEntityDestroyed(Handle<Entity> entity) {
 }
 ```
 
-### C-3 `MyEngine/Systems/EngineSystems.cpp`（4か所）
+### C-3 `HTTEngine/Systems/EngineSystems.cpp`（4か所）
 
 include：
 
 変更前：
 
 ```cpp
-#include "MyEngine/Systems/EngineSystems.h"
+#include "HTTEngine/Systems/EngineSystems.h"
 
-#include "MyEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
 ```
 
 変更後：
 
 ```cpp
-#include "MyEngine/Systems/EngineSystems.h"
+#include "HTTEngine/Systems/EngineSystems.h"
 
-#include "MyEngine/AI/AttackTableManager.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/AI/AttackTableManager.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
 ```
 
 変更前：
 
 ```cpp
-#include "MyEngine/Systems/Effects/TrailSystem.h"
-#include "MyEngine/Systems/Gameplay/ScriptSystem.h"
+#include "HTTEngine/Systems/Effects/TrailSystem.h"
+#include "HTTEngine/Systems/Gameplay/ScriptSystem.h"
 ```
 
 変更後：
 
 ```cpp
-#include "MyEngine/Systems/Effects/TrailSystem.h"
-#include "MyEngine/Systems/Gameplay/AttackTableSystem.h"
-#include "MyEngine/Systems/Gameplay/ScriptSystem.h"
+#include "HTTEngine/Systems/Effects/TrailSystem.h"
+#include "HTTEngine/Systems/Gameplay/AttackTableSystem.h"
+#include "HTTEngine/Systems/Gameplay/ScriptSystem.h"
 ```
 
 `Initialize`：
@@ -1564,23 +1564,23 @@ include：
 	AnimationSystem::Update(isGameRunning, Time::GetDeltaTime()); // アニメーション。停止中もInspectorのPreview Timeのポーズを見せる。
 ```
 
-### C-4 `MyEngine/ECS/GameComponent.h`
+### C-4 `HTTEngine/ECS/GameComponent.h`
 
 Script・SYSTEM から `AttackTableSystem::GetStatus` を使えるようにする。
 
 変更前：
 
 ```cpp
-#include "MyEngine/Systems/Rendering2D/SpriteRenderSystem.h"
-#include "MyEngine/Systems/Effects/TrailSystem.h"
+#include "HTTEngine/Systems/Rendering2D/SpriteRenderSystem.h"
+#include "HTTEngine/Systems/Effects/TrailSystem.h"
 ```
 
 変更後：
 
 ```cpp
-#include "MyEngine/Systems/Rendering2D/SpriteRenderSystem.h"
-#include "MyEngine/Systems/Gameplay/AttackTableSystem.h"
-#include "MyEngine/Systems/Effects/TrailSystem.h"
+#include "HTTEngine/Systems/Rendering2D/SpriteRenderSystem.h"
+#include "HTTEngine/Systems/Gameplay/AttackTableSystem.h"
+#include "HTTEngine/Systems/Effects/TrailSystem.h"
 ```
 
 **ここでビルドが通る。** Add Component → Gameplay に Attack Table が出る（Table の一覧はまだ空）。
@@ -1589,7 +1589,7 @@ Script・SYSTEM から `AttackTableSystem::GetStatus` を使えるようにす�
 
 ## パートD：エディタ
 
-### D-1 `MyEngine/Editor/Inspector/AttackTableEditor.h`（新しいファイル）
+### D-1 `HTTEngine/Editor/Inspector/AttackTableEditor.h`（新しいファイル）
 
 ```cpp
 #pragma once
@@ -1605,7 +1605,7 @@ public:
 };
 ```
 
-### D-2 `MyEngine/Editor/Inspector/AttackTableEditor.cpp`（新しいファイル）
+### D-2 `HTTEngine/Editor/Inspector/AttackTableEditor.cpp`（新しいファイル）
 
 Physic Material は `ComponentUI` だけで描けたが、ここは行の足し引きと折りたたみがあるので ImGui を直接使う。ファイル全体が `#ifdef USE_IMGUI` の中にあるので、Release には入らない。
 
@@ -1627,13 +1627,13 @@ Physic Material は `ComponentUI` だけで描けたが、ここは行の足し�
 #include <externals/imgui/imgui.h>
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/AI/AttackTableManager.h"
-#include "MyEngine/AI/AttackPart.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/Editor/Inspector/AssetInspector.h"
-#include "MyEngine/Systems/Gameplay/AttackTableSystem.h"
+#include "HTTEngine/AI/AttackTableManager.h"
+#include "HTTEngine/AI/AttackPart.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Editor/Inspector/AssetInspector.h"
+#include "HTTEngine/Systems/Gameplay/AttackTableSystem.h"
 
 namespace {
 constexpr std::string_view kTypeName = "Attack Table"; // Inspector の見出しに出す名前
@@ -1826,12 +1826,12 @@ void AttackTableEditor::Initialize() { AssetInspector::Register(std::make_unique
 #endif
 ```
 
-### D-3 `MyEngine/Editor/Windows/AttackTableWindow.h`（新しいファイル）
+### D-3 `HTTEngine/Editor/Windows/AttackTableWindow.h`（新しいファイル）
 
 ```cpp
 #pragma once
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
 
 /// <summary>
 /// Attack Table ウィンドウ。再生中の敵の様子（フェーズ・状態・段階・残り時間）と、攻撃ごとの抽選確率・条件・クールタイムを出す
@@ -1852,7 +1852,7 @@ private:
 };
 ```
 
-### D-4 `MyEngine/Editor/Windows/AttackTableWindow.cpp`（新しいファイル）
+### D-4 `HTTEngine/Editor/Windows/AttackTableWindow.cpp`（新しいファイル）
 
 ```cpp
 #ifdef USE_IMGUI
@@ -1867,11 +1867,11 @@ private:
 #include <externals/imgui/imgui.h>
 #include <externals/magic_enum/magic_enum.hpp>
 
-#include "MyEngine/AI/AttackTableManager.h"
-#include "MyEngine/Components/Gameplay/AttackTableComponent.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Editor/Windows/HierarchyWindow.h"
-#include "MyEngine/Systems/Gameplay/AttackTableSystem.h"
+#include "HTTEngine/AI/AttackTableManager.h"
+#include "HTTEngine/Components/Gameplay/AttackTableComponent.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Editor/Windows/HierarchyWindow.h"
+#include "HTTEngine/Systems/Gameplay/AttackTableSystem.h"
 
 namespace {
 constexpr ImU32 kOkColor = IM_COL32(120, 220, 120, 255); // 条件を満たしている
@@ -2014,21 +2014,21 @@ void AttackTableWindow::DrawAttacks(Handle<Entity> entity) {
 #endif
 ```
 
-### D-5 `MyEngine/Editor/ImGuiManager.cpp`（2か所）
+### D-5 `HTTEngine/Editor/ImGuiManager.cpp`（2か所）
 
 変更前：
 
 ```cpp
-#include "MyEngine/Editor/Widgets/ImeInput.h"
-#include "MyEngine/Editor/Windows/CodeWindow.h"
+#include "HTTEngine/Editor/Widgets/ImeInput.h"
+#include "HTTEngine/Editor/Windows/CodeWindow.h"
 ```
 
 変更後：
 
 ```cpp
-#include "MyEngine/Editor/Widgets/ImeInput.h"
-#include "MyEngine/Editor/Windows/AttackTableWindow.h"
-#include "MyEngine/Editor/Windows/CodeWindow.h"
+#include "HTTEngine/Editor/Widgets/ImeInput.h"
+#include "HTTEngine/Editor/Windows/AttackTableWindow.h"
+#include "HTTEngine/Editor/Windows/CodeWindow.h"
 ```
 
 変更前：
@@ -2050,21 +2050,21 @@ void AttackTableWindow::DrawAttacks(Handle<Entity> entity) {
 	// --- シーンのファイルの確認（保存しますか？・名前を付けて保存など） ---
 ```
 
-### D-6 `MyEngine/Systems/EngineSystems.cpp`（2か所）
+### D-6 `HTTEngine/Systems/EngineSystems.cpp`（2か所）
 
 変更前：
 
 ```cpp
-#include "MyEngine/Editor/History/EditorHistory.h"
-#include "MyEngine/Editor/Windows/UIScreenEditor.h"
+#include "HTTEngine/Editor/History/EditorHistory.h"
+#include "HTTEngine/Editor/Windows/UIScreenEditor.h"
 ```
 
 変更後：
 
 ```cpp
-#include "MyEngine/Editor/History/EditorHistory.h"
-#include "MyEngine/Editor/Inspector/AttackTableEditor.h"
-#include "MyEngine/Editor/Windows/UIScreenEditor.h"
+#include "HTTEngine/Editor/History/EditorHistory.h"
+#include "HTTEngine/Editor/Inspector/AttackTableEditor.h"
+#include "HTTEngine/Editor/Windows/UIScreenEditor.h"
 ```
 
 変更前：
@@ -2086,7 +2086,7 @@ void AttackTableWindow::DrawAttacks(Handle<Entity> entity) {
 
 `CreatePhysicMaterial` の中身を、Physic Material と攻撃表で共通の `CreateAssetFile` にする（同じ処理を2つ並べないため）。
 
-`MyEngine/Editor/Windows/ProjectWindow.h`：
+`HTTEngine/Editor/Windows/ProjectWindow.h`：
 
 変更前：
 
@@ -2118,19 +2118,19 @@ void AttackTableWindow::DrawAttacks(Handle<Entity> entity) {
 	static void CreateAssetFile(std::string_view baseName, std::string_view extension, bool (*create)(const std::filesystem::path&));
 ```
 
-`MyEngine/Editor/Windows/ProjectWindowActions.cpp`（3か所）：
+`HTTEngine/Editor/Windows/ProjectWindowActions.cpp`（3か所）：
 
 変更前：
 
 ```cpp
-#include "MyEngine/Physics/PhysicMaterialManager.h"
+#include "HTTEngine/Physics/PhysicMaterialManager.h"
 ```
 
 変更後：
 
 ```cpp
-#include "MyEngine/AI/AttackTableManager.h"
-#include "MyEngine/Physics/PhysicMaterialManager.h"
+#include "HTTEngine/AI/AttackTableManager.h"
+#include "HTTEngine/Physics/PhysicMaterialManager.h"
 ```
 
 変更前：
@@ -2209,7 +2209,7 @@ void ProjectWindow::CreateAssetFile(std::string_view baseName, std::string_view 
 #include <cmath>
 #include <numbers>
 
-#include <MyEngine/AI/AttackPart.h>
+#include <HTTEngine/AI/AttackPart.h>
 
 // ボスの AI を確かめるための、ゲーム側の攻撃部品（突進・全方向弾）と弾
 // 新しい攻撃を足すときは、このファイルを見本にする
@@ -2307,8 +2307,8 @@ ATTACK_PART(BossTestRadial, "攻撃の始めに、周りへ弾を一斉に撃つ
 ```cpp
 #include <algorithm>
 
-#include <MyEngine/ECS/Script.h>
-#include <MyEngine/Input/InputManager.h>
+#include <HTTEngine/ECS/Script.h>
+#include <HTTEngine/Input/InputManager.h>
 
 // ボスの AI を確かめるための Script。ボスの Entity に付ける
 // ・HP を持って、Attack Table へ割合を渡す（H キーで減る）
@@ -2451,7 +2451,7 @@ SCRIPT(BossTestController, "BossTest");
 1. ゲームのプロジェクトに .cpp を足す。
 
 ```cpp
-#include <MyEngine/AI/AttackPart.h>
+#include <HTTEngine/AI/AttackPart.h>
 
 class LaserAttack : public AttackPart {
 public:

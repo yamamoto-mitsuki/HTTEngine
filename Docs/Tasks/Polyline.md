@@ -726,7 +726,7 @@ void Renderer::DrawPolyline(const PolylineConfig& config) {
 
 ### A-17 プロジェクトに足す
 
-ソリューション エクスプローラーで MyEngine_v1 に、既存の項目として足す（`.shader` は、ほかの `.shader` と同じ場所）。
+ソリューション エクスプローラーで HTTEngine に、既存の項目として足す（`.shader` は、ほかの `.shader` と同じ場所）。
 
 - `Shader/Data/VectorShape/VectorCoverage.hlsli.shader`・`Polyline.hlsli.shader`・`Polyline.VS.shader`・`Polyline.PS.shader`
 
@@ -742,11 +742,11 @@ void Renderer::DrawPolyline(const PolylineConfig& config) {
 #include <algorithm>
 #include <type_traits>
 
-#include "MyEngine/Components/UI/ImageComponent.h"
-#include "MyEngine/Components/UI/VectorShapeComponent.h"
-#include "MyEngine/Graphics/Pipeline/RenderStates.h"
-#include "MyEngine/Math/Vector2.h"
-#include "MyEngine/Math/Vector4.h"
+#include "HTTEngine/Components/UI/ImageComponent.h"
+#include "HTTEngine/Components/UI/VectorShapeComponent.h"
+#include "HTTEngine/Graphics/Pipeline/RenderStates.h"
+#include "HTTEngine/Math/Vector2.h"
+#include "HTTEngine/Math/Vector4.h"
 
 // 点をつないだ UI の線（閉じれば塗った形）。Entityに付けるComponent（カテゴリ：UI）
 // 点は Entity の位置を原点にしたピクセル（Y は上が＋）。Transform の回転 z・大きさ・親子が掛かり、Anchor の所から数える（Image と同じ）
@@ -808,8 +808,8 @@ static_assert(std::is_trivially_copyable_v<PolylineComponent>);
 #include <array>
 #include <cstdint>
 
-#include "MyEngine/Components/UI/PolylineComponent.h"
-#include "MyEngine/Math/Vector2.h"
+#include "HTTEngine/Components/UI/PolylineComponent.h"
+#include "HTTEngine/Math/Vector2.h"
 
 // 前方宣言
 struct PolylineMeshData;
@@ -876,9 +876,9 @@ PolylineMeshInfo Build(const PolylineShape& shape, PolylineMeshData& mesh);
 #include <vector>
 #include <algorithm>
 
-#include "MyEngine/Graphics/Renderer/DrawRequest.h"
-#include "MyEngine/Math/Geometry/Polygon.h"
-#include "MyEngine/Math/MathUtility.h"
+#include "HTTEngine/Graphics/Renderer/DrawRequest.h"
+#include "HTTEngine/Math/Geometry/Polygon.h"
+#include "HTTEngine/Math/MathUtility.h"
 
 namespace {
 constexpr float kEdgeMargin = 2.0f;                      // 輪郭の外へ広げる幅（ピクセル。なめらかな縁がメッシュの外で切れないように。Vector Shape と同じ）
@@ -1428,10 +1428,10 @@ Vector2 SpriteRenderSystem::CalcScreenScale(const Matrix4x4& worldMatrix) {
 
 ```cpp
 #pragma once
-#include "MyEngine/Components/UI/PolylineComponent.h"
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Vector2.h"
+#include "HTTEngine/Components/UI/PolylineComponent.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Vector2.h"
 
 
 /// <summary>
@@ -1474,20 +1474,20 @@ public:
 #include <algorithm>
 #include <unordered_map>
 
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Editor/Viewport/SceneVisibility.h"
-#include "MyEngine/Graphics/Renderer/DrawRequest.h"
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
-#include "MyEngine/Graphics/Renderer/Renderer.h"
-#include "MyEngine/Math/Color.h"
-#include "MyEngine/Systems/Rendering2D/SpriteRenderSystem.h"
-#include "MyEngine/Systems/UI/PolylineMesh.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Editor/Viewport/SceneVisibility.h"
+#include "HTTEngine/Graphics/Renderer/DrawRequest.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Graphics/Renderer/Renderer.h"
+#include "HTTEngine/Math/Color.h"
+#include "HTTEngine/Systems/Rendering2D/SpriteRenderSystem.h"
+#include "HTTEngine/Systems/UI/PolylineMesh.h"
 
 namespace {
 constexpr float kMinScale = 1.0e-4f; // これより小さい Scale は描かない（0 で割らないように）
@@ -1660,7 +1660,7 @@ void DescribePolyline(ComponentUI& ui, PolylineComponent& value) {
 // 初期化 / 解放
 //=============================================================================
 void PolylineSystem::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<PolylineState>();
 
 	// Polyline の置き場所・保存・Inspector を登録する。見せ方は DescribePolyline 1つで、保存と Inspector の両方に使う
@@ -1675,7 +1675,7 @@ void PolylineSystem::Release() { state.reset(); }
 // 描く（停止中も）
 //=============================================================================
 void PolylineSystem::Draw() {
-	MY_ASSERT_MSG(state != nullptr, "PolylineSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PolylineSystem::Initialize()を先に呼んでください");
 	for (auto& [id, cache] : state->caches) {
 		cache.isUsed = false;
 	}
@@ -1696,7 +1696,7 @@ void PolylineSystem::Draw() {
 bool PolylineSystem::IsEditing() { return state != nullptr && state->isEditing; }
 
 void PolylineSystem::SetEditing(bool isEditing) {
-	MY_ASSERT_MSG(state != nullptr, "PolylineSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "PolylineSystem::Initialize()を先に呼んでください");
 	state->isEditing = isEditing;
 }
 
@@ -1722,10 +1722,10 @@ bool PolylineSystem::CalcLocalBounds(const PolylineComponent& polyline, Vector2&
 
 ```cpp
 // UI
-#include "MyEngine/Systems/UI/UIStateSystem.h"
-#include "MyEngine/Systems/UI/PolylineSystem.h"
-#include "MyEngine/Systems/UI/TextRenderSystem.h"
-#include "MyEngine/Systems/UI/VectorShapeSystem.h"
+#include "HTTEngine/Systems/UI/UIStateSystem.h"
+#include "HTTEngine/Systems/UI/PolylineSystem.h"
+#include "HTTEngine/Systems/UI/TextRenderSystem.h"
+#include "HTTEngine/Systems/UI/VectorShapeSystem.h"
 ```
 
 `Initialize`：
@@ -1757,14 +1757,14 @@ bool PolylineSystem::CalcLocalBounds(const PolylineComponent& polyline, Vector2&
 
 ```cpp
 // UI
-#include "MyEngine/Systems/UI/PolylineSystem.h"
-#include "MyEngine/Systems/UI/TextRenderSystem.h"
-#include "MyEngine/Systems/UI/VectorShapeSystem.h"
+#include "HTTEngine/Systems/UI/PolylineSystem.h"
+#include "HTTEngine/Systems/UI/TextRenderSystem.h"
+#include "HTTEngine/Systems/UI/VectorShapeSystem.h"
 ```
 
 ### B-11 `Editor/Windows/HierarchyWindow.cpp`
 
-include に `#include "MyEngine/Components/UI/PolylineComponent.h"` を足す（`TextComponent.h` の上）。作るメニューの Vector Shape の下に足す。
+include に `#include "HTTEngine/Components/UI/PolylineComponent.h"` を足す（`TextComponent.h` の上）。作るメニューの Vector Shape の下に足す。
 
 ```cpp
 	// --- 画像：3D空間に置く板（Sprite Renderer）・画面に重ねる絵（Image）・図形（Vector Shape）・折れ線（Polyline）・文字（Text）を付けた状態で作る ---
@@ -1781,11 +1781,11 @@ include に `#include "MyEngine/Components/UI/PolylineComponent.h"` を足す（
 include に足す。
 
 ```cpp
-#include "MyEngine/Components/UI/PolylineComponent.h"
+#include "HTTEngine/Components/UI/PolylineComponent.h"
 ```
 
 ```cpp
-#include "MyEngine/Systems/UI/PolylineSystem.h"
+#include "HTTEngine/Systems/UI/PolylineSystem.h"
 ```
 
 `CalcShape` の Text の上に足す（折れ線は、点を囲む四角で選ぶ）。
@@ -1841,11 +1841,11 @@ bool UIGizmo::IsScreenUI(Handle<Entity> entity) {
 
 #include <externals/imgui/imgui.h>
 
-#include "MyEngine/Components/UI/ImageComponent.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Matrix4x4.h"
-#include "MyEngine/Math/Vector2.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Components/UI/ImageComponent.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Matrix4x4.h"
+#include "HTTEngine/Math/Vector2.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // 前方宣言
 class Camera;
@@ -1928,11 +1928,11 @@ public:
 
 #include <externals/imgui/ImGuizmo.h>
 
-#include "MyEngine/Camera/Camera.h"
-#include "MyEngine/Collision/Collision.h"
-#include "MyEngine/Editor/History/EditorHistory.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Systems/Rendering2D/SpriteRenderSystem.h"
+#include "HTTEngine/Camera/Camera.h"
+#include "HTTEngine/Collision/Collision.h"
+#include "HTTEngine/Editor/History/EditorHistory.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Systems/Rendering2D/SpriteRenderSystem.h"
 
 namespace {
 constexpr float kHandleHalfSize = 5.0f;                     // 点の印（■）の大きさの半分（ピクセル）
@@ -2364,14 +2364,14 @@ public:
 #ifdef USE_IMGUI
 #include "PolylineGizmo.h"
 
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Components/UI/PolylineComponent.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Editor/Gizmos/PointListGizmo.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Editor/Windows/HierarchyWindow.h"
-#include "MyEngine/Math/Geometry/Polygon.h"
-#include "MyEngine/Systems/UI/PolylineSystem.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Components/UI/PolylineComponent.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Editor/Gizmos/PointListGizmo.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Editor/Windows/HierarchyWindow.h"
+#include "HTTEngine/Math/Geometry/Polygon.h"
+#include "HTTEngine/Systems/UI/PolylineSystem.h"
 
 namespace {
 constexpr float kGridSize = 1.0f; // 点が吸い付く間隔（ピクセル。Inspector の数字が 150.37 のようにならないように）
@@ -2415,7 +2415,7 @@ bool PolylineGizmo::Draw(const ImVec2& imageMin, const ImVec2& imageSize, bool i
 
 ### C-7 `Editor/Gizmos/SceneGizmo.cpp`
 
-include に `#include "MyEngine/Editor/Gizmos/PolylineGizmo.h"` を足し（`PolygonShapeGizmo.h` の下）、`Draw` の編集中の所を差し替える。
+include に `#include "HTTEngine/Editor/Gizmos/PolylineGizmo.h"` を足し（`PolygonShapeGizmo.h` の下）、`Draw` の編集中の所を差し替える。
 
 ```cpp
 	// 形・線の編集中（Polygon Shape の Edit Shape・Arrow Strip の Edit Path・Polyline の Edit Points）は、点を動かすのがマウスの仕事。移動のギズモ・クリックで選び直すのはしない
@@ -2427,7 +2427,7 @@ include に `#include "MyEngine/Editor/Gizmos/PolylineGizmo.h"` を足し（`Pol
 
 ### C-8 プロジェクトに足す
 
-- `Editor/Gizmos/PolylineGizmo.h`・`PolylineGizmo.cpp`（フィルタは `MyEngine\Editor\Gizmos`）
+- `Editor/Gizmos/PolylineGizmo.h`・`PolylineGizmo.cpp`（フィルタは `HTTEngine\Editor\Gizmos`）
 
 ---
 

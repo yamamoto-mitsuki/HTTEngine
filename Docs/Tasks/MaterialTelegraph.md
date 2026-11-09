@@ -72,7 +72,7 @@ Shader の層        .shader（#META・#PROGRAM・#PROPERTIES・#HLSL）
 | `Graphics/Pipeline/ShaderPackageLoader.h`・`.cpp`（全体を差し替え） | A | 場所から名前と .hlsl の場所を決める・ゲームの .shader・#PROPERTIES・描くときの状態の既定・パスで引く |
 | `Shader/Data/**/*.shader`（全部） | A | #META の `path:` の行を消す |
 | `Shader/Data/IBL/BrdfLUT.PS.shader`（`BrdfLut.PS.shader` に改名）・`Graphics/IBL/IBLEnvironment.h`・`Engine.cpp` | A | 名前を `BrdfLut` にそろえる・ゲームの .shader を読む |
-| `MyEngine.props`・`MyEngine_v1.vcxproj`・`Sandbox/Sandbox.vcxproj` | A | エンジンの .shader・Resources を、ゲームを起動するフォルダへ写す手順を1つにまとめる（消した・改名したファイルを写し先に残さない） |
+| `HTTEngine.props`・`HTTEngine.vcxproj`・`Sandbox/Sandbox.vcxproj` | A | エンジンの .shader・Resources を、ゲームを起動するフォルダへ写す手順を1つにまとめる（消した・改名したファイルを写し先に残さない） |
 | `ECS/ComponentUI.h`・`.cpp`・`ComponentSerializer.cpp` | B | アセットの種類に Shader・Material、色の欄に説明（Tip） |
 | `Graphics/Material/Material.h`・`MaterialManager.h`・`.cpp`（新しい） | B | .material の中身・読む・保存・Inspector の並び・描く形にする |
 | `Editor/Inspector/MaterialAssetEditor.h`・`.cpp`（新しい） | B | .material の Inspector（Undo つき） |
@@ -88,7 +88,7 @@ Shader の層        .shader（#META・#PROGRAM・#PROPERTIES・#HLSL）
 | `Shader/Data/Decal/HitShape.hlsli.shader`・`HitboxTelegraph.hlsli.shader`・`HitboxTelegraph.PS.shader`（新しい） | D | 当たりと同じ式・予告の値・予告の既定の Shader |
 | `Components/Combat/HitboxTelegraphComponent.h`・`Systems/Combat/HitboxTelegraphSystem.h`・`.cpp`（新しい） | D | Hitbox Telegraph |
 | `Resources/Materials/HitboxTelegraph.material`（新しい） | D | 予告の既定のマテリアル |
-| `Systems/EngineSystems.cpp`・`MyEngine_v1.vcxproj`・`.filters` | B・C・D | 初期化・描く順・ファイルを足す |
+| `Systems/EngineSystems.cpp`・`HTTEngine.vcxproj`・`.filters` | B・C・D | 初期化・描く順・ファイルを足す |
 | `Sandbox/Resources/curves`・`materials`・`shaders`・`scenes`（新しい） | E | テスト用の Curve・マテリアル・ゲームの .shader・シーン |
 
 ### 0.3 使い方
@@ -97,7 +97,7 @@ Shader の層        .shader（#META・#PROGRAM・#PROPERTIES・#HLSL）
 
 **キャラに塗らない**：プレイヤー・ボスの体の Model Renderer・Primitive Renderer の **Receive Decals** を外す（不透明なときだけ効く）。
 
-**見た目を変える**：Project ウィンドウの **Create → Material** で .material を作り、Inspector で **Shader** に `MyEngine/Shader/Data/Decal/HitboxTelegraph.PS.shader` を選ぶ。色・縁の太さなどの欄が出るので直して、Hitbox Telegraph の Material で選ぶ。攻撃の種類ごとに .material を分ける（同じファイルを選んだ物は、みんな同じ見た目）。
+**見た目を変える**：Project ウィンドウの **Create → Material** で .material を作り、Inspector で **Shader** に `HTTEngine/Shader/Data/Decal/HitboxTelegraph.PS.shader` を選ぶ。色・縁の太さなどの欄が出るので直して、Hitbox Telegraph の Material で選ぶ。攻撃の種類ごとに .material を分ける（同じファイルを選んだ物は、みんな同じ見た目）。
 
 **時間で値を動かす（コードを書かない）**：値の下の **〜 Curve** に .curve を選ぶと、**End** の欄が出る。Curve の横軸は描き手が渡す 0〜1（予告なら Warning の進み具合）、縦軸 0 で上の値、1 で End の値（間は補間、外ははみ出す）。
 
@@ -148,7 +148,7 @@ mask:      Texture "Mask"                                      // Texture：値�
 | 値ごとの Curve | **始まりと終わりを、Curve の出力で補間** | Float・Color・Vector に同じ形で使える。色の合いも変わる |
 | ゲームの .shader | **#META の path: をやめて、場所から決める**。resources の下を全部読む（名前は Project/〜） | 同じことを2か所に書かない。エンジンの名前は今のまま |
 | BRDF の表の PS の名前 | **`BrdfLut` にそろえる**（ファイル名を `BrdfLut.PS.shader` に。`GetBrdfLUT` も `GetBrdfLut` に） | 命名を統一する。名前はファイル名から作るので、ファイル名を直せばコードは今の `BrdfLutPS` のまま |
-| 写す手順 | **`MyEngine.props` に1つにまとめる**（ゲーム＝exe を作るプロジェクトのビルドの後）。.shader は写し先を消してから全部写す、Resources は変わった物だけ写して元に無い物を消す | 上書きで写すだけだと、消した・改名した（大文字だけでも）ファイルが残り、Release で止まる（写しで止まった）。.shader はファイル名から名前を作るので、大文字・小文字までそろえる。Resources はパスで読むので、大文字・小文字の違いは困らない |
+| 写す手順 | **`HTTEngine.props` に1つにまとめる**（ゲーム＝exe を作るプロジェクトのビルドの後）。.shader は写し先を消してから全部写す、Resources は変わった物だけ写して元に無い物を消す | 上書きで写すだけだと、消した・改名した（大文字だけでも）ファイルが残り、Release で止まる（写しで止まった）。.shader はファイル名から名前を作るので、大文字・小文字までそろえる。Resources はパスで読むので、大文字・小文字の違いは困らない |
 | 床への載せ方 | **デカール**（深度から位置を戻す） | 坂・段差・凹凸に張り付く。高さ（Height）の外は塗らないので、当たりとずれない |
 | 塗らない物 | **描く Component ごとの Receive Decals**。受けない物はステンシルの一番上のビット | Unity HDRP・Unreal と同じ。UI のマスクは下の 7 ビットだけを使う |
 | 描く仕組みの分け方 | **Graphics に汎用のデカール＋Decal Renderer、予告は Combat の Hitbox Telegraph** | Graphics は Hitbox を知らない。影・あと・魔法陣も同じ描画で描ける |
@@ -221,21 +221,21 @@ mask:      Texture "Mask"                                      // Texture：値�
 
 | .shader | 作る .hlsl | 名前 | .material が指すパス |
 |---|---|---|---|
-| エンジンの `Model/Unlit.PS.shader` | `Model/Unlit.PS.hlsl` | `UnlitPS` | `MyEngine/Shader/Data/Model/Unlit.PS.shader` |
+| エンジンの `Model/Unlit.PS.shader` | `Model/Unlit.PS.hlsl` | `UnlitPS` | `HTTEngine/Shader/Data/Model/Unlit.PS.shader` |
 | エンジンの `Buffers/Camera.hlsli.shader` | `Buffers/Camera.hlsli`（Include は .hlsl を付けない） | （Include は名前を付けない） | — |
 | ゲームの `resources/shaders/Ring.PS.shader` | `Project/shaders/Ring.PS.hlsl` | `Project/shaders/RingPS` | `resources/shaders/Ring.PS.shader` |
 
 エンジンの .shader の `path:` は全部、この決め方と同じだった（`IBL/BrdfLUT.PS.shader` の `path:` だけが `BrdfLut` だったので、ほかの名前に合わせてファイル名を `BrdfLut.PS.shader` に直す）。ゲームの .hlsl は `Generated/Project/` の下に作るので、エンジンの物と場所がぶつからない。include は今までどおり `Generated` からの名前で書けるので、ゲームの .shader から `"Decal/Decal.hlsli"` などのエンジンの部品を使える。
 
-.material が指すパスは、読む場所（Debug はエンジンのフォルダ、Release は exe の隣の写し）に関係なく `MyEngine/Shader/Data/〜` にそろえる。区切り（/ と \）・`./` は `ToPathKey` でそろえてから引く。
+.material が指すパスは、読む場所（Debug はエンジンのフォルダ、Release は exe の隣の写し）に関係なく `HTTEngine/Shader/Data/〜` にそろえる。区切り（/ と \）・`./` は `ToPathKey` でそろえてから引く。
 
-**写し先も元とそろえる**：名前をファイル名から作るので、Release が読む写し（ゲームを起動するフォルダの `MyEngine\Shader\Data`）のファイル名が元と違うと、名前も違ってしまう。Windows のファイルの名前は大文字・小文字を区別しないので、上書きで写すと「`BrdfLUT.PS.shader` に `BrdfLut.PS.shader` の中身を書く」ことになり、名前は写し先の古い方（`BrdfLUT`）のまま残る。消した・動かしたファイルも残るので、同じ名前の Shader が2つになって止まる。そこで .shader は**写し先を消してから全部写す**（A-9）。60 個ほどの小さいファイルなので、毎回写しても速い。Resources は大きいファイル（画像・モデル）があり、パスで読むので大文字・小文字の違いは困らないから、変わった物だけ写して元に無い物を消す。
+**写し先も元とそろえる**：名前をファイル名から作るので、Release が読む写し（ゲームを起動するフォルダの `HTTEngine\Shader\Data`）のファイル名が元と違うと、名前も違ってしまう。Windows のファイルの名前は大文字・小文字を区別しないので、上書きで写すと「`BrdfLUT.PS.shader` に `BrdfLut.PS.shader` の中身を書く」ことになり、名前は写し先の古い方（`BrdfLUT`）のまま残る。消した・動かしたファイルも残るので、同じ名前の Shader が2つになって止まる。そこで .shader は**写し先を消してから全部写す**（A-9）。60 個ほどの小さいファイルなので、毎回写しても速い。Resources は大きいファイル（画像・モデル）があり、パスで読むので大文字・小文字の違いは困らないから、変わった物だけ写して元に無い物を消す。
 
 ```
 ビルド（ゲーム＝exe を作るプロジェクト）
-  └→ MyEngine.props の CopyMyEngineRuntimeFiles
-        MyEngine\Shader\Data：消す → 全部写す        （名前の大文字・小文字まで元と同じ）
-        MyEngine\Resources  ：変わった物だけ写す → 元に無い物を消す
+  └→ HTTEngine.props の CopyHTTEngineRuntimeFiles
+        HTTEngine\Shader\Data：消す → 全部写す        （名前の大文字・小文字まで元と同じ）
+        HTTEngine\Resources  ：変わった物だけ写す → 元に無い物を消す
 ```
 
 ### 1.4 マテリアルを描く形にする（`MaterialManager::Resolve`）
@@ -493,7 +493,7 @@ void ShaderCompiler::AppendConstantVariables(ID3D12ShaderReflectionType* type, U
 #include <string_view>
 #include <vector>
 
-#include "MyEngine/Math/Vector4.h"
+#include "HTTEngine/Math/Vector4.h"
 
 // .shader の #PROPERTIES（マテリアルの値の意味）と、それを定数バッファの中の場所に結んだ物
 // 並び・場所・大きさはリフレクション（ShaderConstantBuffer）から取り、#PROPERTIES には意味（種類・表示名・既定値・範囲）だけを書く
@@ -574,9 +574,9 @@ struct ShaderPropertyLayout {
 #include <unordered_map>
 #include <vector>
 
-#include "MyEngine/Graphics/Pipeline/RenderStates.h"
-#include "MyEngine/Graphics/Pipeline/ShaderCompiler.h"
-#include "MyEngine/Graphics/Pipeline/ShaderProperty.h"
+#include "HTTEngine/Graphics/Pipeline/RenderStates.h"
+#include "HTTEngine/Graphics/Pipeline/ShaderCompiler.h"
+#include "HTTEngine/Graphics/Pipeline/ShaderProperty.h"
 
 // #META（全 .shader 共通）
 struct ShaderMeta {
@@ -607,7 +607,7 @@ struct ShaderDefinition {
 	std::vector<ShaderPropertyDef> properties; // #PROPERTIES（マテリアルの値の意味）
 	std::string hlslBody;
 	std::string source;    // 読んだ .shader のファイル名（エラーに出す）
-	std::string assetPath; // .material が指すパス（"MyEngine/Shader/Data/Model/Unlit.PS.shader"・"resources/shaders/Floor.PS.shader"）
+	std::string assetPath; // .material が指すパス（"HTTEngine/Shader/Data/Model/Unlit.PS.shader"・"resources/shaders/Floor.PS.shader"）
 	std::string name;      // 名前（エンジンの物は "UnlitPS"、ゲームの物は "Project/shaders/FloorPS"）
 };
 // レジストリ：1コンパイル単位（名前引き）
@@ -663,8 +663,8 @@ public:
 
 	/// <summary>
 	/// .shader を読むフォルダを決める
-	/// <para>Release 以外：エンジンのフォルダ（MyEngine.props の MYENGINE_ROOT_DIR）を直接読む。.shader を直したら、次の起動で反映される</para>
-	/// <para>Release・エンジンのフォルダが無い PC：exe の隣にコピーされた MyEngine/Shader/Data</para>
+	/// <para>Release 以外：エンジンのフォルダ（HTTEngine.props の HTTENGINE_ROOT_DIR）を直接読む。.shader を直したら、次の起動で反映される</para>
+	/// <para>Release・エンジンのフォルダが無い PC：exe の隣にコピーされた HTTEngine/Shader/Data</para>
 	/// </summary>
 	static std::filesystem::path FindDataDir();
 
@@ -681,7 +681,7 @@ public:
 	/// <summary>
 	/// PS の .shader のパスから描画プログラムの番号を探す（.material が Shader を引く。#PROGRAM の無い .shader・知らないパスなら無し）
 	/// </summary>
-	/// <param name="assetPath">.shader のパス（"MyEngine/Shader/Data/〜"・"resources/〜"。区切りは / でも \ でもよい）</param>
+	/// <param name="assetPath">.shader のパス（"HTTEngine/Shader/Data/〜"・"resources/〜"。区切りは / でも \ でもよい）</param>
 	static std::optional<size_t> FindProgramByPath(std::string_view assetPath);
 
 	// ===== アセットの番号（AssetType::Shader・.material の Shader）。番号＝描画プログラムの番号 + 1（0 は未選択）=====
@@ -710,7 +710,7 @@ private:
 	// 読むフォルダの違い（エンジンかゲームか）
 	struct FolderOrigin {
 		std::wstring generatedPrefix; // 作る .hlsl の場所の頭（エンジンは空、ゲームは "Project/"）
-		std::string assetPrefix;      // .material が指すパスの頭（"MyEngine/Shader/Data/"・"resources/"）
+		std::string assetPrefix;      // .material が指すパスの頭（"HTTEngine/Shader/Data/"・"resources/"）
 		std::string namePrefix;       // 名前の頭（エンジンは空、ゲームは "Project/"）
 		bool keepFolderInName = false; // 名前にフォルダを入れるか（ゲームは入れる。エンジンは今までどおりファイル名だけ）
 	};
@@ -761,8 +761,8 @@ private:
 
 #include <externals/magic_enum/magic_enum.hpp>
 
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/String/ConvertString.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/String/ConvertString.h"
 
 // 静的メンバ変数
 std::unique_ptr<ShaderPackageLoader> ShaderPackageLoader::instance_ = nullptr;
@@ -819,7 +819,7 @@ void ShaderPackageLoader::Release() {
 //=============================================================================
 size_t ShaderPackageLoader::GetProgramIndex(DrawCategory c, ShadingType s) {
 	auto it = instance_->programIndexByCatShading_.find(DrawKey(c, s));
-	MY_ASSERT_MSG(it != instance_->programIndexByCatShading_.end(), std::format("program ({}/{}) が未登録", magic_enum::enum_name(c), magic_enum::enum_name(s)));
+	HTT_ASSERT_MSG(it != instance_->programIndexByCatShading_.end(), std::format("program ({}/{}) が未登録", magic_enum::enum_name(c), magic_enum::enum_name(s)));
 	return it->second;
 }
 
@@ -847,7 +847,7 @@ const std::string& ShaderPackageLoader::GetProgramPath(uint32_t handle) {
 
 const ShaderReflection& ShaderPackageLoader::GetShaderReflection(const std::string& name) {
 	auto it = instance_->shadersByName_.find(name);
-	MY_ASSERT_MSG(it != instance_->shadersByName_.end(), std::format("shader '{}' が未登録です", name));
+	HTT_ASSERT_MSG(it != instance_->shadersByName_.end(), std::format("shader '{}' が未登録です", name));
 	const ShaderEntry& s = it->second;
 	return ShaderCompiler::CompileShaderReflection(s.path, s.profile, s.entry);
 }
@@ -866,7 +866,7 @@ const ShaderPropertyLayout& ShaderPackageLoader::GetPropertyLayout(size_t index)
 //=============================================================================
 // ===== エンジン =====
 void ShaderPackageLoader::LoadAll(const std::filesystem::path& dataDir) {
-	// .material が指すパスは、読む場所（エンジンのフォルダか exe の隣か）に関係なく "MyEngine/Shader/Data/〜" にそろえる
+	// .material が指すパスは、読む場所（エンジンのフォルダか exe の隣か）に関係なく "HTTEngine/Shader/Data/〜" にそろえる
 	FolderOrigin origin;
 	origin.assetPrefix = ToUtf8(std::filesystem::path(kShaderDataDir)) + "/";
 	LoadFolder(dataDir, origin);
@@ -922,9 +922,9 @@ void ShaderPackageLoader::LoadFolder(const std::filesystem::path& dir, const Fol
 //=============================================================================
 std::filesystem::path ShaderPackageLoader::FindDataDir() {
 	std::filesystem::path dataDir = kShaderDataDir; // 見つからないときはexeの隣をコピー
-#ifdef MYENGINE_ROOT_DIR
+#ifdef HTTENGINE_ROOT_DIR
 	// Release以外: エンジンのフォルダの.shaderを直接読む
-	const std::filesystem::path engineDataDir = std::filesystem::path(MYENGINE_ROOT_DIR) / kShaderDataDir;
+	const std::filesystem::path engineDataDir = std::filesystem::path(HTTENGINE_ROOT_DIR) / kShaderDataDir;
 	std::error_code error;
 	if (std::filesystem::is_directory(engineDataDir, error)) {
 		dataDir = engineDataDir;
@@ -938,7 +938,7 @@ std::filesystem::path ShaderPackageLoader::FindDataDir() {
 //=============================================================================
 // 場所から .hlsl の場所・名前・パスを決める
 //=============================================================================
-// "Model/Unlit.PS.shader"（エンジン）     → .hlsl "Model/Unlit.PS.hlsl"          名前 "UnlitPS"               パス "MyEngine/Shader/Data/Model/Unlit.PS.shader"
+// "Model/Unlit.PS.shader"（エンジン）     → .hlsl "Model/Unlit.PS.hlsl"          名前 "UnlitPS"               パス "HTTEngine/Shader/Data/Model/Unlit.PS.shader"
 // "shaders/Floor.PS.shader"（ゲーム）     → .hlsl "Project/shaders/Floor.PS.hlsl" 名前 "Project/shaders/FloorPS" パス "resources/shaders/Floor.PS.shader"
 // "Buffers/Camera.hlsli.shader"（Include）→ .hlsl ではなく "Buffers/Camera.hlsli"（include で書く名前のまま）
 void ShaderPackageLoader::ApplyLocation(ShaderDefinition& def, const std::filesystem::path& relativePath, const FolderOrigin& origin) {
@@ -993,7 +993,7 @@ void ShaderPackageLoader::Register(const ShaderDefinition& def) {
 	if (def.meta.stage != ShaderMeta::Stage::Include) {
 		// 同じ名前が2つあると、後の方が前の方を隠してしまう（どちらが使われるか分からない）ので止める
 		const auto existing = instance_->shadersByName_.find(def.name);
-		MY_ASSERT_MSG(existing == instance_->shadersByName_.end(),
+		HTT_ASSERT_MSG(existing == instance_->shadersByName_.end(),
 		    std::format("Shader の名前 '{}' が2つあります（{} と {}）。ファイル名を変えてください", def.name, existing != instance_->shadersByName_.end() ? existing->second.assetPath : "", def.assetPath));
 		instance_->shadersByName_.emplace(def.name, ShaderEntry{def.meta.stage, def.meta.path, def.meta.profile, def.meta.entry, def.assetPath});
 		LogManager::Log(std::format("ShaderName: {}", def.name));
@@ -1059,9 +1059,9 @@ ShaderPropertyLayout ShaderPackageLoader::MakePropertyLayout(const ProgramEntry&
 	// --- #PROPERTIES の1行ずつ、場所と成分の数を決める（名前が無い・型が合わないのは .shader の書き間違いなので止める）---
 	for (const ShaderPropertyDef& def : program.propertyDefs) {
 		const ShaderConstantVariable* variable = buffer->FindVariable(def.name);
-		MY_ASSERT_MSG(variable != nullptr, std::format("{}: #PROPERTIES の '{}' が {} の中にありません", program.assetPath, def.name, kMaterialConstantBufferName));
+		HTT_ASSERT_MSG(variable != nullptr, std::format("{}: #PROPERTIES の '{}' が {} の中にありません", program.assetPath, def.name, kMaterialConstantBufferName));
 		uint32_t components = 1;
-		MY_ASSERT_MSG(MatchPropertyType(def.type, *variable, components),
+		HTT_ASSERT_MSG(MatchPropertyType(def.type, *variable, components),
 		    std::format("{}: #PROPERTIES の '{}'（{}）と、{} の中の型が合いません（Float・Range は float、Toggle は uint、Vector は float〜float4、Color は float3・float4、Texture は uint）", program.assetPath, def.name,
 		        magic_enum::enum_name(def.type), kMaterialConstantBufferName));
 		layout.properties.push_back({def, variable->offset, components});
@@ -1076,7 +1076,7 @@ ShaderPropertyLayout ShaderPackageLoader::MakePropertyLayout(const ProgramEntry&
 ShaderDefinition ShaderPackageLoader::ParseFile(const std::filesystem::path& path) {
 	// バイナリモードで開く
 	std::ifstream ifs(path, std::ios::binary);
-	MY_ASSERT_MSG(ifs.is_open(), std::format(".shaderを開けません: {}", ToUtf8(path)));
+	HTT_ASSERT_MSG(ifs.is_open(), std::format(".shaderを開けません: {}", ToUtf8(path)));
 	// ファイルを先頭から終端まで見る
 	std::string content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
 	return ParseText(content, ToUtf8(path.filename()));
@@ -1171,7 +1171,7 @@ ShaderDefinition ShaderPackageLoader::ParseText(std::string_view text, std::stri
 ShaderMeta ShaderPackageLoader::ParseMeta(const std::vector<std::string>& lines, std::string_view src) {
 	auto kv = ToKeyValues(lines, src);
 	// 作る .hlsl の場所は .shader の場所から決める（2か所に書くと、片方だけ直したときにずれる）
-	MY_ASSERT_MSG(!kv.contains("path"), std::format("{}: #META の path: はもう使いません。行を消してください（.hlsl の場所は .shader の場所から決めます）", src));
+	HTT_ASSERT_MSG(!kv.contains("path"), std::format("{}: #META の path: はもう使いません。行を消してください（.hlsl の場所は .shader の場所から決めます）", src));
 	ShaderMeta m;
 	m.stage = ParseEnum<ShaderMeta::Stage>(Require(kv, "stage", src), "stage", src);
 
@@ -1225,7 +1225,7 @@ std::vector<ShaderPropertyDef> ShaderPackageLoader::ParseProperties(const std::v
 		}
 		ShaderPropertyDef def = ParsePropertyLine(line, src);
 		const bool isDuplicate = std::ranges::any_of(defs, [&def](const ShaderPropertyDef& other) { return other.name == def.name; });
-		MY_ASSERT_MSG(!isDuplicate, std::format("{}: #PROPERTIES の '{}' が2つあります", src, def.name));
+		HTT_ASSERT_MSG(!isDuplicate, std::format("{}: #PROPERTIES の '{}' が2つあります", src, def.name));
 		defs.push_back(std::move(def));
 	}
 	return defs;
@@ -1243,7 +1243,7 @@ ShaderPropertyDef ShaderPackageLoader::ParsePropertyLine(std::string_view line, 
 	ShaderPropertyDef def;
 	// --- 変数名 ---
 	const size_t colon = line.find(':');
-	MY_ASSERT_MSG(colon != std::string_view::npos, std::format("{}: #PROPERTIES に ':' がありません -> '{}'", src, std::string(line)));
+	HTT_ASSERT_MSG(colon != std::string_view::npos, std::format("{}: #PROPERTIES に ':' がありません -> '{}'", src, std::string(line)));
 	def.name = std::string(Trim(line.substr(0, colon)));
 	std::string_view rest = Trim(line.substr(colon + 1));
 
@@ -1258,12 +1258,12 @@ ShaderPropertyDef ShaderPackageLoader::ParsePropertyLine(std::string_view line, 
 			return false;
 		}
 		const size_t close = rest.find('"', 1);
-		MY_ASSERT_MSG(close != std::string_view::npos, std::format("{}: #PROPERTIES の \" が閉じていません", src));
+		HTT_ASSERT_MSG(close != std::string_view::npos, std::format("{}: #PROPERTIES の \" が閉じていません", src));
 		out = std::string(rest.substr(1, close - 1));
 		rest = Trim(rest.substr(close + 1));
 		return true;
 	};
-	MY_ASSERT_MSG(takeQuoted(def.displayName), std::format("{}: #PROPERTIES の '{}' に \"表示名\" がありません", src, def.name));
+	HTT_ASSERT_MSG(takeQuoted(def.displayName), std::format("{}: #PROPERTIES の '{}' に \"表示名\" がありません", src, def.name));
 	takeQuoted(def.tooltip);
 
 	// --- 値（, か空白で区切った数）---
@@ -1279,14 +1279,14 @@ ShaderPropertyDef ShaderPackageLoader::ParsePropertyLine(std::string_view line, 
 		float value = 0.0f;
 		// std::from_chars：文字列から数を読む（例外を投げず、ロケールにも左右されない）。読めた所までのポインタと、エラーを返す
 		const auto [last, result] = std::from_chars(token.data(), token.data() + token.size(), value);
-		MY_ASSERT_MSG(result == std::errc() && last == token.data() + token.size(), std::format("{}: #PROPERTIES の '{}' の値 '{}' が数ではありません", src, def.name, std::string(token)));
+		HTT_ASSERT_MSG(result == std::errc() && last == token.data() + token.size(), std::format("{}: #PROPERTIES の '{}' の値 '{}' が数ではありません", src, def.name, std::string(token)));
 		numbers.push_back(value);
 		pos = (end == std::string_view::npos) ? rest.size() : end;
 	}
 
 	// --- 種類ごとの値の数 ---
 	const auto require = [&](bool isValid, std::string_view expected) {
-		MY_ASSERT_MSG(isValid, std::format("{}: #PROPERTIES の '{}'（{}）の値は {} にしてください", src, def.name, magic_enum::enum_name(def.type), expected));
+		HTT_ASSERT_MSG(isValid, std::format("{}: #PROPERTIES の '{}'（{}）の値は {} にしてください", src, def.name, magic_enum::enum_name(def.type), expected));
 	};
 	switch (def.type) {
 	case ShaderPropertyType::Float:
@@ -1338,7 +1338,7 @@ std::string_view ShaderPackageLoader::Trim(std::string_view s) {
 
 std::string ShaderPackageLoader::Require(const std::unordered_map<std::string, std::string>& kv, std::string_view key, std::string_view src) {
 	auto it = kv.find(std::string(key));
-	MY_ASSERT_MSG(it != kv.end(), std::format("{}: 必須フィールド '{}' がありません", src, std::string(key)));
+	HTT_ASSERT_MSG(it != kv.end(), std::format("{}: 必須フィールド '{}' がありません", src, std::string(key)));
 	return it->second;
 }
 
@@ -1356,7 +1356,7 @@ std::wstring ShaderPackageLoader::DefaultProfile(ShaderMeta::Stage s) {
 
 template<class E> E ShaderPackageLoader::ParseEnum(std::string_view s, std::string_view key, std::string_view src) {
 	auto e = magic_enum::enum_cast<E>(s);
-	MY_ASSERT_MSG(e.has_value(), std::format("{}: {}='{}' は無効な値です", src, std::string(key), std::string(s)));
+	HTT_ASSERT_MSG(e.has_value(), std::format("{}: {}='{}' は無効な値です", src, std::string(key), std::string(s)));
 	return *e;
 }
 
@@ -1369,7 +1369,7 @@ std::unordered_map<std::string, std::string> ShaderPackageLoader::ToKeyValues(co
 		}
 
 		size_t colon = line.find(':');
-		MY_ASSERT_MSG(colon != std::string_view::npos, std::format("{}: ':' がありません -> '{}'", src, std::string(line)));
+		HTT_ASSERT_MSG(colon != std::string_view::npos, std::format("{}: ':' がありません -> '{}'", src, std::string(line)));
 		kv[std::string(Trim(line.substr(0, colon)))] = std::string(Trim(line.substr(colon + 1)));
 	}
 	return kv;
@@ -1390,7 +1390,7 @@ std::unordered_map<std::string, std::string> ShaderPackageLoader::ToKeyValues(co
 55 個全部にあるので、PowerShell で消す（エンジンのリポジトリの一番上で）。`path :`（空白あり）の物もある。
 
 ```powershell
-Get-ChildItem project/MyEngine/Shader/Data -Recurse -Filter *.shader | ForEach-Object { $lines = Get-Content -LiteralPath $_.FullName -Encoding UTF8; $kept = $lines | Where-Object { $_ -notmatch '^\s*path\s*:' }; if ($kept.Count -ne $lines.Count) { [System.IO.File]::WriteAllLines($_.FullName, [string[]]$kept, (New-Object System.Text.UTF8Encoding $false)) } }
+Get-ChildItem project/HTTEngine/Shader/Data -Recurse -Filter *.shader | ForEach-Object { $lines = Get-Content -LiteralPath $_.FullName -Encoding UTF8; $kept = $lines | Where-Object { $_ -notmatch '^\s*path\s*:' }; if ($kept.Count -ne $lines.Count) { [System.IO.File]::WriteAllLines($_.FullName, [string[]]$kept, (New-Object System.Text.UTF8Encoding $false)) } }
 ```
 
 消し残しがあると、起動時に「#META の path: はもう使いません」で止まる（どのファイルかが出る）。
@@ -1402,10 +1402,10 @@ Get-ChildItem project/MyEngine/Shader/Data -Recurse -Filter *.shader | ForEach-O
 大文字だけの改名なので、`git mv` で行う（Windows でもできる。エクスプローラーで名前を変えると、git が改名と分からないことがある）。エンジンのリポジトリの一番上で。
 
 ```powershell
-git mv project/MyEngine/Shader/Data/IBL/BrdfLUT.PS.shader project/MyEngine/Shader/Data/IBL/BrdfLut.PS.shader
+git mv project/HTTEngine/Shader/Data/IBL/BrdfLUT.PS.shader project/HTTEngine/Shader/Data/IBL/BrdfLut.PS.shader
 ```
 
-`MyEngine_v1.vcxproj`・`.filters` の `MyEngine\Shader\Data\IBL\BrdfLUT.PS.shader` も `BrdfLut.PS.shader` に直す。
+`HTTEngine.vcxproj`・`.filters` の `HTTEngine\Shader\Data\IBL\BrdfLUT.PS.shader` も `BrdfLut.PS.shader` に直す。
 
 `Graphics/IBL/IBLEnvironment.h`（使っている所は無い）
 
@@ -1413,53 +1413,53 @@ git mv project/MyEngine/Shader/Data/IBL/BrdfLUT.PS.shader project/MyEngine/Shade
 	RenderTexture* GetBrdfLut() const { return brdfLut_.get(); }
 ```
 
-### A-9 エンジンのファイルを写す手順を `MyEngine.props` に1つにまとめる
+### A-9 エンジンのファイルを写す手順を `HTTEngine.props` に1つにまとめる
 
-今は、エンジンの .shader と Resources を「ゲームを起動するフォルダの `MyEngine\`」へ写す手順が2か所にある（エンジンの lib のビルド後＝ゲームのソリューションから使うとき、と Sandbox のビルド後）。どちらも上書きで写すだけなので、**消した・動かした・名前を変えた（大文字だけでも）ファイルが、写し先に古いまま残る**。Release はこの写しを読むので、A-8 の改名をすると `BrdfLUT.PS.shader` の名前のまま残って止まり、フォルダを動かすと同じ名前の Shader が2つになって止まる（どちらも写しで起きた）。
+今は、エンジンの .shader と Resources を「ゲームを起動するフォルダの `HTTEngine\`」へ写す手順が2か所にある（エンジンの lib のビルド後＝ゲームのソリューションから使うとき、と Sandbox のビルド後）。どちらも上書きで写すだけなので、**消した・動かした・名前を変えた（大文字だけでも）ファイルが、写し先に古いまま残る**。Release はこの写しを読むので、A-8 の改名をすると `BrdfLUT.PS.shader` の名前のまま残って止まり、フォルダを動かすと同じ名前の Shader が2つになって止まる（どちらも写しで起きた）。
 
-ゲームが読む `MyEngine.props` に1つにまとめ、写し先が元とそろうようにする（1.3）。
+ゲームが読む `HTTEngine.props` に1つにまとめ、写し先が元とそろうようにする（1.3）。
 
-`MyEngine.props`：vcpkg の `Target` の後（`</Project>` の前）に足す。
+`HTTEngine.props`：vcpkg の `Target` の後（`</Project>` の前）に足す。
 
 ```xml
 	<!-- ===== エンジンの実行に要るファイルを、ゲームを起動するフォルダへ写す ===== -->
-	<!-- ゲーム（exe を作るプロジェクト）をビルドした後に、エンジンの .shader と Resources を、起動するフォルダ（ゲームのプロジェクトのフォルダ）の MyEngine\ へ写す -->
+	<!-- ゲーム（exe を作るプロジェクト）をビルドした後に、エンジンの .shader と Resources を、起動するフォルダ（ゲームのプロジェクトのフォルダ）の HTTEngine\ へ写す -->
 	<!-- Release とエンジンのフォルダが無い PC は、ここを読む（Debug・Development はエンジンのフォルダの .shader を直接読む。ShaderPackageLoader::FindDataDir） -->
 	<!-- 写し先は、ゲームのリポジトリの .gitignore で git に入れない -->
 	<PropertyGroup>
-		<MyEngineRuntimeDir>$(MSBuildProjectDirectory)\MyEngine\</MyEngineRuntimeDir>
+		<HTTEngineRuntimeDir>$(MSBuildProjectDirectory)\HTTEngine\</HTTEngineRuntimeDir>
 	</PropertyGroup>
-	<Target Name="CopyMyEngineRuntimeFiles" AfterTargets="Build" Condition="'$(ConfigurationType)'=='Application'">
+	<Target Name="CopyHTTEngineRuntimeFiles" AfterTargets="Build" Condition="'$(ConfigurationType)'=='Application'">
 		<!-- ~~~ 写す元（** はフォルダの下を全部。%(RecursiveDir) は ** に当たったフォルダの並び）~~~ -->
 		<ItemGroup>
-			<MyEngineShaderFile Include="$(MyEngineRoot)MyEngine\Shader\Data\**\*" />
-			<MyEngineResourceFile Include="$(MyEngineRoot)Resources\**\*" />
+			<HTTEngineShaderFile Include="$(HTTEngineRoot)HTTEngine\Shader\Data\**\*" />
+			<HTTEngineResourceFile Include="$(HTTEngineRoot)Resources\**\*" />
 		</ItemGroup>
 
 		<!-- ~~~ .shader：写し先を消してから、全部写す ~~~ -->
 		<!-- ファイル名から Shader の名前を作るので、元と同じ名前にそろえる（上書きで写すと、大文字・小文字だけ変えた名前は写し先の古い方のまま残る） -->
 		<!-- 消した・動かした .shader も残らない（残ると、同じ名前の Shader が2つになって起動時に止まる）。60 個ほどの小さいファイルなので、毎回写しても速い -->
-		<RemoveDir Directories="$(MyEngineRuntimeDir)Shader\Data" />
-		<Copy SourceFiles="@(MyEngineShaderFile)" DestinationFiles="@(MyEngineShaderFile->'$(MyEngineRuntimeDir)Shader\Data\%(RecursiveDir)%(Filename)%(Extension)')" />
+		<RemoveDir Directories="$(HTTEngineRuntimeDir)Shader\Data" />
+		<Copy SourceFiles="@(HTTEngineShaderFile)" DestinationFiles="@(HTTEngineShaderFile->'$(HTTEngineRuntimeDir)Shader\Data\%(RecursiveDir)%(Filename)%(Extension)')" />
 
 		<!-- ~~~ Resources：変わった物だけ写し、元に無い物を消す（画像・モデルは大きいので、毎回は写さない）~~~ -->
 		<!-- パスで読むので、大文字・小文字の違いは読むときに困らない（Windows のファイルの名前は大文字・小文字を区別しない） -->
-		<Copy SourceFiles="@(MyEngineResourceFile)" DestinationFiles="@(MyEngineResourceFile->'$(MyEngineRuntimeDir)Resources\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(HTTEngineResourceFile)" DestinationFiles="@(HTTEngineResourceFile->'$(HTTEngineRuntimeDir)Resources\%(RecursiveDir)%(Filename)%(Extension)')" SkipUnchangedFiles="true" />
 		<ItemGroup>
-			<MyEngineCopiedResource Include="$(MyEngineRuntimeDir)Resources\**\*" />
-			<MyEngineStaleResource Include="@(MyEngineCopiedResource)" Exclude="@(MyEngineResourceFile->'$(MyEngineRuntimeDir)Resources\%(RecursiveDir)%(Filename)%(Extension)')" />
+			<HTTEngineCopiedResource Include="$(HTTEngineRuntimeDir)Resources\**\*" />
+			<HTTEngineStaleResource Include="@(HTTEngineCopiedResource)" Exclude="@(HTTEngineResourceFile->'$(HTTEngineRuntimeDir)Resources\%(RecursiveDir)%(Filename)%(Extension)')" />
 		</ItemGroup>
-		<Delete Files="@(MyEngineStaleResource)" />
+		<Delete Files="@(HTTEngineStaleResource)" />
 	</Target>
 ```
 
-`MyEngine_v1.vcxproj`：3つの構成（Debug・Release・Development）にある `<PostBuildEvent>`（`if /I "$(SolutionDir)"=="$(ProjectDir)" exit /b 0` と xcopy の2行）を、`<PostBuildEvent>` から `</PostBuildEvent>` まで消す。
+`HTTEngine.vcxproj`：3つの構成（Debug・Release・Development）にある `<PostBuildEvent>`（`if /I "$(SolutionDir)"=="$(ProjectDir)" exit /b 0` と xcopy の2行）を、`<PostBuildEvent>` から `</PostBuildEvent>` まで消す。
 
 `Sandbox/Sandbox.vcxproj`：ビルド後の xcopy の2行と、そのコメントを直す（dll を写す2行は残す）。
 
 ```xml
     <!-- ビルドの後：シェーダーのコンパイラ（dxcompiler.dll・dxil.dll）を exe の隣へ -->
-    <!-- エンジンの .shader と Resources を起動するフォルダ（このフォルダ）の MyEngine\ へ写すのは、MyEngine.props の CopyMyEngineRuntimeFiles（ゲームと同じ） -->
+    <!-- エンジンの .shader と Resources を起動するフォルダ（このフォルダ）の HTTEngine\ へ写すのは、HTTEngine.props の CopyHTTEngineRuntimeFiles（ゲームと同じ） -->
     <PostBuildEvent>
       <Command>
 copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxcompiler.dll" "$(TargetDir)dxcompiler.dll"
@@ -1468,17 +1468,17 @@ copy /Y "$(WindowsSdkDir)bin\$(TargetPlatformVersion)\x64\dxil.dll" "$(TargetDir
     </PostBuildEvent>
 ```
 
-AL4_01 などのゲームは、エンジン（サブモジュール）を新しくすれば、この手順が自動で入る（写し先は今と同じ `project\MyEngine\`）。
+AL4_01 などのゲームは、エンジン（サブモジュール）を新しくすれば、この手順が自動で入る（写し先は今と同じ `project\HTTEngine\`）。
 
-### A-10 `MyEngine_v1.vcxproj`・`.filters`
+### A-10 `HTTEngine.vcxproj`・`.filters`
 
-`MyEngine\Graphics\Pipeline\ShaderProperty.h`（ClInclude）を足す。
+`HTTEngine\Graphics\Pipeline\ShaderProperty.h`（ClInclude）を足す。
 
 ### A-11 確かめること
 
 - 3構成でビルドが通る
 - 起動して、今までと同じ絵（Console に `[shader] 〜Shader/Data: 38 shaders / 12 programs`、`ShaderName: BrdfLutPS`）
-- Release でビルドすると、`Sandbox/MyEngine/Shader/Data/IBL/` が `BrdfLut.PS.shader` になる。Release で起動して止まらない
+- Release でビルドすると、`Sandbox/HTTEngine/Shader/Data/IBL/` が `BrdfLut.PS.shader` になる。Release で起動して止まらない
 
 ## パートB マテリアル（.material・MaterialManager・Inspector）
 
@@ -1505,13 +1505,13 @@ AL4_01 などのゲームは、エンジン（サブモジュール）を新し�
 include に足す。
 
 ```cpp
-#include "MyEngine/Physics/PhysicMaterialManager.h"
-#include "MyEngine/Graphics/Material/MaterialManager.h"
-#include "MyEngine/Graphics/Model/ModelManager.h"
-#include "MyEngine/Graphics/Text/FontManager.h"
-#include "MyEngine/Graphics/Texture/TextureManager.h"
-#include "MyEngine/Graphics/Animation/AnimationManager.h"
-#include "MyEngine/Graphics/Pipeline/ShaderPackageLoader.h"
+#include "HTTEngine/Physics/PhysicMaterialManager.h"
+#include "HTTEngine/Graphics/Material/MaterialManager.h"
+#include "HTTEngine/Graphics/Model/ModelManager.h"
+#include "HTTEngine/Graphics/Text/FontManager.h"
+#include "HTTEngine/Graphics/Texture/TextureManager.h"
+#include "HTTEngine/Graphics/Animation/AnimationManager.h"
+#include "HTTEngine/Graphics/Pipeline/ShaderPackageLoader.h"
 ```
 
 `GetAssetPath` の `case AssetType::Timeline:` の後に足す。
@@ -1564,7 +1564,7 @@ std::vector<std::filesystem::path> SearchRootsOf(AssetType type) {
 		const std::vector<std::filesystem::path> systemFolders = FontManager::GetSystemFontFolders();
 		roots.insert(roots.end(), systemFolders.begin(), systemFolders.end());
 	}
-	// Shader は、エンジンの .shader の置き場（MyEngine/Shader/Data）も探す（エンジンの既定の Shader も選べるように）
+	// Shader は、エンジンの .shader の置き場（HTTEngine/Shader/Data）も探す（エンジンの既定の Shader も選べるように）
 	if (type == AssetType::Shader) {
 		roots.emplace_back(kShaderDataDir);
 	}
@@ -1639,9 +1639,9 @@ std::vector<std::filesystem::path> SearchRootsOf(AssetType type) {
 #include <string>
 #include <vector>
 
-#include "MyEngine/Graphics/Pipeline/RenderStates.h"
-#include "MyEngine/Graphics/Pipeline/ShaderProperty.h"
-#include "MyEngine/Math/Vector4.h"
+#include "HTTEngine/Graphics/Pipeline/RenderStates.h"
+#include "HTTEngine/Graphics/Pipeline/ShaderProperty.h"
+#include "HTTEngine/Math/Vector4.h"
 
 // マテリアル（.material の中身）＝ 使う Shader ＋ その Shader の #PROPERTIES の値 ＋ 描くときの状態の上書き
 // 同じファイルを選んだ物はみんな同じ見た目になる（物ごとに変えたいときは、ファイルを分ける）
@@ -1705,7 +1705,7 @@ struct ResolvedMaterial {
 #include <string>
 #include <string_view>
 
-#include "MyEngine/Graphics/Material/Material.h"
+#include "HTTEngine/Graphics/Material/Material.h"
 
 // 前方宣言
 class ComponentUI;
@@ -1788,17 +1788,17 @@ public:
 
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/Curve/CurveManager.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/Graphics/Pipeline/ShaderPackageLoader.h"
-#include "MyEngine/Graphics/Texture/TextureManager.h"
-#include "MyEngine/Math/Color.h"
-#include "MyEngine/Math/MathUtility.h"
-#include "MyEngine/Scene/SceneSerializer.h"
-#include "MyEngine/String/ConvertString.h"
+#include "HTTEngine/Curve/CurveManager.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Graphics/Pipeline/ShaderPackageLoader.h"
+#include "HTTEngine/Graphics/Texture/TextureManager.h"
+#include "HTTEngine/Math/Color.h"
+#include "HTTEngine/Math/MathUtility.h"
+#include "HTTEngine/Scene/SceneSerializer.h"
+#include "HTTEngine/String/ConvertString.h"
 
 namespace {
 constexpr std::string_view kTypeName = "Material"; // 警告・Inspector の見出しに出す名前
@@ -1955,7 +1955,7 @@ void WriteUint(std::vector<std::byte>& constants, uint32_t offset, uint32_t valu
 // 初期化 / 解放
 //=============================================================================
 void MaterialManager::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<MaterialState>();
 }
 
@@ -1966,7 +1966,7 @@ void MaterialManager::Release() { state.reset(); }
 // 読み込み
 //=============================================================================
 uint32_t MaterialManager::Load(const std::filesystem::path& filePath) {
-	MY_ASSERT_MSG(state != nullptr, "MaterialManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "MaterialManager::Initialize()を先に呼んでください");
 	// --- 読み込み済みなら、同じ番号を返す ---
 	const std::string key = ToPathKey(filePath);
 	const auto cached = std::ranges::find(state->assets, key, &MaterialAsset::path);
@@ -2180,10 +2180,10 @@ public:
 
 #include <externals/imgui/imgui.h>
 
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/Editor/History/EditorHistory.h"
-#include "MyEngine/Editor/Inspector/AssetInspector.h"
-#include "MyEngine/Graphics/Material/MaterialManager.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Editor/History/EditorHistory.h"
+#include "HTTEngine/Editor/Inspector/AssetInspector.h"
+#include "HTTEngine/Graphics/Material/MaterialManager.h"
 
 namespace {
 constexpr std::string_view kTypeName = "Material"; // Inspector の見出しに出す名前
@@ -2253,13 +2253,13 @@ void MaterialAssetEditor::Initialize() { AssetInspector::Register(std::make_uniq
 include に足す。
 
 ```cpp
-#include "MyEngine/Curve/CurveManager.h"
-#include "MyEngine/Graphics/Material/MaterialManager.h"
+#include "HTTEngine/Curve/CurveManager.h"
+#include "HTTEngine/Graphics/Material/MaterialManager.h"
 ```
 
 ```cpp
-#include "MyEngine/Editor/Inspector/CurveAssetEditor.h"
-#include "MyEngine/Editor/Inspector/MaterialAssetEditor.h"
+#include "HTTEngine/Editor/Inspector/CurveAssetEditor.h"
+#include "HTTEngine/Editor/Inspector/MaterialAssetEditor.h"
 ```
 
 `Initialize` の `CurveManager::Initialize();` の下・`CurveAssetEditor::Initialize();` の下に足す。
@@ -2283,8 +2283,8 @@ include に足す。
 include に足す。
 
 ```cpp
-#include "MyEngine/Curve/CurveManager.h"
-#include "MyEngine/Graphics/Material/MaterialManager.h"
+#include "HTTEngine/Curve/CurveManager.h"
+#include "HTTEngine/Graphics/Material/MaterialManager.h"
 ```
 
 `DrawCreateMenu` の Curve の後（Timeline の前）に足す。
@@ -2297,15 +2297,15 @@ include に足す。
 		ImGui::SetItemTooltip("今のフォルダに作ります（Shader と値。Decal Renderer・Hitbox Telegraph の Material で選ぶ）");
 ```
 
-### B-9 `MyEngine_v1.vcxproj`・`.filters`
+### B-9 `HTTEngine.vcxproj`・`.filters`
 
-`MyEngine\Graphics\Material\Material.h`・`MaterialManager.h`・`MaterialManager.cpp`・`MyEngine\Editor\Inspector\MaterialAssetEditor.h`・`MaterialAssetEditor.cpp` を足す（フィルターは `MyEngine\Graphics\Material` を作る）。
+`HTTEngine\Graphics\Material\Material.h`・`MaterialManager.h`・`MaterialManager.cpp`・`HTTEngine\Editor\Inspector\MaterialAssetEditor.h`・`MaterialAssetEditor.cpp` を足す（フィルターは `HTTEngine\Graphics\Material` を作る）。
 
 ### B-10 確かめること
 
 - 3構成でビルドが通る
 - Project の **Create → Material** で .material ができる。選ぶと Inspector に Shader の欄が出る
-- Shader に `MyEngine/Shader/Data/Model/Unlit.PS.shader` を選ぶと Render States だけ出る（Unlit には #PROPERTIES が無い）。Shader の一覧に Include・VS・ポストエフェクトの PS が出ない
+- Shader に `HTTEngine/Shader/Data/Model/Unlit.PS.shader` を選ぶと Render States だけ出る（Unlit には #PROPERTIES が無い）。Shader の一覧に Include・VS・ポストエフェクトの PS が出ない
 
 ## パートC デカール（描く流れ・Decal Renderer・Receive Decals）
 
@@ -2572,7 +2572,7 @@ include に足す。
 //=============================================================================
 // ===== 読むだけで結ぶ =====
 void RenderTexture::BeginDepthRead() {
-	MY_ASSERT_MSG(isDepthReadable_, "深度を読むには、isDepthReadable で作ってください");
+	HTT_ASSERT_MSG(isDepthReadable_, "深度を読むには、isDepthReadable で作ってください");
 	// 書く状態 → 深度テストで読む ＋ PS で読む（DEPTH_READ と PIXEL_SHADER_RESOURCE は一緒にできる）
 	DirectXCommon::TransitionBarrier(depthResource_.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
 	DirectXCommon::GetCommandList()->OMSetRenderTargets(1, &rtvHandle_, false, &readOnlyDsvHandle_);
@@ -2673,8 +2673,8 @@ struct DecalRequest : DrawTarget {
 `.cpp`：include に足す。
 
 ```cpp
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/Graphics/Renderer/RenderContext.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/Graphics/Renderer/RenderContext.h"
 ```
 
 `Clear` に足す。
@@ -2700,7 +2700,7 @@ struct DecalRequest : DrawTarget {
 // ===== デカールのリクエスト =====
 void RenderQueue::Request(DecalRequest&& req) {
 	// 深度は読むだけの窓口で結んで描くので、書くことはできない（書く PSO で描くとデバッグレイヤーに止められる）
-	MY_ASSERT_MSG(req.depthMode != DepthMode::TestWrite, "デカールの深度は TestNoWrite か Disable にしてください（深度を読みながら描くので、書けません）");
+	HTT_ASSERT_MSG(req.depthMode != DepthMode::TestWrite, "デカールの深度は TestNoWrite か Disable にしてください（深度を読みながら描くので、書けません）");
 	instance_->decalRequests_.push_back(std::move(req));
 }
 ```
@@ -2896,9 +2896,9 @@ void RenderContext::DrawDecal(const DecalRequest& req, uint32_t depthIndex) {
 ```
 
 ```cpp
-#include "MyEngine/Graphics/Material/MaterialManager.h"
-#include "MyEngine/Graphics/Model/ModelManager.h"
-#include "MyEngine/Graphics/Pipeline/ShaderPackageLoader.h"
+#include "HTTEngine/Graphics/Material/MaterialManager.h"
+#include "HTTEngine/Graphics/Model/ModelManager.h"
+#include "HTTEngine/Graphics/Pipeline/ShaderPackageLoader.h"
 ```
 
 `PushMesh` の `req.depthMode = config.depthMode;` の後に足す。
@@ -2956,7 +2956,7 @@ void Renderer::DrawDecal(const DecalConfig& config, std::span<const std::byte> d
 	if (drawDataBuffer != nullptr) {
 		constexpr size_t kRegisterBytes = 16; // 定数バッファは 16 バイトずつ
 		const size_t alignedSize = (drawData.size() + kRegisterBytes - 1) / kRegisterBytes * kRegisterBytes;
-		MY_ASSERT_MSG(alignedSize == drawDataBuffer->size,
+		HTT_ASSERT_MSG(alignedSize == drawDataBuffer->size,
 		    std::format("{}: 描き手の値の大きさが違います（C++ {} バイト / HLSL の {} {} バイト）。構造体の並びをそろえてください", program.assetPath, drawData.size(), kDrawDataConstantBufferName, drawDataBuffer->size));
 	}
 
@@ -3148,19 +3148,19 @@ public:
 #include <array>
 #include <memory>
 
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Components/Rendering3D/DecalRendererComponent.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Editor/Viewport/SceneVisibility.h"
-#include "MyEngine/Graphics/Renderer/Renderer.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Components/Rendering3D/DecalRendererComponent.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Editor/Viewport/SceneVisibility.h"
+#include "HTTEngine/Graphics/Renderer/Renderer.h"
 
 namespace {
-constexpr const char* kDefaultMaterialPath = "MyEngine/Resources/Materials/Decal.material"; // マテリアルを選んでいないときに使う（エンジンの Resources。白い画像を貼る）
+constexpr const char* kDefaultMaterialPath = "HTTEngine/Resources/Materials/Decal.material"; // マテリアルを選んでいないときに使う（エンジンの Resources。白い画像を貼る）
 constexpr Vector4 kGizmoColor = {0.4f, 0.8f, 1.0f, 0.8f}; // 箱のギズモの色（水色）
 constexpr float kNoFadeStart = 10000.0f;                   // 距離でフェードさせないための値（Collider のギズモと同じ）
 constexpr float kNoFadeEnd = 20000.0f;
@@ -3193,7 +3193,7 @@ void DescribeDecalRenderer(ComponentUI& ui, DecalRendererComponent& value) {
 // 初期化・終了
 //=============================================================================
 void DecalRenderSystem::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<DecalRenderState>();
 	state->gizmoLines.fadeStartDistance = kNoFadeStart;
 	state->gizmoLines.fadeEndDistance = kNoFadeEnd;
@@ -3212,7 +3212,7 @@ void DecalRenderSystem::Release() { state.reset(); }
 // 既定のマテリアル
 //=============================================================================
 uint32_t DecalRenderSystem::GetDefaultMaterial() {
-	MY_ASSERT_MSG(state != nullptr, "DecalRenderSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "DecalRenderSystem::Initialize()を先に呼んでください");
 	if (!state->isDefaultMaterialLoaded) {
 		state->isDefaultMaterialLoaded = true;
 		state->defaultMaterial = LoadAsset(AssetType::Material, kDefaultMaterialPath); // 無ければ警告が出て 0（描かない）
@@ -3248,7 +3248,7 @@ void DecalRenderSystem::Draw() {
 // ギズモ（箱の 12 本の辺）
 //=============================================================================
 void DecalRenderSystem::DrawGizmos(Camera* camera) {
-	MY_ASSERT_MSG(state != nullptr, "DecalRenderSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "DecalRenderSystem::Initialize()を先に呼んでください");
 	Renderer::LineListConfig& gizmo = state->gizmoLines;
 	gizmo.lines.clear();
 	gizmo.camera = camera;
@@ -3326,8 +3326,8 @@ void DecalRenderSystem::DrawGizmos(Camera* camera) {
 ### C-17 `Systems/EngineSystems.cpp`
 
 ```cpp
-#include "MyEngine/Systems/Rendering3D/ArrowStripSystem.h"
-#include "MyEngine/Systems/Rendering3D/DecalRenderSystem.h"
+#include "HTTEngine/Systems/Rendering3D/ArrowStripSystem.h"
+#include "HTTEngine/Systems/Rendering3D/DecalRenderSystem.h"
 ```
 
 `Initialize` の `ArrowStripSystem::Initialize();` の下、`Release` の `ArrowStripSystem::Release();` の下に足す。
@@ -3352,11 +3352,11 @@ void DecalRenderSystem::DrawGizmos(Camera* camera) {
 
 ### C-18 `Resources/Materials/Decal.material`（新しい）
 
-エンジンの `project/Resources` の下（ゲームを起動すると `MyEngine/Resources` に写る）。
+エンジンの `project/Resources` の下（ゲームを起動すると `HTTEngine/Resources` に写る）。
 
 ```json
 {
-	"shader": "MyEngine/Shader/Data/Decal/DecalTexture.PS.shader",
+	"shader": "HTTEngine/Shader/Data/Decal/DecalTexture.PS.shader",
 	"blendOverride": false,
 	"blend": "Normal",
 	"rasterizerOverride": false,
@@ -3369,9 +3369,9 @@ void DecalRenderSystem::DrawGizmos(Camera* camera) {
 }
 ```
 
-### C-19 `MyEngine_v1.vcxproj`・`.filters`
+### C-19 `HTTEngine.vcxproj`・`.filters`
 
-`MyEngine\Components\Rendering3D\DecalRendererComponent.h`・`MyEngine\Systems\Rendering3D\DecalRenderSystem.h`・`.cpp` と、`None` の `MyEngine\Shader\Data\Decal\Decal.hlsli.shader`・`DecalTexture.PS.shader` を足す（フィルター `MyEngine\Shader\Data\Decal` を作る）。
+`HTTEngine\Components\Rendering3D\DecalRendererComponent.h`・`HTTEngine\Systems\Rendering3D\DecalRenderSystem.h`・`.cpp` と、`None` の `HTTEngine\Shader\Data\Decal\Decal.hlsli.shader`・`DecalTexture.PS.shader` を足す（フィルター `HTTEngine\Shader\Data\Decal` を作る）。
 
 ### C-20 確かめること
 
@@ -3639,7 +3639,7 @@ static_assert(std::is_trivially_copyable_v<HitboxTelegraphComponent>);
 #pragma once
 #include <cstdint>
 
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Math/Vector3.h"
 
 /// <summary>
 /// 床の予告の描き手が、描く物ごとに Shader へ送る値（gDrawData。Shader の Decal/HitboxTelegraph.hlsli と同じ並び。16 バイトずつ）
@@ -3693,21 +3693,21 @@ public:
 #include <memory>
 #include <span>
 
-#include "MyEngine/Components/Combat/HitboxComponent.h"
-#include "MyEngine/Components/Combat/HitboxTelegraphComponent.h"
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Editor/Viewport/SceneVisibility.h"
-#include "MyEngine/Graphics/Renderer/Renderer.h"
-#include "MyEngine/Systems/Combat/HitSystem.h"
+#include "HTTEngine/Components/Combat/HitboxComponent.h"
+#include "HTTEngine/Components/Combat/HitboxTelegraphComponent.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Editor/Viewport/SceneVisibility.h"
+#include "HTTEngine/Graphics/Renderer/Renderer.h"
+#include "HTTEngine/Systems/Combat/HitSystem.h"
 
 namespace {
-constexpr const char* kDefaultMaterialPath = "MyEngine/Resources/Materials/HitboxTelegraph.material"; // マテリアルを選んでいないときに使う（エンジンの Resources）
+constexpr const char* kDefaultMaterialPath = "HTTEngine/Resources/Materials/HitboxTelegraph.material"; // マテリアルを選んでいないときに使う（エンジンの Resources）
 constexpr float kEdgeMargin = 0.1f;      // 箱を形より横に広げる長さ（m。縁をなめらかにする 1 ピクセルの分が、箱で切れないように）
 constexpr float kBelowBaseDepth = 0.05f; // 箱を形の底より下へ伸ばす長さ（m。底と同じ高さの床が、深度の誤差で箱の外にならないように）
 
@@ -3824,7 +3824,7 @@ bool MakeBox(const WorldHitShape& shape, Matrix4x4& outWorld) {
 // 初期化・終了
 //=============================================================================
 void HitboxTelegraphSystem::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<HitboxTelegraphState>();
 	// Hitbox Telegraph の置き場所・保存・Inspector を登録する（見せ方は DescribeHitboxTelegraph 1つ）
 	EntityManager::RegisterComponent<HitboxTelegraphComponent>();
@@ -3839,7 +3839,7 @@ void HitboxTelegraphSystem::Release() { state.reset(); }
 // 既定のマテリアル
 //=============================================================================
 uint32_t HitboxTelegraphSystem::GetDefaultMaterial() {
-	MY_ASSERT_MSG(state != nullptr, "HitboxTelegraphSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "HitboxTelegraphSystem::Initialize()を先に呼んでください");
 	if (!state->isDefaultMaterialLoaded) {
 		state->isDefaultMaterialLoaded = true;
 		state->defaultMaterial = LoadAsset(AssetType::Material, kDefaultMaterialPath); // 無ければ警告が出て 0（描かない）
@@ -3883,8 +3883,8 @@ void HitboxTelegraphSystem::Draw() {
 ### D-4 `Systems/EngineSystems.cpp`
 
 ```cpp
-#include "MyEngine/Systems/Combat/HitSystem.h"
-#include "MyEngine/Systems/Combat/HitboxTelegraphSystem.h"
+#include "HTTEngine/Systems/Combat/HitSystem.h"
+#include "HTTEngine/Systems/Combat/HitboxTelegraphSystem.h"
 ```
 
 `Initialize` の `DamageSystem::Initialize();` の下、`Release` の `DamageSystem::Release();` の下、`Draw` の `DecalRenderSystem::Draw();` の下に足す。
@@ -3905,7 +3905,7 @@ void HitboxTelegraphSystem::Draw() {
 
 ```json
 {
-	"shader": "MyEngine/Shader/Data/Decal/HitboxTelegraph.PS.shader",
+	"shader": "HTTEngine/Shader/Data/Decal/HitboxTelegraph.PS.shader",
 	"blendOverride": false,
 	"blend": "Normal",
 	"rasterizerOverride": false,
@@ -3926,9 +3926,9 @@ void HitboxTelegraphSystem::Draw() {
 }
 ```
 
-### D-6 `MyEngine_v1.vcxproj`・`.filters`
+### D-6 `HTTEngine.vcxproj`・`.filters`
 
-`MyEngine\Components\Combat\HitboxTelegraphComponent.h`・`MyEngine\Systems\Combat\HitboxTelegraphSystem.h`・`.cpp` と、`None` の `MyEngine\Shader\Data\Decal\HitShape.hlsli.shader`・`HitboxTelegraph.hlsli.shader`・`HitboxTelegraph.PS.shader` を足す。
+`HTTEngine\Components\Combat\HitboxTelegraphComponent.h`・`HTTEngine\Systems\Combat\HitboxTelegraphSystem.h`・`.cpp` と、`None` の `HTTEngine\Shader\Data\Decal\HitShape.hlsli.shader`・`HitboxTelegraph.hlsli.shader`・`HitboxTelegraph.PS.shader` を足す。
 
 ### D-7 確かめること
 
@@ -3970,7 +3970,7 @@ void HitboxTelegraphSystem::Draw() {
 
 ```json
 {
-	"shader": "MyEngine/Shader/Data/Decal/DecalTexture.PS.shader",
+	"shader": "HTTEngine/Shader/Data/Decal/DecalTexture.PS.shader",
 	"blendOverride": false,
 	"blend": "Normal",
 	"rasterizerOverride": false,
@@ -3979,7 +3979,7 @@ void HitboxTelegraphSystem::Draw() {
 	"depth": "Disable",
 	"color": [1.0, 1.0, 1.0, 0.85],
 	"colorCurve": "",
-	"texture": "MyEngine/Resources/Textures/uvChecker.png"
+	"texture": "HTTEngine/Resources/Textures/uvChecker.png"
 }
 ```
 
@@ -3987,7 +3987,7 @@ void HitboxTelegraphSystem::Draw() {
 
 ```json
 {
-	"shader": "MyEngine/Shader/Data/Decal/HitboxTelegraph.PS.shader",
+	"shader": "HTTEngine/Shader/Data/Decal/HitboxTelegraph.PS.shader",
 	"blendOverride": false,
 	"blend": "Normal",
 	"rasterizerOverride": false,

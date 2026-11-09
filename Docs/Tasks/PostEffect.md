@@ -147,8 +147,8 @@
 - トーンマップを入れる場所の候補：ブルームの合成（`BloomComposite` / `BloomKawaseComposite`。HDR のシーン＋光 → SDR の `work_`）。ブルームを切っているときの道も要る。初めの値は「None（1 で切る＝今の見た目のまま）」にして、ACES などを選べるようにする。
 - Bloom の今の値は `Parameters/PostEffect/Bloom.json` で **Threshold 1.0**（AL4_01）。SDR では 1 を超えないので、今はほとんど光らない。
 - Intensity を足す候補：Particle System（`ParticleInstancesConfig.color` は float の Vector4 なので、そのまま 1 を超えられる）・Primitive Renderer（ゴールの扉）。Renderer の多くの Config の色は `uint32_t`（0xRRGGBBAA）なので、倍率を別の値で渡す。
-- Release の exe は `AL4_01/project/MyEngine/Shader` の写しを読む（エンジンをビルドし直すと自動で写る。.shader だけ直したときはリビルド）。
-- 作業用コピーで確かめるときの道具（前のチャットで使った）：AL4_01 を一時フォルダへ clone（サブモジュールは `git -c protocol.file.allow=always submodule update --init` でローカルの MyEngine_v1 から）・assimp の lib を写す・MSBuild（VS 18）で `AL4_01.slnx` をビルド・PowerShell の `PrintWindow`（`SetProcessDPIAware` を先に）で窓を撮る・エディタの操作は `ImGuiManager::Begin` に一時的な入力の仕掛け（md には載せない・終わったら外す）。
+- Release の exe は `AL4_01/project/HTTEngine/Shader` の写しを読む（エンジンをビルドし直すと自動で写る。.shader だけ直したときはリビルド）。
+- 作業用コピーで確かめるときの道具（前のチャットで使った）：AL4_01 を一時フォルダへ clone（サブモジュールは `git -c protocol.file.allow=always submodule update --init` でローカルの HTTEngine から）・assimp の lib を写す・MSBuild（VS 18）で `AL4_01.slnx` をビルド・PowerShell の `PrintWindow`（`SetProcessDPIAware` を先に）で窓を撮る・エディタの操作は `ImGuiManager::Begin` に一時的な入力の仕掛け（md には載せない・終わったら外す）。
 
 ### G-3（スター）の目標（ユーザーが見せてくれた絵・10/25）
 - DirectX SDK の HDRLighting のサンプルと同じ形（川瀬式のスター）：明るい点から十字・×・6本などの光の筋が伸び、**筋の色が虹色に変わる（Twinkle Star (Spectral)）**。芯は白く、筋の先へ行くほど薄く色付く。

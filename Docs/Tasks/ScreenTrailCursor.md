@@ -212,7 +212,7 @@ include（`<cstdint>` の後）
 #pragma once
 #include <cstdint>
 
-#include "MyEngine/Math/Vector2.h"
+#include "HTTEngine/Math/Vector2.h"
 ```
 
 `GetAspectRatio` の次に足す
@@ -538,7 +538,7 @@ void AgePoints(std::vector<TrailPoint>& points, float lifeTime, float deltaTime)
 }
 
 void TrailSystem::ClearAll() {
-	MY_ASSERT_MSG(state != nullptr, "TrailSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "TrailSystem::Initialize()を先に呼んでください");
 	state->trails.clear();
 }
 ```
@@ -572,9 +572,9 @@ void TrailSystem::ClearAll() {
 include（`CameraSystem.h` の次）
 
 ```cpp
-#include "MyEngine/Systems/Camera/CameraSystem.h"
-#include "MyEngine/Systems/Effects/TrailSystem.h"
-#include "MyEngine/Systems/Gameplay/ScriptSystem.h"
+#include "HTTEngine/Systems/Camera/CameraSystem.h"
+#include "HTTEngine/Systems/Effects/TrailSystem.h"
+#include "HTTEngine/Systems/Gameplay/ScriptSystem.h"
 ```
 
 `ChangeScene`（`ParticleManager::ClearGroups();` の次）
@@ -775,9 +775,9 @@ void WindowManager::UpdateCursor() {
 include（`GameComponent.h` の次）
 
 ```cpp
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Input/InputManager.h"
-#include "MyEngine/Particle/ParticleManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Input/InputManager.h"
+#include "HTTEngine/Particle/ParticleManager.h"
 ```
 
 `ChangeScene`（`Time::ResetGameTime();` の次）
@@ -799,8 +799,8 @@ include（`GameComponent.h` の次）
 
 ```cpp
 #pragma once
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/ECS/Script.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/ECS/Script.h"
 
 //=============================================================================
 // 照準の UI と OS のカーソル（Sandbox のテスト用）
@@ -872,10 +872,10 @@ struct TrailFadeBullet {
 
 #include <algorithm>
 
-#include "MyEngine/Components/Effects/TrailComponent.h"
-#include "MyEngine/Components/Rendering3D/PrimitiveRendererComponent.h"
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
-#include "MyEngine/Input/InputManager.h"
+#include "HTTEngine/Components/Effects/TrailComponent.h"
+#include "HTTEngine/Components/Rendering3D/PrimitiveRendererComponent.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Input/InputManager.h"
 
 SCRIPT(AimCursorSample, "Test");
 
@@ -1236,7 +1236,7 @@ Project ウィンドウで `scenes/CursorTrailTest` を開いて Play。
 
 AL4_01 の Docs/AimShoot.md を直すときに使う。
 
-### 2.1 画面の変換（`#include <MyEngine/Graphics/Renderer/GameScreen.h>`）
+### 2.1 画面の変換（`#include <HTTEngine/Graphics/Renderer/GameScreen.h>`）
 
 ```cpp
 class GameScreen {
@@ -1263,7 +1263,7 @@ PlayerAim（右スティックの所）
 		screenPosition_.y = std::clamp(screenPosition_.y + move.y, -1.0f, 1.0f);
 ```
 
-### 2.2 光の尾（`#include <MyEngine/Components/Effects/TrailComponent.h>`）
+### 2.2 光の尾（`#include <HTTEngine/Components/Effects/TrailComponent.h>`）
 
 ```cpp
 struct TrailComponent {
@@ -1276,7 +1276,7 @@ struct TrailComponent {
 - 残らないのは Life Time 0・Enabled を外していた・持ち主が無効だった尾
 - `TrailSystem::ClearAll()` はエンジン（SceneManager）が呼ぶ物。ゲームから呼ぶことはない
 
-### 2.3 OS のカーソル（`#include <MyEngine/Input/InputManager.h>`）
+### 2.3 OS のカーソル（`#include <HTTEngine/Input/InputManager.h>`）
 
 ```cpp
 class InputManager {

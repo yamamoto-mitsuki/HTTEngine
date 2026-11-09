@@ -502,7 +502,7 @@ ModelManager::SubMesh ParseMesh(const aiMesh* mesh, const std::string& filename)
 	subMesh.indices.reserve(mesh->mNumFaces * 3);
 	for (uint32_t faceIndex = 0; faceIndex < mesh->mNumFaces; ++faceIndex) {
 		aiFace& face = mesh->mFaces[faceIndex];
-		MY_ASSERT_MSG(face.mNumIndices == 3, "ポリゴンは三角形のみサポートしています");
+		HTT_ASSERT_MSG(face.mNumIndices == 3, "ポリゴンは三角形のみサポートしています");
 		for (uint32_t element = 0; element < face.mNumIndices; ++element) {
 			subMesh.indices.push_back(face.mIndices[element]);
 		}
@@ -549,7 +549,7 @@ const ModelManager::ImportedMaterial* ModelManager::GetImportedMaterial(uint32_t
 	}
 	// --- 番号が範囲の外（SubMesh::materialIndex は読み込みで assimp の番号のまま入るので、外れるのは呼ぶ側の間違い）---
 	if (materialIndex >= model->materials.size()) {
-		MY_ASSERT_MSG(false, std::format("{}: マテリアルの番号 {} は範囲の外です（{} 個）", model->name, materialIndex, model->materials.size()));
+		HTT_ASSERT_MSG(false, std::format("{}: マテリアルの番号 {} は範囲の外です（{} 個）", model->name, materialIndex, model->materials.size()));
 		return nullptr;
 	}
 	return &model->materials[materialIndex];
@@ -885,17 +885,17 @@ struct Material3dData {
 static_assert(sizeof(Material3dData) == 160, "Material3dData の大きさが ModelSurface.hlsli の ModelMaterial と違います");
 ```
 
-### B-9 `MyEngine_v1.vcxproj`・`.filters`
+### B-9 `HTTEngine.vcxproj`・`.filters`
 
 `ModelSurface.hlsli.shader` を足す（Visual Studio の「既存の項目を追加」で、`Shader\Data\Model` のフィルターへ）。
 
 ```xml
-    <None Include="MyEngine\Shader\Data\Model\ModelSurface.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Model\ModelSurface.hlsli.shader" />
 ```
 
 ```xml
-    <None Include="MyEngine\Shader\Data\Model\ModelSurface.hlsli.shader">
-      <Filter>MyEngine\Shader\Data\Model</Filter>
+    <None Include="HTTEngine\Shader\Data\Model\ModelSurface.hlsli.shader">
+      <Filter>HTTEngine\Shader\Data\Model</Filter>
     </None>
 ```
 
@@ -1085,10 +1085,10 @@ inline Vector4 LinearToSrgb(const Vector4& color) { return {LinearToSrgb(color.x
 
 #include <externals/imgui/imgui.h>
 
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/Editor/Widgets/EditorWidgets.h"
-#include "MyEngine/Graphics/Model/ModelManager.h"
-#include "MyEngine/Math/Color.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Editor/Widgets/EditorWidgets.h"
+#include "HTTEngine/Graphics/Model/ModelManager.h"
+#include "HTTEngine/Math/Color.h"
 
 
 namespace {

@@ -2,8 +2,8 @@
 #include <array>
 #include <cstddef>
 
-#include "MyEngine/ECS/Script.h"
-#include "MyEngine/Systems/Animation/AnimationSystem.h"
+#include "HTTEngine/ECS/Script.h"
+#include "HTTEngine/Systems/Animation/AnimationSystem.h"
 
 /// <summary>
 /// アニメを名前で順に流す（Sandbox のテスト用。AnimationSystem::Play・CalcSpeedToFit を名前で呼ぶ見本）

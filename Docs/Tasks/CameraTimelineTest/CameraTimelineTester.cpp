@@ -1,11 +1,11 @@
 #include <format>
 #include <string>
 
-#include <MyEngine/Components/Animation/TimelineComponent.h>
-#include <MyEngine/ECS/Script.h>
-#include <MyEngine/Input/InputManager.h>
-#include <MyEngine/Scene/PrefabManager.h>
-#include <MyEngine/Systems/Animation/TimelineSystem.h>
+#include <HTTEngine/Components/Animation/TimelineComponent.h>
+#include <HTTEngine/ECS/Script.h>
+#include <HTTEngine/Input/InputManager.h>
+#include <HTTEngine/Scene/PrefabManager.h>
+#include <HTTEngine/Systems/Animation/TimelineSystem.h>
 
 // カメラの演出の見本を動かす Script。Timeline を再生する Director に付ける
 // 演出の中身は resources/timelines/CameraTimelineTest.timeline にある（ここはヒットストップのイベントを受けるだけ）

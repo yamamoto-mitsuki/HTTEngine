@@ -1,7 +1,7 @@
-#include "MyEngine/AI/AttackPart.h"
-#include "MyEngine/Components/Physics/CharacterControllerComponent.h"
-#include "MyEngine/Math/MathUtility.h"
-#include "MyEngine/Systems/Animation/AnimationSystem.h"
+#include "HTTEngine/AI/AttackPart.h"
+#include "HTTEngine/Components/Physics/CharacterControllerComponent.h"
+#include "HTTEngine/Math/MathUtility.h"
+#include "HTTEngine/Systems/Animation/AnimationSystem.h"
 
 
 /// <summary>

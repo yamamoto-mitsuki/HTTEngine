@@ -1,8 +1,8 @@
 #pragma once
 #include <vector>
 
-#include "MyEngine/Core/FixedList.h"
-#include "MyEngine/ECS/Script.h"
+#include "HTTEngine/Core/FixedList.h"
+#include "HTTEngine/ECS/Script.h"
 
 /// <summary>
 /// 距離の段階1つ（一覧の要素の見本）。memcpy で写せる型なので、データの Component の FixedList にも入れられる

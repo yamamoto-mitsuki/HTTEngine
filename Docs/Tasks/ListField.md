@@ -49,7 +49,7 @@ COMPONENT(LockOnSettings) { ui.ListField("Stages###stages", value.stages, &Descr
 | B | `ECS/ComponentUI.h` | `ListAccess`（一覧の窓口）・`ComponentUIDetail::ListAccessOf`（std::vector と FixedList の違いを吸収）・`ui.ListField(...)`・係が上書きする `ListFieldErased` |
 | C | `ECS/ComponentSerializer.cpp` | 書く係・読む係・参照を付け替える係の `ListFieldErased` |
 | D | `ECS/ComponentUI.cpp` | Inspector に描く係の `ListFieldErased`（見出し・つまみ・右クリック・＋ －） |
-| A | `MyEngine_v1.vcxproj`・`.filters` | `FixedList.h` を足す |
+| A | `HTTEngine.vcxproj`・`.filters` | `FixedList.h` を足す |
 | E | `Sandbox/Source/Scripts/ListFieldSample.h`・`.cpp`（新しい） | 見本の Script と データの Component |
 | E | `Sandbox/Resources/scenes/ListFieldTest.scene.json`（新しい） | テストシーン |
 | E | `Sandbox/Sandbox.vcxproj`・`.filters` | 上の2つを足す |
@@ -305,21 +305,21 @@ private:
 };
 ```
 
-### A-2 `MyEngine_v1.vcxproj`・`MyEngine_v1.vcxproj.filters`
+### A-2 `HTTEngine.vcxproj`・`HTTEngine.vcxproj.filters`
 
-Visual Studio のソリューションエクスプローラーで、MyEngine の Core フィルターに `FixedList.h` を足してもよい。手で書くなら：
+Visual Studio のソリューションエクスプローラーで、HTTEngine の Core フィルターに `FixedList.h` を足してもよい。手で書くなら：
 
-`MyEngine_v1.vcxproj`（`MyEngine\Core\NameList.h` の前）
+`HTTEngine.vcxproj`（`HTTEngine\Core\NameList.h` の前）
 
 ```xml
-    <ClInclude Include="MyEngine\Core\FixedList.h" />
+    <ClInclude Include="HTTEngine\Core\FixedList.h" />
 ```
 
-`MyEngine_v1.vcxproj.filters`（`MyEngine\Core\NameList.h` の前）
+`HTTEngine.vcxproj.filters`（`HTTEngine\Core\NameList.h` の前）
 
 ```xml
-    <ClInclude Include="MyEngine\Core\FixedList.h">
-      <Filter>MyEngine\Core</Filter>
+    <ClInclude Include="HTTEngine\Core\FixedList.h">
+      <Filter>HTTEngine\Core</Filter>
     </ClInclude>
 ```
 
@@ -345,8 +345,8 @@ Visual Studio のソリューションエクスプローラーで、MyEngine の
 
 #include <externals/magic_enum/magic_enum.hpp>
 
-#include "MyEngine/Core/FixedList.h"
-#include "MyEngine/ECS/Entity.h"
+#include "HTTEngine/Core/FixedList.h"
+#include "HTTEngine/ECS/Entity.h"
 ```
 
 **前方宣言**に `ComponentUI` を足す（`ListAccess` が `ComponentUI&` を受け取るので、`ComponentUI` より前に名前だけ知らせる）。
@@ -628,7 +628,7 @@ std::string MakeElementName(std::string_view typeName, const char* label, size_t
 
 ```cpp
 // ===== 一覧 =====
-constexpr const char* kListDragType = "MYENGINE_LIST_ITEM"; // 一覧の要素を運ぶドラッグの種類（ImGui の決まりで 32 文字まで）
+constexpr const char* kListDragType = "HTTENGINE_LIST_ITEM"; // 一覧の要素を運ぶドラッグの種類（ImGui の決まりで 32 文字まで）
 constexpr float kListGripWidthRate = 0.75f;                  // 並べ替えのつまみの幅（行の高さに対する割合）
 constexpr float kListGripLineRate = 0.18f;                   // つまみの横線の間隔（行の高さに対する割合）
 
@@ -856,8 +856,8 @@ void ApplyListEdit(ListAccess& list, const ListEdit& edit) {
 #pragma once
 #include <vector>
 
-#include "MyEngine/Core/FixedList.h"
-#include "MyEngine/ECS/Script.h"
+#include "HTTEngine/Core/FixedList.h"
+#include "HTTEngine/ECS/Script.h"
 
 /// <summary>
 /// 距離の段階1つ（一覧の要素の見本）。memcpy で写せる型なので、データの Component の FixedList にも入れられる
@@ -914,7 +914,7 @@ struct ListFieldSampleData {
 
 #include <format>
 
-#include "MyEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
 
 SCRIPT(ListFieldSample, "Test");
 

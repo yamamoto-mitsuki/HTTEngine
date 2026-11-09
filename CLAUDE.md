@@ -1,4 +1,4 @@
-# MyEngine_v1
+# HTTEngine
 - 返答は日本語で行ってください。
 - サブエージェントは起動せず、1つのエージェントで処理してください。（利用制限にひっかかりやすくなるため）
 
@@ -27,7 +27,7 @@ includeの順番は
 
 #include <externals/external.h>
 
-#include "myengine.h"
+#include "httengine.h"
 
 ### コメントアウト
 コメントアウトはいつ見ても理解できるよう、しっかりつけること。まじで
@@ -51,7 +51,7 @@ includeの順番は
 void SoundDecoder::Initialize() {
 	// Media Foundation初期化（MP3等のデコードに使う）
 	const HRESULT hr = MFStartup(MF_VERSION);
-	MY_ASSERT_MSG(SUCCEEDED(hr), "MFStartup失敗");
+	HTT_ASSERT_MSG(SUCCEEDED(hr), "MFStartup失敗");
 }
 
 // ===== 終了 =====

@@ -78,7 +78,7 @@ Trigger（AnyMover）      ┘                     └ CharacterControllerSystem
 | `Components/Physics/CharacterControllerComponent.h`（新しい） | C | Character Controller の値 |
 | `Systems/Physics/CharacterControllerSystem.h`・`.cpp`（新しい） | C | 動かす・Inspector と保存・ギズモ |
 | `Components/Physics/ColliderComponent.h`・`ECS/Script.h`・`ECS/GameComponent.h` | C | コメントだけ |
-| `MyEngine_v1.vcxproj`・`.filters` | B・C | 新しいファイルを足す |
+| `HTTEngine.vcxproj`・`.filters` | B・C | 新しいファイルを足す |
 | `Sandbox/Source/Scripts/CharacterKeyboardMover.h`・`.cpp`（新しい） | D | キーボードで動かすテスト用の Script |
 | `Sandbox/Sandbox.vcxproj`・`.filters` | D | Script を足す |
 | `Sandbox/Resources/scenes/CharacterControllerTest.scene.json`（新しい） | D | 坂・台地・段・壁・急な坂・押せる箱のテストシーン |
@@ -734,7 +734,7 @@ bool CastAgainst(const WorldCollider& shape, const Vector3& motion, const WorldC
 
 ```cpp
 bool CollisionSystem::Cast(const WorldCollider& shape, const Vector3& motion, ShapeCastHit& hit, const ShapeQuery& query) {
-	MY_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
 	const float length = Length(motion);
 	if (length < kMinCastLength) {
 		return false; // 動かない
@@ -779,7 +779,7 @@ bool CollisionSystem::Cast(const WorldCollider& shape, const Vector3& motion, Sh
 }
 
 void CollisionSystem::Overlap(const WorldCollider& shape, std::vector<ShapeOverlap>& out, const ShapeQuery& query) {
-	MY_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
 	out.clear();
 	const AABB bounds = CalcBounds(shape);
 	for (const WorldCollider& collider : state->colliders) {
@@ -797,12 +797,12 @@ void CollisionSystem::Overlap(const WorldCollider& shape, std::vector<ShapeOverl
 // 調べる相手の形を、今の位置に合わせる（物を動かす係から）
 //=============================================================================
 void CollisionSystem::SyncWorld() {
-	MY_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
 	CollectColliders();
 }
 
 void CollisionSystem::MoveCollider(Handle<Entity> entity, const Vector3& move) {
-	MY_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CollisionSystem::Initialize()を先に呼んでください");
 	// 子に付けた形も、Transform では一緒に動くので、ここでも一緒にずらす
 	for (WorldCollider& collider : state->colliders) {
 		if (collider.entity == entity || EntityManager::IsDescendantOf(collider.entity, entity)) {
@@ -841,9 +841,9 @@ void MoveBody(Body& body, const Vector3& move) {
 
 ```cpp
 #pragma once
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Vector3.h"
 
 /// <summary>
 /// 動き方の Component（Rigidbody・Character Controller）に共通して聞ける値
@@ -889,7 +889,7 @@ public:
 #include <memory>
 #include <vector>
 
-#include "MyEngine/Diagnostics/MyAssert.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
 
 namespace {
 /// <summary>
@@ -906,15 +906,15 @@ std::unique_ptr<MotionQueryState> state;
 // 初期化 / 解放
 //=============================================================================
 void MotionQuery::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<MotionQueryState>();
 }
 
 void MotionQuery::Release() { state.reset(); }
 
 void MotionQuery::Register(Getter getter) {
-	MY_ASSERT_MSG(state != nullptr, "MotionQuery::Initialize()を先に呼んでください");
-	MY_ASSERT_MSG(getter != nullptr, "答え方が空です");
+	HTT_ASSERT_MSG(state != nullptr, "MotionQuery::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(getter != nullptr, "答え方が空です");
 	state->getters.push_back(getter);
 }
 
@@ -923,7 +923,7 @@ void MotionQuery::Register(Getter getter) {
 // 聞く
 //=============================================================================
 bool MotionQuery::TryGet(Handle<Entity> entity, MotionState& out) {
-	MY_ASSERT_MSG(state != nullptr, "MotionQuery::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "MotionQuery::Initialize()を先に呼んでください");
 	for (const Getter getter : state->getters) {
 		if (getter(entity, out)) {
 			return true;
@@ -948,21 +948,21 @@ bool MotionQuery::IsGrounded(Handle<Entity> entity) {
 }
 ```
 
-### B-3 `MyEngine_v1.vcxproj`
+### B-3 `HTTEngine.vcxproj`
 
-ソリューション エクスプローラーの `MyEngine/Physics` に、B-1・B-2 を「既存の項目」で足す（`.vcxproj` には次の2行が入る）。
+ソリューション エクスプローラーの `HTTEngine/Physics` に、B-1・B-2 を「既存の項目」で足す（`.vcxproj` には次の2行が入る）。
 
 ```xml
-    <ClCompile Include="MyEngine\Physics\MotionQuery.cpp" />
-    <ClInclude Include="MyEngine\Physics\MotionQuery.h" />
+    <ClCompile Include="HTTEngine\Physics\MotionQuery.cpp" />
+    <ClInclude Include="HTTEngine\Physics\MotionQuery.h" />
 ```
 
 ### B-4 `Systems/EngineSystems.cpp`（窓口の初期化・終了）
 
 ```cpp
-#include "MyEngine/Particle/ParticleManager.h"
-#include "MyEngine/Physics/MotionQuery.h"
-#include "MyEngine/Physics/PhysicMaterialManager.h"
+#include "HTTEngine/Particle/ParticleManager.h"
+#include "HTTEngine/Physics/MotionQuery.h"
+#include "HTTEngine/Physics/PhysicMaterialManager.h"
 ```
 
 `EngineSystems::Initialize` の `EntityManager::Initialize();` の後：
@@ -995,9 +995,9 @@ bool MotionQuery::IsGrounded(Handle<Entity> entity) {
 **② `.cpp`：include**
 
 ```cpp
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Physics/MotionQuery.h"
-#include "MyEngine/Physics/PhysicMaterialManager.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Physics/MotionQuery.h"
+#include "HTTEngine/Physics/PhysicMaterialManager.h"
 ```
 
 **③ `.cpp`：`MoveBody` の下に、窓口への答え方を足す**
@@ -1051,14 +1051,14 @@ Vector3 PhysicsSystem::GetUp() {
 include の `RigidbodyComponent.h` を消して、`MotionQuery.h` を足す。
 
 ```cpp
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
 ```
 
 ```cpp
-#include "MyEngine/Graphics/Renderer/Renderer.h"
-#include "MyEngine/Physics/MotionQuery.h"
-#include "MyEngine/Systems/Rendering3D/PolygonShapeSystem.h"
+#include "HTTEngine/Graphics/Renderer/Renderer.h"
+#include "HTTEngine/Physics/MotionQuery.h"
+#include "HTTEngine/Systems/Rendering3D/PolygonShapeSystem.h"
 ```
 
 `VelocityOf` を差し替える。
@@ -1074,9 +1074,9 @@ Vector3 VelocityOf(Handle<Entity> entity) { return MotionQuery::GetVelocity(enti
 **① `CameraFollow.cpp` の include**：`RigidbodyComponent.h` を消して、`MotionQuery.h` を足す。
 
 ```cpp
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
-#include "MyEngine/Math/MathUtility.h"
-#include "MyEngine/Physics/MotionQuery.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Math/MathUtility.h"
+#include "HTTEngine/Physics/MotionQuery.h"
 ```
 
 **② Ground Snap Y の Tip**
@@ -1111,9 +1111,9 @@ Vector3 VelocityOf(Handle<Entity> entity) { return MotionQuery::GetVelocity(enti
 **② `Systems/Gameplay/TriggerActivatorSystem.cpp`**
 
 ```cpp
-#include "MyEngine/Math/MathUtility.h"
-#include "MyEngine/Physics/MotionQuery.h"
-#include "MyEngine/Systems/Camera/CameraSystem.h"
+#include "HTTEngine/Math/MathUtility.h"
+#include "HTTEngine/Physics/MotionQuery.h"
+#include "HTTEngine/Systems/Camera/CameraSystem.h"
 ```
 
 ```cpp
@@ -1148,9 +1148,9 @@ Vector3 VelocityOf(Handle<Entity> entity) { return MotionQuery::GetVelocity(enti
 #pragma once
 #include <type_traits>
 
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // キャラクターの歩き方。Entityに付けるComponent（カテゴリ：Physics）
 // 形は同じ Entity の Collider（Sphere か Capsule。無い・無効・Box・Polygon なら動かさない）。形を2か所に持たない（Rigidbody と同じ決まり）
@@ -1203,7 +1203,7 @@ static_assert(std::is_trivially_copyable_v<CharacterControllerComponent>);
 
 ```cpp
 #pragma once
-#include "MyEngine/Components/Physics/CharacterControllerComponent.h"
+#include "HTTEngine/Components/Physics/CharacterControllerComponent.h"
 
 // 前方宣言
 class Camera;
@@ -1248,22 +1248,22 @@ public:
 #include <string>
 #include <vector>
 
-#include "MyEngine/Collision/Collision.h"
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Components/Physics/ColliderComponent.h"
-#include "MyEngine/Components/Physics/RigidbodyComponent.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Editor/Gizmos/GizmoLines.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Graphics/Renderer/Renderer.h"
-#include "MyEngine/Math/MathUtility.h"
-#include "MyEngine/Physics/MotionQuery.h"
-#include "MyEngine/Systems/Physics/CollisionSystem.h"
-#include "MyEngine/Systems/Physics/PhysicsSystem.h"
+#include "HTTEngine/Collision/Collision.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Components/Physics/ColliderComponent.h"
+#include "HTTEngine/Components/Physics/RigidbodyComponent.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Editor/Gizmos/GizmoLines.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Graphics/Renderer/Renderer.h"
+#include "HTTEngine/Math/MathUtility.h"
+#include "HTTEngine/Physics/MotionQuery.h"
+#include "HTTEngine/Systems/Physics/CollisionSystem.h"
+#include "HTTEngine/Systems/Physics/PhysicsSystem.h"
 
 namespace {
 constexpr float kSkinWidth = CollisionSystem::kContactOffset * 0.5f; // 周りの物と空けておく隙間（m）。CollisionSystem の「触れている」距離より狭くして、乗っている床との当たり（OnCollisionStay）が切れないように
@@ -1739,7 +1739,7 @@ void CalcFoot(const WorldCollider& shape, const Vector3& up, Vector3* foot, floa
 // 初期化 / 解放
 //=============================================================================
 void CharacterControllerSystem::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<ControllerSystemState>();
 	// 線は距離でフェードさせない
 	state->gizmoLines.fadeStartDistance = kNoFadeStart;
@@ -1760,7 +1760,7 @@ void CharacterControllerSystem::Release() { state.reset(); }
 // 毎フレーム（再生中だけ）
 //=============================================================================
 bool CharacterControllerSystem::Update(float deltaTime) {
-	MY_ASSERT_MSG(state != nullptr, "CharacterControllerSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CharacterControllerSystem::Initialize()を先に呼んでください");
 	if (deltaTime <= 0.0f) {
 		return false; // 一時停止・ヒットストップ中（速さも重力も変えない）
 	}
@@ -1780,7 +1780,7 @@ bool CharacterControllerSystem::Update(float deltaTime) {
 // ギズモ
 //=============================================================================
 void CharacterControllerSystem::DrawGizmos(Camera* camera) {
-	MY_ASSERT_MSG(state != nullptr, "CharacterControllerSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CharacterControllerSystem::Initialize()を先に呼んでください");
 	if (!CollisionSystem::GetShowGizmos()) {
 		return; // Collider のギズモと一緒に出す・消す
 	}
@@ -1811,14 +1811,14 @@ void CharacterControllerSystem::DrawGizmos(Camera* camera) {
 }
 ```
 
-### C-4 `MyEngine_v1.vcxproj`
+### C-4 `HTTEngine.vcxproj`
 
-C-1 を `MyEngine/Components/Physics`、C-2・C-3 を `MyEngine/Systems/Physics` に「既存の項目」で足す。
+C-1 を `HTTEngine/Components/Physics`、C-2・C-3 を `HTTEngine/Systems/Physics` に「既存の項目」で足す。
 
 ```xml
-    <ClCompile Include="MyEngine\Systems\Physics\CharacterControllerSystem.cpp" />
-    <ClInclude Include="MyEngine\Components\Physics\CharacterControllerComponent.h" />
-    <ClInclude Include="MyEngine\Systems\Physics\CharacterControllerSystem.h" />
+    <ClCompile Include="HTTEngine\Systems\Physics\CharacterControllerSystem.cpp" />
+    <ClInclude Include="HTTEngine\Components\Physics\CharacterControllerComponent.h" />
+    <ClInclude Include="HTTEngine\Systems\Physics\CharacterControllerSystem.h" />
 ```
 
 ### C-5 `Systems/EngineSystems.cpp`
@@ -1827,8 +1827,8 @@ C-1 を `MyEngine/Components/Physics`、C-2・C-3 を `MyEngine/Systems/Physics`
 
 ```cpp
 // Physics
-#include "MyEngine/Systems/Physics/CharacterControllerSystem.h"
-#include "MyEngine/Systems/Physics/CollisionSystem.h"
+#include "HTTEngine/Systems/Physics/CharacterControllerSystem.h"
+#include "HTTEngine/Systems/Physics/CollisionSystem.h"
 ```
 
 **② `Initialize`（`PhysicsSystem` の下）**
@@ -1902,7 +1902,7 @@ C-1 を `MyEngine/Components/Physics`、C-2・C-3 を `MyEngine/Systems/Physics`
 
 ```cpp
 #pragma once
-#include "MyEngine/ECS/Script.h"
+#include "HTTEngine/ECS/Script.h"
 
 /// <summary>
 /// Character Controller をキーボードで動かす（Sandbox のテスト用）
@@ -1933,9 +1933,9 @@ private:
 
 #include <format>
 
-#include "MyEngine/Components/Physics/CharacterControllerComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Input/InputManager.h"
+#include "HTTEngine/Components/Physics/CharacterControllerComponent.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Input/InputManager.h"
 
 SCRIPT(CharacterKeyboardMover, "Test");
 

@@ -4,7 +4,7 @@ UpdateFilters.ps1
 vcxproj に入っているファイルのフォルダ構成に合わせて、フィルタを作り直す。
 
 使い方（project フォルダで）：
-powershell -ExecutionPolicy Bypass -File Tools\UpdateFilters.ps1 MyEngine_v1.vcxproj
+powershell -ExecutionPolicy Bypass -File Tools\UpdateFilters.ps1 HTTEngine.vcxproj
 =============================================================================
 #>
 

@@ -2,9 +2,9 @@
 
 #include <format>
 
-#include "MyEngine/Components/Physics/CharacterControllerComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Input/InputManager.h"
+#include "HTTEngine/Components/Physics/CharacterControllerComponent.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Input/InputManager.h"
 
 SCRIPT(CharacterKeyboardMover, "Test");
 

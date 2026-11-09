@@ -39,7 +39,7 @@
 | A | `ECS/EntityManager.h`・`.cpp` | `TransformAdjuster`・`AddTransformAdjuster`。UpdateTransforms が、1つ作るたびに呼ぶ |
 | B | `Components/UI/UIWorldFollowComponent.h`（新しい） | `OffscreenMode`・`UIWorldFollowComponent`（設定と、毎フレームの結果） |
 | B | `Systems/UI/UIWorldFollowSystem.h`・`.cpp`（新しい） | 写す・端に寄せる・置く・Anchor の警告・見せ方 |
-| B | `MyEngine_v1.vcxproj`・`.filters` | 上の3つを足す |
+| B | `HTTEngine.vcxproj`・`.filters` | 上の3つを足す |
 | C | `Systems/EngineSystems.cpp` | Initialize・Release・Update（`CameraSystem::Update` の後） |
 | C | `Systems/Rendering2D/SpriteRenderSystem.cpp` | `CalcGroupAlpha` で隠した物を 0 に・`IsMouseOver` で隠した物に当てない |
 | C | `Systems/UI/VectorShapeSystem.cpp` | `IsMouseOver` で隠した物に当てない |
@@ -233,9 +233,9 @@ void EntityManager::AddTransformAdjuster(TransformAdjuster adjuster) {
 #include <cstdint>
 #include <type_traits>
 
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Vector2.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Vector2.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // 画面に重ねる UI（Image・Text・Vector Shape・Polyline）を、ワールドの物・ワールドの点に重ね続ける Component（カテゴリ：UI）
 // 例：敵に重ねるマーク・名札・当たった所に出す数字・画面の端に出す「あっちにいる」の矢印
@@ -286,9 +286,9 @@ static_assert(std::is_trivially_copyable_v<UIWorldFollowComponent>);
 
 ```cpp
 #pragma once
-#include "MyEngine/Components/UI/UIWorldFollowComponent.h"
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
+#include "HTTEngine/Components/UI/UIWorldFollowComponent.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
 
 // 前方宣言
 class Camera;
@@ -328,20 +328,20 @@ public:
 #include <algorithm>
 #include <unordered_map>
 
-#include "MyEngine/Camera/Camera.h"
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
-#include "MyEngine/Math/MathUtility.h"
+#include "HTTEngine/Camera/Camera.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Math/MathUtility.h"
 #ifdef USE_IMGUI
-#include "MyEngine/Components/UI/ImageComponent.h"
-#include "MyEngine/Components/UI/PolylineComponent.h"
-#include "MyEngine/Components/UI/TextComponent.h"
-#include "MyEngine/Components/UI/VectorShapeComponent.h"
+#include "HTTEngine/Components/UI/ImageComponent.h"
+#include "HTTEngine/Components/UI/PolylineComponent.h"
+#include "HTTEngine/Components/UI/TextComponent.h"
+#include "HTTEngine/Components/UI/VectorShapeComponent.h"
 #endif
 
 namespace {
@@ -605,47 +605,47 @@ bool UIWorldFollowSystem::IsHiddenInHierarchy(Handle<Entity> entity) {
 - `hadPlacements`：前のフレームに置いていた物が今は置かない（Enabled を外した・隠した）とき、ワールド行列を Transform のとおりに戻すためにも計算し直す
 - Inspector の `ui.Label` は保存には関係しない（飾り）。今の状態と注意を出すだけ
 
-### B-4 `MyEngine_v1.vcxproj`・`MyEngine_v1.vcxproj.filters`
+### B-4 `HTTEngine.vcxproj`・`HTTEngine.vcxproj.filters`
 
 ソリューションエクスプローラーで足してもよい。手で書くなら：
 
-`MyEngine_v1.vcxproj`
+`HTTEngine.vcxproj`
 
 ```xml
-    <ClCompile Include="MyEngine\Systems\UI\UIWorldFollowSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\UI\UIWorldFollowSystem.cpp" />
 ```
 
-（`MyEngine\Systems\UI\VectorShapeSystem.cpp` の前）
+（`HTTEngine\Systems\UI\VectorShapeSystem.cpp` の前）
 
 ```xml
-    <ClInclude Include="MyEngine\Components\UI\UIWorldFollowComponent.h" />
+    <ClInclude Include="HTTEngine\Components\UI\UIWorldFollowComponent.h" />
 ```
 
-（`MyEngine\Components\UI\VectorShapeComponent.h` の前）
+（`HTTEngine\Components\UI\VectorShapeComponent.h` の前）
 
 ```xml
-    <ClInclude Include="MyEngine\Systems\UI\UIWorldFollowSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\UI\UIWorldFollowSystem.h" />
 ```
 
-（`MyEngine\Systems\UI\VectorShapeSystem.h` の前）
+（`HTTEngine\Systems\UI\VectorShapeSystem.h` の前）
 
-`MyEngine_v1.vcxproj.filters`（それぞれ同じ所の前）
+`HTTEngine.vcxproj.filters`（それぞれ同じ所の前）
 
 ```xml
-    <ClCompile Include="MyEngine\Systems\UI\UIWorldFollowSystem.cpp">
-      <Filter>MyEngine\Systems\UI</Filter>
+    <ClCompile Include="HTTEngine\Systems\UI\UIWorldFollowSystem.cpp">
+      <Filter>HTTEngine\Systems\UI</Filter>
     </ClCompile>
 ```
 
 ```xml
-    <ClInclude Include="MyEngine\Components\UI\UIWorldFollowComponent.h">
-      <Filter>MyEngine\Components\UI</Filter>
+    <ClInclude Include="HTTEngine\Components\UI\UIWorldFollowComponent.h">
+      <Filter>HTTEngine\Components\UI</Filter>
     </ClInclude>
 ```
 
 ```xml
-    <ClInclude Include="MyEngine\Systems\UI\UIWorldFollowSystem.h">
-      <Filter>MyEngine\Systems\UI</Filter>
+    <ClInclude Include="HTTEngine\Systems\UI\UIWorldFollowSystem.h">
+      <Filter>HTTEngine\Systems\UI</Filter>
     </ClInclude>
 ```
 
@@ -656,8 +656,8 @@ bool UIWorldFollowSystem::IsHiddenInHierarchy(Handle<Entity> entity) {
 include（UI の所の最後）
 
 ```cpp
-#include "MyEngine/Systems/UI/VectorShapeSystem.h"
-#include "MyEngine/Systems/UI/UIWorldFollowSystem.h"
+#include "HTTEngine/Systems/UI/VectorShapeSystem.h"
+#include "HTTEngine/Systems/UI/UIWorldFollowSystem.h"
 ```
 
 `Initialize`（`UIMaskSystem::Initialize();` の次）
@@ -686,8 +686,8 @@ include（UI の所の最後）
 include（`UIMaskSystem.h` の次）
 
 ```cpp
-#include "MyEngine/Systems/UI/UIMaskSystem.h"
-#include "MyEngine/Systems/UI/UIWorldFollowSystem.h"
+#include "HTTEngine/Systems/UI/UIMaskSystem.h"
+#include "HTTEngine/Systems/UI/UIWorldFollowSystem.h"
 ```
 
 `IsMouseOver`（最初の `if` の後）
@@ -730,8 +730,8 @@ float SpriteRenderSystem::CalcGroupAlpha(Handle<Entity> entity) {
 include（`UIMaskSystem.h` の次）
 
 ```cpp
-#include "MyEngine/Systems/UI/UIMaskSystem.h"
-#include "MyEngine/Systems/UI/UIWorldFollowSystem.h"
+#include "HTTEngine/Systems/UI/UIMaskSystem.h"
+#include "HTTEngine/Systems/UI/UIWorldFollowSystem.h"
 ```
 
 `IsMouseOver`（最初の `if` の後）
@@ -754,7 +754,7 @@ include（`UIMaskSystem.h` の次）
 #pragma once
 #include <random>
 
-#include "MyEngine/ECS/Script.h"
+#include "HTTEngine/ECS/Script.h"
 
 /// <summary>
 /// 円を描いて動く（Sandbox のテスト用。UI World Follow の相手・Camera Follow の相手にする）
@@ -813,7 +813,7 @@ private:
 
 #include <cmath>
 
-#include "MyEngine/Components/UI/UIWorldFollowComponent.h"
+#include "HTTEngine/Components/UI/UIWorldFollowComponent.h"
 
 SCRIPT(CircleMover, "Test");
 SCRIPT(EdgeArrow, "Test");

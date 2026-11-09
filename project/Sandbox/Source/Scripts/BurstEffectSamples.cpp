@@ -1,8 +1,8 @@
 #include "Source/Scripts/BurstEffectSamples.h"
 
-#include "MyEngine/Components/Effects/ParticleSystemComponent.h"
-#include "MyEngine/ECS/GameObject.h"
-#include "MyEngine/Math/RandomEngine.h"
+#include "HTTEngine/Components/Effects/ParticleSystemComponent.h"
+#include "HTTEngine/ECS/GameObject.h"
+#include "HTTEngine/Math/RandomEngine.h"
 
 namespace {
 // ===== コードで作るときの、飛び散る物の見た目 =====

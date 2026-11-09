@@ -749,10 +749,10 @@ PixelShaderOutput main(VertexShaderOutput input)
 #pragma once
 #include <type_traits>
 
-#include "MyEngine/Components/UI/ImageComponent.h"
-#include "MyEngine/Graphics/Pipeline/RenderStates.h"
-#include "MyEngine/Math/Vector2.h"
-#include "MyEngine/Math/Vector4.h"
+#include "HTTEngine/Components/UI/ImageComponent.h"
+#include "HTTEngine/Graphics/Pipeline/RenderStates.h"
+#include "HTTEngine/Math/Vector2.h"
+#include "HTTEngine/Math/Vector4.h"
 
 // 画像を使わず、シェーダーで計算して描く UI の図形。Entityに付けるComponent（カテゴリ：UI）
 // 置き方は Image と同じ：Transform の translation の x・y が画面のピクセル（ゲームの画面のつもり。Y は上が＋）、
@@ -869,9 +869,9 @@ Image の並べ替えと同じ処理が要るので、テンプレートにし�
 #include <tuple>
 #include <vector>
 
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/ECS/EntityManager.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/ECS/EntityManager.h"
 
 /// <summary>
 /// 画面に重ねる順に並べるための1件（Image・Vector Shape の Draw の中だけで使う）
@@ -923,8 +923,8 @@ include を2か所直す。`<tuple>` は使わなくなる。
 変更後：
 
 ```cpp
-#include "MyEngine/Math/Color.h"
-#include "MyEngine/Systems/Rendering2D/UIDrawOrder.h"
+#include "HTTEngine/Math/Color.h"
+#include "HTTEngine/Systems/Rendering2D/UIDrawOrder.h"
 ```
 
 `struct ImageDrawItem` を消して、`SpriteRenderState` を直す。
@@ -998,9 +998,9 @@ void DrawImages() {
 
 ```cpp
 #pragma once
-#include "MyEngine/Components/UI/VectorShapeComponent.h"
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
+#include "HTTEngine/Components/UI/VectorShapeComponent.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
 
 /// <summary>
 /// Vector Shape（画像を使わない UI の図形）を描く
@@ -1037,20 +1037,20 @@ public:
 #include <memory>
 #include <vector>
 
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Editor/Viewport/SceneVisibility.h"
-#include "MyEngine/Graphics/Renderer/Renderer.h"
-#include "MyEngine/Input/InputManager.h"
-#include "MyEngine/Math/Color.h"
-#include "MyEngine/Math/MathUtility.h"
-#include "MyEngine/Systems/Rendering2D/SpriteRenderSystem.h"
-#include "MyEngine/Systems/Rendering2D/UIDrawOrder.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Editor/Viewport/SceneVisibility.h"
+#include "HTTEngine/Graphics/Renderer/Renderer.h"
+#include "HTTEngine/Input/InputManager.h"
+#include "HTTEngine/Math/Color.h"
+#include "HTTEngine/Math/MathUtility.h"
+#include "HTTEngine/Systems/Rendering2D/SpriteRenderSystem.h"
+#include "HTTEngine/Systems/Rendering2D/UIDrawOrder.h"
 
 namespace {
 constexpr float kEdgeMargin = 2.0f;         // 四角の板を図形より広げる量（ピクセル。縁のなめらかな所が板の外で切れないように）
@@ -1374,7 +1374,7 @@ void DescribeVectorShape(ComponentUI& ui, VectorShapeComponent& value) {
 // 初期化 / 解放
 //=============================================================================
 void VectorShapeSystem::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<VectorShapeState>();
 
 	// Vector Shape の置き場所・保存・Inspector を登録する。見せ方は DescribeVectorShape 1つで、保存と Inspector の両方に使う
@@ -1389,7 +1389,7 @@ void VectorShapeSystem::Release() { state.reset(); }
 // 描く（停止中も）
 //=============================================================================
 void VectorShapeSystem::Draw() {
-	MY_ASSERT_MSG(state != nullptr, "VectorShapeSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "VectorShapeSystem::Initialize()を先に呼んでください");
 	CollectUIDrawItems<VectorShapeComponent>(state->items);
 	for (const UIDrawItem& item : state->items) {
 		DrawShape(item);
@@ -1417,8 +1417,8 @@ bool VectorShapeSystem::IsMouseOver(Handle<Entity> entity) {
 変更後：
 
 ```cpp
-#include "MyEngine/Systems/UI/TextRenderSystem.h"
-#include "MyEngine/Systems/UI/VectorShapeSystem.h"
+#include "HTTEngine/Systems/UI/TextRenderSystem.h"
+#include "HTTEngine/Systems/UI/VectorShapeSystem.h"
 ```
 
 変更後：
@@ -1449,8 +1449,8 @@ bool VectorShapeSystem::IsMouseOver(Handle<Entity> entity) {
 変更後：
 
 ```cpp
-#include "MyEngine/Systems/UI/TextRenderSystem.h"
-#include "MyEngine/Systems/UI/VectorShapeSystem.h"
+#include "HTTEngine/Systems/UI/TextRenderSystem.h"
+#include "HTTEngine/Systems/UI/VectorShapeSystem.h"
 ```
 
 ここでビルドが通る。シーンファイルに手で書けば描ける（D-1 のシーンがそのまま使える）。
@@ -1466,8 +1466,8 @@ include を足す。
 変更後：
 
 ```cpp
-#include "MyEngine/Components/UI/TextComponent.h"
-#include "MyEngine/Components/UI/VectorShapeComponent.h"
+#include "HTTEngine/Components/UI/TextComponent.h"
+#include "HTTEngine/Components/UI/VectorShapeComponent.h"
 ```
 
 ＋ メニューの Image の下に足す。
@@ -1529,19 +1529,19 @@ include を足す。
 #include <tuple>
 #include <vector>
 
-#include "MyEngine/Components/UI/ImageComponent.h"
-#include "MyEngine/Components/UI/TextComponent.h"
-#include "MyEngine/Components/UI/VectorShapeComponent.h"
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Editor/History/EditorHistory.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Editor/Viewport/EditorViewport.h"
-#include "MyEngine/Editor/Viewport/SceneVisibility.h"
-#include "MyEngine/Editor/Windows/HierarchyWindow.h"
-#include "MyEngine/Graphics/Renderer/Renderer.h"
-#include "MyEngine/Systems/Rendering2D/SpriteRenderSystem.h"
-#include "MyEngine/Systems/UI/TextRenderSystem.h"
+#include "HTTEngine/Components/UI/ImageComponent.h"
+#include "HTTEngine/Components/UI/TextComponent.h"
+#include "HTTEngine/Components/UI/VectorShapeComponent.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Editor/History/EditorHistory.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Editor/Viewport/EditorViewport.h"
+#include "HTTEngine/Editor/Viewport/SceneVisibility.h"
+#include "HTTEngine/Editor/Windows/HierarchyWindow.h"
+#include "HTTEngine/Graphics/Renderer/Renderer.h"
+#include "HTTEngine/Systems/Rendering2D/SpriteRenderSystem.h"
+#include "HTTEngine/Systems/UI/TextRenderSystem.h"
 
 namespace {
 constexpr ImU32 kSelectedColor = IM_COL32(255, 160, 40, 255); // 選んだ UI の枠（3D の物の枠と同じ色）
@@ -1965,4 +1965,4 @@ if (VectorShapeComponent* shape = GetComponent<VectorShapeComponent>()) {
 - **UI Screen の Scale の動きと、Alpha Group のフェードの動き：** 動いている途中の絵は見ていない。止まった値では確かめた。
 - **ビルドの警告：** エラーだけを見た。警告の数は確かめていない。
 - **同じ Order の Image と Text：** UI ギズモのクリックは番号の大きい物を選ぶが、描く順は Image → Vector Shape → Text。重ねるときは Order を分ける（今の Image と Text と同じ）。
-- **Release のシェーダー：** ゲームのビルドの後に xcopy で `MyEngine/Shader` へ写る。`.shader` だけ直したときは、ビルドし直すまで Release には入らない。
+- **Release のシェーダー：** ゲームのビルドの後に xcopy で `HTTEngine/Shader` へ写る。`.shader` だけ直したときは、ビルドし直すまで Release には入らない。

@@ -432,9 +432,9 @@ include を足す。
 変更後：
 
 ```cpp
-#include "MyEngine/Graphics/Pipeline/RootSignatureManager.h"
-#include "MyEngine/Graphics/PostEffect/PostOverride.h"
-#include "MyEngine/Graphics/RenderTarget/RenderTexture.h"
+#include "HTTEngine/Graphics/Pipeline/RootSignatureManager.h"
+#include "HTTEngine/Graphics/PostEffect/PostOverride.h"
+#include "HTTEngine/Graphics/RenderTarget/RenderTexture.h"
 ```
 
 `DepthOfFieldSettings` の最後に足す。
@@ -480,8 +480,8 @@ include を足す。
 変更後：
 
 ```cpp
-#include "MyEngine/Graphics/PostEffect/LensPass.h"
-#include "MyEngine/Graphics/PostEffect/PostOverride.h"
+#include "HTTEngine/Graphics/PostEffect/LensPass.h"
+#include "HTTEngine/Graphics/PostEffect/PostOverride.h"
 ```
 
 変更前：
@@ -724,7 +724,7 @@ DepthOfFieldSettings SceneRenderer::GetViewDepthOfField() {
 #pragma once
 #include <type_traits>
 
-#include "MyEngine/Math/Easing.h"
+#include "HTTEngine/Math/Easing.h"
 
 // ゲームの絵を撮るカメラ。Entityに付けるComponent（カテゴリ：Camera）
 // 位置・向きは Transform（親の下に置けば一緒に動く）。ここに持つのは写り方と、このカメラへ切り替わるときの動き方
@@ -776,9 +776,9 @@ static_assert(std::is_trivially_copyable_v<CameraComponent>);
 #pragma once
 #include <type_traits>
 
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Vector2.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Vector2.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // カメラが Entity を追いかける。Camera Component と同じ Entity に付けるComponent（カテゴリ：Camera）
 // どの面の上で動かすかは Plane で決める。カメラの向きは変えない
@@ -841,8 +841,8 @@ static_assert(std::is_trivially_copyable_v<CameraFollowComponent>);
 #pragma once
 #include <type_traits>
 
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // カメラに注視点を見させる。Camera Component と同じ Entity に付けるComponent（カテゴリ：Camera）
 // 変えるのは写す向きだけで、Transform の向きは変えない（Camera Look At を外すと、置いた向きに戻る）
@@ -871,7 +871,7 @@ static_assert(std::is_trivially_copyable_v<CameraLookAtComponent>);
 #pragma once
 #include <type_traits>
 
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // カメラの揺れ。Camera Component と同じ Entity に付けるComponent（カテゴリ：Camera）
 // ノイズ：ずっと続く小さな揺れ（手持ちカメラ・地鳴りなど）
@@ -973,9 +973,9 @@ static_assert(std::is_trivially_copyable_v<CameraVolumeComponent>);
 
 ```cpp
 #pragma once
-#include "MyEngine/Components/Camera/CameraFollowComponent.h"
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
+#include "HTTEngine/Components/Camera/CameraFollowComponent.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
 
 // 前方宣言
 class ComponentUI;
@@ -1007,14 +1007,14 @@ float CalcSmoothRate(float deltaTime, float smoothTime);
 #include <cmath>
 #include <optional>
 
-#include "MyEngine/Components/Camera/CameraComponent.h"
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Components/Physics/RigidbodyComponent.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
-#include "MyEngine/Math/MathUtility.h"
+#include "HTTEngine/Components/Camera/CameraComponent.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Components/Physics/RigidbodyComponent.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Math/MathUtility.h"
 
 namespace {
 constexpr float kMinVerticalForward = 0.001f; // 前の向きの Y の大きさがこれより小さければ、カメラは水平（地面と交わらない）
@@ -1058,7 +1058,7 @@ FollowAxes MakeFollowAxes(CameraFollowPlane plane, const Quaternion& rotation) {
 	case CameraFollowPlane::View:
 		return {right, RotateVector({0.0f, 1.0f, 0.0f}, rotation)};
 	}
-	MY_ASSERT_MSG(false, "知らない CameraFollowPlane です");
+	HTT_ASSERT_MSG(false, "知らない CameraFollowPlane です");
 	return {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}};
 }
 
@@ -1118,7 +1118,7 @@ Vector2 CalcWantedLookAhead(const CameraFollowComponent& follow, const Vector2& 
 		    std::clamp(velocity.y * follow.lookAheadTime.y, -follow.lookAheadMax.y, follow.lookAheadMax.y),
 		};
 	}
-	MY_ASSERT_MSG(false, "知らない CameraFollowMode です");
+	HTT_ASSERT_MSG(false, "知らない CameraFollowMode です");
 	return {0.0f, 0.0f};
 }
 
@@ -1288,8 +1288,8 @@ bool CameraFollow::Update(Handle<Entity> entity, CameraFollowComponent& follow, 
 
 ```cpp
 #pragma once
-#include "MyEngine/Components/Camera/CameraShakeComponent.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Components/Camera/CameraShakeComponent.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // 前方宣言
 class ComponentUI;
@@ -1334,9 +1334,9 @@ void AddImpulse(CameraShakeComponent& shake, float strength, const Vector3& dire
 #include <cstdint>
 #include <numbers>
 
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/Math/Easing.h"
-#include "MyEngine/Systems/Camera/CameraSystem.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Math/Easing.h"
+#include "HTTEngine/Systems/Camera/CameraSystem.h"
 
 namespace {
 constexpr float kMinDamping = 0.01f;       // 減衰比の下限（0 だと永遠に揺れる）
@@ -1487,8 +1487,8 @@ void CameraShake::AddImpulse(CameraShakeComponent& shake, float strength, const 
 #pragma once
 #include <optional>
 
-#include "MyEngine/Components/Camera/CameraVolumeComponent.h"
-#include "MyEngine/Graphics/PostEffect/PostOverride.h"
+#include "HTTEngine/Components/Camera/CameraVolumeComponent.h"
+#include "HTTEngine/Graphics/PostEffect/PostOverride.h"
 
 // 前方宣言
 class ComponentUI;
@@ -1516,8 +1516,8 @@ PostOverrides MakeOverrides(const CameraVolumeComponent& volume, std::optional<f
 #include <algorithm>
 #include <format>
 
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/Graphics/PostEffect/DepthOfFieldPass.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Graphics/PostEffect/DepthOfFieldPass.h"
 
 namespace {
 // 1項目を、左のチェックと右の値を1行に並べて見せる。保存の名前は key（チェックは key + "Override"）
@@ -1607,14 +1607,14 @@ PostOverrides CameraVolume::MakeOverrides(const CameraVolumeComponent& volume, s
 #pragma once
 #include <memory>
 
-#include "MyEngine/Components/Camera/CameraComponent.h"
-#include "MyEngine/Components/Camera/CameraFollowComponent.h"
-#include "MyEngine/Components/Camera/CameraLookAtComponent.h"
-#include "MyEngine/Components/Camera/CameraShakeComponent.h"
-#include "MyEngine/Components/Camera/CameraVolumeComponent.h"
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Components/Camera/CameraComponent.h"
+#include "HTTEngine/Components/Camera/CameraFollowComponent.h"
+#include "HTTEngine/Components/Camera/CameraLookAtComponent.h"
+#include "HTTEngine/Components/Camera/CameraShakeComponent.h"
+#include "HTTEngine/Components/Camera/CameraVolumeComponent.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // 前方宣言
 class Camera;
@@ -1696,24 +1696,24 @@ public:
 #include <optional>
 #include <vector>
 
-#include "MyEngine/Camera/Camera.h"
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Graphics/PostEffect/PostOverride.h"
-#include "MyEngine/Graphics/Renderer/GameScreen.h"
-#include "MyEngine/Graphics/Renderer/SceneRenderer.h"
-#include "MyEngine/Math/MathUtility.h"
-#include "MyEngine/Math/RandomEngine.h"
-#include "MyEngine/Systems/Camera/CameraFollow.h"
-#include "MyEngine/Systems/Camera/CameraShake.h"
-#include "MyEngine/Systems/Camera/CameraVolume.h"
-#include "MyEngine/Time/EngineTime.h"
+#include "HTTEngine/Camera/Camera.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Graphics/PostEffect/PostOverride.h"
+#include "HTTEngine/Graphics/Renderer/GameScreen.h"
+#include "HTTEngine/Graphics/Renderer/SceneRenderer.h"
+#include "HTTEngine/Math/MathUtility.h"
+#include "HTTEngine/Math/RandomEngine.h"
+#include "HTTEngine/Systems/Camera/CameraFollow.h"
+#include "HTTEngine/Systems/Camera/CameraShake.h"
+#include "HTTEngine/Systems/Camera/CameraVolume.h"
+#include "HTTEngine/Time/EngineTime.h"
 
 namespace {
 const Vector3 kDefaultPosition = {0.0f, 0.0f, -10.0f}; // Camera Component が無いときの位置（原点を正面から見る）
@@ -1810,7 +1810,7 @@ float GetCameraDeltaTime(CameraTimeMode mode) {
 	case CameraTimeMode::Real:
 		return Time::GetRealDeltaTime();
 	}
-	MY_ASSERT_MSG(false, "知らない CameraTimeMode です");
+	HTT_ASSERT_MSG(false, "知らない CameraTimeMode です");
 	return 0.0f;
 }
 
@@ -1910,7 +1910,7 @@ std::optional<float> CalcVolumeFocusDistance(Handle<Entity> entity, const Camera
 		return target ? std::optional<float>(depthOf(GetWorldPosition(*target))) : std::nullopt;
 	}
 	}
-	MY_ASSERT_MSG(false, "知らない CameraVolumeFocus です");
+	HTT_ASSERT_MSG(false, "知らない CameraVolumeFocus です");
 	return std::nullopt;
 }
 
@@ -2044,7 +2044,7 @@ void UpdateCameraMotion() {
 // 初期化 / 解放
 //=============================================================================
 void CameraSystem::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<CameraState>();
 	UseDefaultCamera(); // 最初の Update より前（シーンの Initialize）に使われても、ちゃんとしたカメラを返せるように
 
@@ -2092,7 +2092,7 @@ bool CameraSystem::UpdateFollow() {
 }
 
 void CameraSystem::Update(bool isGameRunning) {
-	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
 
 	// ===== 1. 使う Camera を選ぶ（有効な物の中で priority が一番大きい物。同じなら先に見つけた物）=====
 	Handle<Entity> best;
@@ -2154,22 +2154,22 @@ void CameraSystem::ResetOutput() {
 // 取得
 //=============================================================================
 Camera* CameraSystem::GetMainCamera() {
-	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
 	return state->camera.get();
 }
 
 std::shared_ptr<Camera> CameraSystem::GetSharedMainCamera() {
-	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
 	return state->camera;
 }
 
 Handle<Entity> CameraSystem::GetMainCameraEntity() {
-	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
 	return state->mainEntity;
 }
 
 bool CameraSystem::IsBlending() {
-	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
 	return state->blend.isActive;
 }
 
@@ -2188,14 +2188,14 @@ Handle<Entity> CameraSystem::GetFollowTargetEntity() {
 // 衝撃
 //=============================================================================
 void CameraSystem::AddImpulse(float strength) {
-	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
 	// 画面の面の中で、向きをランダムに決める
 	const float angle = RandomEngine::GetFloat(0.0f, 2.0f * std::numbers::pi_v<float>);
 	state->impulses.push_back({strength, {std::cos(angle), std::sin(angle), 0.0f}, false});
 }
 
 void CameraSystem::AddImpulse(float strength, const Vector3& worldDirection) {
-	MY_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
 	state->impulses.push_back({strength, worldDirection, true});
 }
 ```
@@ -2229,9 +2229,9 @@ include を足す。
 変更後：
 
 ```cpp
-#include "MyEngine/Systems/Audio/AudioSystem.h"
-#include "MyEngine/Systems/Camera/CameraSystem.h"
-#include "MyEngine/Systems/Gameplay/ScriptSystem.h"
+#include "HTTEngine/Systems/Audio/AudioSystem.h"
+#include "HTTEngine/Systems/Camera/CameraSystem.h"
+#include "HTTEngine/Systems/Gameplay/ScriptSystem.h"
 ```
 
 `ChangeScene` の中。
@@ -2278,8 +2278,8 @@ include を足す。
 ```cpp
 #include <array>
 
-#include <MyEngine/ECS/Script.h>
-#include <MyEngine/Input/InputManager.h>
+#include <HTTEngine/ECS/Script.h>
+#include <HTTEngine/Input/InputManager.h>
 
 // Virtual Camera を確かめるための Script。動かす Entity に付ける
 // 1〜4：カメラの切り替え / WASD：動かす / Q・E：今のカメラを回す

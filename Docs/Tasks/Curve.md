@@ -330,10 +330,10 @@ AssetInspector::Draw：needsLoadCheck なら CanLoad を1回だけ呼ぶ
 
 ## パートA カーブの計算
 
-ファイルを足したら、VS のソリューションエクスプローラーで `MyEngine_v1` プロジェクトに追加する。フィルタは `project` フォルダで次を実行すると、フォルダの形に作り直される。
+ファイルを足したら、VS のソリューションエクスプローラーで `HTTEngine` プロジェクトに追加する。フィルタは `project` フォルダで次を実行すると、フォルダの形に作り直される。
 
 ```bash
-powershell -ExecutionPolicy Bypass -File Tools\UpdateFilters.ps1 MyEngine_v1.vcxproj
+powershell -ExecutionPolicy Bypass -File Tools\UpdateFilters.ps1 HTTEngine.vcxproj
 ```
 
 ### A-1 `Curve/Curve.h`（新しいファイル）
@@ -342,8 +342,8 @@ powershell -ExecutionPolicy Bypass -File Tools\UpdateFilters.ps1 MyEngine_v1.vcx
 #pragma once
 #include <vector>
 
-#include "MyEngine/Math/Easing.h"
-#include "MyEngine/Math/Vector2.h"
+#include "HTTEngine/Math/Easing.h"
+#include "HTTEngine/Math/Vector2.h"
 
 /// <summary>
 /// キーから次のキーまでの補間の種類
@@ -892,8 +892,8 @@ void Curve::ClampHandles() {
 include に足す。
 
 ```cpp
-#include "MyEngine/AI/AttackTableManager.h"
-#include "MyEngine/Curve/CurveManager.h"
+#include "HTTEngine/AI/AttackTableManager.h"
+#include "HTTEngine/Curve/CurveManager.h"
 ```
 
 `GetAssetPath` の `switch` に足す。
@@ -943,8 +943,8 @@ constexpr std::array<std::string_view, 1> kCurveExtensions = {CurveManager::kFil
 #include <string_view>
 #include <filesystem>
 
-#include "MyEngine/Curve/Curve.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/Curve/Curve.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
 
 
 /// <summary>
@@ -1005,11 +1005,11 @@ public:
 
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/Scene/SceneSerializer.h"
-#include "MyEngine/String/ConvertString.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Scene/SceneSerializer.h"
+#include "HTTEngine/String/ConvertString.h"
 
 namespace {
 constexpr std::string_view kTypeName = "Curve"; // 警告に出す名前
@@ -1055,7 +1055,7 @@ bool WriteFile(const std::string& path, const Curve& curve) {
 // 初期化 / 解放
 //=============================================================================
 void CurveManager::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<CurveStorage>();
 }
 
@@ -1065,7 +1065,7 @@ void CurveManager::Release() { state.reset(); }
 // 読み込み
 //=============================================================================
 uint32_t CurveManager::Load(const std::filesystem::path& filePath) {
-	MY_ASSERT_MSG(state != nullptr, "CurveManager::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "CurveManager::Initialize()を先に呼んでください");
 	// --- 読み込み済みなら、同じ番号を返す ---
 	const std::string key = ToPathKey(filePath);
 	const auto cached = std::ranges::find(state->assets, key, &CurveAsset::path);
@@ -1186,8 +1186,8 @@ void CurveManager::DescribeKey(ComponentUI& ui, CurveKey& value, bool isInUsed, 
 include に足す。
 
 ```cpp
-#include "MyEngine/AI/AttackTableManager.h"
-#include "MyEngine/Curve/CurveManager.h"
+#include "HTTEngine/AI/AttackTableManager.h"
+#include "HTTEngine/Curve/CurveManager.h"
 ```
 
 `Initialize` に足す。
@@ -1240,10 +1240,10 @@ void Run();
 #include <externals/magic_enum/magic_enum.hpp>
 #include <externals/nlohmann/json.hpp>
 
-#include "MyEngine/Curve/Curve.h"
-#include "MyEngine/Curve/CurveManager.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
+#include "HTTEngine/Curve/Curve.h"
+#include "HTTEngine/Curve/CurveManager.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
 
 namespace {
 constexpr float kExact = 0.00002f;      // 式で答えが決まる値の許容
@@ -1597,7 +1597,7 @@ void CurveSelfTest::Run() {
 	TestEase(tester);
 	TestEdit(tester);
 	TestJson(tester);
-	MY_ASSERT_MSG(tester.failed == 0, std::format("カーブの計算が合いません（{} 項目。ログを見てください）", tester.failed));
+	HTT_ASSERT_MSG(tester.failed == 0, std::format("カーブの計算が合いません（{} 項目。ログを見てください）", tester.failed));
 	LogManager::Log(std::format("[curve] self test OK ({} / {})", tester.passed, tester.passed + tester.failed));
 }
 ```
@@ -1607,9 +1607,9 @@ void CurveSelfTest::Run() {
 include に足す。
 
 ```cpp
-#include "MyEngine/Collision/Profiling/CollisionProfiler.h"
+#include "HTTEngine/Collision/Profiling/CollisionProfiler.h"
 // Curve
-#include "MyEngine/Curve/CurveSelfTest.h"
+#include "HTTEngine/Curve/CurveSelfTest.h"
 ```
 
 `Initialize` の `ComputeSelfTest::Run` の下に足す。
@@ -1633,8 +1633,8 @@ include に足す。
 
 #include <externals/imgui/imgui.h>
 
-#include "MyEngine/Curve/Curve.h"
-#include "MyEngine/Math/Vector2.h"
+#include "HTTEngine/Curve/Curve.h"
+#include "HTTEngine/Math/Vector2.h"
 
 // 前方宣言
 class ComponentUI;
@@ -1754,8 +1754,8 @@ private:
 
 #include <externals/magic_enum/magic_enum.hpp>
 
-#include "MyEngine/Curve/CurveManager.h"
-#include "MyEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Curve/CurveManager.h"
+#include "HTTEngine/ECS/ComponentUI.h"
 
 namespace {
 constexpr float kKeySize = 5.0f;           // キーの印の大きさ（ピクセル）
@@ -2348,11 +2348,11 @@ public:
 #include <cstdint>
 #include <optional>
 
-#include "MyEngine/Curve/CurveManager.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/Editor/History/EditorHistory.h"
-#include "MyEngine/Editor/Inspector/AssetInspector.h"
-#include "MyEngine/Editor/Widgets/CurveEditor.h"
+#include "HTTEngine/Curve/CurveManager.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Editor/History/EditorHistory.h"
+#include "HTTEngine/Editor/Inspector/AssetInspector.h"
+#include "HTTEngine/Editor/Widgets/CurveEditor.h"
 
 namespace {
 constexpr std::string_view kTypeName = "Curve"; // Inspector の見出しに出す名前
@@ -2417,8 +2417,8 @@ void CurveAssetEditor::Initialize() { AssetInspector::Register(std::make_unique<
 `#ifdef USE_IMGUI` の中の include に足す。
 
 ```cpp
-#include "MyEngine/Editor/Inspector/AttackTableEditor.h"
-#include "MyEngine/Editor/Inspector/CurveAssetEditor.h"
+#include "HTTEngine/Editor/Inspector/AttackTableEditor.h"
+#include "HTTEngine/Editor/Inspector/CurveAssetEditor.h"
 ```
 
 `Initialize` の `#ifdef USE_IMGUI` の中に足す。
@@ -2433,8 +2433,8 @@ void CurveAssetEditor::Initialize() { AssetInspector::Register(std::make_unique<
 include に足す。
 
 ```cpp
-#include "MyEngine/AI/AttackTableManager.h"
-#include "MyEngine/Curve/CurveManager.h"
+#include "HTTEngine/AI/AttackTableManager.h"
+#include "HTTEngine/Curve/CurveManager.h"
 ```
 
 `DrawCreateMenu` の Attack Table の下に足す。
@@ -2461,8 +2461,8 @@ include に足す。
 ファイルをゲームから使うとき。`Fields` に `AssetField` を書くと、Inspector で `.curve` を選べて、シーンにも保存される。カーブの値を Entity の高さへ書く見本（ゲーム側のコード）。
 
 ```cpp
-#include <MyEngine/Curve/CurveManager.h>
-#include <MyEngine/ECS/Script.h>
+#include <HTTEngine/Curve/CurveManager.h>
+#include <HTTEngine/ECS/Script.h>
 
 // カーブの値を、この Entity の高さへ書く見本
 class CurveMover : public Script {
@@ -2559,7 +2559,7 @@ Curve loaded = CurveManager::FromJson(json, warnings); // 読む
 | 34 | 起動・終了 | Debug を起動して閉じる | 終了コード 0。ログの error・warning は 0 |
 | 35 | 3 構成の自己テスト | Debug の起動。Development・Release は一時的に呼ぶように変えて起動 | どれも 93 / 93 |
 | 36 | 製品版で読む | Release で `LoadAsset(AssetType::Curve, 〜)` と `Evaluate` を呼ぶ | 読めた（キー3個、`Evaluate(0.6)` = 0.642369） |
-| 37 | ゲームからヘッダを読む | ゲームの `main.cpp` から `#include <MyEngine/Curve/CurveManager.h>` | コンパイルが通る |
+| 37 | ゲームからヘッダを読む | ゲームの `main.cpp` から `#include <HTTEngine/Curve/CurveManager.h>` | コンパイルが通る |
 | 38 | パートB の後 | パートC のファイルと行を除いた状態 | Debug のビルドと起動が通り、自己テストは 93 / 93 |
 | 39 | シーンから使う | D-2 の `CurveMover` を付けたシーンを Release で動かす | シーンのパスから `.curve` を読み、0.6 秒で高さが `Evaluate` と同じ 0.642592 になった |
 

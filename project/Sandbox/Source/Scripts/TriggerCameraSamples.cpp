@@ -6,10 +6,10 @@
 #include <format>
 #include <numbers>
 
-#include "MyEngine/Components/Camera/CameraComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Input/InputManager.h"
-#include "MyEngine/Time/EngineTime.h"
+#include "HTTEngine/Components/Camera/CameraComponent.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Input/InputManager.h"
+#include "HTTEngine/Time/EngineTime.h"
 
 SCRIPT(TriggerCameraSwitcher, "Test");
 SCRIPT(SideSwing, "Test");

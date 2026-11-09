@@ -370,7 +370,7 @@ FodyWeavers.xsd
 /generated/
 
 # Claude Code の作業用フォルダ
-/MyEngine_v1/
+/HTTEngine/
 
 # Docs の md に貼る画像（手元に置くだけで、git には上げない）
 /Docs/Tasks/images/
@@ -382,7 +382,7 @@ FodyWeavers.xsd
 project/externals/vcpkg_installed/
 
 # Sandbox（エンジンのテスト用の exe）が書くファイル
-/project/Sandbox/MyEngine/
+/project/Sandbox/HTTEngine/
 /project/Sandbox/imgui.ini
 /project/Sandbox/imgui_style.ini
 /project/Sandbox/saves/

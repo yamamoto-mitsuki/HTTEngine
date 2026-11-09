@@ -1,0 +1,677 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Development|x64">
+      <Configuration>Development</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>18.0</VCProjectVersion>
+    <Keyword>Win32Proj</Keyword>
+    <ProjectGuid>{1d0f63d3-16bb-43b8-985e-6bb516a1d662}</ProjectGuid>
+    <RootNamespace>HTTEngine</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v145</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="HTTEngine.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Development|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <Optimization>Disabled</Optimization>
+      <WholeProgramOptimization>false</WholeProgramOptimization>
+    </ClCompile>
+    <Link>
+      <SubSystem>
+      </SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <!-- HTTEngine -->
+    <ClCompile Include="HTTEngine\AI\AttackPart.cpp" />
+    <ClCompile Include="HTTEngine\AI\AttackTableManager.cpp" />
+    <ClCompile Include="HTTEngine\Combat\DamageTypes.cpp" />
+    <ClCompile Include="HTTEngine\Core\AssetMoveRegistry.cpp" />
+    <ClCompile Include="HTTEngine\Core\NameList.cpp" />
+    <ClCompile Include="HTTEngine\Curve\Curve.cpp" />
+    <ClCompile Include="HTTEngine\Curve\CurveManager.cpp" />
+    <ClCompile Include="HTTEngine\ECS\GameObject.cpp" />
+    <ClCompile Include="HTTEngine\ECS\Layers.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Assets\AssetIcons.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Assets\AssetMover.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Assets\AssetThumbnails.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Assets\ProjectFiles.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Gizmos\ArrowStripGizmo.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Gizmos\CameraGizmo.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Gizmos\GizmoLines.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Gizmos\PointListGizmo.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Gizmos\PolygonShapeGizmo.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Gizmos\PolylineGizmo.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Gizmos\SceneGizmo.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Gizmos\UIGizmo.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Inspector\AssetInspector.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Inspector\AttackTableEditor.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Inspector\CurveAssetEditor.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Inspector\MaterialAssetEditor.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Inspector\ScriptEditor.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Inspector\TimelineAssetEditor.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Timeline\TimelineDetails.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Timeline\TimelineEditorState.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Timeline\TimelineRows.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Timeline\TimelineWindow.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Viewport\ScenePicking.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Viewport\SceneVisibility.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Widgets\CurveEditor.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Widgets\FontPreview.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Widgets\ToolIcons.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Windows\AttackTableWindow.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Windows\CodeWindow.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Windows\ControlWindow.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Windows\ProjectWindow.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Windows\ProjectWindowActions.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Windows\SceneDialogs.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Windows\SettingsWindow.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Windows\UIScreenEditor.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Animation\AnimationManager.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Animation\AnimationPlayer.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Compute\ComputePipeline.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Compute\ComputeTexture.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Diagnostics\GraphicsDebug.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\GPU\DescriptorAllocator.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Material\MaterialManager.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\PostEffect\DepthOfFieldPass.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Renderer\GameScreen.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Renderer\SkinCache.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Text\FontManager.cpp" />
+    <ClCompile Include="HTTEngine\Math\Geometry\HitShape.cpp" />
+    <ClCompile Include="HTTEngine\Math\Geometry\PathCurve.cpp" />
+    <ClCompile Include="HTTEngine\Math\Geometry\Polygon.cpp" />
+    <ClCompile Include="HTTEngine\Math\Quaternion.cpp" />
+    <ClCompile Include="HTTEngine\Physics\ElasticSurfaceSimulation.cpp" />
+    <ClCompile Include="HTTEngine\Physics\MotionQuery.cpp" />
+    <ClCompile Include="HTTEngine\Physics\PhysicMaterialManager.cpp" />
+    <ClCompile Include="HTTEngine\Scene\DefaultScene.cpp" />
+    <ClCompile Include="HTTEngine\Scene\Prefab\PrefabDiff.cpp" />
+    <ClCompile Include="HTTEngine\Scene\Prefab\PrefabManager.cpp" />
+    <ClCompile Include="HTTEngine\Scene\Prefab\PrefabOverrides.cpp" />
+    <ClCompile Include="HTTEngine\Scene\Prefab\PrefabRecords.cpp" />
+    <ClCompile Include="HTTEngine\Scene\SceneTransition.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Animation\AnimationSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Animation\TimelineSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Camera\CameraFollow.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Camera\CameraLookAt.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Camera\CameraPath.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Camera\CameraShake.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Camera\CameraVolume.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Combat\DamageSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Combat\HitboxTelegraphSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Combat\HitSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Gameplay\AttackTableSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Gameplay\TimelineTriggerSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Rendering3D\ArrowStripSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Audio\AudioSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Camera\CameraSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Physics\CollisionSystem.cpp" />
+    <ClCompile Include="HTTEngine\Components\EngineComponents.cpp" />
+    <ClCompile Include="HTTEngine\ECS\ComponentSerializer.cpp" />
+    <ClCompile Include="HTTEngine\ECS\ComponentUI.cpp" />
+    <ClCompile Include="HTTEngine\ECS\GameComponent.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Inspector\LightEditor.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Widgets\ImeInput.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Inspector\ModelRendererEditor.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Inspector\ComponentEditor.cpp" />
+    <ClCompile Include="HTTEngine\Editor\History\EditorHistory.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Windows\InspectorWindow.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Windows\HierarchyWindow.cpp" />
+    <ClCompile Include="HTTEngine\ECS\EntityManager.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\GPU\FrameUploadBuffer.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Gizmos\LightGizmo.cpp" />
+    <ClCompile Include="HTTEngine\Collision\Profiling\CollisionProfiler.cpp" />
+    <ClCompile Include="HTTEngine\Diagnostics\CrashHandler.cpp" />
+    <ClCompile Include="HTTEngine\Diagnostics\LogManager.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Viewport\EditorGrid.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Viewport\EditorOverlay.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Viewport\EditorViewport.cpp" />
+    <ClCompile Include="HTTEngine\Editor\ImGuiManager.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Profiler.cpp" />
+    <ClCompile Include="HTTEngine\Editor\FrameStats.cpp" />
+    <ClCompile Include="HTTEngine\Systems\EngineSystems.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Viewport\ViewportWindow.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Diagnostics\D3D12ResourceLeakChecker.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\GPU\DirectXCommon.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\GPU\GpuResources.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\GPU\UploadContext.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\IBL\BrdfLutPass.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\IBL\CubeBakePass.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\IBL\IBLBaker.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\IBL\IBLEnvironment.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\IBL\PrefilterPass.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Model\ModelManager.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Pipeline\PSOManager.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Pipeline\RenderStates.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Pipeline\RootSignatureManager.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Pipeline\ShaderCompiler.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Pipeline\ShaderPackageLoader.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Pipeline\VertexFormat.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\PostEffect\BloomPass.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\PostEffect\LensPass.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\PostEffect\PostProcess.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Profiling\GPUProfiler.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Renderer\Renderer.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Renderer\RenderContext.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Renderer\RenderQueue.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Renderer\SceneRenderer.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\RenderTarget\RenderTexture.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\RenderTarget\RenderTextureCube.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\RenderTarget\RenderTextureManager.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\RenderTarget\RenderWindow.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Texture\TextureManager.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Rendering3D\DecalRenderSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Rendering3D\DepthOfFieldSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Physics\ElasticSurfaceSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Rendering3D\FogSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Lighting\LightSystem.cpp" />
+    <ClCompile Include="HTTEngine\Math\Easing.cpp" />
+    <ClCompile Include="HTTEngine\Math\Geometry\AABB.cpp" />
+    <ClCompile Include="HTTEngine\Math\Geometry\OBB.cpp" />
+    <ClCompile Include="HTTEngine\Math\Geometry\Sphere.cpp" />
+    <ClCompile Include="HTTEngine\Math\RandomEngine.cpp" />
+    <ClCompile Include="HTTEngine\Particle\Field\AccelerationField.cpp" />
+    <ClCompile Include="HTTEngine\Particle\ParticleEmitter.cpp" />
+    <ClCompile Include="HTTEngine\Particle\ParticleManager.cpp" />
+    <ClCompile Include="HTTEngine\Scene\Skybox.cpp" />
+    <ClCompile Include="HTTEngine\Sound\SoundDecoder.cpp" />
+    <ClCompile Include="HTTEngine\Sound\SoundManager.cpp" />
+    <ClCompile Include="HTTEngine\Camera\Camera.cpp" />
+    <ClCompile Include="HTTEngine\Camera\DebugCamera.cpp" />
+    <ClCompile Include="HTTEngine\Collision\Collision.cpp" />
+    <ClCompile Include="HTTEngine\Engine.cpp" />
+    <ClCompile Include="HTTEngine\Input\InputManager.cpp" />
+    <ClCompile Include="HTTEngine\Input\KeyboardInput.cpp" />
+    <ClCompile Include="HTTEngine\Input\MouseInput.cpp" />
+    <ClCompile Include="HTTEngine\Input\XInputGamepad.cpp" />
+    <ClCompile Include="HTTEngine\Math\Matrix3x3.cpp" />
+    <ClCompile Include="HTTEngine\Math\Matrix4x4.cpp" />
+    <ClCompile Include="HTTEngine\Math\Vector4.cpp" />
+    <ClCompile Include="HTTEngine\Scene\SceneManager.cpp" />
+    <ClCompile Include="HTTEngine\String\ConvertString.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Effects\ParticleSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Physics\CharacterControllerSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Physics\PhysicsSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Rendering3D\PolygonShapeSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Rendering3D\PrimitiveRenderSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Gameplay\ScriptSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Rendering2D\SpriteRenderSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\UI\PolylineMesh.cpp" />
+    <ClCompile Include="HTTEngine\Systems\UI\PolylineSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\UI\TextRenderSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Effects\TrailSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Gameplay\TriggerActivatorSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Physics\WindZoneSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\UI\UIMaskSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\UI\UIStateSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\UI\UIWorldFollowSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\UI\VectorShapeSystem.cpp" />
+    <ClCompile Include="HTTEngine\Timeline\Camera\TimelineCameraShakeTrack.cpp" />
+    <ClCompile Include="HTTEngine\Timeline\Camera\TimelineCameraTrack.cpp" />
+    <ClCompile Include="HTTEngine\Timeline\TimelineEdit.cpp" />
+    <ClCompile Include="HTTEngine\Timeline\TimelineEventTrack.cpp" />
+    <ClCompile Include="HTTEngine\Timeline\TimelineManager.cpp" />
+    <ClCompile Include="HTTEngine\Timeline\TimelinePlayhead.cpp" />
+    <ClCompile Include="HTTEngine\Timeline\TimelineTrack.cpp" />
+    <ClCompile Include="HTTEngine\Timeline\TimelineValueTrack.cpp" />
+    <ClCompile Include="HTTEngine\Timeline\Tween\TimelinePresetTrack.cpp" />
+    <ClCompile Include="HTTEngine\Timeline\Tween\TimelineTweenTrack.cpp" />
+    <ClCompile Include="HTTEngine\UI\GameNotification.cpp" />
+    <ClCompile Include="HTTEngine\UI\GlobalVariables.cpp" />
+    <ClCompile Include="HTTEngine\UI\UIScreen.cpp" />
+    <ClCompile Include="HTTEngine\Window\Win32Window.cpp" />
+    <ClCompile Include="HTTEngine\Window\WindowManager.cpp" />
+    <!-- ImGui（Debugのみ） -->
+    <ClCompile Include="HTTEngine\Systems\Rendering3D\ModelRenderSystem.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Inspector\TransformEditor.cpp" />
+    <ClCompile Include="HTTEngine\Scene\SceneSerializer.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="HTTEngine\AI\AttackPart.h" />
+    <ClInclude Include="HTTEngine\AI\AttackTableManager.h" />
+    <ClInclude Include="HTTEngine\Combat\DamageTypes.h" />
+    <ClInclude Include="HTTEngine\Combat\HitInfo.h" />
+    <ClInclude Include="HTTEngine\Components\Animation\TimelineComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Camera\CameraLookAtComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Camera\CameraPathComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Camera\CameraShakeComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Camera\CameraVolumeComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Combat\DamageSourceComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Combat\HealthComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Combat\HitboxComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Combat\HitboxTelegraphComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Combat\HurtboxComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Gameplay\AttackTableComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Gameplay\TimelineTriggerComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Rendering3D\DecalRendererComponent.h" />
+    <ClInclude Include="HTTEngine\Components\UI\AlphaGroupComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Animation\AnimatorComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Rendering3D\ArrowStripComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Camera\CameraFollowComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Rendering3D\DepthOfFieldComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Physics\ElasticSurfaceComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Rendering3D\FogComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Core\FolderComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Core\PrefabInstanceComponent.h" />
+    <ClInclude Include="HTTEngine\Components\UI\ImageComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Effects\ParticleSystemComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Rendering3D\PolygonRendererComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Rendering3D\PolygonShapeComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Rendering3D\PrimitiveRendererComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Physics\CharacterControllerComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Physics\RigidbodyComponent.h" />
+    <ClInclude Include="HTTEngine\Components\UI\PolylineComponent.h" />
+    <ClInclude Include="HTTEngine\Components\UI\UIMaskComponent.h" />
+    <ClInclude Include="HTTEngine\Components\UI\UIScreenComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Rendering2D\SpriteRendererComponent.h" />
+    <ClInclude Include="HTTEngine\Components\UI\TextComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Effects\TrailComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Gameplay\TriggerActivatorComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Physics\WindZoneComponent.h" />
+    <ClInclude Include="HTTEngine\Components\UI\UIStateComponent.h" />
+    <ClInclude Include="HTTEngine\Components\UI\UIWorldFollowComponent.h" />
+    <ClInclude Include="HTTEngine\Components\UI\VectorShapeComponent.h" />
+    <ClInclude Include="HTTEngine\Core\AssetMoveRegistry.h" />
+    <ClInclude Include="HTTEngine\Core\FixedList.h" />
+    <ClInclude Include="HTTEngine\Core\NameList.h" />
+    <ClInclude Include="HTTEngine\Curve\Curve.h" />
+    <ClInclude Include="HTTEngine\Curve\CurveManager.h" />
+    <ClInclude Include="HTTEngine\ECS\GameObject.h" />
+    <ClInclude Include="HTTEngine\ECS\Layers.h" />
+    <ClInclude Include="HTTEngine\ECS\Script.h" />
+    <ClInclude Include="HTTEngine\Editor\Assets\AssetIcons.h" />
+    <ClInclude Include="HTTEngine\Editor\Assets\AssetMover.h" />
+    <ClInclude Include="HTTEngine\Editor\Assets\AssetThumbnails.h" />
+    <ClInclude Include="HTTEngine\Editor\Assets\ProjectFiles.h" />
+    <ClInclude Include="HTTEngine\Editor\Gizmos\ArrowStripGizmo.h" />
+    <ClInclude Include="HTTEngine\Editor\Gizmos\CameraGizmo.h" />
+    <ClInclude Include="HTTEngine\Editor\Gizmos\GizmoLines.h" />
+    <ClInclude Include="HTTEngine\Editor\Gizmos\PointListGizmo.h" />
+    <ClInclude Include="HTTEngine\Editor\Gizmos\PolygonShapeGizmo.h" />
+    <ClInclude Include="HTTEngine\Editor\Gizmos\PolylineGizmo.h" />
+    <ClInclude Include="HTTEngine\Editor\Gizmos\SceneGizmo.h" />
+    <ClInclude Include="HTTEngine\Editor\Gizmos\UIGizmo.h" />
+    <ClInclude Include="HTTEngine\Editor\Inspector\AssetInspector.h" />
+    <ClInclude Include="HTTEngine\Editor\Inspector\AttackTableEditor.h" />
+    <ClInclude Include="HTTEngine\Editor\Inspector\CurveAssetEditor.h" />
+    <ClInclude Include="HTTEngine\Editor\Inspector\MaterialAssetEditor.h" />
+    <ClInclude Include="HTTEngine\Editor\Inspector\ScriptEditor.h" />
+    <ClInclude Include="HTTEngine\Editor\Inspector\TimelineAssetEditor.h" />
+    <ClInclude Include="HTTEngine\Editor\Timeline\TimelineEditorState.h" />
+    <ClInclude Include="HTTEngine\Editor\Timeline\TimelineWindow.h" />
+    <ClInclude Include="HTTEngine\Editor\Viewport\ScenePicking.h" />
+    <ClInclude Include="HTTEngine\Editor\Viewport\SceneVisibility.h" />
+    <ClInclude Include="HTTEngine\Editor\Widgets\CurveEditor.h" />
+    <ClInclude Include="HTTEngine\Editor\Widgets\FontPreview.h" />
+    <ClInclude Include="HTTEngine\Editor\Widgets\ToolIcons.h" />
+    <ClInclude Include="HTTEngine\Editor\Windows\AttackTableWindow.h" />
+    <ClInclude Include="HTTEngine\Editor\Windows\CodeWindow.h" />
+    <ClInclude Include="HTTEngine\Editor\Windows\ControlWindow.h" />
+    <ClInclude Include="HTTEngine\Editor\Windows\ProjectWindow.h" />
+    <ClInclude Include="HTTEngine\Editor\Windows\SceneDialogs.h" />
+    <ClInclude Include="HTTEngine\Editor\Windows\SettingsWindow.h" />
+    <ClInclude Include="HTTEngine\Editor\Windows\UIScreenEditor.h" />
+    <ClInclude Include="HTTEngine\Graphics\Animation\Animation.h" />
+    <ClInclude Include="HTTEngine\Graphics\Animation\AnimationManager.h" />
+    <ClInclude Include="HTTEngine\Graphics\Animation\AnimationPlayer.h" />
+    <ClInclude Include="HTTEngine\Graphics\Compute\ComputePipeline.h" />
+    <ClInclude Include="HTTEngine\Graphics\Compute\ComputeTexture.h" />
+    <ClInclude Include="HTTEngine\Graphics\Diagnostics\GraphicsDebug.h" />
+    <ClInclude Include="HTTEngine\Graphics\GPU\DescriptorAllocator.h" />
+    <ClInclude Include="HTTEngine\Graphics\Material\Material.h" />
+    <ClInclude Include="HTTEngine\Graphics\Material\MaterialManager.h" />
+    <ClInclude Include="HTTEngine\Graphics\Pipeline\ShaderProperty.h" />
+    <ClInclude Include="HTTEngine\Graphics\PostEffect\DepthOfFieldPass.h" />
+    <ClInclude Include="HTTEngine\Graphics\PostEffect\PostOverride.h" />
+    <ClInclude Include="HTTEngine\Graphics\Renderer\GameScreen.h" />
+    <ClInclude Include="HTTEngine\Graphics\Renderer\SkinCache.h" />
+    <ClInclude Include="HTTEngine\Graphics\Text\FontManager.h" />
+    <ClInclude Include="HTTEngine\Math\Color.h" />
+    <ClInclude Include="HTTEngine\Math\Geometry\Capsule.h" />
+    <ClInclude Include="HTTEngine\Math\Geometry\HitShape.h" />
+    <ClInclude Include="HTTEngine\Math\Geometry\PathCurve.h" />
+    <ClInclude Include="HTTEngine\Math\Geometry\Polygon.h" />
+    <ClInclude Include="HTTEngine\Math\Quaternion.h" />
+    <ClInclude Include="HTTEngine\Physics\ElasticSurfaceSimulation.h" />
+    <ClInclude Include="HTTEngine\Physics\MotionQuery.h" />
+    <ClInclude Include="HTTEngine\Physics\PhysicMaterialManager.h" />
+    <ClInclude Include="HTTEngine\Scene\DefaultScene.h" />
+    <ClInclude Include="HTTEngine\Components\Camera\CameraComponent.h" />
+    <ClInclude Include="HTTEngine\Scene\Prefab\PrefabDiff.h" />
+    <ClInclude Include="HTTEngine\Scene\Prefab\PrefabManager.h" />
+    <ClInclude Include="HTTEngine\Scene\Prefab\PrefabOverrides.h" />
+    <ClInclude Include="HTTEngine\Scene\Prefab\PrefabRecords.h" />
+    <ClInclude Include="HTTEngine\Scene\SceneTransition.h" />
+    <ClInclude Include="HTTEngine\Sound\AudioBus.h" />
+    <ClInclude Include="HTTEngine\String\FileNameRule.h" />
+    <ClInclude Include="HTTEngine\String\FixedString.h" />
+    <ClInclude Include="HTTEngine\Systems\Animation\AnimationSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Animation\TimelineSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Camera\CameraFollow.h" />
+    <ClInclude Include="HTTEngine\Systems\Camera\CameraLookAt.h" />
+    <ClInclude Include="HTTEngine\Systems\Camera\CameraPath.h" />
+    <ClInclude Include="HTTEngine\Systems\Camera\CameraShake.h" />
+    <ClInclude Include="HTTEngine\Systems\Camera\CameraVolume.h" />
+    <ClInclude Include="HTTEngine\Systems\Combat\DamageSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Combat\HitboxTelegraphSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Combat\HitSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Gameplay\AttackTableSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Gameplay\TimelineTriggerSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Rendering3D\ArrowStripSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Audio\AudioSystem.h" />
+    <ClInclude Include="HTTEngine\Components\Audio\AudioSourceComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Physics\ColliderComponent.h" />
+    <ClInclude Include="HTTEngine\Systems\Camera\CameraSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Physics\CollisionSystem.h" />
+    <ClInclude Include="HTTEngine\ECS\ComponentSerializer.h" />
+    <ClInclude Include="HTTEngine\ECS\ComponentUI.h" />
+    <ClInclude Include="HTTEngine\ECS\GameComponent.h" />
+    <ClInclude Include="HTTEngine\Editor\Inspector\LightEditor.h" />
+    <ClInclude Include="HTTEngine\ECS\ComponentStorage.h" />
+    <ClInclude Include="HTTEngine\Editor\Widgets\ImeInput.h" />
+    <ClInclude Include="HTTEngine\Editor\Inspector\ModelRendererEditor.h" />
+    <ClInclude Include="HTTEngine\Editor\Inspector\ComponentEditor.h" />
+    <ClInclude Include="HTTEngine\Editor\History\EditorHistory.h" />
+    <ClInclude Include="HTTEngine\Editor\Widgets\EditorWidgets.h" />
+    <ClInclude Include="HTTEngine\Editor\Windows\InspectorWindow.h" />
+    <ClInclude Include="HTTEngine\Editor\Windows\HierarchyWindow.h" />
+    <ClInclude Include="HTTEngine\ECS\EntityManager.h" />
+    <ClInclude Include="externals\spdlog\async.h" />
+    <ClInclude Include="externals\spdlog\async_logger.h" />
+    <ClInclude Include="externals\spdlog\common.h" />
+    <ClInclude Include="externals\spdlog\spdlog-inl.h" />
+    <ClInclude Include="externals\spdlog\spdlog.h" />
+    <ClInclude Include="HTTEngine\ECS\Entity.h" />
+    <ClInclude Include="HTTEngine\Components\Rendering3D\ModelRendererComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Core\TransformComponent.h" />
+    <ClInclude Include="HTTEngine\Graphics\GPU\FrameUploadBuffer.h" />
+    <ClInclude Include="HTTEngine\Editor\Gizmos\LightGizmo.h" />
+    <ClInclude Include="HTTEngine\Camera\CameraIncludes.h" />
+    <ClInclude Include="HTTEngine\Collision\CollisionIncludes.h" />
+    <ClInclude Include="HTTEngine\Collision\Profiling\CollisionProfiler.h" />
+    <ClInclude Include="HTTEngine\Core\Handle.h" />
+    <ClInclude Include="HTTEngine\Core\SlotMap.h" />
+    <ClInclude Include="HTTEngine\Diagnostics\CrashHandler.h" />
+    <ClInclude Include="HTTEngine\Diagnostics\LogManager.h" />
+    <ClInclude Include="HTTEngine\Diagnostics\HTTAssert.h" />
+    <ClInclude Include="HTTEngine\Editor\Viewport\EditorGrid.h" />
+    <ClInclude Include="HTTEngine\Editor\Viewport\EditorOverlay.h" />
+    <ClInclude Include="HTTEngine\Editor\Viewport\EditorViewport.h" />
+    <ClInclude Include="HTTEngine\Editor\ImGuiManager.h" />
+    <ClInclude Include="HTTEngine\Editor\Profiler.h" />
+    <ClInclude Include="HTTEngine\Editor\FrameStats.h" />
+    <ClInclude Include="HTTEngine\Systems\EngineSystems.h" />
+    <ClInclude Include="HTTEngine\Editor\Viewport\ViewportWindow.h" />
+    <ClInclude Include="HTTEngine\Graphics\Diagnostics\D3D12ResourceLeakChecker.h" />
+    <ClInclude Include="HTTEngine\Graphics\GPU\DirectXCommon.h" />
+    <ClInclude Include="HTTEngine\Graphics\GPU\GpuResources.h" />
+    <ClInclude Include="HTTEngine\Graphics\GPU\UploadContext.h" />
+    <ClInclude Include="HTTEngine\Graphics\IBL\BrdfLutPass.h" />
+    <ClInclude Include="HTTEngine\Graphics\IBL\CubeBakePass.h" />
+    <ClInclude Include="HTTEngine\Graphics\IBL\IBLBaker.h" />
+    <ClInclude Include="HTTEngine\Graphics\IBL\IBLConfig.h" />
+    <ClInclude Include="HTTEngine\Graphics\IBL\IBLEnvironment.h" />
+    <ClInclude Include="HTTEngine\Graphics\IBL\IBLIncludes.h" />
+    <ClInclude Include="HTTEngine\Graphics\IBL\PrefilterPass.h" />
+    <ClInclude Include="HTTEngine\Graphics\Model\ModelManager.h" />
+    <ClInclude Include="HTTEngine\Graphics\Pipeline\PSOManager.h" />
+    <ClInclude Include="HTTEngine\Graphics\Pipeline\RenderStates.h" />
+    <ClInclude Include="HTTEngine\Graphics\Pipeline\RootSignatureManager.h" />
+    <ClInclude Include="HTTEngine\Graphics\Pipeline\ShaderCompiler.h" />
+    <ClInclude Include="HTTEngine\Graphics\Pipeline\ShaderConstants.h" />
+    <ClInclude Include="HTTEngine\Graphics\Pipeline\ShaderPackageLoader.h" />
+    <ClInclude Include="HTTEngine\Graphics\Pipeline\VertexFormat.h" />
+    <ClInclude Include="HTTEngine\Graphics\PostEffect\BloomPass.h" />
+    <ClInclude Include="HTTEngine\Graphics\PostEffect\LensPass.h" />
+    <ClInclude Include="HTTEngine\Graphics\PostEffect\PostProcess.h" />
+    <ClInclude Include="HTTEngine\Graphics\Profiling\GPUProfiler.h" />
+    <ClInclude Include="HTTEngine\Graphics\Profiling\GPUScope.h" />
+    <ClInclude Include="HTTEngine\Graphics\Renderer\DrawRequest.h" />
+    <ClInclude Include="HTTEngine\Graphics\Renderer\Renderer.h" />
+    <ClInclude Include="HTTEngine\Graphics\Renderer\RenderContext.h" />
+    <ClInclude Include="HTTEngine\Graphics\Renderer\RenderQueue.h" />
+    <ClInclude Include="HTTEngine\Graphics\Renderer\SceneRenderer.h" />
+    <ClInclude Include="HTTEngine\Graphics\RenderTarget\RenderTexture.h" />
+    <ClInclude Include="HTTEngine\Graphics\RenderTarget\RenderTextureCube.h" />
+    <ClInclude Include="HTTEngine\Graphics\RenderTarget\RenderTextureManager.h" />
+    <ClInclude Include="HTTEngine\Graphics\RenderTarget\RenderWindow.h" />
+    <ClInclude Include="HTTEngine\Graphics\Texture\TextureManager.h" />
+    <ClInclude Include="HTTEngine\Input\InputIncludes.h" />
+    <ClInclude Include="HTTEngine\Components\Lighting\LightComponent.h" />
+    <ClInclude Include="HTTEngine\Systems\Rendering3D\DecalRenderSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Rendering3D\DepthOfFieldSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Physics\ElasticSurfaceSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Rendering3D\FogSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Lighting\LightSystem.h" />
+    <ClInclude Include="HTTEngine\Math\Easing.h" />
+    <ClInclude Include="HTTEngine\Math\Geometry\AABB.h" />
+    <ClInclude Include="HTTEngine\Math\Geometry\OBB.h" />
+    <ClInclude Include="HTTEngine\Math\Geometry\Plane.h" />
+    <ClInclude Include="HTTEngine\Math\Geometry\Ray.h" />
+    <ClInclude Include="HTTEngine\Math\Geometry\Sphere.h" />
+    <ClInclude Include="HTTEngine\Math\MathIncludes.h" />
+    <ClInclude Include="HTTEngine\Math\RandomEngine.h" />
+    <ClInclude Include="HTTEngine\Particle\Field\AccelerationField.h" />
+    <ClInclude Include="HTTEngine\Particle\ParticleEmitter.h" />
+    <ClInclude Include="HTTEngine\Particle\ParticleManager.h" />
+    <ClInclude Include="HTTEngine\Scene\SceneIncludes.h" />
+    <ClInclude Include="HTTEngine\Scene\Skybox.h" />
+    <ClInclude Include="HTTEngine\Sound\SoundDecoder.h" />
+    <ClInclude Include="HTTEngine\Sound\SoundIncludes.h" />
+    <ClInclude Include="HTTEngine\Sound\SoundManager.h" />
+    <ClInclude Include="HTTEngine\Camera\Camera.h" />
+    <ClInclude Include="HTTEngine\Camera\DebugCamera.h" />
+    <ClInclude Include="HTTEngine\Collision\Collision.h" />
+    <ClInclude Include="HTTEngine\Engine.h" />
+    <ClInclude Include="HTTEngine\Input\InputManager.h" />
+    <ClInclude Include="HTTEngine\Input\KeyboardInput.h" />
+    <ClInclude Include="HTTEngine\Input\MouseInput.h" />
+    <ClInclude Include="HTTEngine\Input\XInputGamepad.h" />
+    <ClInclude Include="HTTEngine\Math\Matrix3x3.h" />
+    <ClInclude Include="HTTEngine\Math\Matrix4x4.h" />
+    <ClInclude Include="HTTEngine\Math\Vector2.h" />
+    <ClInclude Include="HTTEngine\Math\Vector3.h" />
+    <ClInclude Include="HTTEngine\Math\Vector4.h" />
+    <ClInclude Include="HTTEngine\Math\Transform.h" />
+    <ClInclude Include="HTTEngine\Math\MathUtility.h" />
+    <ClInclude Include="HTTEngine\Scene\IScene.h" />
+    <ClInclude Include="HTTEngine\Scene\SceneManager.h" />
+    <ClInclude Include="HTTEngine\String\ConvertString.h" />
+    <ClInclude Include="HTTEngine\Systems\Effects\ParticleSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Physics\CharacterControllerSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Physics\PhysicsSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Rendering3D\PolygonShapeSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Rendering3D\PrimitiveRenderSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Gameplay\ScriptSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Rendering2D\SpriteRenderSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\UI\PolylineMesh.h" />
+    <ClInclude Include="HTTEngine\Systems\UI\PolylineSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\UI\TextRenderSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Effects\TrailSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Gameplay\TriggerActivatorSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Physics\WindZoneSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\UI\UIMaskSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\UI\UIStateSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\UI\UIWorldFollowSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\UI\VectorShapeSystem.h" />
+    <ClInclude Include="HTTEngine\Timeline\Camera\TimelineCameraShakeTrack.h" />
+    <ClInclude Include="HTTEngine\Timeline\Camera\TimelineCameraTrack.h" />
+    <ClInclude Include="HTTEngine\Timeline\TimelineEdit.h" />
+    <ClInclude Include="HTTEngine\Timeline\TimelineEvent.h" />
+    <ClInclude Include="HTTEngine\Timeline\TimelineEventTrack.h" />
+    <ClInclude Include="HTTEngine\Timeline\TimelineManager.h" />
+    <ClInclude Include="HTTEngine\Timeline\TimelinePlayhead.h" />
+    <ClInclude Include="HTTEngine\Timeline\TimelineTimeView.h" />
+    <ClInclude Include="HTTEngine\Timeline\TimelineTrack.h" />
+    <ClInclude Include="HTTEngine\Timeline\TimelineValueTrack.h" />
+    <ClInclude Include="HTTEngine\Timeline\Tween\TimelinePresetTrack.h" />
+    <ClInclude Include="HTTEngine\Timeline\Tween\TimelineTweenTrack.h" />
+    <ClInclude Include="HTTEngine\Time\EngineTime.h" />
+    <ClInclude Include="HTTEngine\UI\GameNotification.h" />
+    <ClInclude Include="HTTEngine\UI\GlobalVariables.h" />
+    <ClInclude Include="HTTEngine\UI\UIScreen.h" />
+    <ClInclude Include="HTTEngine\Window\Win32Window.h" />
+    <ClInclude Include="HTTEngine\Window\WindowIncludes.h" />
+    <ClInclude Include="HTTEngine\Window\WindowManager.h" />
+    <!-- ImGui headers -->
+    <ClInclude Include="HTTEngine\Systems\Rendering3D\ModelRenderSystem.h" />
+    <ClInclude Include="HTTEngine\Editor\Inspector\TransformEditor.h" />
+    <ClInclude Include="HTTEngine\Scene\SceneSerializer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="HTTEngine.props" />
+    <None Include="HTTEngine\Shader\Data\Buffers\Camera.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Buffers\Light.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Buffers\ObjectTransform.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Compute\Skinning.CS.shader" />
+    <None Include="HTTEngine\Shader\Data\Decal\Decal.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Decal\DecalTexture.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Decal\HitboxTelegraph.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Decal\HitboxTelegraph.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Decal\HitShape.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Fog\Fog.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\IBL\BrdfLut.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\IBL\BrdfLut.VS.shader" />
+    <None Include="HTTEngine\Shader\Data\IBL\EquirectToCube.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\IBL\EquirectToCube.VS.shader" />
+    <None Include="HTTEngine\Shader\Data\IBL\IBLCommon.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\IBL\IrradianceConvolution.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\IBL\Prefilter.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Line\Line3d.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Line\Line3d.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Line\Line3d.VS.shader" />
+    <None Include="HTTEngine\Shader\Data\Model\BlinnPhong.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Model\HalfLambert.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Model\Lambert.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Model\ModelSurface.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Model\Object3d.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Model\Object3d.VS.shader" />
+    <None Include="HTTEngine\Shader\Data\Model\PBR.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Model\Phong.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Model\Unlit.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Particle\Particle.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Particle\Particle.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Particle\Particle.VS.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\Bloom.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\BloomBright.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\BloomComposite.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\BloomDown.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\BloomGaussian.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\BloomKawaseComposite.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\BloomUp.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\ColorAdjust.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\Dither.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\DepthOfField.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\DepthOfFieldBlur.CS.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\DepthOfFieldComposite.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\DepthOfFieldDownsample.CS.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\Fullscreen.VS.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\Lens.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Post\ToneMap.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Resources\Texture.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Resources\TextureCube.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Skybox\Skybox.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Skybox\Skybox.VS.shader" />
+    <None Include="HTTEngine\Shader\Data\Sprite\Sprite2d.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Sprite\Sprite2d.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Sprite\Sprite2d.VS.shader" />
+    <None Include="HTTEngine\Shader\Data\Text\Text2d.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Text\Text2d.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Text\Text2d.VS.shader" />
+    <None Include="HTTEngine\Shader\Data\VectorShape\Polyline.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\VectorShape\Polyline.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\VectorShape\Polyline.VS.shader" />
+    <None Include="HTTEngine\Shader\Data\VectorShape\VectorCoverage.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\VectorShape\VectorShape.PS.shader" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

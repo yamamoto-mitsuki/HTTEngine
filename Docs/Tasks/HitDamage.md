@@ -91,7 +91,7 @@ Collider（押し合う形）・Hurtbox（やられ判定）・Hitbox（攻撃�
 | `Components/Gameplay/AttackTableComponent.h`・`Systems/Gameplay/AttackTableSystem.cpp` | D | HP の割合を Health から読む |
 | `AI/AttackPart.h`・`.cpp` | D | `SyncHitbox`（窓を攻撃の段階に合わせる） |
 | `ECS/GameComponent.h`・`Systems/EngineSystems.cpp`・`Editor/ImGuiManager.cpp` | A・C・D | 初期化・呼ぶ順・ギズモ・メニュー |
-| `MyEngine_v1.vcxproj`・`.filters` | A〜D | 新しいファイルを足す |
+| `HTTEngine.vcxproj`・`.filters` | A〜D | 新しいファイルを足す |
 | `Sandbox/Parameters/Layers/Layers.json`・`DamageTypes/DamageTypes.json`（新しい） | E | レイヤーと攻撃の種類の名前 |
 | `Sandbox/Source/Scripts/HitTestPlayer`・`HitboxCycler`・`TestBullet`（新しい） | E | テスト用の Script・弾 |
 | `Sandbox/Resources/scenes/HitDamageTest.scene.json`（新しい） | E | 円・扇・線・多段・弾のテストシーン |
@@ -396,8 +396,8 @@ include の `EditorHistory.h` の下に足す。
 
 ```cpp
 #ifdef USE_IMGUI
-#include "MyEngine/Editor/History/EditorHistory.h"
-#include "MyEngine/Editor/Widgets/EditorWidgets.h"
+#include "HTTEngine/Editor/History/EditorHistory.h"
+#include "HTTEngine/Editor/Widgets/EditorWidgets.h"
 #endif
 ```
 
@@ -488,8 +488,8 @@ private:
 #include <format>
 #include <utility>
 
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/UI/GlobalVariables.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/UI/GlobalVariables.h"
 
 //=============================================================================
 // 作る・登録
@@ -633,7 +633,7 @@ public:
 ```cpp
 #include "Layers.h"
 
-#include "MyEngine/Core/NameList.h"
+#include "HTTEngine/Core/NameList.h"
 
 //=============================================================================
 // 名前の一覧
@@ -721,9 +721,9 @@ class NameList;
 include に足す。
 
 ```cpp
-#include "MyEngine/AI/AttackTableManager.h"
-#include "MyEngine/Core/NameList.h"
-#include "MyEngine/Curve/CurveManager.h"
+#include "HTTEngine/AI/AttackTableManager.h"
+#include "HTTEngine/Core/NameList.h"
+#include "HTTEngine/Curve/CurveManager.h"
 ```
 
 `DrawSelectedFontSample` の後（`/// Inspectorに描く係` の前）に足す。
@@ -996,11 +996,11 @@ void EditorHistory::RequestSetLayer(Handle<Entity> handle, uint8_t layer) { Requ
 include に足す。
 
 ```cpp
-#include "MyEngine/Core/NameList.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/ECS/Layers.h"
+#include "HTTEngine/Core/NameList.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/Layers.h"
 ```
 
 `DrawHeader` の名前の下（`// --- 参考情報` の前）に足す。
@@ -1056,9 +1056,9 @@ void GameObject::SetLayer(int newLayer) const {
 include に足す。
 
 ```cpp
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/ECS/Layers.h"
-#include "MyEngine/Particle/ParticleManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/ECS/Layers.h"
+#include "HTTEngine/Particle/ParticleManager.h"
 ```
 
 `Initialize` の `MotionQuery::Initialize` の下に足す。
@@ -1067,14 +1067,14 @@ include に足す。
 	Layers::Initialize();      // レイヤーの名前（Settings の Layers）。シーンを読む前に、名前の行を登録しておく
 ```
 
-### A-19 `MyEngine_v1.vcxproj`
+### A-19 `HTTEngine.vcxproj`
 
 Visual Studio のソリューションエクスプローラーで、フィルターの同じ場所に「既存の項目を追加」する（`.filters` も一緒に直る）。
 
 | フィルター | 足すファイル |
 |---|---|
-| `MyEngine\Core` | `NameList.h`・`NameList.cpp` |
-| `MyEngine\ECS` | `Layers.h`・`Layers.cpp` |
+| `HTTEngine\Core` | `NameList.h`・`NameList.cpp` |
+| `HTTEngine\ECS` | `Layers.h`・`Layers.cpp` |
 
 ここでビルドできる。Settings に **Layers** のページが出て、Inspector の名前の下に **Layer** の欄が出る。
 
@@ -1086,11 +1086,11 @@ Visual Studio のソリューションエクスプローラーで、フィルタ
 #pragma once
 #include <type_traits>
 
-#include "MyEngine/Math/Geometry/Capsule.h"
-#include "MyEngine/Math/Geometry/Sphere.h"
-#include "MyEngine/Math/Matrix4x4.h"
-#include "MyEngine/Math/Vector2.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Math/Geometry/Capsule.h"
+#include "HTTEngine/Math/Geometry/Sphere.h"
+#include "HTTEngine/Math/Matrix4x4.h"
+#include "HTTEngine/Math/Vector2.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // 攻撃の形（形の層）。当たり判定・ジャスト判定の範囲・床の予告の図形が、この1つの値と1つの式（符号付き距離）を使う
 // 押し合う形（Collider）とは別。押し戻さないので、扇のような「物理では意味の無い形」も持てる
@@ -1441,11 +1441,11 @@ Vector3 WorldHitShape::FindNearestOnSegment(const Vector3& start, const Vector3&
 }
 ```
 
-### B-3 `MyEngine_v1.vcxproj`
+### B-3 `HTTEngine.vcxproj`
 
 | フィルター | 足すファイル |
 |---|---|
-| `MyEngine\Math\Geometry` | `HitShape.h`・`HitShape.cpp` |
+| `HTTEngine\Math\Geometry` | `HitShape.h`・`HitShape.cpp` |
 
 ## パートC 当たりの層（Hitbox・Hurtbox・HitSystem）
 
@@ -1457,9 +1457,9 @@ Vector3 WorldHitShape::FindNearestOnSegment(const Vector3& start, const Vector3&
 #pragma once
 #include <cstdint>
 
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Vector3.h"
 
 /// <summary>
 /// 当たったときの扱い（受ける側の Script の OnBeforeHitTaken で変えられる）
@@ -1503,9 +1503,9 @@ struct HitInfo {
 #include <cstdint>
 #include <type_traits>
 
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/ECS/Layers.h"
-#include "MyEngine/Math/Geometry/HitShape.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/ECS/Layers.h"
+#include "HTTEngine/Math/Geometry/HitShape.h"
 
 // 攻撃の当たる形と、当たる時間の窓。Entity に付ける Component（カテゴリ：Combat。当たりの層）
 // 当たったら HitSystem が「当たりの知らせ」を作る（Script の OnHitDealt・OnHitTaken、SYSTEM は HitSystem::GetAllHits）
@@ -1566,7 +1566,7 @@ static_assert(std::is_trivially_copyable_v<HitboxComponent>);
 #pragma once
 #include <type_traits>
 
-#include "MyEngine/Math/Vector3.h"
+#include "HTTEngine/Math/Vector3.h"
 
 // 攻撃を受ける形（やられ判定）。Entity に付ける Component（カテゴリ：Combat。当たりの層）
 // 押し合う形（Collider）とは別（見た目より小さくする・体の部分ごとに分けるため）。部分ごとに分けるときは、子の Entity に1つずつ付ける
@@ -1605,13 +1605,13 @@ static_assert(std::is_trivially_copyable_v<HurtboxComponent>);
 #include <span>
 #include <vector>
 
-#include "MyEngine/Combat/HitInfo.h"
-#include "MyEngine/Components/Combat/HitboxComponent.h"
-#include "MyEngine/Components/Combat/HurtboxComponent.h"
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
-#include "MyEngine/Math/Geometry/Capsule.h"
-#include "MyEngine/Math/Geometry/HitShape.h"
+#include "HTTEngine/Combat/HitInfo.h"
+#include "HTTEngine/Components/Combat/HitboxComponent.h"
+#include "HTTEngine/Components/Combat/HurtboxComponent.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
+#include "HTTEngine/Math/Geometry/Capsule.h"
+#include "HTTEngine/Math/Geometry/HitShape.h"
 
 // 前方宣言
 class Camera;
@@ -1718,16 +1718,16 @@ private:
 #include <unordered_map>
 #include <vector>
 
-#include "MyEngine/Components/Core/TransformComponent.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/ECS/Layers.h"
-#include "MyEngine/Editor/Gizmos/GizmoLines.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Graphics/Renderer/Renderer.h"
+#include "HTTEngine/Components/Core/TransformComponent.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/ECS/Layers.h"
+#include "HTTEngine/Editor/Gizmos/GizmoLines.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Graphics/Renderer/Renderer.h"
 
 namespace {
 // ===== すり抜けない判定 =====
@@ -2337,7 +2337,7 @@ void DescribeHurtbox(ComponentUI& ui, HurtboxComponent& value) {
 // 初期化・終了
 //=============================================================================
 void HitSystem::Initialize() {
-	MY_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
+	HTT_ASSERT_MSG(state == nullptr, "Initialize()が2回以上呼ばれています");
 	state = std::make_unique<HitState>();
 	state->gizmoLines.fadeStartDistance = kNoFadeStart;
 	state->gizmoLines.fadeEndDistance = kNoFadeEnd;
@@ -2359,7 +2359,7 @@ void HitSystem::Release() { state.reset(); }
 // 更新
 //=============================================================================
 void HitSystem::Update(bool isGameRunning, float deltaTime) {
-	MY_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
 	state->hits.clear();
 	if (!isGameRunning) {
 		// 停止中：実行中の値を全部捨てる（次の Play は記録の無い状態から）
@@ -2420,7 +2420,7 @@ void HitSystem::Deactivate(Handle<Entity> hitbox) {
 // 当たりの知らせ
 //=============================================================================
 std::span<const HitInfo> HitSystem::GetAllHits() {
-	MY_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
 	return state->hits;
 }
 
@@ -2447,13 +2447,13 @@ void HitSystem::GetHitsTaken(Handle<Entity> receiver, std::vector<HitInfo>& out)
 // ジャスト判定
 //=============================================================================
 bool HitSystem::FindJust(Handle<Entity> receiver, JustCandidate& out) {
-	MY_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
 	Handle<Entity> found;
 	return FindJustCandidate(receiver, out, found);
 }
 
 bool HitSystem::TryConsumeJust(Handle<Entity> receiver, JustCandidate& out) {
-	MY_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
 	Handle<Entity> found;
 	if (!FindJustCandidate(receiver, out, found)) {
 		return false;
@@ -2510,12 +2510,12 @@ Handle<Entity> HitSystem::FindReceiver(Handle<Entity> hurtbox) {
 // 答える係
 //=============================================================================
 void HitSystem::SetReceiverFinder(ReceiverFinder finder) {
-	MY_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
 	state->receiverFinder = finder;
 }
 
 void HitSystem::SetHitResolver(HitResolver resolver) {
-	MY_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
 	state->hitResolver = resolver;
 }
 
@@ -2524,7 +2524,7 @@ void HitSystem::SetHitResolver(HitResolver resolver) {
 // ギズモ
 //=============================================================================
 void HitSystem::DrawGizmos(Camera* camera) {
-	MY_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
 	if (!state->showGizmos) {
 		return;
 	}
@@ -2573,7 +2573,7 @@ void HitSystem::DrawGizmos(Camera* camera) {
 }
 
 bool& HitSystem::GetShowGizmos() {
-	MY_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
+	HTT_ASSERT_MSG(state != nullptr, "HitSystem::Initialize()を先に呼んでください");
 	return state->showGizmos;
 }
 ```
@@ -2583,9 +2583,9 @@ bool& HitSystem::GetShowGizmos() {
 include に足す。
 
 ```cpp
-#include "MyEngine/Combat/HitInfo.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/ECS/GameObject.h"
+#include "HTTEngine/Combat/HitInfo.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/ECS/GameObject.h"
 ```
 
 `OnCollisionExit` の下（`// ===== Timeline =====` の前）に足す。`OnBeforeHitTaken` はパート D の DamageSystem が呼ぶ（C までは呼ばれない）。
@@ -2626,9 +2626,9 @@ struct HitInfo;
 `.cpp`：include に足す。
 
 ```cpp
-#include "MyEngine/Editor/Inspector/ScriptEditor.h"
-#include "MyEngine/Systems/Combat/HitSystem.h"
-#include "MyEngine/Systems/Physics/CollisionSystem.h"
+#include "HTTEngine/Editor/Inspector/ScriptEditor.h"
+#include "HTTEngine/Systems/Combat/HitSystem.h"
+#include "HTTEngine/Systems/Physics/CollisionSystem.h"
 ```
 
 `Update` の「3. 当たり」の後（`// --- 4. Update ---` の前）に足す。
@@ -2678,10 +2678,10 @@ void ScriptSystem::SendBeforeHitTaken(Handle<Entity> entity, HitInfo& hit) {
 
 ```cpp
 // Camera
-#include "MyEngine/Systems/Camera/CameraSystem.h"
+#include "HTTEngine/Systems/Camera/CameraSystem.h"
 // Combat
-#include "MyEngine/ECS/Layers.h"
-#include "MyEngine/Systems/Combat/HitSystem.h"
+#include "HTTEngine/ECS/Layers.h"
+#include "HTTEngine/Systems/Combat/HitSystem.h"
 ```
 
 ### C-9 `Systems/EngineSystems.cpp`
@@ -2690,9 +2690,9 @@ include の `// Camera` の下に足す。
 
 ```cpp
 // Camera
-#include "MyEngine/Systems/Camera/CameraSystem.h"
+#include "HTTEngine/Systems/Camera/CameraSystem.h"
 // Combat
-#include "MyEngine/Systems/Combat/HitSystem.h"
+#include "HTTEngine/Systems/Combat/HitSystem.h"
 ```
 
 `Initialize` の `TimelineTriggerSystem::Initialize` の下に足す。
@@ -2724,9 +2724,9 @@ include の `// Camera` の下に足す。
 include に足す。
 
 ```cpp
-#include "MyEngine/Systems/Animation/AnimationSystem.h"
-#include "MyEngine/Systems/Combat/HitSystem.h"
-#include "MyEngine/Systems/Physics/CollisionSystem.h"
+#include "HTTEngine/Systems/Animation/AnimationSystem.h"
+#include "HTTEngine/Systems/Combat/HitSystem.h"
+#include "HTTEngine/Systems/Physics/CollisionSystem.h"
 ```
 
 View メニューの `Colliders` の下に足す。
@@ -2736,13 +2736,13 @@ View メニューの `Colliders` の下に足す。
 		ImGui::MenuItem("Hit Shapes", nullptr, &HitSystem::GetShowGizmos()); // 攻撃の形・ジャスト判定の範囲・Hurtbox
 ```
 
-### C-11 `MyEngine_v1.vcxproj`
+### C-11 `HTTEngine.vcxproj`
 
 | フィルター | 足すファイル |
 |---|---|
-| `MyEngine\Combat`（新しい） | `HitInfo.h` |
-| `MyEngine\Components\Combat`（新しい） | `HitboxComponent.h`・`HurtboxComponent.h` |
-| `MyEngine\Systems\Combat`（新しい） | `HitSystem.h`・`HitSystem.cpp` |
+| `HTTEngine\Combat`（新しい） | `HitInfo.h` |
+| `HTTEngine\Components\Combat`（新しい） | `HitboxComponent.h`・`HurtboxComponent.h` |
+| `HTTEngine\Systems\Combat`（新しい） | `HitSystem.h`・`HitSystem.cpp` |
 
 ここでビルドできる。Add Component → **Combat** に Hitbox・Hurtbox が出る。当たると Script の `OnHitTaken` が来る（HP はまだ無い）。
 
@@ -2787,7 +2787,7 @@ public:
 ```cpp
 #include "DamageTypes.h"
 
-#include "MyEngine/Core/NameList.h"
+#include "HTTEngine/Core/NameList.h"
 
 //=============================================================================
 // 名前の一覧
@@ -2882,11 +2882,11 @@ static_assert(std::is_trivially_copyable_v<DamageSourceComponent>);
 
 ```cpp
 #pragma once
-#include "MyEngine/Combat/HitInfo.h"
-#include "MyEngine/Components/Combat/DamageSourceComponent.h"
-#include "MyEngine/Components/Combat/HealthComponent.h"
-#include "MyEngine/Core/Handle.h"
-#include "MyEngine/ECS/Entity.h"
+#include "HTTEngine/Combat/HitInfo.h"
+#include "HTTEngine/Components/Combat/DamageSourceComponent.h"
+#include "HTTEngine/Components/Combat/HealthComponent.h"
+#include "HTTEngine/Core/Handle.h"
+#include "HTTEngine/ECS/Entity.h"
 
 /// <summary>
 /// 攻撃のダメージ（ダメージの層）。当たりの層（HitSystem）から当たり1件を受け取り、受けるか決めて HP を減らす
@@ -2927,19 +2927,19 @@ private:
 #include <algorithm>
 #include <memory>
 
-#include "MyEngine/Combat/DamageTypes.h"
-#include "MyEngine/Curve/Curve.h"
-#include "MyEngine/Curve/CurveManager.h"
-#include "MyEngine/Diagnostics/MyAssert.h"
-#include "MyEngine/ECS/ComponentSerializer.h"
-#include "MyEngine/ECS/ComponentUI.h"
-#include "MyEngine/ECS/EntityManager.h"
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/Editor/Inspector/ComponentEditor.h"
-#include "MyEngine/Systems/Camera/CameraSystem.h"
-#include "MyEngine/Systems/Combat/HitSystem.h"
-#include "MyEngine/Systems/Gameplay/ScriptSystem.h"
-#include "MyEngine/Time/EngineTime.h"
+#include "HTTEngine/Combat/DamageTypes.h"
+#include "HTTEngine/Curve/Curve.h"
+#include "HTTEngine/Curve/CurveManager.h"
+#include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/ECS/ComponentSerializer.h"
+#include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Systems/Camera/CameraSystem.h"
+#include "HTTEngine/Systems/Combat/HitSystem.h"
+#include "HTTEngine/Systems/Gameplay/ScriptSystem.h"
+#include "HTTEngine/Time/EngineTime.h"
 
 namespace {
 constexpr uint32_t kMaxReceiverDepth = 64; // 受ける本体を探して、親を何段までたどるか（EntityManager の親子の深さの上限と同じ）
@@ -3090,15 +3090,15 @@ bool DamageSystem::Resolve(HitInfo& hit) {
 include に足す（2か所）。
 
 ```cpp
-#include "MyEngine/AI/AttackTableManager.h"
-#include "MyEngine/Combat/DamageTypes.h"
-#include "MyEngine/Curve/CurveManager.h"
+#include "HTTEngine/AI/AttackTableManager.h"
+#include "HTTEngine/Combat/DamageTypes.h"
+#include "HTTEngine/Curve/CurveManager.h"
 ```
 
 ```cpp
 // Combat
-#include "MyEngine/Systems/Combat/DamageSystem.h"
-#include "MyEngine/Systems/Combat/HitSystem.h"
+#include "HTTEngine/Systems/Combat/DamageSystem.h"
+#include "HTTEngine/Systems/Combat/HitSystem.h"
 ```
 
 `Initialize` の `Layers::Initialize` の下に足す。
@@ -3132,10 +3132,10 @@ C-8 の `// Combat` を、この4行にする。
 
 ```cpp
 // Combat
-#include "MyEngine/Combat/DamageTypes.h"
-#include "MyEngine/ECS/Layers.h"
-#include "MyEngine/Systems/Combat/DamageSystem.h"
-#include "MyEngine/Systems/Combat/HitSystem.h"
+#include "HTTEngine/Combat/DamageTypes.h"
+#include "HTTEngine/ECS/Layers.h"
+#include "HTTEngine/Systems/Combat/DamageSystem.h"
+#include "HTTEngine/Systems/Combat/HitSystem.h"
 ```
 
 ### D-8 `Components/Gameplay/AttackTableComponent.h`・`Systems/Gameplay/AttackTableSystem.cpp`
@@ -3149,9 +3149,9 @@ C-8 の `// Combat` を、この4行にする。
 `.cpp`：include に足す。
 
 ```cpp
-#include "MyEngine/AI/AttackPart.h"
-#include "MyEngine/Components/Combat/HealthComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/AI/AttackPart.h"
+#include "HTTEngine/Components/Combat/HealthComponent.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
 ```
 
 `DescribeAttackTableComponent` の Health Ratio の説明を直す。
@@ -3192,8 +3192,8 @@ protected:
 `.cpp`：include に足す。
 
 ```cpp
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Systems/Combat/HitSystem.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Systems/Combat/HitSystem.h"
 ```
 
 一番下に足す。
@@ -3220,13 +3220,13 @@ void AttackPart::SyncHitbox(GameObject hitbox, const AttackPartContext& context)
 }
 ```
 
-### D-10 `MyEngine_v1.vcxproj`
+### D-10 `HTTEngine.vcxproj`
 
 | フィルター | 足すファイル |
 |---|---|
-| `MyEngine\Combat` | `DamageTypes.h`・`DamageTypes.cpp` |
-| `MyEngine\Components\Combat` | `HealthComponent.h`・`DamageSourceComponent.h` |
-| `MyEngine\Systems\Combat` | `DamageSystem.h`・`DamageSystem.cpp` |
+| `HTTEngine\Combat` | `DamageTypes.h`・`DamageTypes.cpp` |
+| `HTTEngine\Components\Combat` | `HealthComponent.h`・`DamageSourceComponent.h` |
+| `HTTEngine\Systems\Combat` | `DamageSystem.h`・`DamageSystem.cpp` |
 
 ここでビルドできる。
 
@@ -3314,8 +3314,8 @@ Settings で名前を付けて Save しても同じ物ができる（書く順�
 
 ```cpp
 #pragma once
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/ECS/GameObject.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/ECS/GameObject.h"
 
 /// <summary>
 /// まっすぐ飛ぶ弾（Sandbox のテスト用。数が多い物は COMPONENT / SYSTEM で回す形の見本）
@@ -3351,10 +3351,10 @@ struct TestBulletSpawner {
 ```cpp
 #include "Source/Scripts/TestBullet.h"
 
-#include "MyEngine/Components/Combat/DamageSourceComponent.h"
-#include "MyEngine/Components/Combat/HitboxComponent.h"
-#include "MyEngine/Components/Rendering3D/PrimitiveRendererComponent.h"
-#include "MyEngine/Core/NameList.h"
+#include "HTTEngine/Components/Combat/DamageSourceComponent.h"
+#include "HTTEngine/Components/Combat/HitboxComponent.h"
+#include "HTTEngine/Components/Rendering3D/PrimitiveRendererComponent.h"
+#include "HTTEngine/Core/NameList.h"
 
 namespace {
 constexpr float kBulletRadius = 0.15f; // 弾の当たる形の半径（m）
@@ -3443,7 +3443,7 @@ SYSTEM(TestBulletSpawnerUpdate);
 
 ```cpp
 #pragma once
-#include "MyEngine/ECS/Script.h"
+#include "HTTEngine/ECS/Script.h"
 
 /// <summary>
 /// Hitbox の窓をくり返し開ける（Sandbox のテスト用。窓を開けるのは呼ぶ側、の見本）
@@ -3504,7 +3504,7 @@ void HitboxCycler::Fields(ComponentUI& ui) {
 
 ```cpp
 #pragma once
-#include "MyEngine/ECS/Script.h"
+#include "HTTEngine/ECS/Script.h"
 
 /// <summary>
 /// 攻撃の当たり・ダメージを手で試すプレイヤー役（Sandbox のテスト用）
@@ -3536,9 +3536,9 @@ private:
 
 #include <format>
 
-#include "MyEngine/Components/Combat/HealthComponent.h"
-#include "MyEngine/Diagnostics/LogManager.h"
-#include "MyEngine/Input/InputManager.h"
+#include "HTTEngine/Components/Combat/HealthComponent.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Input/InputManager.h"
 #include "Source/Scripts/TestBullet.h"
 
 SCRIPT(HitTestPlayer, "Test");

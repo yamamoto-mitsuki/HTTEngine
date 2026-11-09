@@ -1,5 +1,5 @@
 参照：
-- 学習サイト「MyEngine 図解」：https://claude.ai/artifact/P7bh92LTZ1M4vBtjnLgCSt （スライドの一覧＝目次の「スライド」）
+- 学習サイト「HTTEngine 図解」：https://claude.ai/artifact/P7bh92LTZ1M4vBtjnLgCSt （スライドの一覧＝目次の「スライド」）
 - サイトの直し方（AI 向け）：上の Artifact のファイル `README.md`
 - 分け方の手本：科目 → 単元 → 資料
 - 見た目の手本：作った1本目：CG_04_00 ブルーム https://claude.ai/artifact/F5y1p9pw7wS9LTbypfJNb4

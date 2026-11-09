@@ -13,7 +13,7 @@ on:
 
 # ===== 共通の値 =====
 env:
-  SOLUTION_FILE_PATH: project\MyEngine_v1.slnx # ビルドするソリューション（リポジトリのルートから見た場所）
+  SOLUTION_FILE_PATH: project\HTTEngine.slnx # ビルドするソリューション（リポジトリのルートから見た場所）
   CONFIGURATION: Debug                         # 構成（エンジンも Sandbox も Debug でビルドされる）
 
 # ===== やること =====

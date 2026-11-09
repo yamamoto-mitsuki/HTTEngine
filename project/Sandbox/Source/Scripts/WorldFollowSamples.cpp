@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-#include "MyEngine/Components/UI/UIWorldFollowComponent.h"
+#include "HTTEngine/Components/UI/UIWorldFollowComponent.h"
 
 SCRIPT(CircleMover, "Test");
 SCRIPT(EdgeArrow, "Test");

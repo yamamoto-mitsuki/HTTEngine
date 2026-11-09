@@ -1,5 +1,5 @@
 #pragma once
-#include "MyEngine/ECS/Script.h"
+#include "HTTEngine/ECS/Script.h"
 
 /// <summary>
 /// Hitbox の窓をくり返し開ける（Sandbox のテスト用。窓を開けるのは呼ぶ側、の見本）

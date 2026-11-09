@@ -71,14 +71,14 @@
 
 | 部品 | 何をする | 置き場所（案） | 誰が |
 |---|---|---|---|
-| Quaternion | 回転を4つの数で。掛け算・Slerp・行列にする | `MyEngine/Math/Quaternion.h/.cpp` | 自分（学校） |
-| AnimationClip | キーの並び（ノード名ごと）・長さ | `MyEngine/Graphics/Model/`（`ModelAsset` に `animations` を足す） | 自分（学校） |
+| Quaternion | 回転を4つの数で。掛け算・Slerp・行列にする | `HTTEngine/Math/Quaternion.h/.cpp` | 自分（学校） |
+| AnimationClip | キーの並び（ノード名ごと）・長さ | `HTTEngine/Graphics/Model/`（`ModelAsset` に `animations` を足す） | 自分（学校） |
 | 補間（サンプル） | 時間 t の値を、前後のキーから作る | 同じ所 | 自分（学校） |
-| Skeleton | 骨（Joint）の配列・親の番号・親から順に行列を作る | `MyEngine/Graphics/Model/Skeleton.h/.cpp` | 自分（学校） |
-| SkinCluster | 頂点ごとの骨4本と重み・逆バインド行列・行列パレット | `MyEngine/Graphics/Model/SkinCluster.h/.cpp` | 自分（学校） |
+| Skeleton | 骨（Joint）の配列・親の番号・親から順に行列を作る | `HTTEngine/Graphics/Model/Skeleton.h/.cpp` | 自分（学校） |
+| SkinCluster | 頂点ごとの骨4本と重み・逆バインド行列・行列パレット | `HTTEngine/Graphics/Model/SkinCluster.h/.cpp` | 自分（学校） |
 | スキン用の VS | `Object3d.VS` のスキン版（パレットで頂点と法線を曲げる） | `Shader/Data/Model/` | 自分（学校） |
-| **Animator Component** | クリップ・再生するか・速さ・ループ・Play On Start | `MyEngine/Components/Animation/AnimatorComponent.h` | md |
-| **AnimationSystem** | Entity ごとの「動いている状態」（時間・ポーズ・パレット）を持ち、毎フレーム ①② を回す | `MyEngine/Systems/Animation/AnimationSystem.h/.cpp` | md |
+| **Animator Component** | クリップ・再生するか・速さ・ループ・Play On Start | `HTTEngine/Components/Animation/AnimatorComponent.h` | md |
+| **AnimationSystem** | Entity ごとの「動いている状態」（時間・ポーズ・パレット）を持ち、毎フレーム ①② を回す | `HTTEngine/Systems/Animation/AnimationSystem.h/.cpp` | md |
 | 描画への渡し方 | ノードの行列・パレットを `DrawModel` に渡す。スキン用の PSO | `ModelRenderSystem`・`Renderer`・`PSOManager` | md（学校の VS を差し込む） |
 | Inspector | クリップの選択（モデルの中のクリップ名のコンボ）・停止中に時間のスライダーでプレビュー・骨の線 | `AnimationSystem.cpp` の Describe | md |
 | 保存 | クリップは名前で保存（番号はファイルが変わるとずれる） | 同上 | md |
@@ -189,16 +189,16 @@ struct Animation {
 
 ### 6.5 エンジンに登録する
 
-**MyEngine_v1.vcxproj**（ソリューションエクスプローラーで `Graphics/Animation` フィルタに `AnimationManager.cpp` を追加、でもよい）：
+**HTTEngine.vcxproj**（ソリューションエクスプローラーで `Graphics/Animation` フィルタに `AnimationManager.cpp` を追加、でもよい）：
 
 ```xml
-    <ClCompile Include="MyEngine\Graphics\Animation\AnimationManager.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Animation\AnimationManager.cpp" />
 ```
 
 **Engine.cpp**：
 
 ```cpp
-#include "MyEngine/Graphics/Animation/AnimationManager.h"
+#include "HTTEngine/Graphics/Animation/AnimationManager.h"
 ```
 
 ```cpp

@@ -1,8 +1,8 @@
-#include <MyEngine/ECS/EntityManager.h>
-#include <MyEngine/ECS/Script.h>
-#include <MyEngine/Input/InputManager.h>
-#include <MyEngine/Systems/Animation/TimelineSystem.h>
-#include <MyEngine/UI/UIScreen.h>
+#include <HTTEngine/ECS/EntityManager.h>
+#include <HTTEngine/ECS/Script.h>
+#include <HTTEngine/Input/InputManager.h>
+#include <HTTEngine/Systems/Animation/TimelineSystem.h>
+#include <HTTEngine/UI/UIScreen.h>
 
 // UI アニメーションの見本を、キーで動かす Script（UIAnimationTest シーンの Tester に付ける）
 // 1 / 2 / 3：HP のゲージを 100% / 50% / 15% へ動かす（Tween の Parameter "hp" に渡す）

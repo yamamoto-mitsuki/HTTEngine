@@ -1,6 +1,6 @@
 #pragma once
-#include "MyEngine/ECS/GameComponent.h"
-#include "MyEngine/ECS/GameObject.h"
+#include "HTTEngine/ECS/GameComponent.h"
+#include "HTTEngine/ECS/GameObject.h"
 
 /// <summary>
 /// まっすぐ飛ぶ弾（Sandbox のテスト用。数が多い物は COMPONENT / SYSTEM で回す形の見本）
