@@ -391,3 +391,7 @@ project/externals/vcpkg_installed/
 *.bak
 *.broken
 /project/Sandbox/Parameters/Editor/
+
+# 人ごとの AI への指示と、個人の作業用の md
+CLAUDE.local.md
+/personal/
