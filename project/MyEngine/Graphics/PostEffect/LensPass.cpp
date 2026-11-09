@@ -64,16 +64,18 @@ void LensPass::CreatePSO() {
 //=============================================================================
 // 描画（描画先は呼び出し側が設定済み）
 //=============================================================================
-void LensPass::Render(RenderTexture& source, const ViewRect& rect, bool enabled) {
+void LensPass::Render(RenderTexture& source, const ViewRect& rect, bool useLens, bool useColorAdjust) {
 	MY_ASSERT_MSG(slot_ < kMaxPassPerFrame, "1フレームのレンズパス数が上限を超えました");
 	auto* cmdList = DirectXCommon::GetCommandList();
 
-	// --- パラメータを作る。切ってあるときはレンズの値が全部0＝露出・トーンマップだけ掛けたコピーになる ---
+	// --- パラメータを作る。切ってあるときはレンズの値が全部0・彩度が1＝露出・トーンマップだけ掛けたコピーになる ---
 	Param param{};
 	param.srcIndex = source.GetSRVSlot();
 	param.exposure = kExposure;
 	param.toneMap = static_cast<uint32_t>(toneMap);
-	if (enabled) {
+	param.saturation = useColorAdjust ? kSaturation : 1.0f;
+	param.dither = dither ? 1u : 0u; // 画面へ書くときの事なので、レンズ・色の調整を切ったビューでも掛ける
+	if (useLens) {
 		param.distortion = kDistortion + addDistortion;
 		param.aberration = kAberration + addAberration;
 		param.radialBlur = kRadialBlur + addRadialBlur;

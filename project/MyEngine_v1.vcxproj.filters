@@ -735,6 +735,9 @@
     <ClCompile Include="MyEngine\Systems\Camera\CameraFollow.cpp">
       <Filter>MyEngine\Systems\Camera</Filter>
     </ClCompile>
+    <ClCompile Include="MyEngine\Systems\Camera\CameraLookAt.cpp">
+      <Filter>MyEngine\Systems\Camera</Filter>
+    </ClCompile>
     <ClCompile Include="MyEngine\Systems\Camera\CameraPath.cpp">
       <Filter>MyEngine\Systems\Camera</Filter>
     </ClCompile>
@@ -1589,6 +1592,9 @@
     <ClInclude Include="MyEngine\Systems\Camera\CameraFollow.h">
       <Filter>MyEngine\Systems\Camera</Filter>
     </ClInclude>
+    <ClInclude Include="MyEngine\Systems\Camera\CameraLookAt.h">
+      <Filter>MyEngine\Systems\Camera</Filter>
+    </ClInclude>
     <ClInclude Include="MyEngine\Systems\Camera\CameraPath.h">
       <Filter>MyEngine\Systems\Camera</Filter>
     </ClInclude>
@@ -1869,6 +1875,12 @@
       <Filter>MyEngine\Shader\Data\Post</Filter>
     </None>
     <None Include="MyEngine\Shader\Data\Post\BloomUp.PS.shader">
+      <Filter>MyEngine\Shader\Data\Post</Filter>
+    </None>
+    <None Include="MyEngine\Shader\Data\Post\ColorAdjust.hlsli.shader">
+      <Filter>MyEngine\Shader\Data\Post</Filter>
+    </None>
+    <None Include="MyEngine\Shader\Data\Post\Dither.hlsli.shader">
       <Filter>MyEngine\Shader\Data\Post</Filter>
     </None>
     <None Include="MyEngine\Shader\Data\Post\DepthOfField.hlsli.shader">

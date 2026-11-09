@@ -22,6 +22,7 @@
 #include "MyEngine/Math/MathUtility.h"
 #include "MyEngine/Math/RandomEngine.h"
 #include "MyEngine/Systems/Camera/CameraFollow.h"
+#include "MyEngine/Systems/Camera/CameraLookAt.h"
 #include "MyEngine/Systems/Camera/CameraShake.h"
 #include "MyEngine/Systems/Camera/CameraVolume.h"
 #include "MyEngine/Systems/Camera/CameraPath.h"
@@ -29,7 +30,6 @@
 
 namespace {
 const Vector3 kDefaultPosition = {0.0f, 0.0f, -10.0f}; // Camera Component が無いときの位置（原点を正面から見る）
-constexpr float kMinLookDistanceSq = 1e-6f;            // 見る点がカメラとほとんど同じ位置なら、向きが決まらないので Transform の向きのままにする
 
 /// <summary>
 /// 1フレーム分の、カメラが写す値
@@ -167,56 +167,6 @@ void DescribeCamera(ComponentUI& ui, CameraComponent& value) {
 	    Tip("このカメラの切り替え・Camera Follow・Camera Look At・Camera Shake が使う時間。Game：スローで遅くなり、ヒットストップ・ポーズで止まる / Real：止まらない"));
 }
 
-// ===== Camera Look At =====
-// 実行中だけの値は並べない＝保存しない
-void DescribeCameraLookAt(ComponentUI& ui, CameraLookAtComponent& value) {
-	ui.Field("Enabled###enabled", value.enabled, Tip("外すと Transform の向きのまま"));
-	ui.Field("Target###target", value.target, Tip("見る Entity（Hierarchy からドラッグ）。空なら Offset をワールドの座標として見る"));
-	ui.Field("Offset###offset", value.offset, Tip("見る点のずれ（m。ワールドの向き）"));
-	ui.Field("Smooth Time###smoothTime", value.smoothTime, AtLeast(0.0f).Tip("見る点が追いつくまでの時間の目安（秒）。大きいほどゆっくり。0 ならすぐ合わせる（再生中だけ効く）"));
-}
-
-//=============================================================================
-// 注視点
-//=============================================================================
-// ===== 見たい点（Target が居なくなったら nullopt）=====
-std::optional<Vector3> FindLookAtPoint(const CameraLookAtComponent& lookAt) {
-	if (!lookAt.target.IsSet()) {
-		return lookAt.offset;
-	}
-	const TransformComponent* target = EntityManager::Get<TransformComponent>(lookAt.target);
-	if (target == nullptr) {
-		return std::nullopt;
-	}
-	return GetWorldPosition(*target) + lookAt.offset;
-}
-
-// ===== 今見ている点を、見たい点へ近づける =====
-void UpdateLookAt(CameraLookAtComponent& lookAt, float deltaTime) {
-	const std::optional<Vector3> point = FindLookAtPoint(lookAt);
-	if (!lookAt.enabled || !point.has_value()) {
-		lookAt.isAiming = false;
-		return;
-	}
-	if (!lookAt.isAiming) {
-		lookAt.currentPoint = *point; // 見始め：カメラの向きが置いた向きから流れないように、すぐ合わせる
-		lookAt.isAiming = true;
-		return;
-	}
-	lookAt.currentPoint += (*point - lookAt.currentPoint) * MathUtility::CalcSmoothRate(deltaTime, lookAt.smoothTime);
-}
-
-// ===== 今見る点。再生中はなめらかにした点、停止中は見たい点そのもの（Inspector で変えた値がすぐ見えるように）=====
-std::optional<Vector3> GetLookAtPoint(const CameraLookAtComponent& lookAt, bool isGameRunning) {
-	if (!lookAt.enabled) {
-		return std::nullopt;
-	}
-	if (isGameRunning && lookAt.isAiming) {
-		return lookAt.currentPoint;
-	}
-	return FindLookAtPoint(lookAt);
-}
-
 //=============================================================================
 // 揺れのプレビュー
 //=============================================================================
@@ -276,13 +226,17 @@ CameraOutput EvaluateCamera(Handle<Entity> entity, const TransformComponent& tra
 	if (const CameraPathComponent* path = EntityManager::Get<CameraPathComponent>(entity)) {
 		CameraPath::Apply(*path, output.position, output.rotation);
 	}
-	// --- 注視点：向きだけ置き換える ---
+	// --- 注視点：向きだけ置き換える（見る点が Screen Position の所に写る向き）---
 	std::optional<Vector3> lookAtPoint;
 	if (const CameraLookAtComponent* lookAt = EntityManager::Get<CameraLookAtComponent>(entity)) {
-		lookAtPoint = GetLookAtPoint(*lookAt, isGameRunning);
-	}
-	if (lookAtPoint.has_value() && LengthSq(*lookAtPoint - output.position) > kMinLookDistanceSq) {
-		output.rotation = MakeLookRotation(*lookAtPoint - output.position);
+		lookAtPoint = CameraLookAt::GetPoint(*lookAt, isGameRunning);
+		if (lookAtPoint.has_value()) {
+			// 縦横の比は写すときと同じ（ApplyProjection）。視野角はこのカメラの物（切り替えの補間はこの後なので、補間の途中でも、それぞれのカメラの絵で合う）
+			const std::optional<Quaternion> rotation = CameraLookAt::CalcRotation(output.position, *lookAtPoint, lookAt->screenPosition, output.fovY, GameScreen::GetAspectRatio());
+			if (rotation.has_value()) {
+				output.rotation = *rotation;
+			}
+		}
 	}
 	// --- ポストエフェクト（揺れを足す前の位置で測る。揺れでピントが動かないように）---
 	if (const CameraVolumeComponent* volume = EntityManager::Get<CameraVolumeComponent>(entity)) {
@@ -409,7 +363,7 @@ void UpdateCameraMotion() {
 	ApplyPendingImpulses();
 	EntityManager::ForEach<CameraLookAtComponent>([](Handle<Entity> entity, CameraLookAtComponent& lookAt) {
 		if (EntityManager::IsActiveInHierarchy(entity)) {
-			UpdateLookAt(lookAt, GetCameraDeltaTime(entity));
+			CameraLookAt::Update(lookAt, GetCameraDeltaTime(entity));
 		}
 	});
 	EntityManager::ForEach<CameraShakeComponent>([](Handle<Entity> entity, CameraShakeComponent& shake) {
@@ -437,8 +391,8 @@ void CameraSystem::Initialize() {
 	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraFollowComponent>>("Camera Follow", "Camera", &CameraFollow::Describe));
 
 	EntityManager::RegisterComponent<CameraLookAtComponent>();
-	ComponentSerializer::Register<CameraLookAtComponent>("Camera Look At", &DescribeCameraLookAt);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraLookAtComponent>>("Camera Look At", "Camera", &DescribeCameraLookAt));
+	ComponentSerializer::Register<CameraLookAtComponent>("Camera Look At", &CameraLookAt::Describe);
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraLookAtComponent>>("Camera Look At", "Camera", &CameraLookAt::Describe));
 
 	EntityManager::RegisterComponent<CameraShakeComponent>();
 	ComponentSerializer::Register<CameraShakeComponent>("Camera Shake", &CameraShake::Describe);

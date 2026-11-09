@@ -11,7 +11,8 @@
 void XInputGamepad::Init() {
 	for (int i = 0; i < kMaxControllers; ++i) {
 		memset(&controllers_[i].state, 0, sizeof(XINPUT_STATE));
-		memset(&controllers_[i].statePrev, 0, sizeof(XINPUT_STATE));
+		controllers_[i].buttons = 0;
+		controllers_[i].buttonsPrev = 0;
 		controllers_[i].connected = false;
 	}
 
@@ -36,8 +37,8 @@ void XInputGamepad::Finalize() {
 
 void XInputGamepad::Update() {
 	for (int i = 0; i < kMaxControllers; ++i) {
-		// 前フレームの状態を保存してから今フレームを取得する
-		controllers_[i].statePrev = controllers_[i].state;
+		// 前フレームのボタンの印を保存してから今フレームを取得する
+		controllers_[i].buttonsPrev = controllers_[i].buttons;
 
 		DWORD result = XInputGetState(i, &controllers_[i].state);
 		bool nowConnected = (result == ERROR_SUCCESS);
@@ -51,6 +52,8 @@ void XInputGamepad::Update() {
 			}
 		}
 		controllers_[i].connected = nowConnected;
+		// トリガーの判定は前フレームの印（buttonsPrev）を見るので、上で移した後に作る
+		controllers_[i].buttons = MakeButtons(i);
 	}
 }
 
@@ -61,28 +64,28 @@ bool XInputGamepad::IsConnected(int index) const {
 	return controllers_[index].connected;
 }
 
-bool XInputGamepad::IsButtonPressed(uint16_t button, int index) const {
+bool XInputGamepad::IsButtonPressed(uint32_t button, int index) const {
 	if (!IsConnected(index)) {
 		return false;
 	}
-	return (controllers_[index].state.Gamepad.wButtons & button) != 0;
+	return (controllers_[index].buttons & button) != 0;
 }
 
-bool XInputGamepad::IsButtonTriggered(uint16_t button, int index) const {
+bool XInputGamepad::IsButtonTriggered(uint32_t button, int index) const {
 	if (!IsConnected(index)) {
 		return false;
 	}
-	bool now = (controllers_[index].state.Gamepad.wButtons & button) != 0;
-	bool prev = (controllers_[index].statePrev.Gamepad.wButtons & button) != 0;
+	bool now = (controllers_[index].buttons & button) != 0;
+	bool prev = (controllers_[index].buttonsPrev & button) != 0;
 	return now && !prev;
 }
 
-bool XInputGamepad::IsButtonReleased(uint16_t button, int index) const {
+bool XInputGamepad::IsButtonReleased(uint32_t button, int index) const {
 	if (!IsConnected(index)) {
 		return false;
 	}
-	bool now = (controllers_[index].state.Gamepad.wButtons & button) != 0;
-	bool prev = (controllers_[index].statePrev.Gamepad.wButtons & button) != 0;
+	bool now = (controllers_[index].buttons & button) != 0;
+	bool prev = (controllers_[index].buttonsPrev & button) != 0;
 	return !now && prev;
 }
 
@@ -145,6 +148,14 @@ void XInputGamepad::SetTriggerDeadzone(float deadzone) {
 	triggerDeadzone_ = std::clamp(deadzone, 0.0f, 1.0f);
 }
 
+void XInputGamepad::SetTriggerPressThreshold(float threshold) {
+	triggerPressThreshold_ = std::clamp(threshold, 0.0f, 1.0f);
+}
+
+void XInputGamepad::SetTriggerReleaseThreshold(float threshold) {
+	triggerReleaseThreshold_ = std::clamp(threshold, 0.0f, 1.0f);
+}
+
 void XInputGamepad::SetVibration(float leftMotor, float rightMotor, int index) {
 	if (!IsConnected(index)) {
 		return;
@@ -169,4 +180,27 @@ float XInputGamepad::ApplyDeadzone(int16_t value, float deadzone) const {
 		return 0.0f;
 	}
 	return normalized;
+}
+
+uint32_t XInputGamepad::MakeButtons(int index) const {
+	if (!IsConnected(index)) {
+		return 0; // 抜けている間は何も押していない（差し直したとき、押したままのボタンは「押した瞬間」になる）
+	}
+	const ControllerState& controller = controllers_[index];
+	uint32_t buttons = controller.state.Gamepad.wButtons;
+	// --- トリガー：引いた量をしきい値で判定して、ボタンの印に足す ---
+	if (IsTriggerHeld(GetLeftTrigger(index), (controller.buttonsPrev & GamepadButton::LeftTrigger) != 0)) {
+		buttons |= GamepadButton::LeftTrigger;
+	}
+	if (IsTriggerHeld(GetRightTrigger(index), (controller.buttonsPrev & GamepadButton::RightTrigger) != 0)) {
+		buttons |= GamepadButton::RightTrigger;
+	}
+	return buttons;
+}
+
+bool XInputGamepad::IsTriggerHeld(float amount, bool wasPressed) const {
+	// 押していない間は押すしきい値、押している間は離すしきい値で比べる（離す方が大きくされていても、押す方を超えない）
+	const float threshold = wasPressed ? (std::min)(triggerReleaseThreshold_, triggerPressThreshold_) : triggerPressThreshold_;
+	// 0 は「引いていない」（デッドゾーンの中も 0）。しきい値を 0 にしても、触っていないのに押した扱いにはしない
+	return amount > 0.0f && amount >= threshold;
 }

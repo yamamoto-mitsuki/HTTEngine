@@ -149,14 +149,17 @@ public:
 	/// <summary>指定番号のコントローラーが接続されているか。</summary>
 	static bool IsGamepadConnected(int index = 0);
 
-	/// <summary>指定ボタンが押されているか。</summary>
-	static bool IsButtonPressed(uint16_t button, int index = 0);
+	/// <summary>
+	/// 指定ボタンが押されているか。button は GamepadButton::***
+	/// <para>GamepadButton::LeftTrigger・RightTrigger で、トリガーをしきい値（SetTriggerPressThreshold / SetTriggerReleaseThreshold）で判定したボタンとして読める</para>
+	/// </summary>
+	static bool IsButtonPressed(uint32_t button, int index = 0);
 
-	/// <summary>指定ボタンを押した瞬間か。</summary>
-	static bool IsButtonTriggered(uint16_t button, int index = 0);
+	/// <summary>指定ボタンを押した瞬間か。トリガーは、押すしきい値まで引いたフレーム</summary>
+	static bool IsButtonTriggered(uint32_t button, int index = 0);
 
-	/// <summary>指定ボタンを離した瞬間か。</summary>
-	static bool IsButtonReleased(uint16_t button, int index = 0);
+	/// <summary>指定ボタンを離した瞬間か。トリガーは、離すしきい値より戻したフレーム</summary>
+	static bool IsButtonReleased(uint32_t button, int index = 0);
 
 	/// <summary>左スティックX軸 (-1.0f=左, 1.0f=右, デッドゾーン処理済み)。</summary>
 	static float GetLeftStickX(int index = 0);
@@ -170,10 +173,10 @@ public:
 	/// <summary>右スティックY軸 (-1.0f=下, 1.0f=上, デッドゾーン処理済み)。</summary>
 	static float GetRightStickY(int index = 0);
 
-	/// <summary>左トリガー (0.0f=未押し, 1.0f=最大)。</summary>
+	/// <summary>左トリガー (0.0f=未押し, 1.0f=最大)。押した瞬間を読むなら IsButtonTriggered(GamepadButton::LeftTrigger)</summary>
 	static float GetLeftTrigger(int index = 0);
 
-	/// <summary>右トリガー (0.0f=未押し, 1.0f=最大)。</summary>
+	/// <summary>右トリガー (0.0f=未押し, 1.0f=最大)。押した瞬間を読むなら IsButtonTriggered(GamepadButton::RightTrigger)</summary>
 	static float GetRightTrigger(int index = 0);
 
 	/// <summary>
@@ -195,6 +198,13 @@ public:
 	static float GetLeftStickDeadzone();
 	static float GetRightStickDeadzone();
 	static float GetTriggerDeadzone();
+
+	// ---- トリガーをボタンとして読むときのしきい値 (0.0f〜1.0f。デッドゾーン処理後の量。既定は押す 0.5・離す 0.4) ----
+	// 2つに分けるのは、しきい値の近くで指を止めたときに、押した・離したが何度も出ないように（離す方を小さくする）
+	static void SetTriggerPressThreshold(float threshold);   // この量以上引いたら押した
+	static void SetTriggerReleaseThreshold(float threshold); // 押している間は、この量より戻したら離した
+	static float GetTriggerPressThreshold();
+	static float GetTriggerReleaseThreshold();
 
 	//============================================================
 	// まとめて読む

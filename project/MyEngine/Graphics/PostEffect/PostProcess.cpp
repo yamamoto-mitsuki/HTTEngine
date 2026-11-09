@@ -15,20 +15,20 @@ void PostProcess::Initialize(uint32_t width, uint32_t height) {
 	RegisterGV();
 	GlobalVariables::GetInstance()->LoadGroup("PostEffect"); // 保存済みがあれば読む
 	ApplyGV();
-	LogManager::Log(std::format("PostEffect Bloom={} Lens={} Threshold={:.2f} Intensity={:.2f} Vignette={:.2f} ToneMap={} Exposure={:.2f}", kBloomEnabled, kLensEnabled, bloom_.kThreshold, bloom_.kIntensity,
-	        lens_.kVignette, static_cast<int>(lens_.toneMap), lens_.kExposure));
+	LogManager::Log(std::format("PostEffect Bloom={} Lens={} Threshold={:.2f} Intensity={:.2f} Vignette={:.2f} ToneMap={} Exposure={:.2f} Saturation={:.2f}", kBloomEnabled, kLensEnabled, bloom_.kThreshold,
+	        bloom_.kIntensity, lens_.kVignette, static_cast<int>(lens_.toneMap), lens_.kExposure, lens_.kSaturation));
 }
 
 //=============================================================================
 // 準備（描画先を張り替えるので、この後に描画先を設定すること）
 //=============================================================================
-void PostProcess::Prepare(RenderTexture& scene, const PostOverrides& cameraOverrides, bool useBloom) {
+void PostProcess::Prepare(RenderTexture& scene, const PostOverrides& cameraOverrides, PostEffectMode mode) {
 	ApplyGV(); // ImGuiでいじった値がその場で効くように毎フレーム反映する
 	ApplyCameraOverrides(cameraOverrides);
 	source_ = &scene;
 
 	// --- ブルーム：明るい所を滲ませて work_ へ合成する ---
-	if (useBloom && isBloomActive_) {
+	if (mode != PostEffectMode::None && isBloomActive_) {
 		bloom_.Record(scene);
 		work_->PreDraw();
 		bloom_.Composite(scene, static_cast<float>(work_->GetWidth()), static_cast<float>(work_->GetHeight()));
@@ -53,9 +53,12 @@ RenderTexture* PostProcess::ApplyDepthOfField(RenderTexture& scene, const Camera
 //=============================================================================
 // 最終出力（描画先は呼び出し側が設定済み）
 //=============================================================================
-void PostProcess::Composite(const ViewRect& rect, bool useLens) {
+void PostProcess::Composite(const ViewRect& rect, PostEffectMode mode) {
 	// 切っていても最終出力として通す（HDR の絵を、露出・トーンマップで画面の 0〜1 に収めるのもここ）
-	lens_.Render(*source_, rect, useLens && isLensActive_);
+	// 色の調整は Scene ビュー（NoLens）にも掛ける（色は絵の歪みと違い、ギズモ・クリックの位置とずれないので。Unity の Scene ビューと同じ）
+	const bool useLens = (mode == PostEffectMode::All) && isLensActive_;
+	const bool useColorAdjust = (mode != PostEffectMode::None);
+	lens_.Render(*source_, rect, useLens, useColorAdjust);
 }
 
 //=============================================================================
@@ -91,9 +94,14 @@ void PostProcess::RegisterGV() {
 		.Add("RadialBlur", lens_.kRadialBlur)
 		.Add("Vignette", lens_.kVignette);
 	// 露出・トーンマップ（HDR の絵 → 画面）。Enabled は無い（3D の絵は HDR なので、いつも掛ける。None なら 1 で切るだけ＝今までの見た目）
+	// Dither は画面の 256 段に丸める前に粒を足して、ビネット・空のようななめらかな明るさが帯（等高線）に見えないようにする（0/1。初めは 1）
 	post.Category("ToneMap")
 		.Add("Mode", GlobalVariables::MakeEnumCombo(lens_.toneMap))
-		.Add("Exposure", lens_.kExposure);
+		.Add("Exposure", lens_.kExposure)
+		.Add("Dither", kDitherEnabled);
+	// 色の調整。Enabled は無い（Saturation 1 で何も変わらない＝切ったのと同じ）
+	post.Category("ColorAdjust")
+		.Add("Saturation", lens_.kSaturation);
 }
 
 void PostProcess::ApplyGV() {
@@ -117,6 +125,10 @@ void PostProcess::ApplyGV() {
 
 	lens_.toneMap = GlobalVariables::GetEnumCombo<ToneMapMode>(gv->Get<GlobalVariables::ComboItem>(s, "ToneMap", "Mode"));
 	lens_.kExposure = gv->Get<float>(s, "ToneMap", "Exposure");
+	kDitherEnabled = gv->Get<int32_t>(s, "ToneMap", "Dither");
+	lens_.dither = (kDitherEnabled != 0);
+
+	lens_.kSaturation = gv->Get<float>(s, "ColorAdjust", "Saturation");
 }
 
 
@@ -140,4 +152,6 @@ void PostProcess::ApplyCameraOverrides(const PostOverrides& camera) {
 	isLensActive_ = isLensEnabled || camera.HasAny({PostParam::LensDistortion, PostParam::LensAberration, PostParam::LensRadialBlur, PostParam::LensVignette});
 	// --- 露出（切る設定が無いので、いつも混ぜる）---
 	lens_.kExposure = camera.Apply(PostParam::Exposure, lens_.kExposure);
+	// --- 色の調整（これも切る設定が無いので、いつも混ぜる）---
+	lens_.kSaturation = camera.Apply(PostParam::Saturation, lens_.kSaturation);
 }

@@ -38,6 +38,7 @@
     <ClCompile Include="Source\Scripts\TestBullet.cpp" />
     <ClCompile Include="Source\Scripts\CursorTrailSamples.cpp" />
     <ClCompile Include="Source\Scripts\BurstEffectSamples.cpp" />
+    <ClCompile Include="Source\Scripts\TriggerCameraSamples.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\CharacterKeyboardMover.h" />
@@ -49,6 +50,7 @@
     <ClInclude Include="Source\Scripts\TestBullet.h" />
     <ClInclude Include="Source\Scripts\CursorTrailSamples.h" />
     <ClInclude Include="Source\Scripts\BurstEffectSamples.h" />
+    <ClInclude Include="Source\Scripts\TriggerCameraSamples.h" />
   </ItemGroup>
 
   <!-- ===== プロジェクトの情報 ===== -->

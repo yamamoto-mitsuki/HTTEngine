@@ -6,6 +6,8 @@ profile : ps_6_0
 #HLSL
 #include "Resources/Texture.hlsli"
 #include "Post/ToneMap.hlsli"
+#include "Post/ColorAdjust.hlsli"
+#include "Post/Dither.hlsli"
 
 struct LensParam
 {
@@ -20,6 +22,8 @@ struct LensParam
     float2 windLineDirection; // 風の線の流れる向き（画面の右・上が＋）
     float exposure;   // 露出（トーンマップの前に掛ける倍率）
     uint32_t toneMap; // トーンマップの種類（ToneMap.hlsli の kToneMap〇〇）
+    float saturation; // 彩度（1 でそのまま・0 で白黒）
+    uint32_t dither;  // 1 なら画面へ書く前に粒を足して、明るさの帯（等高線）を消す
 };
 ConstantBuffer<LensParam> gLens : register(b0);
 
@@ -101,9 +105,11 @@ float32_t4 main(VSOutput input) : SV_TARGET
         color = sum * (1.0f / 6.0f);
     }
     
-     // ===== 露出・トーンマップ：HDR の明るさを、画面の 0〜1 に収める =====
+     // ===== 露出・彩度・トーンマップ：HDR の明るさを、画面の 0〜1 に収める =====
     // ここまでは HDR のまま（明るい所ほど色収差・放射ブラーの筋も明るい）。風の線・ビネットは収めた後に掛ける（今までの見た目と同じ）
-    color = ApplyToneMap(color * gLens.exposure, gLens.toneMap);
+    // 彩度は露出の後・トーンマップの前（Unity の Color Adjustments と同じ順。白黒でもトーンマップの明るさの付き方は同じ）
+    color = ApplySaturation(color * gLens.exposure, gLens.saturation);
+    color = ApplyToneMap(color, gLens.toneMap);
     
      // ===== 風の線：白へ寄せる（足すと明るい所で白く飛ぶので、lerp で寄せる）=====
     if (gLens.windLines > 0.001f)
@@ -115,6 +121,13 @@ float32_t4 main(VSOutput input) : SV_TARGET
 
     // ===== ビネット：端を落として中心へ視線を集める =====
     color *= 1.0f - saturate(dist2 * gLens.vignette);
+
+    // ===== ディザ：画面の 256 段に丸める前に、1 段より小さい粒を足す（ビネットのようななめらかな暗さが、楕円の帯に見えないように）=====
+    // 一番最後（この後に明るさを変える物が無い所）で足す。粒の並びは画面の画素の位置で決まる（毎フレーム同じ並び）
+    if (gLens.dither != 0)
+    {
+        color = ApplyDither(color, input.position.xy);
+    }
 
     return float32_t4(color, 1.0f);
 }

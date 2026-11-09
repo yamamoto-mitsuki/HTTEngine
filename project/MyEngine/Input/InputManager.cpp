@@ -208,9 +208,9 @@ long InputManager::GetMouseDeltaWheel() {
 // キーボードと同じく、ウィンドウが手前に無いとき・ImGui に文字を打っているときは、何も押していない扱いにする
 // （XInput はウィンドウに関係なく読めるので、見ないと、別のアプリを触っている間もゲームが動いてしまう）
 bool InputManager::IsGamepadConnected(int i) { return GetInstance()->gamepad_.IsConnected(i); }
-bool InputManager::IsButtonPressed(uint16_t btn, int i) { return !IsGamepadBlocked() && GetInstance()->gamepad_.IsButtonPressed(btn, i); }
-bool InputManager::IsButtonTriggered(uint16_t btn, int i) { return !IsGamepadBlocked() && GetInstance()->gamepad_.IsButtonTriggered(btn, i); }
-bool InputManager::IsButtonReleased(uint16_t btn, int i) { return !IsGamepadBlocked() && GetInstance()->gamepad_.IsButtonReleased(btn, i); }
+bool InputManager::IsButtonPressed(uint32_t btn, int i) { return !IsGamepadBlocked() && GetInstance()->gamepad_.IsButtonPressed(btn, i); }
+bool InputManager::IsButtonTriggered(uint32_t btn, int i) { return !IsGamepadBlocked() && GetInstance()->gamepad_.IsButtonTriggered(btn, i); }
+bool InputManager::IsButtonReleased(uint32_t btn, int i) { return !IsGamepadBlocked() && GetInstance()->gamepad_.IsButtonReleased(btn, i); }
 float InputManager::GetLeftStickX(int i) { return IsGamepadBlocked() ? 0.0f : GetInstance()->gamepad_.GetLeftStickX(i); }
 float InputManager::GetLeftStickY(int i) { return IsGamepadBlocked() ? 0.0f : GetInstance()->gamepad_.GetLeftStickY(i); }
 float InputManager::GetRightStickX(int i) { return IsGamepadBlocked() ? 0.0f : GetInstance()->gamepad_.GetRightStickX(i); }
@@ -227,6 +227,12 @@ void InputManager::SetTriggerDeadzone(float d) { GetInstance()->gamepad_.SetTrig
 float InputManager::GetLeftStickDeadzone() { return GetInstance()->gamepad_.GetLeftStickDeadzone(); }
 float InputManager::GetRightStickDeadzone() { return GetInstance()->gamepad_.GetRightStickDeadzone(); }
 float InputManager::GetTriggerDeadzone() { return GetInstance()->gamepad_.GetTriggerDeadzone(); }
+
+// ---- トリガーのしきい値 ----
+void InputManager::SetTriggerPressThreshold(float t) { GetInstance()->gamepad_.SetTriggerPressThreshold(t); }
+void InputManager::SetTriggerReleaseThreshold(float t) { GetInstance()->gamepad_.SetTriggerReleaseThreshold(t); }
+float InputManager::GetTriggerPressThreshold() { return GetInstance()->gamepad_.GetTriggerPressThreshold(); }
+float InputManager::GetTriggerReleaseThreshold() { return GetInstance()->gamepad_.GetTriggerReleaseThreshold(); }
 
 // ---- まとめて読む ----
 Vector2 InputManager::GetMoveAxis(bool useController) {

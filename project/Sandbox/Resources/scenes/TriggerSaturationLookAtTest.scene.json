@@ -1,0 +1,89 @@
+{
+	"version": 5,
+	"entities": [
+		{
+			"id": 1,
+			"name": "Main Camera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [-2.0, 3.0, -9.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]},
+				"Camera": {"fovY": 50.0, "nearZ": 0.1, "farZ": 1000.0, "priority": 0, "blendStyle": "Ease", "blendTime": 0.8, "blendEase": "InOutCubic"},
+				"Camera Look At": {"enabled": true, "target": 4, "offset": [0.0, 0.5, 0.0], "screenPosition": [-0.333, 0.0], "smoothTime": 0.3}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Gray Camera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [5.0, 2.0, -6.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]},
+				"Camera": {"fovY": 40.0, "nearZ": 0.1, "farZ": 1000.0, "priority": -1, "blendStyle": "Ease", "blendTime": 0.8, "blendEase": "InOutCubic"},
+				"Camera Look At": {"enabled": true, "target": 4, "offset": [0.0, 0.5, 0.0], "screenPosition": [0.333, 0.2], "smoothTime": 0.3},
+				"Camera Volume": {"enabled": true, "weight": 1.0, "saturationOverride": true, "saturation": 0.0}
+			}
+		},
+		{
+			"id": 3,
+			"name": "Directional Light",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [0.0, 3.0, 0.0], "rotation": [50.0, -30.0, 0.0], "scale": [1.0, 1.0, 1.0]},
+				"Directional Light": {"color": [1.0, 1.0, 1.0]}
+			}
+		},
+		{
+			"id": 4,
+			"name": "Target",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [0.0, 0.5, 2.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]},
+				"Primitive Renderer": {"enabled": true, "shape": "Box", "color": [1.0, 0.45, 0.1, 1.0]},
+				"SideSwing": {"width": 3.0, "period": 4.0}
+			}
+		},
+		{
+			"id": 5,
+			"name": "Ground",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [0.0, -0.5, 5.0], "rotation": [0.0, 0.0, 0.0], "scale": [16.0, 1.0, 24.0]},
+				"Primitive Renderer": {"enabled": true, "shape": "Box", "color": [0.2, 0.55, 0.3, 1.0]}
+			}
+		},
+		{
+			"id": 6,
+			"name": "Pillar",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [-4.0, 1.5, 6.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 4.0, 1.0]},
+				"Primitive Renderer": {"enabled": true, "shape": "Box", "color": [0.2, 0.4, 1.0, 1.0]}
+			}
+		},
+		{
+			"id": 7,
+			"name": "Switcher",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]},
+				"TriggerCameraSwitcher": {"otherCamera": 2, "switchedPriority": 10}
+			}
+		},
+		{
+			"id": 8,
+			"name": "Red UI",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [40.0, -40.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]},
+				"Image": {"color": [1.0, 0.0, 0.0, 1.0], "size": [120.0, 120.0], "anchor": "TopLeft", "pivot": [0.0, 1.0]}
+			}
+		}
+	]
+}

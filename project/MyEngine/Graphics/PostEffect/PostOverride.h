@@ -38,6 +38,7 @@ enum class PostParam {
 	LensRadialBlur, // レンズ：放射ブラー
 	LensVignette,   // レンズ：端の暗さ
 	Exposure,       // 露出
+	Saturation,     // 色の調整：彩度（1 でそのまま・0 で白黒）
 };
 
 /// <summary>

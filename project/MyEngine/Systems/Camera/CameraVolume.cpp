@@ -53,6 +53,9 @@ void CameraVolume::Describe(ComponentUI& ui, CameraVolumeComponent& value) {
 	// ===== 露出 =====
 	ui.Separator("ToneMap");
 	DescribeItem(ui, "Exposure", "exposure", value.exposure, AtLeast(0.0f).Tip("露出。2 で1段明るい・0.5 で1段暗い"));
+	// ===== 色の調整 =====
+	ui.Separator("Color Adjust");
+	DescribeItem(ui, "Saturation", "saturation", value.saturation, AtLeast(0.0f).Tip("彩度。1 でそのまま・0 で白黒（同じ明るさの灰色）・1 より大きいと色が濃くなる。UI には掛からない"));
 }
 
 //=============================================================================
@@ -84,5 +87,6 @@ PostOverrides CameraVolume::MakeOverrides(const CameraVolumeComponent& volume, s
 	setItem(PostParam::LensRadialBlur, volume.lensRadialBlur);
 	setItem(PostParam::LensVignette, volume.lensVignette);
 	setItem(PostParam::Exposure, volume.exposure);
+	setItem(PostParam::Saturation, volume.saturation);
 	return overrides;
 }

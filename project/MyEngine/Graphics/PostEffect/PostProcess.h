@@ -11,14 +11,14 @@ class Camera;
 
 // ポストエフェクトをどこまで掛けるか（SceneRenderer::RenderToTexture に渡す）
 enum class PostEffectMode {
-	None,   // 掛けない（被写界深度・ブルーム・レンズを外す。露出・トーンマップだけは掛ける）
+	None,   // 掛けない（被写界深度・ブルーム・レンズ・色の調整を外す。露出・トーンマップだけは掛ける）
 	All,    // 全部（Game ビュー・製品版）
 	NoLens, // レンズ（歪み・色収差・周辺を暗く）だけ外す。Scene ビュー用（絵を歪ませると、ギズモやクリックで選ぶ位置が物とずれる）
 };
 
 
 /// <summary>
-/// ポストエフェクトをまとめて順に掛ける（被写界深度 → ブルーム → レンズ・露出・トーンマップ）。ブルーム・レンズ・トーンマップの有無と数値は GlobalVariables で持つ
+/// ポストエフェクトをまとめて順に掛ける（被写界深度 → ブルーム → レンズ・露出・彩度・トーンマップ）。ブルーム・レンズ・色の調整・トーンマップの有無と数値は GlobalVariables で持つ
 /// <para>被写界深度の値はシーンの Depth Of Field Component から（ApplyDepthOfField に渡す）</para>
 /// <para>途中の絵は全部 HDR。画面（SDR）の 0〜1 に収めるのは、最後のレンズのパス（LensPass）</para>
 /// </summary>
@@ -33,9 +33,10 @@ public:
 	/// <returns>ぼかした絵。描画先として張ったまま（深度は scene の物）なので、この後に半透明を描いて PostDraw する</returns>
 	RenderTexture* ApplyDepthOfField(RenderTexture& scene, const Camera& camera, const DepthOfFieldSettings& settings);
 
-	// cameraOverrides はカメラごとの上書き。useBloom が false ならブルームを掛けない（ポストエフェクトを切ったビュー）
-	void Prepare(RenderTexture& scene, const PostOverrides& cameraOverrides, bool useBloom = true);
-	void Composite(const ViewRect& rect, bool useLens = true); // useLens が false ならレンズを掛けずに、露出・トーンマップだけ掛けて通す
+	// cameraOverrides はカメラごとの上書き。mode が None ならブルームを掛けない（ポストエフェクトを切ったビュー）
+	void Prepare(RenderTexture& scene, const PostOverrides& cameraOverrides, PostEffectMode mode = PostEffectMode::All);
+	// mode が All のときだけレンズ、None 以外のとき色の調整を掛ける。どれでも露出・トーンマップは掛けて通す（Prepare と同じ mode を渡す）
+	void Composite(const ViewRect& rect, PostEffectMode mode = PostEffectMode::All);
 	void ResetSlot();
 	BloomPass& GetBloomPass() { return bloom_; }
 	LensPass& GetLensPass() { return lens_; }
@@ -44,6 +45,7 @@ private:
 	// --- 調整項目 ---
 	int kBloomEnabled = 1; // GlobalVariables は bool を持たないので 0/1 で扱う
 	int kLensEnabled = 1;
+	int kDitherEnabled = 1; // 画面へ書く前に粒を足して、明るさの帯を消すか（LensPass::dither へ渡す）
 
 	void RegisterGV();
 	void ApplyGV();

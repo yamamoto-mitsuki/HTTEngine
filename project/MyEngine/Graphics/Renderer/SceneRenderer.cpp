@@ -180,9 +180,9 @@ void SceneRenderer::RenderToTexture(const Camera* camera, RenderTexture* target,
 	const ViewRect rect = {0.0f, 0.0f, static_cast<float>(target->GetWidth()), static_cast<float>(target->GetHeight())};
 	// 一旦 HDR の絵へ描き、光の層を作ってから target へ合成する（露出・トーンマップで 0〜1 に収める）
 	RenderTexture* scene = RenderWorldForPost(camera, windowTitle);
-	instance_->postProcess_->Prepare(*scene, GetViewPostOverrides(), mode != PostEffectMode::None); // 張り替える処理はここで全部済ませる
+	instance_->postProcess_->Prepare(*scene, GetViewPostOverrides(), mode); // 張り替える処理はここで全部済ませる
 	target->PreDraw();                                                      // その後に描画先を張る
-	instance_->postProcess_->Composite(rect, mode == PostEffectMode::All);
+	instance_->postProcess_->Composite(rect, mode);
 	RenderUI(windowTitle, rect); // UIは効果の外側に重ねる
 	target->PostDraw();
 }

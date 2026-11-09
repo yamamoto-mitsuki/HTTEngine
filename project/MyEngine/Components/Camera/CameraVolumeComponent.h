@@ -48,6 +48,8 @@ struct CameraVolumeComponent {
 	CameraVolumeValue lensVignette = {false, 0.35f};  // 端の暗さ
 	// --- ToneMap ---
 	CameraVolumeValue exposure = {false, 1.0f}; // 露出（2 で1段明るい・0.5 で1段暗い）
+	// --- Color Adjust ---
+	CameraVolumeValue saturation = {false, 1.0f}; // 彩度（1 でそのまま・0 で白黒・1 より大きいと色が濃くなる）
 };
 
 static_assert(std::is_trivially_copyable_v<CameraVolumeComponent>);

@@ -180,6 +180,7 @@
     <ClCompile Include="MyEngine\Systems\Animation\AnimationSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Animation\TimelineSystem.cpp" />
     <ClCompile Include="MyEngine\Systems\Camera\CameraFollow.cpp" />
+    <ClCompile Include="MyEngine\Systems\Camera\CameraLookAt.cpp" />
     <ClCompile Include="MyEngine\Systems\Camera\CameraPath.cpp" />
     <ClCompile Include="MyEngine\Systems\Camera\CameraShake.cpp" />
     <ClCompile Include="MyEngine\Systems\Camera\CameraVolume.cpp" />
@@ -434,6 +435,7 @@
     <ClInclude Include="MyEngine\Systems\Animation\AnimationSystem.h" />
     <ClInclude Include="MyEngine\Systems\Animation\TimelineSystem.h" />
     <ClInclude Include="MyEngine\Systems\Camera\CameraFollow.h" />
+    <ClInclude Include="MyEngine\Systems\Camera\CameraLookAt.h" />
     <ClInclude Include="MyEngine\Systems\Camera\CameraPath.h" />
     <ClInclude Include="MyEngine\Systems\Camera\CameraShake.h" />
     <ClInclude Include="MyEngine\Systems\Camera\CameraVolume.h" />
@@ -644,6 +646,8 @@
     <None Include="MyEngine\Shader\Data\Post\BloomGaussian.PS.shader" />
     <None Include="MyEngine\Shader\Data\Post\BloomKawaseComposite.PS.shader" />
     <None Include="MyEngine\Shader\Data\Post\BloomUp.PS.shader" />
+    <None Include="MyEngine\Shader\Data\Post\ColorAdjust.hlsli.shader" />
+    <None Include="MyEngine\Shader\Data\Post\Dither.hlsli.shader" />
     <None Include="MyEngine\Shader\Data\Post\DepthOfField.hlsli.shader" />
     <None Include="MyEngine\Shader\Data\Post\DepthOfFieldBlur.CS.shader" />
     <None Include="MyEngine\Shader\Data\Post\DepthOfFieldComposite.PS.shader" />

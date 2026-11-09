@@ -826,9 +826,21 @@ Diffuse は今どのシェーダーも使っていない（色は Color で付�
 |---|---|
 | Mode | **None**：1 で切るだけ（前の見た目。初めの値）／**Reinhard**：x/(1+x)。飛ばないが暗く淡い／**ACES**：映画の標準の近似。明るい所は柔らかく白へ、暗い所は締まる／**GT**：グランツーリスモ（内村式）。真ん中はそのまま、明るい所だけ柔らかく（アニメ調に向く） |
 | Exposure | トーンマップの前に掛ける倍率（2 で1段明るい）。ブルームの光り方は変わらない |
+| Dither | 1（初めの値）なら、画面の 256 段に丸める前に1段より小さい粒を足して、ビネット・空のようななめらかな明るさが帯（楕円の等高線）に見えないようにする。どのビューでも掛かる。R・G・B に同じ粒なので白黒の絵は灰色のまま |
 
 - 光らせる物：Primitive Renderer（Polygon Renderer・Elastic Surface・Arrow Strip も）・Particle System・Model Renderer・Sprite Renderer・Trail の **Intensity**（Color の下）。
 - CS でテクスチャを読み書きするとき：`ComputeTexture`（UAV と SRV を持つ）、`ComputePipeline::SetTextureTable`（`gTextures[]`）・`SetUnorderedAccessTexture`（`RWTexture2D`）。
+
+### 色の調整（Settings → PostEffect → ColorAdjust）
+
+露出の後・トーンマップの前に掛ける（Unity の Color Adjustments と同じ順。`Parameters/PostEffect/ColorAdjust.json`）。UI（Sprite・Text・Image など）には掛からない。
+
+| 項目 | 中身 |
+|---|---|
+| Saturation | 彩度。1 でそのまま（初めの値）・0 で白黒（同じ明るさの灰色。Rec.709 の重み）・1 より大きいと色が濃くなる |
+
+- Game ビュー・製品版・Scene ビューに掛かる。View → Scene View → Post Effects を切ると、Scene ビューは外れる。
+- カメラごとに変えるなら Camera Volume の Color Adjust → Saturation（切り替えで補間する）。作りは `TriggerSaturationScreenPosition.md` のパートB。
 
 ### 図形・スプライト
 
@@ -958,9 +970,10 @@ void MoveCameraUp(float deltaTime) {
 |---|---|
 | Target | 見る Entity。空なら Offset をワールドの座標として見る |
 | Offset | 見る点のずれ（m。ワールドの向き） |
+| Screen Position | 見る点を写す画面の位置（真ん中が 0、右と上が＋、端が ±1。スプライトの position と同じ）。横 1/3 なら X を -0.333（左から）か 0.333（右から）。カメラは横に傾けない |
 | Smooth Time | 見る点が追いつくまでの時間の目安（秒。再生中だけ効く） |
 
-カメラの子の Entity は Transform に付いていくので、注視点の向きには回らない。
+カメラの子の Entity は Transform に付いていくので、注視点の向きには回らない。Screen Position の向きの計算は `TriggerSaturationScreenPosition.md` の 1.3。
 
 ### カメラの揺れ（Camera Shake）
 
@@ -994,6 +1007,7 @@ CameraSystem::AddImpulse(0.4f, {1.0f, 0.0f, 0.0f}); // ワールドの +X へ。
 | Bloom | Threshold・Knee・Intensity |
 | Lens | Distortion・Aberration・Radial Blur・Vignette |
 | ToneMap | Exposure |
+| Color Adjust | Saturation |
 
 - Bloom の Mode・ToneMap の Mode は途中の値が無いので持たない（全体の設定のまま）。
 - 全体の設定で切ってある効果も、Bloom の Intensity・Lens の項目・Max Blur を上書きしたカメラでは掛かる。
@@ -1067,7 +1081,13 @@ if (InputManager::IsKeyPressed(DIK_W))      { … } // 押している間
 if (InputManager::IsKeyReleased(DIK_SPACE)) { … } // 離した瞬間
 
 const float x = InputManager::GetLeftStickX();     // -1 〜 1（デッドゾーン処理済み）
-if (InputManager::IsButtonTriggered(XINPUT_GAMEPAD_A)) { … }
+if (InputManager::IsButtonTriggered(GamepadButton::A)) { … }
+
+// トリガー（LT・RT）もボタンとして読める（押す 0.5 まで引いたら押した・押している間は 0.4 より戻したら離した）
+if (InputManager::IsButtonTriggered(GamepadButton::RightTrigger)) { … } // RT を押した瞬間
+if (InputManager::IsButtonReleased(GamepadButton::LeftTrigger)) { … }   // LT を離した瞬間
+const float amount = InputManager::GetRightTrigger();                   // 量（0〜1）はいままで通り
+InputManager::SetTriggerPressThreshold(0.3f);                           // しきい値を変える（離す方は SetTriggerReleaseThreshold）
 
 const long dx = InputManager::GetMouseDeltaX();
 
