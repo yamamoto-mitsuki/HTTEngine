@@ -31,7 +31,7 @@
 //   void PlayerController::Update() { transform.translation.x += moveSpeed_ * Time::GetDeltaTime(); }
 //
 //   COMPONENT / SYSTEM（GameComponent.h）との使い分け：1体ずつ違う動きをする物（Player・ボス・ゲームの進行）は Script、
-//   同じ処理をたくさんの Entity にまとめてかける物（弾・敵の群れ）は COMPONENT / SYSTEM。理由は Docs/Tasks/Script.md の1章
+//   同じ処理をたくさんの Entity にまとめてかける物（弾・敵の群れ）は COMPONENT / SYSTEM。書き方は Docs/Reference/22-Script.md
 
 /// <summary>
 /// ぶつかった相手と、ぶつかった向き（Script の OnCollision〜 に渡す。Unity の Collision の小さい版）
