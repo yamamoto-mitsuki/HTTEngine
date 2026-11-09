@@ -12,7 +12,7 @@ void ViewportWindow::Draw(RenderTexture* rt, const std::function<void()>& overla
 	if (hovered_) {
 		flags |= ImGuiWindowFlags_NoMove;
 	}
-	ImGui::Begin(name_.c_str(), nullptr, flags);
+	visible_ = ImGui::Begin(name_.c_str(), nullptr, flags); // ほかのタブの裏・たたんでいると false（中身は描かれない）
 	ImGui::PopStyleColor();
 	// アスペクト維持
 	ImVec2 available = ImGui::GetContentRegionAvail();

@@ -1,0 +1,206 @@
+{
+	"version": 5,
+	"entities": [
+		{
+			"id": 1,
+			"name": "Main Camera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 7.0, -9.0],
+					"rotation": [30.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Camera": {
+					"fovY": 60.0,
+					"nearZ": 0.1,
+					"farZ": 1000.0,
+					"priority": 0
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Directional Light",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 3.0, 0.0],
+					"rotation": [50.0, -30.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Directional Light": {
+					"color": [1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 3,
+			"name": "Ground",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, -0.5, 5.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [16.0, 1.0, 24.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.3, 0.3, 0.35, 1.0]
+				}
+			}
+		},
+		{
+			"id": 10,
+			"name": "Shooter Fade Add",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-4.0, 1.0, -2.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [0.5, 0.5, 0.5]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.4, 0.8, 1.0, 1.0]
+				},
+				"TrailFadeShooter": {
+					"interval": 0.8,
+					"speed": 12.0,
+					"flightTime": 0.6,
+					"end": "DestroyEntity",
+					"afterOwner": "Fade",
+					"fadeSeconds": 0.3,
+					"trailLifeTime": 0.6,
+					"blend": "Add",
+					"trailColor": [0.4, 0.8, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 11,
+			"name": "Shooter Fade Normal",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 1.0, -2.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [0.5, 0.5, 0.5]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [1.0, 0.3, 0.3, 1.0]
+				},
+				"TrailFadeShooter": {
+					"interval": 0.8,
+					"speed": 12.0,
+					"flightTime": 0.6,
+					"end": "DestroyEntity",
+					"afterOwner": "Fade",
+					"fadeSeconds": 0.3,
+					"trailLifeTime": 0.6,
+					"blend": "Normal",
+					"trailColor": [1.0, 0.3, 0.3, 1.0]
+				}
+			}
+		},
+		{
+			"id": 12,
+			"name": "Shooter Shrink",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [4.0, 1.0, -2.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [0.5, 0.5, 0.5]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.6, 1.0, 0.4, 1.0]
+				},
+				"TrailFadeShooter": {
+					"interval": 0.8,
+					"speed": 12.0,
+					"flightTime": 0.6,
+					"end": "DestroyEntity",
+					"afterOwner": "Shrink",
+					"fadeSeconds": 0.3,
+					"trailLifeTime": 0.6,
+					"blend": "Add",
+					"trailColor": [0.6, 1.0, 0.4, 1.0]
+				}
+			}
+		},
+		{
+			"id": 13,
+			"name": "Burst Spawner Code",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-3.0, 1.0, 5.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"BurstSpawner": {
+					"interval": 0.5,
+					"prefab": "",
+					"spread": 2.0
+				}
+			}
+		},
+		{
+			"id": 14,
+			"name": "Burst Spawner Prefab",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [3.0, 1.0, 5.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"BurstSpawner": {
+					"interval": 0.5,
+					"prefab": "resources/prefabs/BurstEffect.prefab",
+					"spread": 2.0
+				}
+			}
+		},
+		{
+			"id": 20,
+			"name": "Aim Cursor",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Vector Shape": {
+					"enabled": true,
+					"shape": "Ring",
+					"size": [40.0, 40.0],
+					"ringThickness": 4.0,
+					"color": [1.0, 0.9, 0.3, 1.0]
+				},
+				"AimCursorSample": {
+					"padSpeed": 1200.0,
+					"confineOnStart": true,
+					"pixelsPerCount": 1.0
+				}
+			}
+		}
+	]
+}

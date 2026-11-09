@@ -1,5 +1,6 @@
 #include "MyEngine/Input/InputManager.h"
 
+#include <cmath>
 #include <format>
 
 #ifdef USE_IMGUI
@@ -26,9 +27,9 @@ InputManager* InputManager::GetInstance() {
 // static 窓口 (外部から呼ぶインターフェース)
 // 実処理はすべて GetInstance() 経由でインスタンスメソッドに委譲する
 // ============================================================
-void InputManager::Initialize(HINSTANCE hInstance, HWND hwnd) { GetInstance()->initInternal(hInstance, hwnd); }
-void InputManager::Release() { GetInstance()->finalizeInternal(); }
-void InputManager::Update() { GetInstance()->updateInternal(); }
+void InputManager::Initialize(HINSTANCE hInstance, HWND hwnd) { GetInstance()->InitInternal(hInstance, hwnd); }
+void InputManager::Release() { GetInstance()->FinalizeInternal(); }
+void InputManager::Update() { GetInstance()->UpdateInternal(); }
 
 // ---- キーボード ----
 bool InputManager::IsKeyPressed(uint8_t key) {
@@ -51,16 +52,19 @@ bool InputManager::IsKeyReleased(uint8_t key) {
 bool InputManager::IsMouseButtonPressed(int b) {
 	if (!IsActive()) return false;
 	if (IsMouseCapturedByImGui()) return false;
+	if (GetInstance()->isMouseButtonSwallowed_) return false; // また閉じ込めたクリック（ボタンを全部離すまで）
 	return GetInstance()->mouse_.IsButtonPressed(b);
 }
 bool InputManager::IsMouseButtonTriggered(int b) {
 	if (!IsActive()) return false;
 	if (IsMouseCapturedByImGui()) return false;
+	if (GetInstance()->isMouseButtonSwallowed_) return false; // また閉じ込めたクリック（ボタンを全部離すまで）
 	return GetInstance()->mouse_.IsButtonTriggered(b);
 }
 bool InputManager::IsMouseButtonReleased(int b) {
 	if (!IsActive()) return false;
 	if (IsMouseCapturedByImGui()) return false;
+	if (GetInstance()->isMouseButtonSwallowed_) return false; // また閉じ込めたクリック（ボタンを全部離すまで）
 	return GetInstance()->mouse_.IsButtonReleased(b);
 }
 
@@ -99,6 +103,10 @@ bool InputManager::ShouldHideCursor() {
 	if (GetInstance()->isCursorVisible_) {
 		return false;
 	}
+	// 閉じ込めている間は、カーソルはいつもゲーム画面の中（エディタは ImGui がマウスを見ないので、Game ビューの「上か」が取れない。WindowManager が先に閉じ込めるかを決めて渡している）
+	if (GetInstance()->isCursorConfineActive_) {
+		return true;
+	}
 #ifdef USE_IMGUI
 	// エディタ：Game ビューの絵の上（ほかの窓が重なっている所は出す）
 	return GetInstance()->isGameViewHovered_;
@@ -107,6 +115,78 @@ bool InputManager::ShouldHideCursor() {
 	return IsMouseInGame();
 #endif
 }
+
+//=============================================================================
+// OS のカーソルを閉じ込める
+//=============================================================================
+// ===== 閉じ込める四角 =====
+std::optional<RECT> InputManager::GetCursorConfineRect() {
+	InputManager* self = GetInstance();
+	if (!self->isCursorConfineRequested_ || !self->IsMainWindowForeground()) {
+		return std::nullopt;
+	}
+#ifdef USE_IMGUI
+	if (self->isCursorConfineReleasedInEditor_) {
+		return std::nullopt; // Shift+F1 で放している（Game ビューをクリックするまで）
+	}
+#endif
+	// --- ゲーム画面（エディタは Game ビューの絵、製品版は黒帯の内側）を、内側へ丸めた整数の四角にする ---
+	// 外側へ丸めると、端の 1 ピクセルが絵の外（エディタではパネルの縁）になる
+	Vector2 topLeft;
+	Vector2 size;
+	GetGameViewRect(topLeft, size);
+	const RECT rect = {
+	    static_cast<LONG>(std::ceil(topLeft.x)),
+	    static_cast<LONG>(std::ceil(topLeft.y)),
+	    static_cast<LONG>(std::floor(topLeft.x + size.x)),
+	    static_cast<LONG>(std::floor(topLeft.y + size.y)),
+	};
+	if (rect.right - rect.left < 1 || rect.bottom - rect.top < 1) {
+		return std::nullopt; // ゲーム画面がまだ無い（最初のフレーム・エディタで Game ビューがほかのタブの裏）
+	}
+	return rect;
+}
+
+// ===== シーンを変えたとき =====
+void InputManager::ResetCursorRequests() {
+	InputManager* self = GetInstance();
+	self->isCursorVisible_ = true;
+	self->isCursorConfineRequested_ = false;
+#ifdef USE_IMGUI
+	self->isCursorConfineReleasedInEditor_ = false; // 次に閉じ込めるシーンは、Shift+F1 で放す前から始まる
+#endif
+}
+
+// ===== また閉じ込めたクリックを、ゲームに渡さない =====
+// ボタンを全部離して、離した瞬間（Released）も過ぎたフレームに戻す（押した・離したの片方だけがゲームに届かないように）
+void InputManager::UpdateMouseSwallow() {
+	if (isMouseButtonSwallowed_ && !mouse_.IsAnyButtonPressed() && !mouse_.IsAnyButtonReleased()) {
+		isMouseButtonSwallowed_ = false;
+	}
+}
+
+#ifdef USE_IMGUI
+// ===== エディタで放す・また閉じ込める =====
+// フレームの頭（ゲームが入力を読む前）に決めるので、また閉じ込めたクリックは、このフレームからゲームに渡さない
+// 「閉じ込めているか」は前のフレームの終わりに WindowManager が決めた値（isCursorConfineActive_）
+void InputManager::UpdateEditorCursorConfine() {
+	const bool isForeground = IsMainWindowForeground();
+	if (isCursorConfineActive_) {
+		// --- 閉じ込めている：Shift+F1 か、手前でなくなったら放す（DirectInput のキーボードはエディタの ImGui に関係なく読める）---
+		const bool isShift = keyboard_.IsPressed(DIK_LSHIFT) || keyboard_.IsPressed(DIK_RSHIFT);
+		if (!isForeground || (isShift && keyboard_.IsTriggered(DIK_F1))) {
+			isCursorConfineReleasedInEditor_ = true;
+		}
+		return;
+	}
+	// --- 放している：Game ビューの絵を左クリックしたら、また閉じ込める。そのクリックはゲームに渡さない（撃つなどが起きないように）---
+	// 「絵の上か」は前のフレームの描画で決めた値（ほかの窓に隠れていない所だけ）
+	if (isCursorConfineReleasedInEditor_ && isCursorConfineRequested_ && isForeground && isGameViewHovered_ && mouse_.IsButtonTriggered(0)) {
+		isCursorConfineReleasedInEditor_ = false;
+		isMouseButtonSwallowed_ = true;
+	}
+}
+#endif
 
 long InputManager::GetMouseDeltaX() {
 	if (!IsActive()) return 0;
@@ -182,7 +262,7 @@ Vector2 InputManager::GetMoveAxis(bool useController) {
 // ============================================================
 // 内部ヘルパー
 // ============================================================
-void InputManager::initInternal(HINSTANCE hInstance, HWND hwnd) {
+void InputManager::InitInternal(HINSTANCE hInstance, HWND hwnd) {
 	mainHwnd_ = hwnd;
 	// --- DirectInput8 インターフェースの生成 ---
 	HRESULT hr = DirectInput8Create(hInstance, DIRECTINPUT_VERSION, IID_IDirectInput8, (void**)&directInput_, nullptr);
@@ -199,7 +279,7 @@ void InputManager::initInternal(HINSTANCE hInstance, HWND hwnd) {
 	LogManager::Log("Initialized");
 }
 
-void InputManager::finalizeInternal() {
+void InputManager::FinalizeInternal() {
 	gamepad_.Finalize();
 	mouse_.Finalize();
 	keyboard_.Finalize();
@@ -208,14 +288,21 @@ void InputManager::finalizeInternal() {
 	LogManager::Log("Finalized");
 }
 
-void InputManager::updateInternal() {
+void InputManager::UpdateInternal() {
 	keyboard_.Update();
 	mouse_.Update();
 	gamepad_.Update();
+	// --- OS のカーソルを閉じ込めるの（ゲームが入力を読む前に決める）---
+	UpdateMouseSwallow();
+#ifdef USE_IMGUI
+	UpdateEditorCursorConfine();
+#endif
 }
 
 bool InputManager::IsMouseCapturedByImGui() {
 #ifdef USE_IMGUI
+	// カーソルを閉じ込めている間は、マウスはゲームの物（カーソルは Game ビューの中にいて、ImGui はマウスを見ていない）
+	if (GetInstance()->isCursorConfineActive_) return false;
 	if (GetInstance()->mouseInViewport_) return false;
 	return ImGui::GetIO().WantCaptureMouse;
 #else

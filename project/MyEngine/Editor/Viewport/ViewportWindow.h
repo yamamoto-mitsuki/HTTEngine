@@ -25,10 +25,13 @@ public:
 	const ImVec2& GetImageMax() const { return imageMax_; }
 	const ImVec2& GetImageSize() const { return imageSize_; }
 	bool IsHovered() const { return hovered_; }
+	// このフレームに絵を描いたか（ほかのタブの裏・たたんでいるときは false。そのときの GetImageMin などは当てにならない）
+	bool IsVisible() const { return visible_; }
 
 private:
 	std::string name_;
 	ImVec2 imageMin_{}, imageMax_{}, imageSize_{};
 	bool hovered_ = false;
+	bool visible_ = false; // ImGui::Begin が true を返したか（中身を描く所か）
 };
 #endif

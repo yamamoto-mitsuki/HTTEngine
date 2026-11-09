@@ -143,16 +143,31 @@ void WindowManager::UpdateAll() {
 //=============================================================================
 // OS のカーソル
 //=============================================================================
-// 隠すのは「メインのウィンドウのシーンが Play 中（一時停止・停止中は出す）」で「ゲームが隠すと頼んでいて、マウスがゲーム画面の上」のときだけ
+// 閉じ込める・隠すのは「メインのウィンドウのシーンが Play 中（一時停止・停止中は放す・出す）」のときだけ
+// 閉じ込める：ゲームが頼んでいて、メインのウィンドウが手前で、ゲーム画面がある（エディタは Shift+F1 で放していない）
+// 隠す　：ゲームが頼んでいて、マウスがゲーム画面の上か、閉じ込めている
 // ゲーム画面（エディタは Game ビューの絵、製品版は黒帯の内側）は、メインのウィンドウの中にある
 // 頼みと場所は InputManager、Play 中かは SceneManager、OS のカーソルは Win32Window が持つ。SceneManager と Win32Window を組で持っているのはここなので、ここでつなぐ
-// エディタの「Game ビューの絵の上か」は描画（PreRenderAll の EditorViewport::Render）で決まるので、ここで読むのは前のフレームの値（1フレーム遅れは目に見えない）
+// エディタの「Game ビューの絵の上か・どこか」は描画（PreRenderAll の EditorViewport::Render）で決まるので、ここで読むのは前のフレームの値（1フレーム遅れは目に見えない）
 void WindowManager::UpdateCursor() {
 	if (windows_.empty()) {
 		return;
 	}
 	const WindowSet& main = windows_[0];
 	const bool isPlaying = main.sceneManager && main.sceneManager->GetPlayState() == PlayState::Playing;
+
+	// --- 閉じ込める（隠すかは「閉じ込めているか」も見るので先に）---
+	const std::optional<RECT> confineRect = isPlaying ? InputManager::GetCursorConfineRect() : std::nullopt;
+	main.window->SetCursorClip(confineRect);
+	InputManager::SetCursorConfineActive(confineRect.has_value());
+#ifdef USE_IMGUI
+	// 閉じ込めている間は、エディタのパネルをマウスで触らない（カーソルは Game ビューの中だが、上に重なった窓・パネルの縁を押せてしまうので）
+	if (main.window->GetWindowConfig().isImGui) {
+		ImGuiManager::SetMouseEnabled(!confineRect.has_value());
+	}
+#endif
+
+	// --- 隠す ---
 	main.window->SetCursorHidden(isPlaying && InputManager::ShouldHideCursor());
 }
 

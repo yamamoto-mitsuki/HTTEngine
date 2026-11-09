@@ -30,6 +30,12 @@ public:
 	/// <summary>指定ボタンを離した瞬間か。</summary>
 	bool IsButtonReleased(int button) const;
 
+	/// <summary>どれかのボタン（8個のどれか）が押されているか。</summary>
+	bool IsAnyButtonPressed() const;
+
+	/// <summary>どれかのボタンを、このフレームに離したか。</summary>
+	bool IsAnyButtonReleased() const;
+
 	// ---- 現在位置 (クライアント座標) ----
 
 	/// <summary>マウスX座標(クライアント座標、左端が0)。</summary>

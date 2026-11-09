@@ -22,7 +22,8 @@ constexpr float kTrailVertexDistance = 0.05f; // 弾の Trail の点の間（m�
 //=============================================================================
 // ===== 初期化 =====
 void AimCursorSample::Start() {
-	InputManager::SetCursorVisible(false); // ゲーム画面の上では、この照準がカーソルの代わり
+	InputManager::SetCursorVisible(false);        // ゲーム画面の上では、この照準がカーソルの代わり
+	InputManager::SetCursorConfined(confineOnStart_);  // 閉じ込めると、照準はマウスの動いた量で動く（カーソルがゲーム画面の外へ出ない）
 }
 
 // ===== 更新 =====
@@ -31,10 +32,21 @@ void AimCursorSample::Update() {
 	if (InputManager::IsKeyTriggered(DIK_C)) {
 		InputManager::SetCursorVisible(!InputManager::IsCursorVisible());
 	}
+	// --- L キー：OS のカーソルを閉じ込める・放すを切り替える ---
+	if (InputManager::IsKeyTriggered(DIK_L)) {
+		InputManager::SetCursorConfined(!InputManager::IsCursorConfined());
+	}
 
-	// --- マウス：ゲーム画面の中で動いたら、その位置（画面の位置。端が ±1）---
-	const bool isMouseMoved = InputManager::GetMouseDeltaX() != 0 || InputManager::GetMouseDeltaY() != 0;
-	if (isMouseMoved && InputManager::IsMouseInGame()) {
+	const long deltaX = InputManager::GetMouseDeltaX();
+	const long deltaY = InputManager::GetMouseDeltaY();
+	if (InputManager::IsCursorConfineActive()) {
+		// --- 閉じ込めている：マウスの動いた量（数えた数）→ ピクセルの量（感度を掛ける）→ 画面の位置の量 ---
+		// マウスは下が＋、画面の位置は上が＋なので、Y を返す
+		const Vector2 pixelMove = {static_cast<float>(deltaX) * pixelsPerCount_, -static_cast<float>(deltaY) * pixelsPerCount_};
+		const Vector2 move = GameScreen::PixelToNdc(pixelMove);
+		screenPosition_ = {screenPosition_.x + move.x, screenPosition_.y + move.y};
+	} else if ((deltaX != 0 || deltaY != 0) && InputManager::IsMouseInGame()) {
+		// --- 閉じ込めていない：ゲーム画面の中で動いたら、その位置（画面の位置。端が ±1）---
 		screenPosition_ = InputManager::GetMousePositionInGame();
 	}
 
@@ -52,6 +64,8 @@ void AimCursorSample::Update() {
 // ===== Inspector に出す・保存する値 =====
 void AimCursorSample::Fields(ComponentUI& ui) {
 	ui.Field("Pad Speed###padSpeed", padSpeed_, AtLeast(0.0f).Tip("右スティックで照準を動かす速さ（ピクセル／秒。倒しきったとき）"));
+	ui.Field("Confine On Start###confineOnStart", confineOnStart_, Tip("Start で OS のカーソルをゲーム画面に閉じ込める（照準はマウスの動いた量で動く。L キーで切り替え・エディタは Shift+F1 で放す）"));
+	ui.Field("Pixels Per Count###pixelsPerCount", pixelsPerCount_, AtLeast(0.0f).Tip("閉じ込めている間、マウスが1つ数えたら照準を何ピクセル動かすか（感度。1 で Windows の矢印とおよそ同じ）"));
 }
 
 
@@ -64,8 +78,10 @@ COMPONENT(TrailFadeShooter, "Test") {
 	ui.Field("Speed###speed", value.speed, AtLeast(0.0f).Tip("弾の速さ（m/s）"));
 	ui.Field("Flight Time###flightTime", value.flightTime, AtLeast(0.0f).Tip("弾が飛ぶ秒（過ぎたら End のやり方でいなくなる）"));
 	ui.Field("End###end", value.end, Tip("弾がいなくなる形"));
-	ui.Field("Fade Out After Owner###fadeOutAfterOwner", value.fadeOutAfterOwner, Tip("弾の Trail の Fade Out After Owner（true：消えても尾が寿命で消えきるまで残る）"));
+	ui.Field("After Owner###afterOwner", value.afterOwner, Tip("弾の Trail の After Owner（弾がいなくなった後の尾。Discard：すぐ消える／Shrink：縮む／Fade：形はそのままで薄くなる）"));
+	ui.Field("Fade Seconds###fadeSeconds", value.fadeSeconds, AtLeast(0.0f).Tip("弾の Trail の Fade Seconds（Fade のとき、薄くしきるまでの秒）"));
 	ui.Field("Trail Life Time###trailLifeTime", value.trailLifeTime, AtLeast(0.0f).Tip("弾の Trail の Life Time（点が消えるまでの秒）"));
+	ui.Field("Blend###blend", value.blend, Tip("弾の Trail の Blend（Add・Normal のどちらでも薄くなる）"));
 	ui.ColorField("Trail Color###trailColor", value.trailColor);
 }
 
@@ -96,12 +112,13 @@ void TrailFadeShooterUpdate(Handle<Entity>, TrailFadeShooter& shooter, Transform
 
 	TrailComponent trail;
 	trail.lifeTime = shooter.trailLifeTime;
-	trail.fadeOutAfterOwner = shooter.fadeOutAfterOwner;
+	trail.afterOwner = shooter.afterOwner;
+	trail.fadeSeconds = shooter.fadeSeconds;
 	trail.minVertexDistance = kTrailVertexDistance;
 	trail.width = kBulletScale * kTrailWidthRate;
 	trail.color = shooter.trailColor;
 	trail.intensity = kTrailIntensity;
-	trail.blend = TrailBlend::Add;
+	trail.blend = shooter.blend;
 	bullet.AddComponent(trail);
 }
 SYSTEM(TrailFadeShooterUpdate);

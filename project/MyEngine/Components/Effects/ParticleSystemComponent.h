@@ -39,6 +39,15 @@ enum class ParticleSpace {
 };
 
 /// <summary>
+/// 出し終わったとき（出すのをやめて、粒が全部消えたとき）にすること。Unity の Stop Action
+/// <para>出すのをやめる＝Looping でなく Duration が過ぎた・ゲームが ParticleSystem::Stop を呼んだ。一度も Play していない物（Play On Start を外して Play を呼んでいない・Emit だけ）は出し終わりにならない</para>
+/// </summary>
+enum class ParticleStopAction {
+	None,    // 何もしない（Entity は残る。また Play できる）
+	Destroy, // この Component を持つ Entity を消す（子も一緒に消える。飛び散る物の Prefab を Instantiate して、出し終わったら勝手に消す）
+};
+
+/// <summary>
 /// パーティクルの設定
 /// <para>Min〜Max の項目（Vector2）は、x が小さい方・y が大きい方。逆に入れても、その間で選ぶ</para>
 /// </summary>
@@ -49,6 +58,7 @@ struct ParticleSystemComponent {
 	bool playOnStart = true; // Play で流し始める（false：ゲームが ParticleSystem::Play を呼ぶまで出さない。使ったら飛び散る用）
 	bool looping = true;     // Duration 秒ごとにくり返す（Burst もまた出る）。false：1回で出すのをやめる
 	float duration = 1.0f;   // 1回の長さ（秒）
+	ParticleStopAction stopAction = ParticleStopAction::None; // 出し終わったら（出すのをやめて、粒が全部消えたら）すること
 
 	// ===== 出す量 =====
 	float rateOverTime = 10.0f; // 1秒に出す数（0 で Burst だけ）

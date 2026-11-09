@@ -122,6 +122,35 @@ void Win32Window::SetCursorHidden(bool hidden) {
 	}
 }
 
+//=============================================================================
+// OS のカーソルを閉じ込める
+//=============================================================================
+// ===== 閉じ込める・放す =====
+void Win32Window::SetCursorClip(const std::optional<RECT>& clientRect) {
+	if (!clientRect.has_value()) {
+		ReleaseCursorClip();
+		return;
+	}
+	// ClipCursor はスクリーン座標（モニターの左上が 0,0）なので、クライアント座標から直す
+	POINT topLeft = {clientRect->left, clientRect->top};
+	POINT bottomRight = {clientRect->right, clientRect->bottom};
+	ClientToScreen(hwnd_, &topLeft);
+	ClientToScreen(hwnd_, &bottomRight);
+	const RECT screenRect = {topLeft.x, topLeft.y, bottomRight.x, bottomRight.y};
+	// 毎フレーム頼み直す（同じ四角でも。ほかのアプリ・Windows が外していることがある）
+	ClipCursor(&screenRect);
+	isCursorClipped_ = true;
+}
+
+// ===== 放す =====
+void Win32Window::ReleaseCursorClip() {
+	if (!isCursorClipped_) {
+		return;
+	}
+	ClipCursor(nullptr);
+	isCursorClipped_ = false;
+}
+
 LRESULT CALLBACK Win32Window::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	// SetWindowLongPtrで保存した値を取り出す（ウィンドウを作っている途中はまだnullptr）
 	Win32Window* self = reinterpret_cast<Win32Window*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
@@ -166,6 +195,15 @@ LRESULT CALLBACK Win32Window::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPA
 		if (self && self->isCursorHidden_ && LOWORD(lparam) == HTCLIENT) {
 			SetCursor(nullptr);
 			return TRUE; // DefWindowProc に渡すと、ウィンドウクラスの矢印に戻される
+		}
+		break;
+	}
+
+	// 手前になった・手前でなくなった。手前でなくなったら、閉じ込めているカーソルをすぐ放す
+	// （Alt+Tab・Windows キー・assert のメッセージボックス。メッセージボックスの間はフレームが回らないので、次のフレームを待つとカーソルがボタンへ届かない）
+	case WM_ACTIVATE: {
+		if (self && LOWORD(wparam) == WA_INACTIVE) {
+			self->ReleaseCursorClip();
 		}
 		break;
 	}
@@ -229,8 +267,11 @@ LRESULT CALLBACK Win32Window::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPA
 		return 0;
 	}
 
-	// ウィンドウが破棄された
+	// ウィンドウが破棄された（閉じ込めていたカーソルを放して終わる。ClipCursor はほかのアプリと共有なので、残さない）
 	case WM_DESTROY: {
+		if (self) {
+			self->ReleaseCursorClip();
+		}
 		return 0;
 	}
 	}

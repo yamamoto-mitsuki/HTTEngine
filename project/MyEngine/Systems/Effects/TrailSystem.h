@@ -32,7 +32,7 @@ public:
 	/// <summary>
 	/// 毎フレーム1回、EntityManager::FlushDestroy の後に呼ぶ（ワールド行列も計算済み）
 	/// <para>持ち主（Entity か TrailComponent）が消えた尾を持ち主から離し、点を古くして寿命の物を消し、Emitting の Trail に今の位置を足す</para>
-	/// <para>離れた尾は、Fade Out After Owner なら写しておいた設定で消えきるまで描く（新しい点は足さない）。そうでなければ、そのフレームに捨てる</para>
+	/// <para>離れた尾は、写しておいた設定の After Owner で消す（Shrink：点が寿命で消えきるまで／Fade：形はそのままで Fade Seconds かけて薄く／Discard：そのフレームに捨てる）。新しい点は足さない</para>
 	/// </summary>
 	/// <param name="isGameRunning">ゲームが動いているか（再生中・一時停止中は true、エディタの停止中は false＝点を全部捨てる）</param>
 	/// <param name="deltaTime">経過秒（Time::GetDeltaTime。スロー・一時停止が掛かった物）</param>

@@ -377,6 +377,20 @@ void ImGuiManager::ClearRequests() {
 }
 
 //=============================================================================
+// マウスを見るか
+//=============================================================================
+void ImGuiManager::SetMouseEnabled(bool enabled) {
+	MY_ASSERT_MSG(instance_, "Initialize()を先に呼んでください");
+	// NoMouse の間、ImGui はどの窓もホバーしない（マウスの位置は覚え続けるので、戻したフレームから今の位置で動く）
+	ImGuiIO& io = ImGui::GetIO();
+	if (enabled) {
+		io.ConfigFlags &= ~ImGuiConfigFlags_NoMouse;
+	} else {
+		io.ConfigFlags |= ImGuiConfigFlags_NoMouse;
+	}
+}
+
+//=============================================================================
 // スタイルの保存項目
 //=============================================================================
 namespace {

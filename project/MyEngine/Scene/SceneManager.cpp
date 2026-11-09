@@ -383,8 +383,9 @@ void SceneManager::ChangeScene(std::unique_ptr<IScene> next, bool useSnapshot) {
 	// ===== 1. 古いシーンの片付け（カメラ・IBLなど、Entityではない物）=====
 	// スロー・ヒットストップの途中で Stop・シーン切り替えをしても、次のシーンへ持ち越さない
 	Time::ResetGameTime();
-	// OS のカーソルを隠す頼みも持ち越さない（隠したいシーンが自分で頼む。タイトルへ戻ったら矢印が出ない、という戻し忘れが起きないように）
-	InputManager::SetCursorVisible(true);
+	// OS のカーソルを隠す・閉じ込める頼みも持ち越さない（したいシーンが自分で頼む。タイトルへ戻ったら矢印が出ない・外へ出られない、という戻し忘れが起きないように）
+	// 実際に放すのは、このフレームの終わり（WindowManager::UpdateCursor）
+	InputManager::ResetCursorRequests();
 	CameraSystem::ResetOutput(); // 前のシーンのカメラから補間しないように
 	const bool oldUsesFile = currentScene_ && currentScene_->GetSceneFile() != nullptr;
 	if (currentScene_) {

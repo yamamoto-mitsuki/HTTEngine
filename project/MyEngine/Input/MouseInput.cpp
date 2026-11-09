@@ -2,6 +2,7 @@
 
 #include <format>
 #include <cstring>
+#include <iterator>
 
 #include "MyEngine/Diagnostics/MyAssert.h"
 #include "MyEngine/Diagnostics/LogManager.h"
@@ -91,4 +92,22 @@ bool MouseInput::IsButtonReleased(int button) const {
 		return false;
 	}
 	return (state_.rgbButtons[button] & 0x80) == 0 && (statePrev_.rgbButtons[button] & 0x80) != 0;
+}
+bool MouseInput::IsAnyButtonPressed() const {
+	// rgbButtons は DIMOUSESTATE2 の 8 個のボタン（上の 0x80 が押している印）
+	for (const BYTE button : state_.rgbButtons) {
+		if ((button & 0x80) != 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+bool MouseInput::IsAnyButtonReleased() const {
+	for (int i = 0; i < static_cast<int>(std::size(state_.rgbButtons)); ++i) {
+		if (IsButtonReleased(i)) {
+			return true;
+		}
+	}
+	return false;
 }

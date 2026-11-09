@@ -55,6 +55,10 @@ private:
 	void ApplyGV();    // 保存値の反映
 	void SyncGV();     // 毎フレームの同期
 #ifdef USE_IMGUI
+	// Game ビューの絵の左上に、OS のカーソルを閉じ込める・放すの案内を出す（gameView_.Draw の中から。閉じ込めた直後の数秒と、Shift+F1 で放している間）
+	void DrawCursorConfineHint();
+	double cursorConfineStartTime_ = -1.0; // 閉じ込め始めた時刻（ImGui::GetTime の秒。閉じ込めていない間は負）
+
 	std::shared_ptr<DebugCamera> debugCamera_; // shared_ptr なのは、EditorOverlay が weak_ptr で見ているから
 	Vector3 lastTranslation_{}; // 前フレームのカメラ位置（操作されたかの判定用）
 	Vector3 lastRotation_{};    // 前フレームのカメラ回転（操作されたかの判定用）

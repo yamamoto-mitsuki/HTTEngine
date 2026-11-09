@@ -1,6 +1,8 @@
 #ifdef USE_IMGUI
 #include "EditorViewport.h"
 
+#include <string_view>
+
 #include "MyEngine/Camera/Camera.h"
 #include "MyEngine/UI/GlobalVariables.h"
 #include "MyEngine/Editor/Gizmos/SceneGizmo.h"
@@ -87,10 +89,11 @@ void EditorViewport::Render(const Camera* gameCamera, const std::wstring& window
 	SceneRenderer::RenderToTexture(gameCamera, gameRT, windowTitle, PostEffectMode::All, gameOptions); // Game：全部
 
 	// --- Game ---
-	gameView_.Draw(gameRT);
+	gameView_.Draw(gameRT, [this] { DrawCursorConfineHint(); });
 	// ゲームのマウス座標（InputManager::GetMousePositionInGame）は、この絵の中を画面として数える
+	// ほかのタブの裏で見えていないときは、大きさ 0（画面が無い。OS のカーソルを、見えない所へ閉じ込めないように）
 	const ImVec2& gameMin = gameView_.GetImageMin();
-	const ImVec2& gameSize = gameView_.GetImageSize();
+	const ImVec2 gameSize = gameView_.IsVisible() ? gameView_.GetImageSize() : ImVec2{0.0f, 0.0f};
 	InputManager::SetGameViewRect({gameMin.x, gameMin.y}, {gameSize.x, gameSize.y});
 	InputManager::SetGameViewHovered(gameView_.IsHovered()); // OS のカーソルを隠すのは、絵の上（ほかの窓に隠れていない所）だけ
 
@@ -105,6 +108,46 @@ void EditorViewport::Render(const Camera* gameCamera, const std::wstring& window
 
 	// どちらかのビュー上なら入力をImGuiに食わせない
 	InputManager::SetMouseInViewport(gameView_.IsHovered() || sceneView_.IsHovered());
+}
+
+//=============================================================================
+// OS のカーソルを閉じ込める・放すの案内
+//=============================================================================
+// 閉じ込めている間はパネルをマウスで触れないので、放し方を見せる（Unreal の「Shift+F1 でマウスカーソルを表示」と同じ）
+// 閉じ込めた直後の数秒だけ出す（ずっと出すと、ゲームの絵の上に残って邪魔なので）。放している間は、また閉じ込める方法を出し続ける
+void EditorViewport::DrawCursorConfineHint() {
+	constexpr double kConfineHintSeconds = 3.0;              // 閉じ込めた後、案内を出しておく秒
+	constexpr float kHintPadding = 6.0f;                     // 絵の端・文字の周りの余白（ピクセル）
+	constexpr ImU32 kHintBackColor = IM_COL32(0, 0, 0, 160); // 文字の後ろの帯（半分透けた黒）
+	constexpr ImU32 kHintTextColor = IM_COL32(255, 255, 255, 255);
+
+	// --- 出す文字を決める（空なら出さない）---
+	std::string_view text;
+	const double now = ImGui::GetTime();
+	if (InputManager::IsCursorConfineActive()) {
+		if (cursorConfineStartTime_ < 0.0) {
+			cursorConfineStartTime_ = now;
+		}
+		if (now - cursorConfineStartTime_ < kConfineHintSeconds) {
+			text = "Shift+F1 : カーソルを画面の外へ出す";
+		}
+	} else {
+		cursorConfineStartTime_ = -1.0;
+		if (InputManager::IsCursorConfined() && InputManager::IsCursorConfineReleasedInEditor()) {
+			text = "クリックでカーソルを画面に閉じ込める";
+		}
+	}
+	if (text.empty()) {
+		return;
+	}
+
+	// --- 絵の左上に、帯と文字を描く（ImGui は文字の始まりと終わりのポインタで受け取る）---
+	ImDrawList* drawList = ImGui::GetWindowDrawList();
+	const ImVec2 textSize = ImGui::CalcTextSize(text.data(), text.data() + text.size());
+	const ImVec2 min = {gameView_.GetImageMin().x + kHintPadding, gameView_.GetImageMin().y + kHintPadding};
+	const ImVec2 max = {min.x + textSize.x + kHintPadding * 2.0f, min.y + textSize.y + kHintPadding * 2.0f};
+	drawList->AddRectFilled(min, max, kHintBackColor);
+	drawList->AddText({min.x + kHintPadding, min.y + kHintPadding}, kHintTextColor, text.data(), text.data() + text.size());
 }
 
 //=============================================================================

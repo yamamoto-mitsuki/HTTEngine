@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <optional>
 
 #include <Windows.h>
 #include <wrl.h>
@@ -89,15 +90,52 @@ public:
 	static bool IsCursorVisible() { return GetInstance()->isCursorVisible_; }
 
 	/// <summary>
-	/// 今 OS のカーソルを隠す所か（SetCursorVisible(false) を頼まれていて、マウスがゲーム画面の上。Play 中かは見ない）
+	/// 今 OS のカーソルを隠す所か（SetCursorVisible(false) を頼まれていて、マウスがゲーム画面の上か、カーソルを閉じ込めている。Play 中かは見ない）
 	/// <para>WindowManager が毎フレーム（UpdateAll の最後）見て、メインのウィンドウに渡す</para>
 	/// </summary>
 	static bool ShouldHideCursor();
 
-	/// <summary>前フレームからのX移動量 (右が正)。</summary>
+	/// <summary>
+	/// OS のカーソルをゲーム画面の中に閉じ込めるか。true で頼む（外へ出られなくなり、画面の端で止まる。真ん中へ戻し続けるのではない＝Unity の CursorLockMode.Confined）
+	/// <para>閉じ込めている間も GetMouseDeltaX/Y は動いた分を返す（カーソルが画面の端で止まっていても）。エディタの Game ビューの上で ImGui に取られて 0 にもならない</para>
+	/// <para>本当に閉じ込めるのは、Play 中（一時停止中は放す）で、メインのウィンドウが手前の間だけ（Alt+Tab などで手前でなくなったら放す。製品版は手前に戻るとまた閉じ込める）</para>
+	/// <para>エディタ：閉じ込めている間は、エディタのパネルをマウスで触れない。Shift+F1 で放す（手前でなくなったときも放す）。Game ビューの絵を左クリックすると、また閉じ込める（そのクリックはゲームに渡さない）</para>
+	/// <para>シーンを変えると（Stop も）false に戻る。閉じ込めたいシーンが、自分で頼む。隠すのは SetCursorVisible（別に頼む）</para>
+	/// </summary>
+	static void SetCursorConfined(bool confined) { GetInstance()->isCursorConfineRequested_ = confined; }
+
+	/// <summary>SetCursorConfined で頼んだ値（今本当に閉じ込めているかではない。それは IsCursorConfineActive）</summary>
+	static bool IsCursorConfined() { return GetInstance()->isCursorConfineRequested_; }
+
+	/// <summary>今本当に OS のカーソルをゲーム画面に閉じ込めているか（前のフレームの終わりに WindowManager が決めた値。一時停止中・手前でない・エディタで放した間は false）</summary>
+	static bool IsCursorConfineActive() { return GetInstance()->isCursorConfineActive_; }
+
+	/// <summary>
+	/// 今カーソルを閉じ込める四角（メインのウィンドウのクライアント座標。ゲーム画面の内側に丸めた物）。閉じ込めない所なら空（Play 中かは見ない）
+	/// <para>閉じ込めるのは：SetCursorConfined(true) を頼まれていて、メインのウィンドウが手前で、ゲーム画面がある（エディタは Game ビューの絵が見えていて、Shift+F1 で放していない）とき</para>
+	/// <para>WindowManager が毎フレーム（UpdateAll の最後）見て、メインのウィンドウに渡し、SetCursorConfineActive で結果を返す</para>
+	/// </summary>
+	static std::optional<RECT> GetCursorConfineRect();
+
+	/// <summary>今本当にカーソルを閉じ込めたか。WindowManager が毎フレーム（UpdateAll の最後）渡す</summary>
+	static void SetCursorConfineActive(bool active) { GetInstance()->isCursorConfineActive_ = active; }
+
+	/// <summary>
+	/// 隠す・閉じ込める頼みを戻す（SetCursorVisible(true)・SetCursorConfined(false)。エディタで Shift+F1 で放したのも戻す）
+	/// <para>シーンを変えたとき（Stop も）に SceneManager が呼ぶ。前のシーンの頼みを持ち越さない</para>
+	/// </summary>
+	static void ResetCursorRequests();
+
+	/// <summary>
+	/// 前フレームからのX移動量 (右が正)。
+	/// <para>単位はマウスが数えた数（mickey。DirectInput の相対の値）。ピクセルではない。コントロールパネルのポインターの速さ・加速は掛からない</para>
+	/// <para>どれだけ動かすと 1 になるかはマウス（DPI）で変わる。ふつうの設定（ポインターの速さが真ん中・加速なし）なら、Windows の矢印の 1 ピクセルとおよそ同じ</para>
+	/// <para>ゲームで使うときは「1 カウントを何ピクセルにするか」の倍率（感度）を掛けてピクセルの量にし、GameScreen::PixelToNdc で画面の位置の量にする</para>
+	/// <para>カーソルを閉じ込めている間（SetCursorConfined）は、画面の端でカーソルが止まっていても動いた分を返す</para>
+	/// </summary>
 	static long GetMouseDeltaX();
 
-	/// <summary>前フレームからのY移動量 (下が正)。</summary>
+	/// <summary>前フレームからのY移動量 (下が正)。単位は GetMouseDeltaX と同じ（マウスが数えた数）</summary>
 	static long GetMouseDeltaY();
 
 	/// <summary>ホイール移動量 (上スクロールが正)。</summary>
@@ -178,22 +216,24 @@ public:
 	// Viewportがフォーカスされてるか
 	static void SetViewportFocused(bool focused) { GetInstance()->viewportFocused_ = focused; }
 	static bool IsViewportFocused() { return GetInstance()->viewportFocused_; }
-	// Game ビューの絵がウィンドウのどこにあるか（左上・大きさ。クライアント座標）。EditorViewport が毎フレーム渡す
+	// Game ビューの絵がウィンドウのどこにあるか（左上・大きさ。クライアント座標）。EditorViewport が毎フレーム渡す（見えていない＝ほかのタブの裏なら、大きさ 0）
 	static void SetGameViewRect(const Vector2& topLeft, const Vector2& size) {
 		GetInstance()->gameViewTopLeft_ = topLeft;
 		GetInstance()->gameViewSize_ = size;
 	}
 	// マウスが Game ビューの絵の上か（ほかの窓に隠れていない所だけ）。EditorViewport が毎フレーム渡す（OS のカーソルを隠すかに使う）
 	static void SetGameViewHovered(bool hovered) { GetInstance()->isGameViewHovered_ = hovered; }
+	// カーソルを閉じ込めるのを、エディタで放しているか（Shift+F1 を押した・手前でなくなった。Game ビューを左クリックするか、シーンを変えると戻る）。Game ビューに出す案内に使う
+	static bool IsCursorConfineReleasedInEditor() { return GetInstance()->isCursorConfineReleasedInEditor_; }
 #endif
 
 private:
 	static InputManager* GetInstance();
 
 	// 内部ヘルパー
-	void initInternal(HINSTANCE hInstance, HWND hwnd);
-	void finalizeInternal();
-	void updateInternal();
+	void InitInternal(HINSTANCE hInstance, HWND hwnd);
+	void FinalizeInternal();
+	void UpdateInternal();
 	static bool IsMouseCapturedByImGui();
 	static bool IsKeyboardCapturedByImGui();
 	static bool IsTypingInImGui(); // ImGui の入力欄に文字を打っている最中か
@@ -201,10 +241,21 @@ private:
 	static bool IsGamepadBlocked() { return !IsActive() || IsTypingInImGui(); } // パッドを「何も押していない」扱いにするか
 	// ゲーム画面がウィンドウのどこにあるか（左上・大きさ。クライアント座標）
 	static void GetGameViewRect(Vector2& topLeft, Vector2& size);
+	// メインのウィンドウが手前か（カーソルを閉じ込めるのは、手前の間だけ）
+	bool IsMainWindowForeground() const { return mainHwnd_ != nullptr && GetForegroundWindow() == mainHwnd_; }
+	// また閉じ込めたクリックを、ボタンを全部離すまでゲームに渡さない（フレームの頭。UpdateInternal から）
+	void UpdateMouseSwallow();
+#ifdef USE_IMGUI
+	// エディタで閉じ込めるのを放す・また閉じ込める（フレームの頭、ゲームが入力を読む前。UpdateInternal から）
+	void UpdateEditorCursorConfine();
+#endif
 
 	HWND activeHwnd_ = nullptr;
 	HWND mainHwnd_ = nullptr; // Initialize で受け取ったウィンドウ（製品版のゲーム画面＝このウィンドウの中）
-	bool isCursorVisible_ = true; // ゲーム画面の上で OS のカーソルを出すか（SetCursorVisible で頼んだ値）
+	bool isCursorVisible_ = true;           // ゲーム画面の上で OS のカーソルを出すか（SetCursorVisible で頼んだ値）
+	bool isCursorConfineRequested_ = false; // OS のカーソルをゲーム画面に閉じ込めるか（SetCursorConfined で頼んだ値）
+	bool isCursorConfineActive_ = false;    // 今本当に閉じ込めているか（WindowManager が SetCursorConfineActive で渡す）
+	bool isMouseButtonSwallowed_ = false;   // マウスのボタンを「何も押していない」扱いにしているか（また閉じ込めたクリック。ボタンを全部離した次のフレームに戻る）
 
 #ifdef USE_IMGUI
 	bool mouseInViewport_ = false;           // マウスがViewportにあるか
@@ -212,6 +263,7 @@ private:
 	Vector2 gameViewTopLeft_ = {0.0f, 0.0f}; // Game ビューの絵の左上（クライアント座標）
 	Vector2 gameViewSize_ = {0.0f, 0.0f};    // Game ビューの絵の大きさ（0なら、まだ描いていない）
 	bool isGameViewHovered_ = false;         // マウスが Game ビューの絵の上か（ほかの窓に隠れていない所だけ）
+	bool isCursorConfineReleasedInEditor_ = false; // カーソルを閉じ込めるのを、エディタで放しているか（Shift+F1・手前でなくなった）
 #endif
 
 	// DirectInput8 インターフェース。キーボードとマウスで共有する。

@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <optional>
 #include <functional>
 
 #include <Windows.h>
@@ -62,6 +63,13 @@ public:
 	/// </summary>
 	void SetCursorHidden(bool hidden);
 
+	/// <summary>
+	/// OS のカーソルを、このウィンドウの中の四角（クライアント座標）に閉じ込める。空なら放す。WindowManager が毎フレーム渡す（閉じ込める所かは InputManager::GetCursorConfineRect が決める）
+	/// <para>閉じ込めている間は毎フレーム頼み直す（ウィンドウ・Game ビューが動いた、ほかのアプリや Windows が外した、に追いつく）</para>
+	/// <para>このウィンドウが手前でなくなったら（WM_ACTIVATE。assert のメッセージボックスが出たときも）、次のフレームを待たずにすぐ放す</para>
+	/// </summary>
+	void SetCursorClip(const std::optional<RECT>& clientRect);
+
 	void ClearPendingResize() { pendingResize_ = false; }
 
 	// ウィンドウシステム
@@ -84,6 +92,10 @@ private:
 	bool pendingResize_ = false;
 	bool isImGuiTarget_ = false;
 	bool isFullscreen_ = false;
-	bool isCursorHidden_ = false; // クライアント領域で OS のカーソルを隠すか（WM_SETCURSOR で見る）
+	bool isCursorHidden_ = false;  // クライアント領域で OS のカーソルを隠すか（WM_SETCURSOR で見る）
+	bool isCursorClipped_ = false; // OS のカーソルを閉じ込めているか（ClipCursor を頼んだか。放すときに1回だけ外す）
 	WindowConfig config_;
+
+	// 閉じ込めているカーソルを放す（閉じ込めていなければ何もしない。ClipCursor はほかのアプリと共有の物なので、閉じ込めていないのに外さない）
+	void ReleaseCursorClip();
 };

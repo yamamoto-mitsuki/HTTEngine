@@ -43,6 +43,9 @@
     <ClCompile Include="Source\Scripts\CursorTrailSamples.cpp">
       <Filter>Source\Scripts</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Scripts\BurstEffectSamples.cpp">
+      <Filter>Source\Scripts</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\CharacterKeyboardMover.h">
@@ -67,6 +70,9 @@
       <Filter>Source\Scripts</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scripts\CursorTrailSamples.h">
+      <Filter>Source\Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scripts\BurstEffectSamples.h">
       <Filter>Source\Scripts</Filter>
     </ClInclude>
   </ItemGroup>

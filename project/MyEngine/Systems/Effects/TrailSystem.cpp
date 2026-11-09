@@ -25,7 +25,7 @@ constexpr Vector3 kGroundNormal = {0.0f, 1.0f, 0.0f}; // Ground の帯の面の�
 
 /// <summary>
 /// Trail 1つ分の、実行中だけの状態（保存しない。Play / Stop で作り直すと消える）
-/// <para>持ち主（Entity か TrailComponent）が消えたら「離れた尾」になる：entity を無効にして、写しておいた設定で、点が寿命で消えきるまで描く</para>
+/// <para>持ち主（Entity か TrailComponent）が消えたら「離れた尾」になる：entity を無効にして、写しておいた設定の After Owner で消えきるまで描く</para>
 /// </summary>
 struct TrailState {
 	Handle<Entity> entity;                  // 持ち主（離れた尾は無効な Handle。同じ Entity に Trail を付け直しても、新しい尾は別に始まる）
@@ -33,6 +33,7 @@ struct TrailState {
 	std::optional<TrailComponent> settings; // 描く設定の写し（毎フレーム持ち主の Component から写す。離れた後はこれで描く。まだ一度も写していなければ空）
 	std::optional<Vector3> head;            // 帯の先（Emitting の持ち主の今の位置。離れるときに最後の点にする。前のフレームに描いた帯の先と同じ所）
 	bool isShown = false;                   // 今描いているか（Enabled で、持ち主が有効）。描いていなかった尾は、離れるときに捨てる（急に出てこないように）
+	float detachedSeconds = 0.0f;           // 持ち主から離れてからの秒（After Owner が Fade のとき、薄くするのに使う）
 };
 
 /// <summary>
@@ -74,11 +75,26 @@ bool HasOwner(const TrailState& trail) {
 	return EntityManager::Get<TrailComponent>(trail.entity) != nullptr || EntityManager::IsAddPending<TrailComponent>(trail.entity);
 }
 
+// 持ち主から離れた後も残す設定か（いつかは消えきる物だけ残す）
+// Shrink は Life Time 0 だと点が消えないので残さない。Fade は秒で消えるので Life Time 0 でも残せる（Fade Seconds 0 は残さない）
+bool CanKeepAfterOwner(const TrailComponent& settings) {
+	switch (settings.afterOwner) {
+	case TrailAfterOwner::Shrink:
+		return settings.lifeTime > 0.0f;
+	case TrailAfterOwner::Fade:
+		return settings.fadeSeconds > 0.0f;
+	case TrailAfterOwner::Discard:
+	default:
+		return false;
+	}
+}
+
 // 持ち主から離す。残す設定で、描いていた尾なら、帯の先を最後の点にして残す。残さないなら点を捨てる（点が無くなった尾は Update が捨てる）
-// 残さないのは：Fade Out After Owner を外した・描いていなかった（Enabled を外していた・持ち主が無効）・Life Time 0（消えないので、いつまでも残ってしまう）・設定を一度も写していない
+// 残さないのは：After Owner が Discard・消えきらない設定（CanKeepAfterOwner）・描いていなかった（Enabled を外していた・持ち主が無効）・設定を一度も写していない
 void Detach(TrailState& trail) {
-	const bool canFadeOut = trail.settings.has_value() && trail.settings->fadeOutAfterOwner && trail.isShown && trail.settings->lifeTime > 0.0f;
-	if (!canFadeOut) {
+	const bool canKeep = trail.settings.has_value() && CanKeepAfterOwner(*trail.settings) && trail.isShown;
+	trail.detachedSeconds = 0.0f;
+	if (!canKeep) {
 		trail.points.clear();
 	} else if (trail.head.has_value() && (trail.points.empty() || Distance(trail.points.back().position, *trail.head) > kSamePointDistance)) {
 		trail.points.push_back({*trail.head, 0.0f}); // 前のフレームに描いた帯の先で終わらせる（Emitting は先を持ち主にくっつけて描いていたので）
@@ -95,6 +111,37 @@ void AgePoints(std::vector<TrailPoint>& points, float lifeTime, float deltaTime)
 	if (lifeTime > 0.0f) {
 		std::erase_if(points, [lifeTime](const TrailPoint& point) { return point.age >= lifeTime; });
 	}
+}
+
+// 離れた尾を1フレーム進める（写しておいた設定の After Owner で消していく。消えきったら点を空にする＝Update が捨てる）
+void UpdateDetached(TrailState& trail, float deltaTime) {
+	const TrailComponent& settings = *trail.settings;
+	switch (settings.afterOwner) {
+	// --- 縮む：点が古い方から寿命で消える ---
+	case TrailAfterOwner::Shrink:
+		AgePoints(trail.points, settings.lifeTime, deltaTime);
+		break;
+	// --- 薄くする：点は古くしない（形はそのまま）。秒を数えて、Fade Seconds が過ぎたら消す ---
+	case TrailAfterOwner::Fade:
+		trail.detachedSeconds += deltaTime;
+		if (trail.detachedSeconds >= settings.fadeSeconds) {
+			trail.points.clear();
+		}
+		break;
+	// --- 残さない（Detach で点を捨てているので、ここには来ない）---
+	case TrailAfterOwner::Discard:
+	default:
+		trail.points.clear();
+		break;
+	}
+}
+
+// 離れた尾の濃さ（1：そのまま → 0：消えた。尾全体の色の A に掛ける）。Fade 以外はいつも 1
+float CalcDetachedAlpha(const TrailState& trail) {
+	if (!trail.settings.has_value() || trail.settings->afterOwner != TrailAfterOwner::Fade || trail.settings->fadeSeconds <= 0.0f) {
+		return 1.0f;
+	}
+	return std::clamp(1.0f - trail.detachedSeconds / trail.settings->fadeSeconds, 0.0f, 1.0f);
 }
 
 // 上限を超えた分を、古い方から消す
@@ -179,7 +226,8 @@ void DescribeTrail(ComponentUI& ui, TrailComponent& value) {
 	ui.Field("Emitting###emitting", value.emitting, Tip("動いたら自動で点を足す。外すと TrailSystem::AddPoint で足した点だけ（描いた線）"));
 	ui.Field("Min Vertex Distance###minVertexDistance", value.minVertexDistance, AtLeast(0.0f).Tip("自動で足すとき、この距離動くたびに1点"));
 	ui.Field("Life Time###lifeTime", value.lifeTime, AtLeast(0.0f).Tip("点が消えるまでの秒。0 で消えない"));
-	ui.Field("Fade Out After Owner###fadeOutAfterOwner", value.fadeOutAfterOwner, Tip("true：持ち主（Entity かこの Component）が消えても、点が寿命で消えきるまで描く（新しい点は足さない）／false：消えたフレームに捨てる"));
+	ui.Field("After Owner###afterOwner", value.afterOwner, Tip("持ち主（Entity かこの Component）が消えた後の消え方（新しい点は足さない）。Discard：すぐ捨てる／Shrink：点が寿命で消えて縮む（Life Time 0 なら捨てる）／Fade：形はそのままで、Fade Seconds かけて薄くして消す"));
+	ui.Field("Fade Seconds###fadeSeconds", value.fadeSeconds, AtLeast(0.0f).Tip("After Owner が Fade のとき、薄くしきるまでの秒。0 ならすぐ捨てる"));
 	ui.Field("Max Points###maxPoints", value.maxPoints, AtLeast(static_cast<float>(kMinPoints)).Tip("超えたら古い方から消す"));
 	ui.Separator("Appearance");
 	ui.Field("Width###width", value.width, AtLeast(0.0f).Tip("新しい方の端の太さ"));
@@ -229,10 +277,10 @@ void TrailSystem::Update(bool isGameRunning, float deltaTime) {
 		}
 	}
 
-	// ===== 2. 離れた尾を古くして、寿命が来た点を消す。帯にならなくなった尾を捨てる =====
+	// ===== 2. 離れた尾を After Owner で消していく（縮める・薄くする）。帯にならなくなった尾を捨てる =====
 	for (TrailState& trail : trails) {
 		if (IsDetached(trail) && trail.settings.has_value()) {
-			AgePoints(trail.points, trail.settings->lifeTime, deltaTime);
+			UpdateDetached(trail, deltaTime);
 		}
 	}
 	std::erase_if(trails, [](const TrailState& trail) { return IsDetached(trail) && trail.points.size() < static_cast<size_t>(kMinPoints); });
@@ -312,7 +360,9 @@ void TrailSystem::Draw(Camera* camera) {
 		BuildRibbon(path, *component, camera, vertices, indices);
 
 		Renderer::MeshConfig config;
-		config.color = ApplyIntensity(component->color, component->intensity); // 明るさの倍率はリニアで掛ける（Color.h）
+		// 明るさの倍率はリニアで掛ける（Color.h）。離れて薄くしている尾は、A に濃さを掛ける
+		// Normal も Add も「色 × A」を重ねる（RenderStates の SrcBlend が SRC_ALPHA）ので、A を 0 へ下げれば、どちらも色と明るさごと 0 になる
+		config.color = MultiplyAlpha(ApplyIntensity(component->color, component->intensity), isDetached ? CalcDetachedAlpha(trail) : 1.0f);
 		config.textureHandle = component->textureHandle;
 		config.shadingType = ShadingType::Unlit; // 軌跡は光の当たり方を使わない（色そのまま）
 		config.blendMode = (component->blend == TrailBlend::Add) ? BlendMode::Add : BlendMode::Normal;

@@ -73,6 +73,12 @@ public:
 	/// </summary>
 	static void ClearRequests();
 
+	/// <summary>
+	/// エディタ（ImGui）がマウスを見るか。false の間は、どのパネルもマウスで触れない（ホバーもしない）
+	/// <para>ゲームが OS のカーソルを Game ビューに閉じ込めている間、WindowManager が false にする（ImGuiConfigFlags_NoMouse）</para>
+	/// </summary>
+	static void SetMouseEnabled(bool enabled);
+
 private:
 	// シングルトン
 	friend struct std::default_delete<ImGuiManager>;
@@ -119,6 +125,7 @@ public:
 	static void ClearRequests() {}
 	static void ProcessRequests() {}
 	static void AddDrawRequest(std::function<void()>) {}
+	static void SetMouseEnabled(bool) {}
 };
 
 #endif
