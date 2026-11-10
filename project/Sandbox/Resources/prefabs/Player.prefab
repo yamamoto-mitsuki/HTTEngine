@@ -1,0 +1,75 @@
+{
+	"version": 5,
+	"entities": [
+		{
+			"id": 15981731572122588503,
+			"name": "Player",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 2.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Character Controller": {
+					"enabled": true,
+					"slopeLimit": 45.0,
+					"stepOffset": 0.3,
+					"useGravity": true,
+					"gravityScale": 1.0,
+					"pushRigidbodies": true,
+					"pushMass": 80.0,
+					"freezePositionX": false,
+					"freezePositionY": false,
+					"freezePositionZ": false,
+					"velocity": [0.0, 0.0, 0.0]
+				},
+				"Collider": {
+					"enabled": true,
+					"isTrigger": false,
+					"shape": "Capsule",
+					"center": [0.0, 1.0, 0.0],
+					"physicMaterial": "",
+					"radius": 0.5,
+					"height ": 2.0
+				},
+				"PlayerController": {
+					"Enabled": true,
+					"Move Speed": 5.0,
+					"Jump Speed": 6.0,
+					"Turn Smooth Time": 0.08
+				}
+			}
+		},
+		{
+			"id": 89885680208617368,
+			"name": "Body",
+			"parent": 15981731572122588503,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.9, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [0.8, 1.8, 0.5]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.23529412, 0.54901963, 0.92156863, 1.0],
+					"intensity": 1.0,
+					"surface": "Opaque",
+					"texture": "",
+					"uvScale": [1.0, 1.0],
+					"shadingType": "HalfLambert",
+					"specular": [0.0, 0.0, 0.0],
+					"shininess": 32.0,
+					"metallic": 0.0,
+					"roughness": 0.5,
+					"emissive": [0.0, 0.0, 0.0],
+					"receivesDecals": true
+				}
+			}
+		}
+	]
+}

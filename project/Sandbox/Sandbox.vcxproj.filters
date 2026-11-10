@@ -10,6 +10,9 @@
     <Filter Include="Source\AttackParts">
       <UniqueIdentifier>{8d4fdb17-5795-4708-aa13-c2c7dd01a5d6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Scripts\Player">
+      <UniqueIdentifier>{b1f6c3a2-9d47-4e58-a6c0-3e7f52d81c94}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -49,6 +52,9 @@
     <ClCompile Include="Source\Scripts\TriggerCameraSamples.cpp">
       <Filter>Source\Scripts</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Scripts\Player\PlayerController.cpp">
+      <Filter>Source\Scripts\Player</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\CharacterKeyboardMover.h">
@@ -80,6 +86,9 @@
     </ClInclude>
     <ClInclude Include="Source\Scripts\TriggerCameraSamples.h">
       <Filter>Source\Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scripts\Player\PlayerController.h">
+      <Filter>Source\Scripts\Player</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
