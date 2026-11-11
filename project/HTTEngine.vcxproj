@@ -265,6 +265,7 @@
     <ClCompile Include="HTTEngine\Sound\SoundDecoder.cpp" />
     <ClCompile Include="HTTEngine\Sound\SoundManager.cpp" />
     <ClCompile Include="HTTEngine\Camera\Camera.cpp" />
+    <ClCompile Include="HTTEngine\Camera\CameraRelativeInput.cpp" />
     <ClCompile Include="HTTEngine\Camera\DebugCamera.cpp" />
     <ClCompile Include="HTTEngine\Collision\Collision.cpp" />
     <ClCompile Include="HTTEngine\Engine.cpp" />
@@ -554,6 +555,7 @@
     <ClInclude Include="HTTEngine\Sound\SoundIncludes.h" />
     <ClInclude Include="HTTEngine\Sound\SoundManager.h" />
     <ClInclude Include="HTTEngine\Camera\Camera.h" />
+    <ClInclude Include="HTTEngine\Camera\CameraRelativeInput.h" />
     <ClInclude Include="HTTEngine\Camera\DebugCamera.h" />
     <ClInclude Include="HTTEngine\Collision\Collision.h" />
     <ClInclude Include="HTTEngine\Engine.h" />

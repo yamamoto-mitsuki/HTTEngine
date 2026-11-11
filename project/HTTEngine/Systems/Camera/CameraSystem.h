@@ -69,6 +69,15 @@ public:
 	static std::shared_ptr<Camera> GetSharedMainCamera();
 	// 今使っている Camera Component の Entity（無ければ無効な Handle）。補間の途中は、切り替わった先のカメラ
 	static Handle<Entity> GetMainCameraEntity();
+
+	/// <summary>
+	/// 画面に写っているカメラが、地面の上でどちらを向いているか（Y のまわりの角度。度。+Z で 0、+X で 90。MathUtility::DirectionToYaw と同じ測り方）
+	/// <para>画面の奥が、地面の上のどちらか。キャラを「カメラから見た向き」で動かすのに使う（ふつうは CameraRelativeInput から使う）</para>
+	/// <para>Camera Look At・切り替えの補間・Timeline の上書きが入った、写している向き。揺れは入れない（画面が揺れても進む向きが揺れないように）</para>
+	/// <para>真下・真上を見るカメラは、画面の上の向きを使う。それも決まらないフレームは前の向きのまま。Camera Component が無ければ 0</para>
+	/// <para>Update で決まる値なので、Script（Update より前に動く）が読むのは前のフレームの向き</para>
+	/// </summary>
+	static float GetMainCameraYaw();
 	// カメラの切り替えの補間の途中か
 	static bool IsBlending();
 	// そのカメラの本来の位置（Camera Path があれば線の上。注視点・揺れ・補間は入らない。エディタの Camera Path の印に使う）

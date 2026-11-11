@@ -29,11 +29,11 @@ void PlayerController::Update() {
 		return; // Character Controller が付いていない
 	}
 
-	// --- 歩く：WASD・矢印キー・左スティック（-1〜1）---
+	// --- 歩く：WASD・矢印キー・左スティック（-1〜1）を、カメラから見た地面の向きへ直す ---
 	// velocity の X・Z は毎フレーム書く（離すと 0 になって止まる）
-	const Vector2 move = InputManager::GetMoveAxis();
+	const Vector3 move = moveInput_.ToWorld(InputManager::GetMoveAxis());
 	controller->velocity.x = move.x * moveSpeed_;
-	controller->velocity.z = move.y * moveSpeed_;
+	controller->velocity.z = move.z * moveSpeed_;
 
 	// --- 跳ぶ：地面にいて、押した瞬間だけ ---
 	// velocity の Y は跳ぶときだけ書く（あとは重力に任せる）
@@ -43,8 +43,8 @@ void PlayerController::Update() {
 	}
 
 	// --- 向く：進む向きへ、近い回り方でなめらかに ---
-	if (move.x != 0.0f || move.y != 0.0f) {
-		const float targetYaw = MathUtility::DirectionToYaw({move.x, 0.0f, move.y});
+	if (move.x != 0.0f || move.z != 0.0f) {
+		const float targetYaw = MathUtility::DirectionToYaw(move);
 		const float rate = MathUtility::CalcSmoothRate(dt, turnSmoothTime_);
 		facingYaw_ += MathUtility::DeltaAngle(facingYaw_, targetYaw) * rate;
 	}

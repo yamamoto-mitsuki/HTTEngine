@@ -16,8 +16,8 @@
 | 位置・回転（クォータニオンと角度）・親子（**見た目を変えずに親を付け替える**） | [07 Transform](Reference/07-Transform.md) |
 | モデルを出す・マテリアルの上書き・**モデル無しで球・箱を出す**・足場の形・**床・壁に塗る（Decal）**・霧・被写界深度・ブルーム・トーンマップ・色の調整・図形とスプライト | [08 描画](Reference/08-Rendering.md) |
 | ライト | [09 ライト](Reference/09-Light.md) |
-| **カメラを置く・切り替える・追いかける・回り込む（ロックオン）・揺らす** | [10 カメラ](Reference/10-Camera.md) |
-| キー・マウス・パッド（**Game ビューのマウス位置・移動の入力**） | [11 入力](Reference/11-Input.md) |
+| **カメラを置く・切り替える・追いかける・回り込む（ロックオン）・揺らす・カメラから見た向きで動かす** | [10 カメラ](Reference/10-Camera.md) |
+| キー・マウス・パッド（**Game ビューのマウス位置・移動の入力**。カメラから見た向きへ直すのは 10 章） | [11 入力](Reference/11-Input.md) |
 | 音（AudioSource・BGM / SE の音量・3D の音・SoundManager） | [12 音](Reference/12-Sound.md) |
 | 経過時間・ポーズ（**スロー・ヒットストップ**） | [13 時間](Reference/13-Time.md) |
 | 乱数・数学・**当たったかどうか（Collider）**・OnCollision / OnTrigger・**Raycast・SweepSphere**・弾む床・風・範囲に入ったら出す・Alpha Group | [14 数学と当たり判定](Reference/14-MathCollision.md) |

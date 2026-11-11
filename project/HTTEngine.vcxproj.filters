@@ -291,6 +291,9 @@
     <ClCompile Include="HTTEngine\Camera\Camera.cpp">
       <Filter>HTTEngine\Camera</Filter>
     </ClCompile>
+    <ClCompile Include="HTTEngine\Camera\CameraRelativeInput.cpp">
+      <Filter>HTTEngine\Camera</Filter>
+    </ClCompile>
     <ClCompile Include="HTTEngine\Camera\DebugCamera.cpp">
       <Filter>HTTEngine\Camera</Filter>
     </ClCompile>
@@ -918,6 +921,9 @@
       <Filter>HTTEngine\AI</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Camera\Camera.h">
+      <Filter>HTTEngine\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Camera\CameraRelativeInput.h">
       <Filter>HTTEngine\Camera</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Camera\CameraIncludes.h">

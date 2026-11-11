@@ -25,6 +25,7 @@ if (InputManager::IsMouseInGame()) { … }                          // マウス
 
 キーの名前は DirectInput の `DIK_A` `DIK_SPACE` `DIK_LSHIFT` など。
 
+- `GetMoveAxis()` は入力の値（x が右・y が上）で、ワールドの向きではない。キャラをカメラから見た向き（W＝画面の奥）で動かすなら `CameraRelativeInput` に通す（[10 カメラ](10-Camera.md) の「カメラから見た向きで動かす」）。
 - キーボードとパッドは、**ウィンドウが手前に無いとき・ImGui に文字を打っているときは「押していない」**扱い。
 - マウスの位置は、エディタでは Game ビューの中の位置が欲しいので、`GetMousePositionInWindow`（ウィンドウの中のピクセル。エディタ・エンジン用）ではなく `GetMousePositionInGame` を使う。
 

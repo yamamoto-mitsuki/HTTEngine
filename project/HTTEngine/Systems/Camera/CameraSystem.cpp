@@ -39,6 +39,7 @@ const Vector3 kDefaultPosition = {0.0f, 0.0f, -10.0f}; // Camera Component が�
 struct CameraOutput {
 	Vector3 position = kDefaultPosition;            // 位置（ワールド）
 	Quaternion rotation = {0.0f, 0.0f, 0.0f, 1.0f}; // 向き（ワールド）
+	Quaternion steadyRotation = {0.0f, 0.0f, 0.0f, 1.0f}; // 揺れを足す前の向き（ワールド。キャラを動かす向きに使う。画面が揺れても進む向きが揺れないように）
 	float fovY = CameraComponent{}.fovY;            // 縦の視野角（度）
 	float nearZ = CameraComponent{}.nearZ;          // 近い方の端
 	float farZ = CameraComponent{}.farZ;            // 遠い方の端
@@ -95,6 +96,7 @@ struct CameraState {
 	bool hasLoggedNoCamera = false;                // 「Camera Component が無い」を知らせたか（続けて何度も出さない）
 	bool hasOutput = false;                        // output に前のフレームの値が入っているか（false なら、次の切り替えは補間しない）
 	CameraOutput output;                           // 前のフレームに写した値（切り替えの途中でさらに切り替えるときは、ここから始める）
+	float mainYaw = 0.0f;                          // 写しているカメラの、地面の上の向き（度。GetMainCameraYaw が返す）
 	CameraBlend blend;                             // 切り替えの補間
 	std::vector<PendingImpulse> impulses;          // 送られた衝撃
 	std::optional<CameraOverride> overrideRequest; // このフレームの上書きの頼み
@@ -131,6 +133,7 @@ void UseDefaultCamera() {
 	state->camera->SetRotation({0.0f, 0.0f, 0.0f});
 	state->camera->SetScale({1.0f, 1.0f, 1.0f});
 	ApplyProjection(CameraComponent{}.fovY, CameraComponent{}.nearZ, CameraComponent{}.farZ);
+	state->mainYaw = 0.0f; // +Z を向く
 }
 
 // Camera Component の背景 → 描くときの背景（色は Inspector で選んだ sRGB → シェーダーで塗るリニアへ。Component が無ければ天球）
@@ -146,6 +149,28 @@ SceneBackground MakeBackground(const CameraComponent* camera) {
 	background.groundColor = SrgbToLinear(camera->gradientGroundColor);
 	background.horizonWidth = (std::max)(camera->gradientHorizonWidth, 0.0f); // 0 なら地平線で Sky と Ground がくっきり分かれる
 	return background;
+}
+
+//=============================================================================
+// 地面の上の向き
+//=============================================================================
+// ===== カメラの向き → 地面の上で、画面の奥がどちらか（Y のまわりの角度。度。決まらなければ nullopt）=====
+// 前の向きを地面に寝かせた向き。真下・真上を見ると長さが 0 になるので、そのときはカメラの上の向き（画面の上）を寝かせて使う
+// 真下を見るカメラの上は、見下ろす前に向いていた側（画面の奥）。真上を見るカメラの上は、その反対の側なので裏返す（少しだけ傾けた所の向きとつながる）
+std::optional<float> CalcGroundYaw(const Quaternion& rotation) {
+	constexpr float kMinGroundLength = 0.001f; // これより短い向きは使わない（真下・真上から約 0.06° の内側）
+	const Vector3 forward = RotateVector({0.0f, 0.0f, 1.0f}, rotation);
+	Vector3 ground = {forward.x, 0.0f, forward.z};
+	if (Length(ground) < kMinGroundLength) {
+		const Vector3 up = RotateVector({0.0f, 1.0f, 0.0f}, rotation);
+		const float side = (forward.y < 0.0f) ? 1.0f : -1.0f; // 真下を見る：上がそのまま奥 ／ 真上を見る：上の反対が奥
+		ground = {up.x * side, 0.0f, up.z * side};
+	}
+	// 上の向きも寝かせられない（横に 90° 傾けて真下を見る）・数でない向きなら、決まらない（否定で書くのは NaN も弾くため）
+	if (!(Length(ground) >= kMinGroundLength)) {
+		return std::nullopt;
+	}
+	return MathUtility::DirectionToYaw(ground);
 }
 
 //=============================================================================
@@ -290,6 +315,7 @@ CameraOutput EvaluateCamera(Handle<Entity> entity, const TransformComponent& tra
 		output.post = CameraVolume::MakeOverrides(*volume, CalcVolumeFocusDistance(entity, *volume, output, lookAtPoint));
 	}
 	// --- 揺れ：カメラの向きから見たずれを足す ---
+	output.steadyRotation = output.rotation;
 	const CameraShakeComponent* shake = EntityManager::Get<CameraShakeComponent>(entity);
 	if ((isGameRunning || state->previewShake.has_value()) && shake != nullptr && shake->enabled) {
 		const CameraShakeOffset offset = CameraShake::CalcOffset(isGameRunning ? *shake : MakePreviewShake(*shake, output.rotation));
@@ -307,6 +333,7 @@ CameraOutput LerpOutput(const CameraOutput& from, const CameraOutput& to, float 
 	CameraOutput output;
 	output.position = Lerp(from.position, to.position, t);
 	output.rotation = Slerp(from.rotation, to.rotation, t);
+	output.steadyRotation = Slerp(from.steadyRotation, to.steadyRotation, t);
 	output.fovY = Ease::Lerp(from.fovY, to.fovY, t);
 	output.nearZ = Ease::Lerp(from.nearZ, to.nearZ, t);
 	output.farZ = Ease::Lerp(from.farZ, to.farZ, t);
@@ -556,6 +583,8 @@ void CameraSystem::Update(bool isGameRunning) {
 	state->output = output;
 	state->hasOutput = true;
 	state->mainEntity = (request.has_value() && request->to.IsValid()) ? request->to : best;
+	// 地面の上の向き（揺れの前・補間の後。決まらないフレームは前の向きのまま）
+	state->mainYaw = CalcGroundYaw(output.steadyRotation).value_or(state->mainYaw);
 	// 背景は今使っているカメラの物（補間の途中は切り替わった先。色は補間しない）
 	SceneRenderer::SetCameraBackground(MakeBackground(EntityManager::Get<CameraComponent>(state->mainEntity)));
 
@@ -589,6 +618,11 @@ std::shared_ptr<Camera> CameraSystem::GetSharedMainCamera() {
 Handle<Entity> CameraSystem::GetMainCameraEntity() {
 	HTT_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
 	return state->mainEntity;
+}
+
+float CameraSystem::GetMainCameraYaw() {
+	HTT_ASSERT_MSG(state != nullptr, "CameraSystem::Initialize()を先に呼んでください");
+	return state->mainYaw;
 }
 
 bool CameraSystem::IsBlending() {

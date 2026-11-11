@@ -90,6 +90,45 @@ if (CameraLookAtComponent* lookAt = EntityManager::Get<CameraLookAtComponent>(lo
 }
 ```
 
+## カメラから見た向きで動かす（`CameraRelativeInput`）
+
+移動の入力（`InputManager::GetMoveAxis()`）を、画面に写っているカメラから見た地面の向きへ直す。**W・スティックの上＝画面の奥、D・右＝画面の右**。カメラが回り込んでも（Camera Orbit・ロックオン）、いつも画面に合った向きに動く。動かすキャラの Script が1つずつ持つ。
+
+```cpp
+#include <HTTEngine/Camera/CameraRelativeInput.h>
+
+class PlayerController : public Script {
+	// …
+	CameraRelativeInput moveInput_; // メンバに持つ（前のフレームを覚えるので、毎回作らない）
+};
+
+void PlayerController::Update() {
+	const Vector3 move = moveInput_.ToWorld(InputManager::GetMoveAxis()); // Y は 0。長さは入力のまま（スティックを半分倒せば半分）
+	controller->velocity.x = move.x * moveSpeed_;
+	controller->velocity.z = move.z * moveSpeed_;
+	if (move.x != 0.0f || move.z != 0.0f) {
+		facingYaw_ = MathUtility::DirectionToYaw(move); // 進む向きを向く
+	}
+}
+```
+
+- 押している間にカメラが切り替わったら（Priority・Entity の有効・無効・Timeline のカメラのトラック）、**離すまで切り替わる前のカメラの向き**で動く（切り替えた瞬間に、進む向きが急に変わらない）。同じカメラが回る間は、毎フレーム今の向き。使い続けているかは `IsHolding()`。
+- 使う向きは写している向き（Camera Look At・切り替えの補間・Timeline の上書きが入った後）。揺れ（Camera Shake）は入れない（画面が揺れても、まっすぐ歩ける）。
+- 真下・真上を見るカメラは、画面の上の向きを奥にする。
+- `ToWorld` は毎フレーム1回呼ぶ。ワープ・やり直しの後に前の向きを持ち越したくないときは `Reset()`。
+- 読むのは前のフレームのカメラの向き（Script はカメラより先に動く）。1フレームなので、見て分かるずれは無い。
+- 向きだけ欲しいとき（コンパスの UI など）は `CameraSystem::GetMainCameraYaw()`（度。+Z で 0、+X で 90。`MathUtility::YawToDirection` で向きにできる）。
+- AI・動く床など、カメラと関係ない物は使わない（ワールドの向きで動かす）。
+- ロックオン中に相手のまわりを同じ距離で回る・体を相手へ向けるのは、ゲームの操作の決まりなので Script で。`ToWorld` だけだと、D で画面の右（相手の方向にほぼ直角）へ歩くので、少しずつ相手から離れながら回る。
+- Camera Orbit の Heading が TargetForward のカメラで横に歩き続けると、カメラが後ろへ回り込むたびに右も回るので、キャラは円を描く。
+
+```cpp
+// ✗ だめな例
+const Vector2 move = InputManager::GetMoveAxis();
+controller->velocity.x = move.x * moveSpeed_; // ✗ 入力をそのままワールドの X・Z にすると、カメラが回ったときに W が画面の奥にならない
+controller->velocity.z = move.y * moveSpeed_;
+```
+
 ## 注視点（Camera Look At）
 
 **Add Component → Camera → Camera Look At**（`CameraLookAtComponent`）。カメラが Target を見続ける。変えるのは写す向きだけで、Transform の向きは変えない。停止中も Game ビューに効く。
