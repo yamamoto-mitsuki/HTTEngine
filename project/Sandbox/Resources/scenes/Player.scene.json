@@ -3,13 +3,13 @@
 	"entities": [
 		{
 			"id": 1,
-			"name": "Main Camera",
+			"name": "GameCamera",
 			"parent": 0,
 			"active": true,
 			"components": {
 				"Transform": {
-					"translation": [0.0, 3.0, -7.0],
-					"rotation": [20.0, 0.0, 0.0],
+					"translation": [0.0, 5.0, -8.0],
+					"rotation": [30.0, 0.0, 0.0],
 					"scale": [1.0, 1.0, 1.0]
 				},
 				"Camera": {
@@ -21,6 +21,31 @@
 					"blendTime": 1.0,
 					"blendEase": "InOutCubic",
 					"timeMode": "Game"
+				},
+				"Camera Follow": {
+					"enabled": true,
+					"target": 15981731572122588503,
+					"plane": "View",
+					"mode": "Center",
+					"offset": [0.0, 1.5],
+					"deadZone": [0.5, 0.0],
+					"groundSnapY": true,
+					"smoothTime": 0.15,
+					"maxLag": [6.0, 4.0],
+					"useBounds": false,
+					"boundsMin": [-10.0, -10.0],
+					"boundsMax": [100.0, 30.0]
+				},
+				"Camera Shake": {
+					"enabled": true,
+					"noisePosition": [0.0, 0.0, 0.0],
+					"noiseRotation": [0.0, 0.0, 0.0],
+					"noiseFrequency": 1.0,
+					"noiseGain": 1.0,
+					"impulseGain": 1.0,
+					"impulseFrequency": 8.0,
+					"impulseDamping": 0.2,
+					"impulseRotation": 2.0
 				}
 			}
 		},
