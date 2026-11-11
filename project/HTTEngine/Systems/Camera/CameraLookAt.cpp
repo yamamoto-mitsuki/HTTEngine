@@ -14,18 +14,6 @@ namespace {
 constexpr float kMinLookDistanceSq = 1e-6f; // 見る点がカメラとほとんど同じ位置なら、向きが決まらないので Transform の向きのままにする
 // 上下に向ける角の上限（ラジアン）。真上・真下まで向けると、左右の向きが決まらなくなる
 constexpr float kMaxPitch = std::numbers::pi_v<float> * 0.5f - 0.01f;
-
-// ===== 見たい点（Target が居なくなったら nullopt）=====
-std::optional<Vector3> FindPoint(const CameraLookAtComponent& lookAt) {
-	if (!lookAt.target.IsSet()) {
-		return lookAt.offset;
-	}
-	const TransformComponent* target = EntityManager::Get<TransformComponent>(lookAt.target);
-	if (target == nullptr) {
-		return std::nullopt;
-	}
-	return GetWorldPosition(*target) + lookAt.offset;
-}
 } // namespace
 
 //=============================================================================
@@ -45,9 +33,21 @@ void CameraLookAt::Describe(ComponentUI& ui, CameraLookAtComponent& value) {
 //=============================================================================
 // 見る点
 //=============================================================================
+// ===== 見たい点 =====
+std::optional<Vector3> CameraLookAt::FindWantedPoint(const CameraLookAtComponent& lookAt) {
+	if (!lookAt.target.IsSet()) {
+		return lookAt.offset;
+	}
+	const TransformComponent* target = EntityManager::Get<TransformComponent>(lookAt.target);
+	if (target == nullptr) {
+		return std::nullopt;
+	}
+	return GetWorldPosition(*target) + lookAt.offset;
+}
+
 // ===== 今見ている点を、見たい点へ近づける =====
 void CameraLookAt::Update(CameraLookAtComponent& lookAt, float deltaTime) {
-	const std::optional<Vector3> point = FindPoint(lookAt);
+	const std::optional<Vector3> point = FindWantedPoint(lookAt);
 	if (!lookAt.enabled || !point.has_value()) {
 		lookAt.isAiming = false;
 		return;
@@ -68,7 +68,7 @@ std::optional<Vector3> CameraLookAt::GetPoint(const CameraLookAtComponent& lookA
 	if (isGameRunning && lookAt.isAiming) {
 		return lookAt.currentPoint;
 	}
-	return FindPoint(lookAt);
+	return FindWantedPoint(lookAt);
 }
 
 //=============================================================================

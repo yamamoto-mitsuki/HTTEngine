@@ -52,6 +52,9 @@
     <ClCompile Include="Source\Scripts\TriggerCameraSamples.cpp">
       <Filter>Source\Scripts</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Scripts\OrbitCameraSamples.cpp">
+      <Filter>Source\Scripts</Filter>
+    </ClCompile>
     <ClCompile Include="Source\Scripts\Player\PlayerController.cpp">
       <Filter>Source\Scripts\Player</Filter>
     </ClCompile>
@@ -85,6 +88,9 @@
       <Filter>Source\Scripts</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scripts\TriggerCameraSamples.h">
+      <Filter>Source\Scripts</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scripts\OrbitCameraSamples.h">
       <Filter>Source\Scripts</Filter>
     </ClInclude>
     <ClInclude Include="Source\Scripts\Player\PlayerController.h">

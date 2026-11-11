@@ -6,7 +6,7 @@
 // 範囲の中の Rigidbody を、風の向きへ押す。Entityに付けるComponent（カテゴリ：Physics）
 // 範囲は Entity の位置を真ん中にした箱（Size × Scale。Entity と一緒に回る）。風は Entity の右（ローカルの +X）へ吹く。Rotation の Z で向きを変える（90 で上へ）
 // 押すのは WindZoneSystem（再生中だけ）。風の速さまでは Strength で速くして、それより速い物はそれ以上押さない（いつまでも速くならない）
-// 画面の風の線は、カメラが追っている物（Camera Follow の Target）が範囲の中にいる間だけ出る
+// 画面の風の線は、カメラが追っている物（Camera Follow・Camera Orbit の Target）が範囲の中にいる間だけ出る
 
 
 /// <summary>

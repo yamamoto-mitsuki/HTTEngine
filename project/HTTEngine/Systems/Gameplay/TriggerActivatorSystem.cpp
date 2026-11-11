@@ -141,7 +141,7 @@ void DescribeTriggerActivator(ComponentUI& ui, TriggerActivatorComponent& value)
 	// --- 選んだ相手の値だけを見せる（保存も、使っている方だけが書かれる。Camera Follow の Mode と同じ）---
 	switch (value.source) {
 	case TriggerSource::FollowTarget:
-		break; // 選ぶ物は無い（メインカメラの Camera Follow の Target を使う）
+		break; // 選ぶ物は無い（メインカメラの Camera Follow・Camera Orbit の Target を使う）
 	case TriggerSource::Entity:
 		ui.Field("Source Entity###sourceEntity", value.sourceEntity, Tip("反応する相手（Hierarchy からドラッグ）。子に付けた Collider も、この Entity として数える"));
 		break;

@@ -181,6 +181,7 @@
     <ClCompile Include="HTTEngine\Systems\Animation\TimelineSystem.cpp" />
     <ClCompile Include="HTTEngine\Systems\Camera\CameraFollow.cpp" />
     <ClCompile Include="HTTEngine\Systems\Camera\CameraLookAt.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Camera\CameraOrbit.cpp" />
     <ClCompile Include="HTTEngine\Systems\Camera\CameraPath.cpp" />
     <ClCompile Include="HTTEngine\Systems\Camera\CameraShake.cpp" />
     <ClCompile Include="HTTEngine\Systems\Camera\CameraVolume.cpp" />
@@ -321,6 +322,7 @@
     <ClInclude Include="HTTEngine\Combat\HitInfo.h" />
     <ClInclude Include="HTTEngine\Components\Animation\TimelineComponent.h" />
     <ClInclude Include="HTTEngine\Components\Camera\CameraLookAtComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Camera\CameraOrbitComponent.h" />
     <ClInclude Include="HTTEngine\Components\Camera\CameraPathComponent.h" />
     <ClInclude Include="HTTEngine\Components\Camera\CameraShakeComponent.h" />
     <ClInclude Include="HTTEngine\Components\Camera\CameraVolumeComponent.h" />
@@ -437,6 +439,7 @@
     <ClInclude Include="HTTEngine\Systems\Animation\TimelineSystem.h" />
     <ClInclude Include="HTTEngine\Systems\Camera\CameraFollow.h" />
     <ClInclude Include="HTTEngine\Systems\Camera\CameraLookAt.h" />
+    <ClInclude Include="HTTEngine\Systems\Camera\CameraOrbit.h" />
     <ClInclude Include="HTTEngine\Systems\Camera\CameraPath.h" />
     <ClInclude Include="HTTEngine\Systems\Camera\CameraShake.h" />
     <ClInclude Include="HTTEngine\Systems\Camera\CameraVolume.h" />

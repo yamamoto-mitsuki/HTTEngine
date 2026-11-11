@@ -228,7 +228,7 @@ void EngineSystems::Update(bool isGameRunning, const std::shared_ptr<Camera>& ga
 	if (isGameRunning && PhysicsSystem::Update(Time::GetDeltaTime())) {
 		EntityManager::UpdateTransforms();
 	}
-	// カメラの追いかけ（Camera Follow）。物理で動いた後の位置を追う。カメラを動かしたら、カメラ（と子）のワールド行列を計算し直す
+	// カメラの追いかけ（Camera Follow・Camera Orbit）。物理で動いた後の位置を追う。カメラを動かしたら、カメラ（と子）のワールド行列を計算し直す
 	if (isGameRunning && CameraSystem::UpdateFollow()) {
 		EntityManager::UpdateTransforms();
 	}

@@ -143,7 +143,7 @@ void PushRigidbodies(float deltaTime) {
 //=============================================================================
 // 画面の風の線
 //=============================================================================
-// カメラが追っている物（Camera Follow の Target）の所の風で、線の濃さと向きを決めて、LensPass へ書く
+// カメラが追っている物（Camera Follow・Camera Orbit の Target）の所の風で、線の濃さと向きを決めて、LensPass へ書く
 void UpdateScreenLines(bool isGameRunning, float deltaTime) {
 	float target = 0.0f; // 出したい濃さ
 	if (isGameRunning) {
@@ -182,7 +182,7 @@ void DescribeWindZone(ComponentUI& ui, WindZoneComponent& value) {
 	ui.Field("Strength###strength", value.strength, AtLeast(0.0f).Tip("風の速さまで速くする強さ（m/s²）。上向きの風で浮かせるなら、重力（Settings の Physics → Gravity × 物の Gravity Scale）より大きくする"));
 	ui.Field("Gust###gust", value.gust, Range(0.0f, 1.0f).Tip("ゆれ（0.3 なら、風の速さが ±30% の間でゆれる）。0 ならゆれない"));
 	ui.Field("Gust Frequency###gustFrequency", value.gustFrequency, AtLeast(0.0f).Tip("ゆれる速さ（1秒に何回くらい。大きいほど細かくゆれる）"));
-	ui.Field("Line Amount###lineAmount", value.lineAmount, Range(0.0f, 1.0f).Tip("画面の風の線の濃さ（0 なら出さない）。カメラが追っている物（Camera Follow の Target）が範囲の中にいる間だけ出る"));
+	ui.Field("Line Amount###lineAmount", value.lineAmount, Range(0.0f, 1.0f).Tip("画面の風の線の濃さ（0 なら出さない）。カメラが追っている物（Camera Follow・Camera Orbit の Target）が範囲の中にいる間だけ出る"));
 }
 } // namespace
 

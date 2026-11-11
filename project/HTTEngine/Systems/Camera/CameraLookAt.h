@@ -16,6 +16,10 @@ namespace CameraLookAt {
 // Inspector とシーンファイルの並び
 void Describe(ComponentUI& ui, CameraLookAtComponent& value);
 
+// 見たい点（ワールド。Target ＋ Offset で、なめらかにする前の点）。Target が居なくなったら nullopt。Enabled は見ない
+// Camera Orbit の Heading（LookAt）も使う（見る点と反対の側にカメラを置く）
+std::optional<Vector3> FindWantedPoint(const CameraLookAtComponent& lookAt);
+
 // 今見ている点を、見たい点へ deltaTime 秒ぶん近づける（再生中だけ呼ぶ）
 void Update(CameraLookAtComponent& lookAt, float deltaTime);
 

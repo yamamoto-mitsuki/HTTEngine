@@ -21,11 +21,11 @@ void DescribeDepthOfField(ComponentUI& ui, DepthOfFieldComponent& value) {
 	ui.Label("シーンに1つ。ピントの合った所だけはっきり見え、手前と奥がぼける（Scene ビューは View → Scene View → Depth of Field で切れる）");
 	// ===== ピント =====
 	ui.Separator("Focus");
-	ui.Field("Focus###focus", value.focus, Tip("ピントの合わせ方。FollowTarget：メインカメラの Camera Follow の Target の奥行き / Distance：カメラから Focus Distance の奥行き"));
+	ui.Field("Focus###focus", value.focus, Tip("ピントの合わせ方。FollowTarget：メインカメラの Camera Follow・Camera Orbit の Target の奥行き / Distance：カメラから Focus Distance の奥行き"));
 	// --- 選んだ合わせ方の値だけを見せる（保存も、使っている方だけが書かれる。Camera Follow の Mode と同じ）---
 	switch (value.focus) {
 	case DepthOfFieldFocus::FollowTarget:
-		break; // FollowTarget だけの値は無い（Target は Camera Follow の物を使う）
+		break; // FollowTarget だけの値は無い（Target は Camera Follow・Camera Orbit の物を使う）
 	case DepthOfFieldFocus::Distance:
 		ui.Field("Focus Distance###focusDistance", value.focusDistance, AtLeast(0.0f).Tip("カメラからピントの合う所までの奥行き（m）"));
 		break;

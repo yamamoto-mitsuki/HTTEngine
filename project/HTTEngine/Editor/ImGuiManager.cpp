@@ -131,6 +131,7 @@ void DrawViewMenu() {
 		ImGui::MenuItem("Camera Icons", nullptr, &CameraGizmo::GetShowIcons());
 		ImGui::MenuItem("Camera Paths", nullptr, &CameraGizmo::GetShowPaths());
 		ImGui::MenuItem("Camera Follow Zones", nullptr, &CameraGizmo::GetShowFollowZones()); // Dead Zone・Soft Zone（Game ビューにも出る。1つずつは Inspector の Show Gizmo）
+		ImGui::MenuItem("Camera Orbits", nullptr, &CameraGizmo::GetShowOrbits());           // 回る輪・回る中心（Scene ビューだけ。1つずつは Inspector の Show Gizmo）
 		ImGui::MenuItem("Particle Shapes", nullptr, &ParticleSystem::GetShowGizmos());      // 粒の出る形（Scene ビューだけ。1つずつは Inspector の Show Gizmo）
 		ImGui::MenuItem("Colliders", nullptr, &CollisionSystem::GetShowGizmos());
 		ImGui::MenuItem("Hit Shapes", nullptr, &HitSystem::GetShowGizmos()); // 攻撃の形・ジャスト判定の範囲・Hurtbox

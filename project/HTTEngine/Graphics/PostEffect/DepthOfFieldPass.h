@@ -17,7 +17,7 @@ class Camera;
 struct DepthOfFieldSettings {
 	bool enabled = false;        // false ならぼかさない（Depth Of Field Component が無い・切ってある）
 	bool hasFocusPoint = false;  // true：focusPoint の奥行きにピントを合わせる（ビューごとに、そのカメラからの奥行きを計算する）
-	Vector3 focusPoint = {};     // ピントを合わせる点（ワールド座標。Camera Follow の Target の位置）
+	Vector3 focusPoint = {};     // ピントを合わせる点（ワールド座標。Camera Follow・Camera Orbit の Target の位置）
 	float focusDistance = 10.0f; // hasFocusPoint が false のときの、ピントの合う奥行き（m）
 	float focusRange = 3.0f;     // ピントの前後この奥行き（m）までは、ぼけない
 	float farTransition = 40.0f; // その奥から、一番ぼけるまでの奥行き（m）

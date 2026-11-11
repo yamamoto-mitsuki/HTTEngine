@@ -12,7 +12,7 @@
 | Priority | 有効な Camera が複数あるとき、大きい方を使う。切り替えは、この値か Entity の有効・無効で |
 | Background（Type・Color・Sky・Horizon・Ground・Horizon Width） | 物が描かれていない所の塗り方。`Skybox`（天球）／`SolidColor`（Color の1色）／`Gradient`（見る向きの上下で、真上の Sky・地平線の Horizon・真下の Ground を混ぜる。Horizon Width は地平線の色が残る幅で、0.15 なら上下に約 9°。その間をなめらかにぼかす）。SolidColor・Gradient は霧が掛からない。環境光（IBL）は天球のまま。Scene ビューは見ない（初めはエディタのグラデーション。View → Skybox で天球に切り替える） |
 | Blend（Style・Time・Ease） | このカメラへ切り替わるときの動き方。`Cut`（すぐ切り替える）／`Ease`（Time の秒をかけて、位置・向き・視野角・Camera Volume の値を補間する） |
-| Time Mode | このカメラの切り替え・Camera Follow・Camera Look At・Camera Shake が使う時間。`Game`（スローで遅くなり、ヒットストップ・ポーズで止まる）／`Real`（止まらない。エディタの一時停止では止まる） |
+| Time Mode | このカメラの切り替え・Camera Follow・Camera Orbit・Camera Look At・Camera Shake が使う時間。`Game`（スローで遅くなり、ヒットストップ・ポーズで止まる）／`Real`（止まらない。エディタの一時停止では止まる） |
 
 - Save される。Play 中に動いたカメラは Stop で戻る。停止中も Game ビューはそのカメラから撮る。
 - **Transform はカメラの本来の位置・向き。** 注視点・揺れ・切り替えの補間は写す値にだけ入り、Transform は変わらない。画面に写っている位置・向きは `CameraSystem::GetMainCamera()` で読む。
@@ -56,6 +56,39 @@ void MoveCameraUp(float deltaTime) {
 - 「画面の真ん中」は、カメラの前の向きが追う物を通る面（XY：追う物の奥行き、XZ：追う物の高さ）と交わる点。傾けたカメラでも、追い始め・Ground Snap Y で focus は画面の真ん中に来る。Bounds の画面の端も、画面の四隅をその面に当てて測る（下へ傾けると、下の方が遠くまで写る）。
 - 動かすのは物理の後・`CameraSystem::Update` の前（[1フレームの順番](01-Overview.md#1フレームの順番) の 5）なので、追う物と1フレームずれない。
 - 自分で動かしたいカメラ（演出など）は、Camera Follow を外す（Enabled）か、付けずに SYSTEM・Script で Transform を動かす（上の例）。
+- 追う物のまわりを回るカメラ・相手を見ながら後ろに付くカメラは、Camera Follow ではなく Camera Orbit（次の節）。Camera Follow はカメラの向きを変えない。
+
+## 追う物のまわりを回るカメラ（Camera Orbit）
+
+**Add Component → Camera → Camera Orbit**（`CameraOrbitComponent`）。Camera と同じ Entity に付けて、Target に追う Entity を Hierarchy からドラッグする。カメラを「回る中心（追う物 ＋ Pivot Offset）から、横の向きの後ろへ Distance、Pitch だけ上」に置き、回る中心を向かせる（Transform の位置と向きを書く）。再生中だけ動く（停止中は置いた位置のまま。Scene ビューの線が、再生したら置かれる位置を見せる）。
+
+| 項目 | 中身 |
+|---|---|
+| Target | 追う Entity |
+| Pivot Offset | 追う物の位置から回る中心へのずれ（m。ワールドの向き）。足元が原点のキャラなら Y を胸・頭の高さに |
+| Distance | 回る中心からカメラまでの長さ（m） |
+| Pitch | 見下ろす角度（度。-80〜80）。＋ で上から見下ろす |
+| Heading | カメラが追う物のどちら側に付くか。`World`（ワールドの決まった向き。Yaw 0 で +Z を向く）／`TargetForward`（追う物の前の向き＝追う物の後ろに付く）／`LookAt`（同じ Entity の Camera Look At が見る点の向き＝見る点と反対の側に付く。**ロックオン**） |
+| Yaw | 横の角度（度。＋ で上から見て時計回り）。World は向きそのもの、ほかは決まった向きに足す角度（20 くらいずらすと肩越し） |
+| Heading Smooth Time | 横の向きが追いつくまでの時間の目安（秒）。一番近い回り方で回る |
+| Smooth Time | 回る中心が追う物に追いつくまでの時間の目安（秒） |
+| Show Gizmo | Scene ビューに線を出す（エディタだけ）。黄：回る中心の十字と追う物からの線／紫：回る輪と、回る中心からカメラを置く位置への線／赤：LookAt の見る点から回る中心への線。View → Gizmos → Camera Orbits で全部まとめて消せる |
+
+- **相手を見ながら追う物の後ろに付く（ロックオン）**：Camera Orbit（Target＝プレイヤー・Heading＝LookAt）＋ Camera Look At（Target＝ボス）。上から見て、ボス・プレイヤー・カメラが一直線に並び、写す向きは Camera Look At がボスへ向ける（Screen Position を (0, 0.15) くらいにすると、ボスが少し上・プレイヤーが下に写る）。
+- ロックオンを入れる・切るは、ロックオンのカメラを別に置いて Priority か Entity の有効・無効で切り替える（Camera の Blend で補間する）。相手を変えるのは Camera Look At の Target を書き換えるだけ（Camera Orbit は同じ Entity の Camera Look At を読むので、ボスを2か所に入れない）。
+- 横の向きが決まらないとき（LookAt で見る点が回る中心の真上・真下・同じ所、Camera Look At が無い・切ってある、TargetForward で追う物が真上・真下を向いている）は、そのときの向きを保つ。回り始めに決まらなければ、置いたカメラから回る中心への向きから始める。
+- LookAt の向きは Camera Look At の見たい点（Smooth Time をかける前の点）で決める。回り込みの遅れは Heading Smooth Time だけで決まる。
+- 同じ Entity に Camera Follow も付いていて、どちらも有効なら、**Camera Orbit だけが動かす**（Camera Follow の範囲の線も出ない）。Enabled を切った・Entity を無効にした Camera Orbit は、また動かすときに決まった位置からすぐ始める。
+- 「カメラが追っている物」（`CameraSystem::GetFollowTargetEntity`・Camera Volume と Depth Of Field の FollowTarget・Trigger Activator の FollowTarget・Wind Zone の線）は、有効な Camera Orbit があればその Target。
+- 親の下に置いたカメラでも、ワールドでその位置・向きになる（`EntityManager::SetWorldRotation`）。
+- 壁に当たって寄る（Cinemachine の Deoccluder）・スティックで回す専用の項目は無い。回すなら Heading を World にして、Script で `yaw` を書き換える。
+
+```cpp
+// ロックオンの相手を変える（lockOnCamera は Camera Orbit の Heading が LookAt のカメラ）
+if (CameraLookAtComponent* lookAt = EntityManager::Get<CameraLookAtComponent>(lockOnCamera)) {
+	lookAt->target = EntityManager::RefOf(nextEnemy); // カメラは Heading Smooth Time で新しい相手の反対側へ回り込む
+}
+```
 
 ## 注視点（Camera Look At）
 
@@ -97,7 +130,7 @@ CameraSystem::AddImpulse(0.4f, {1.0f, 0.0f, 0.0f}); // ワールドの +X へ。
 | 項目 | 中身 |
 |---|---|
 | Weight | 全部の項目の効き具合（0：全体の設定のまま 〜 1：このカメラの値） |
-| Focus | ピントの合わせ方。`Global`（全体の設定）／`Distance`（Focus Distance）／`LookAtTarget`（Camera Look At が見ている点）／`FollowTarget`（このカメラの Camera Follow の Target） |
+| Focus | ピントの合わせ方。`Global`（全体の設定）／`Distance`（Focus Distance）／`LookAtTarget`（Camera Look At が見ている点）／`FollowTarget`（このカメラの Camera Follow・Camera Orbit の Target。両方あれば有効な Camera Orbit の方） |
 | Depth Of Field | Focus Range・Far Transition・Near Transition・Max Blur |
 | Bloom | Threshold・Knee・Intensity |
 | Lens | Distortion・Aberration・Radial Blur・Vignette |

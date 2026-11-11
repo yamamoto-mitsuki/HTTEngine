@@ -24,6 +24,7 @@
 #include "HTTEngine/Math/RandomEngine.h"
 #include "HTTEngine/Systems/Camera/CameraFollow.h"
 #include "HTTEngine/Systems/Camera/CameraLookAt.h"
+#include "HTTEngine/Systems/Camera/CameraOrbit.h"
 #include "HTTEngine/Systems/Camera/CameraShake.h"
 #include "HTTEngine/Systems/Camera/CameraVolume.h"
 #include "HTTEngine/Systems/Camera/CameraPath.h"
@@ -162,6 +163,24 @@ float GetCameraDeltaTime(Handle<Entity> entity) {
 }
 
 //=============================================================================
+// 追う物
+//=============================================================================
+// ===== その Entity に、有効な Camera Orbit が付いているか（付いていれば、Camera Follow の代わりにこちらが位置を決める）=====
+bool HasEnabledOrbit(Handle<Entity> entity) {
+	const CameraOrbitComponent* orbit = EntityManager::Get<CameraOrbitComponent>(entity);
+	return orbit != nullptr && orbit->enabled;
+}
+
+// ===== その Entity のカメラが追う物（有効な Camera Orbit の Target、無ければ Camera Follow の Target。どれも無ければ無効な Handle）=====
+Handle<Entity> FindFollowTarget(Handle<Entity> entity) {
+	if (HasEnabledOrbit(entity)) {
+		return EntityManager::Find(EntityManager::Get<CameraOrbitComponent>(entity)->target);
+	}
+	const CameraFollowComponent* follow = EntityManager::Get<CameraFollowComponent>(entity);
+	return (follow != nullptr) ? EntityManager::Find(follow->target) : Handle<Entity>{};
+}
+
+//=============================================================================
 // Inspector と保存
 //=============================================================================
 // ===== Camera =====
@@ -193,7 +212,7 @@ void DescribeCamera(ComponentUI& ui, CameraComponent& value) {
 	ui.Separator("Time");
 	ui.Field(
 	    "Time Mode###timeMode", value.timeMode,
-	    Tip("このカメラの切り替え・Camera Follow・Camera Look At・Camera Shake が使う時間。Game：スローで遅くなり、ヒットストップ・ポーズで止まる / Real：止まらない"));
+	    Tip("このカメラの切り替え・Camera Follow・Camera Orbit・Camera Look At・Camera Shake が使う時間。Game：スローで遅くなり、ヒットストップ・ポーズで止まる / Real：止まらない"));
 }
 
 //=============================================================================
@@ -232,8 +251,7 @@ std::optional<float> CalcVolumeFocusDistance(Handle<Entity> entity, const Camera
 	case CameraVolumeFocus::LookAtTarget:
 		return lookAtPoint.has_value() ? std::optional<float>(depthOf(*lookAtPoint)) : std::nullopt;
 	case CameraVolumeFocus::FollowTarget: {
-		const CameraFollowComponent* follow = EntityManager::Get<CameraFollowComponent>(entity);
-		const TransformComponent* target = follow ? EntityManager::Get<TransformComponent>(follow->target) : nullptr;
+		const TransformComponent* target = EntityManager::Get<TransformComponent>(FindFollowTarget(entity));
 		return target ? std::optional<float>(depthOf(GetWorldPosition(*target))) : std::nullopt;
 	}
 	}
@@ -423,6 +441,10 @@ void CameraSystem::Initialize() {
 	ComponentSerializer::Register<CameraLookAtComponent>("Camera Look At", &CameraLookAt::Describe);
 	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraLookAtComponent>>("Camera Look At", "Camera", &CameraLookAt::Describe));
 
+	EntityManager::RegisterComponent<CameraOrbitComponent>();
+	ComponentSerializer::Register<CameraOrbitComponent>("Camera Orbit", &CameraOrbit::Describe);
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraOrbitComponent>>("Camera Orbit", "Camera", &CameraOrbit::Describe));
+
 	EntityManager::RegisterComponent<CameraShakeComponent>();
 	ComponentSerializer::Register<CameraShakeComponent>("Camera Shake", &CameraShake::Describe);
 	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraShakeComponent>>("Camera Shake", "Camera", &CameraShake::Describe));
@@ -443,8 +465,23 @@ void CameraSystem::Release() { state.reset(); }
 //=============================================================================
 bool CameraSystem::UpdateFollow() {
 	bool isMoved = false;
+	// --- Camera Orbit（追う物のまわりを回る）---
+	EntityManager::ForEach<CameraOrbitComponent>([&isMoved](Handle<Entity> entity, CameraOrbitComponent& orbit) {
+		if (!orbit.enabled || !EntityManager::IsActiveInHierarchy(entity)) {
+			orbit.isOrbiting = false; // 止めている間に追う物は動くので、また動かすときは、決まった位置からすぐ始める（離れた所から流れてこないように）
+			return;
+		}
+		const float deltaTime = GetCameraDeltaTime(entity);
+		if (deltaTime <= 0.0f) {
+			return; // このカメラの時間が止まっている（今の値のまま。止まっている間に回り直さない）
+		}
+		if (CameraOrbit::Update(entity, orbit, deltaTime)) {
+			isMoved = true;
+		}
+	});
+	// --- Camera Follow（面の上で追う。同じ Entity の Camera Orbit が有効なら、そちらが位置を決めるので動かさない）---
 	EntityManager::ForEach<CameraFollowComponent>([&isMoved](Handle<Entity> entity, CameraFollowComponent& follow) {
-		if (!follow.enabled || !EntityManager::IsActiveInHierarchy(entity)) {
+		if (!follow.enabled || !EntityManager::IsActiveInHierarchy(entity) || HasEnabledOrbit(entity)) {
 			return;
 		}
 		const float deltaTime = GetCameraDeltaTime(entity);
@@ -578,9 +615,8 @@ const TransformComponent* CameraSystem::GetFollowTargetTransform() {
 }
 
 Handle<Entity> CameraSystem::GetFollowTargetEntity() {
-	// メインカメラの Camera Follow → その Target の Entity（どこかで無ければ無効な Handle）
-	const CameraFollowComponent* follow = EntityManager::Get<CameraFollowComponent>(GetMainCameraEntity());
-	return (follow != nullptr) ? EntityManager::Find(follow->target) : Handle<Entity>{};
+	// メインカメラの Camera Orbit・Camera Follow → その Target の Entity（どこかで無ければ無効な Handle）
+	return FindFollowTarget(GetMainCameraEntity());
 }
 
 //=============================================================================

@@ -4,6 +4,7 @@
 #include "HTTEngine/Components/Camera/CameraComponent.h"
 #include "HTTEngine/Components/Camera/CameraFollowComponent.h"
 #include "HTTEngine/Components/Camera/CameraLookAtComponent.h"
+#include "HTTEngine/Components/Camera/CameraOrbitComponent.h"
 #include "HTTEngine/Components/Camera/CameraPathComponent.h"
 #include "HTTEngine/Components/Camera/CameraShakeComponent.h"
 #include "HTTEngine/Components/Camera/CameraVolumeComponent.h"
@@ -34,7 +35,7 @@ struct CameraOverride {
 /// CameraComponent を持つEntityから、ゲームの絵を撮るカメラを決める（Unity の Cinemachine の Brain と Virtual Camera の小さい版）
 /// <para>カメラ（Camera クラス）はここが1つだけ持ち、毎フレーム、有効な Camera Component の中で priority が一番大きい物の値をそこへ写す。
 /// シーンの GetCamera() は、上書きしなければこのカメラを返す</para>
-/// <para>1台分の値 ＝ Transform ＋ Camera Path（位置）＋ Camera Look At（向き）＋ Camera Shake（揺れ）＋ Camera Volume（ポストエフェクト）。Transform を動かすのは Camera Follow と Timelineのキーだけで、ほかは写す値にだけ入る</para>
+/// <para>1台分の値 ＝ Transform ＋ Camera Path（位置）＋ Camera Look At（向き）＋ Camera Shake（揺れ）＋ Camera Volume（ポストエフェクト）。Transform を動かすのは Camera Follow・Camera Orbit と Timelineのキーだけで、ほかは写す値にだけ入る</para>
 /// <para>priority が一番大きいカメラが変わると、Camera の Blend の設定で、今見えている値からそのカメラの値へ補間する</para>
 /// <para>Timeline のカメラのトラックは RequestOverride で、そのフレームに写すカメラを頼む（頼まなくなれば通常のカメラへ戻る）</para>
 /// </summary>
@@ -45,7 +46,8 @@ public:
 	static void Release();
 
 	/// <summary>
-	/// Camera Follow を付けた Entity（カメラ）の Transform を、追う物へ近づける（再生中だけ。EngineSystems から1フレームに1回）
+	/// Camera Follow・Camera Orbit を付けた Entity（カメラ）の Transform を、追う物へ近づける（再生中だけ。EngineSystems から1フレームに1回）
+	/// <para>同じ Entity に両方あって、どちらも有効なら Camera Orbit だけが動かす（どちらもカメラの位置を決めるので）</para>
 	/// <para>物理で動いた後（ワールド行列を計算し直した後）、Update の前に呼ぶ。追う物の、そのフレームの位置を追うため</para>
 	/// <para>時間はカメラごとに Camera の Time Mode で決まる</para>
 	/// </summary>
@@ -72,7 +74,7 @@ public:
 	// そのカメラの本来の位置（Camera Path があれば線の上。注視点・揺れ・補間は入らない。エディタの Camera Path の印に使う）
 	static Vector3 CalcCameraPosition(Handle<Entity> entity);
 
-	// メインカメラの Camera Follow が追っている物の Transform（Camera Follow・Target が無ければ nullptr。停止中も返す）
+	// メインカメラが追っている物の Transform（有効な Camera Orbit があればその Target、無ければ Camera Follow の Target。どれも無ければ nullptr。停止中も返す）
 	// 風の線（WindZoneSystem）・被写界深度のピント（DepthOfFieldSystem）が使う
 	static const TransformComponent* GetFollowTargetTransform();
 

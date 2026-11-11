@@ -150,7 +150,7 @@ EntityManager::RequestAdd<ModelRendererComponent>(ball, renderer);
 
 | 項目 | 中身 |
 |---|---|
-| Focus | **FollowTarget**：メインカメラの Camera Follow の Target（遊ぶキャラ）の奥行きにピント（ビューごとに、そのカメラから測る）／**Distance**：カメラから Focus Distance（m） |
+| Focus | **FollowTarget**：メインカメラの Camera Follow・Camera Orbit の Target（遊ぶキャラ）の奥行きにピント（ビューごとに、そのカメラから測る）／**Distance**：カメラから Focus Distance（m） |
 | Focus Range | ピントの前後この奥行き（m）までは、ぼけない |
 | Far Transition・Near Transition | ピントの範囲の奥・手前から、一番ぼけるまでの奥行き（m）。Near を 0 にすると手前はぼかさない |
 | Max Blur | 一番ぼけた所の、ぼけの半径（ピクセル。高さ 720 の画面で。上限 32） |

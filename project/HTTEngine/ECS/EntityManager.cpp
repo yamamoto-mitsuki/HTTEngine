@@ -217,6 +217,24 @@ void EntityManager::TranslateWorld(Handle<Entity> handle, const Vector3& worldMo
 	transform->translation += move;
 }
 
+void EntityManager::SetWorldRotation(Handle<Entity> handle, const Quaternion& worldRotation) {
+	TransformComponent* transform = Get<TransformComponent>(handle);
+	const Entity* entity = Get(handle);
+	if (!transform || !entity) {
+		return;
+	}
+	Quaternion local = worldRotation;
+	if (const TransformComponent* parent = Get<TransformComponent>(entity->parent)) {
+		// ワールドの向き ＝ 親のワールドの向き × 親から見た向き（右に掛けた方が先に回る）なので、左から親の逆（長さ1なら共役）を掛ける
+		const Quaternion fromParent = Conjugate(GetWorldRotation(*parent)) * worldRotation;
+		// 親の大きさが0だと親の向きが取り出せず、数でなくなる。そのときは、ワールドの向きをそのまま入れる
+		if (std::isfinite(fromParent.x) && std::isfinite(fromParent.y) && std::isfinite(fromParent.z) && std::isfinite(fromParent.w)) {
+			local = fromParent;
+		}
+	}
+	transform->rotation = Normalize(local);
+}
+
 bool EntityManager::IsDescendantOf(Handle<Entity> handle, Handle<Entity> ancestor) {
 	if (!ancestor.IsValid()) {
 		return false;

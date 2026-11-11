@@ -7,10 +7,12 @@
 
 #include "HTTEngine/Components/Core/TransformComponent.h"
 #include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Editor/Gizmos/GizmoLines.h"
 #include "HTTEngine/Graphics/Renderer/Renderer.h"
 #include "HTTEngine/Graphics/Texture/TextureManager.h"
 #include "HTTEngine/Math/Geometry/PathCurve.h"
 #include "HTTEngine/Systems/Camera/CameraFollow.h"
+#include "HTTEngine/Systems/Camera/CameraOrbit.h"
 #include "HTTEngine/Systems/Camera/CameraPath.h"
 #include "HTTEngine/Systems/Camera/CameraSystem.h"
 
@@ -25,14 +27,21 @@ constexpr Vector4 kDeadZoneColor = {0.35f, 1.0f, 0.45f, 1.0f}; // Dead Zone（�
 constexpr Vector4 kSoftZoneColor = {0.35f, 0.6f, 1.0f, 1.0f};  // Soft Zone（青）
 constexpr Vector4 kFocusColor = {1.0f, 0.85f, 0.2f, 1.0f};     // focus の印と、追う物から focus へ引く線（黄）
 constexpr Vector4 kBoundsColor = {1.0f, 0.35f, 0.3f, 1.0f};    // Use Bounds の範囲（赤）
+// Camera Orbit の線の色（Inspector の Show Gizmo の説明と合わせる）
+constexpr Vector4 kOrbitColor = {0.75f, 0.45f, 1.0f, 1.0f};  // 回る輪と、回る中心からカメラを置く位置への線（紫）
+constexpr Vector4 kLookAtColor = {1.0f, 0.35f, 0.3f, 1.0f};  // Heading が LookAt のとき、見る点から回る中心への線（赤）
+constexpr uint32_t kOrbitRingDivision = 48;                  // 回る輪を何本の線で描くか（大きな輪なので、ふつうの円より細かく）
+constexpr float kOrbitMarkSize = 0.2f;                       // 回る中心の十字の、半分の長さ（m）
 
 uint32_t iconTextureHandle = 0;       // カメラのアイコン
 bool isShowIcons = true;              // アイコンを出すか
 bool isShowPaths = true;              // Camera Path の線を出すか
 bool isShowFollowZones = true;        // Camera Follow の範囲の線を出すか
+bool isShowOrbits = true;             // Camera Orbit の線を出すか
 Renderer::LineListConfig lines;       // 線の置き場（配列のメモリを使い回す）
 Renderer::LineListConfig followLines; // Camera Follow のワールドの線の置き場（Scene・Game ビュー。Scene ビューだけの lines と分ける）
 Renderer::LineListConfig screenLines; // Camera Follow の Screen の範囲の置き場（Game ビューだけ）
+Renderer::LineListConfig orbitLines;  // Camera Orbit の線の置き場（Scene ビューだけ。View メニューで lines と別に消すので分ける）
 PathCurve pathLine;                   // 描く線（使い回す）
 
 // ===== 四角（4つの角を順に結ぶ）=====
@@ -69,6 +78,23 @@ void PushFollowGuide(const CameraFollow::Guide& guide, CameraFollowZoneSpace zon
 	out.push_back({guide.target, guide.focus, kFocusColor});
 	if (guide.bounds.has_value()) {
 		PushRect(out, *guide.bounds, kBoundsColor);
+	}
+}
+
+// ===== Camera Orbit 1つ分の線を積む =====
+// 輪は Yaw だけを回したときにカメラが通る円。回る中心からカメラを置く位置へ線を引いて、今どこから見ているかを見せる
+void PushOrbitGuide(const CameraOrbit::Guide& guide) {
+	std::vector<Renderer::LineSegment>& out = orbitLines.lines;
+	const Vector3 ringCenter = {guide.pivot.x, guide.ringHeight, guide.pivot.z};
+	GizmoLines::PushCircle(out, ringCenter, guide.ringRadius, {1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}, kOrbitColor, kOrbitRingDivision);
+	out.push_back({guide.pivot, guide.camera, kOrbitColor});
+	// 回る中心の十字と、追う物から回る中心へ（Pivot Offset・Smooth Time の遅れでどれだけずれているか）
+	for (const Vector3& axis : {Vector3{1.0f, 0.0f, 0.0f}, Vector3{0.0f, 1.0f, 0.0f}, Vector3{0.0f, 0.0f, 1.0f}}) {
+		out.push_back({guide.pivot - axis * kOrbitMarkSize, guide.pivot + axis * kOrbitMarkSize, kFocusColor});
+	}
+	out.push_back({guide.target, guide.pivot, kFocusColor});
+	if (guide.lookPoint.has_value()) {
+		out.push_back({*guide.lookPoint, guide.pivot, kLookAtColor});
 	}
 }
 
@@ -126,6 +152,11 @@ void CameraGizmo::Initialize() {
 	screenLines.layer = DrawLayer::GameViewGuide;
 	screenLines.depthMode = DepthMode::Disable;
 	screenLines.isGizmo = true;
+	// Camera Orbit の線は Scene ビューだけ（輪はカメラ自身を通るので、Game ビューに出しても見えない・邪魔になる）
+	orbitLines.fadeStartDistance = kNoFadeStart;
+	orbitLines.fadeEndDistance = kNoFadeEnd;
+	orbitLines.layer = DrawLayer::EditorGizmo;
+	orbitLines.isGizmo = true;
 }
 
 //=============================================================================
@@ -163,6 +194,11 @@ void CameraGizmo::Draw(Camera* camera) {
 			if (!follow.enabled || !follow.showGizmo || !EntityManager::IsActiveInHierarchy(entity)) {
 				return;
 			}
+			// 同じ Entity の Camera Orbit が有効なら、Camera Follow は動かさないので線も出さない（CameraSystem::UpdateFollow と同じ決まり）
+			const CameraOrbitComponent* orbit = EntityManager::Get<CameraOrbitComponent>(entity);
+			if (orbit != nullptr && orbit->enabled) {
+				return;
+			}
 			if (const std::optional<CameraFollow::Guide> guide = CameraFollow::CalcGuide(entity, follow)) {
 				PushFollowGuide(*guide, follow.zoneSpace, entity == mainCamera);
 			}
@@ -171,6 +207,20 @@ void CameraGizmo::Draw(Camera* camera) {
 		Renderer::DrawLines(screenLines);
 		followLines.camera = nullptr;
 		screenLines.camera = nullptr;
+	}
+	if (isShowOrbits) {
+		orbitLines.camera = camera;
+		orbitLines.lines.clear();
+		EntityManager::ForEach<CameraOrbitComponent>([](Handle<Entity> entity, const CameraOrbitComponent& orbit) {
+			if (!orbit.enabled || !orbit.showGizmo || !EntityManager::IsActiveInHierarchy(entity)) {
+				return;
+			}
+			if (const std::optional<CameraOrbit::Guide> guide = CameraOrbit::CalcGuide(entity, orbit)) {
+				PushOrbitGuide(*guide);
+			}
+		});
+		Renderer::DrawLines(orbitLines);
+		orbitLines.camera = nullptr;
 	}
 }
 
@@ -182,4 +232,6 @@ bool& CameraGizmo::GetShowIcons() { return isShowIcons; }
 bool& CameraGizmo::GetShowPaths() { return isShowPaths; }
 
 bool& CameraGizmo::GetShowFollowZones() { return isShowFollowZones; }
+
+bool& CameraGizmo::GetShowOrbits() { return isShowOrbits; }
 #endif

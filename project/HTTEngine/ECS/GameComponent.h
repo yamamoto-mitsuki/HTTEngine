@@ -55,7 +55,7 @@
 //   歩くキャラは Character Controller（坂で滑らない・段を上る）。同じく velocity を書いて動かす
 //   画像は Sprite Renderer（3D空間の板）・Image（画面に重ねる絵）。ボタンは SpriteRenderSystem::IsMouseOver(entity)
 //   音は、③の中で AudioSystem::Play(entity) / PlayOneShot(entity) を呼ぶ（Audio Source は Add Component → Audio で付ける）
-//   カメラは Entity に付ける Camera Component。追いかけるなら、同じ Entity に Camera Follow（Add Component → Camera）を付けて Target を入れる
+//   カメラは Entity に付ける Camera Component。追いかけるなら、同じ Entity に Camera Follow（Add Component → Camera）を付けて Target を入れる（まわりを回って後ろに付くなら Camera Orbit）
 //   シーンを替えるときは、③の中で SceneManager::LoadScene("Result") を呼ぶ（切り替わるのは次のフレームの頭）。やり直しは SceneManager::ReloadScene()
 
 // 度 ↔ ラジアン（std::sin・std::cos に渡すとき。SetEulerAngles・Rotate などの Transform の角度は、度のまま渡す）

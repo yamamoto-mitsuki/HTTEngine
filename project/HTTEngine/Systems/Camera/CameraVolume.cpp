@@ -29,7 +29,7 @@ void CameraVolume::Describe(ComponentUI& ui, CameraVolumeComponent& value) {
 	ui.Separator("Depth Of Field");
 	ui.Field(
 	    "Focus###focus", value.focus,
-	    Tip("ピントの合わせ方。Global：全体の設定のまま / Distance：カメラから Focus Distance / LookAtTarget：Camera Look At が見ている点 / FollowTarget：このカメラの Camera Follow の Target"));
+	    Tip("ピントの合わせ方。Global：全体の設定のまま / Distance：カメラから Focus Distance / LookAtTarget：Camera Look At が見ている点 / FollowTarget：このカメラの Camera Follow・Camera Orbit の Target"));
 	ui.BeginDisabled(value.focus != CameraVolumeFocus::Distance);
 	ui.Field("Focus Distance###focusDistance", value.focusDistance, AtLeast(0.0f).Tip("カメラからピントの合う所までの奥行き（m）"));
 	ui.EndDisabled();

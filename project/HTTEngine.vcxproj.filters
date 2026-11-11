@@ -891,6 +891,9 @@
     <ClCompile Include="HTTEngine\Window\WindowManager.cpp">
       <Filter>HTTEngine\Window</Filter>
     </ClCompile>
+    <ClCompile Include="HTTEngine\Systems\Camera\CameraOrbit.cpp">
+      <Filter>HTTEngine\Systems\Camera</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\spdlog\async.h">
@@ -1765,6 +1768,12 @@
     </ClInclude>
     <ClInclude Include="HTTEngine\Window\WindowManager.h">
       <Filter>HTTEngine\Window</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Components\Camera\CameraOrbitComponent.h">
+      <Filter>HTTEngine\Components\Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Systems\Camera\CameraOrbit.h">
+      <Filter>HTTEngine\Systems\Camera</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

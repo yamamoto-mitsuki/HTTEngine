@@ -10,7 +10,7 @@
 /// ピントをどこに合わせるか。Inspector では、選んだ合わせ方の値だけが出る
 /// </summary>
 enum class DepthOfFieldFocus {
-	FollowTarget, // メインカメラの Camera Follow の Target（遊ぶキャラ）の奥行きに合わせる。Target が無ければ Focus Distance の初期値
+	FollowTarget, // メインカメラの Camera Follow・Camera Orbit の Target（遊ぶキャラ）の奥行きに合わせる。Target が無ければ Focus Distance の初期値
 	Distance,     // カメラから Focus Distance（m）の奥行きに合わせる
 };
 

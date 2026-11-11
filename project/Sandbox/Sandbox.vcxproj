@@ -39,6 +39,7 @@
     <ClCompile Include="Source\Scripts\CursorTrailSamples.cpp" />
     <ClCompile Include="Source\Scripts\BurstEffectSamples.cpp" />
     <ClCompile Include="Source\Scripts\TriggerCameraSamples.cpp" />
+    <ClCompile Include="Source\Scripts\OrbitCameraSamples.cpp" />
     <ClCompile Include="Source\Scripts\Player\PlayerController.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -52,6 +53,7 @@
     <ClInclude Include="Source\Scripts\CursorTrailSamples.h" />
     <ClInclude Include="Source\Scripts\BurstEffectSamples.h" />
     <ClInclude Include="Source\Scripts\TriggerCameraSamples.h" />
+    <ClInclude Include="Source\Scripts\OrbitCameraSamples.h" />
     <ClInclude Include="Source\Scripts\Player\PlayerController.h" />
   </ItemGroup>
 

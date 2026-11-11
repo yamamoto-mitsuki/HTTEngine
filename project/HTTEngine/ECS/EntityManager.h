@@ -73,6 +73,9 @@ public:
 	// ワールド座標で worldMove だけ動かす（translation は親から見た位置なので、親の下なら、親から見た量に直して足す）
 	// 親のワールド行列は UpdateTransforms の結果を使う。物理の押し戻し・カメラの追いかけが使う
 	static void TranslateWorld(Handle<Entity> handle, const Vector3& worldMove);
+	// ワールドの向きを worldRotation にする（rotation は親から見た向きなので、親の下なら、親の向きを外して入れる）
+	// 親の向きは UpdateTransforms の結果を使う。カメラの回り込み（Camera Orbit）が使う
+	static void SetWorldRotation(Handle<Entity> handle, const Quaternion& worldRotation);
 	// 親をたどって、handleがancestorの子孫かを調べる（handle自身は含まない）
 	static bool IsDescendantOf(Handle<Entity> handle, Handle<Entity> ancestor);
 	// 同じEntityか、どちらかがどちらかの先祖（親・親の親…）か。自分の子に付けた Collider と当たらないようにするのに使う

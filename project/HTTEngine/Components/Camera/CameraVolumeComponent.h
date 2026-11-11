@@ -21,7 +21,7 @@ enum class CameraVolumeFocus {
 	Global,       // 全体の設定（Depth Of Field Component の Focus）のまま
 	Distance,     // カメラから Focus Distance（m）の奥行き
 	LookAtTarget, // Camera Look At が見ている点の奥行き
-	FollowTarget, // このカメラの Camera Follow の Target の奥行き
+	FollowTarget, // このカメラの Camera Follow・Camera Orbit の Target の奥行き
 };
 
 /// <summary>

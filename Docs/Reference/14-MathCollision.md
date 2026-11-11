@@ -189,7 +189,7 @@ ElasticSurfaceSystem::AddImpulse(floor, x, -20.0f, 2.0f);                // 一�
 | Speed | 風の速さ（m/s）。物はこの速さまで流される。それより速い物は、それ以上押さない（止めもしない） |
 | Strength | 風の速さまで速くする強さ（m/s²）。上向きの風で浮かせるなら、重力（Settings の Physics → World → Gravity × Rigidbody の Gravity Scale）より大きくする |
 | Gust・Gust Frequency | ゆれ（0.3 なら速さが ±30%）と、ゆれる速さ（1秒に何回くらい） |
-| Line Amount | 画面の風の線の濃さ（0〜1）。**カメラが追っている物（Camera Follow の Target）が範囲の中にいる間だけ**、入ってから 0.3 秒で出て、範囲から出たら 0.5 秒で消える。Game ビューだけ（Lens のパス） |
+| Line Amount | 画面の風の線の濃さ（0〜1）。**カメラが追っている物（Camera Follow・Camera Orbit の Target）が範囲の中にいる間だけ**、入ってから 0.3 秒で出て、範囲から出たら 0.5 秒で消える。Game ビューだけ（Lens のパス） |
 
 - 範囲と向きの線は、Collider のギズモと一緒に出る（Scene ビュー）。
 - 押されるのは **Rigidbody の Wind Scale**（初期値 1）の倍率。0 なら押さない。Script で速さを毎フレーム目標へ近づけている物（プレイヤーなど）は、押した分がすぐ消されるので、Wind Scale を 0 にして、自分で風を読む：
@@ -215,7 +215,7 @@ rigidbody->velocity = WindZoneSystem::Push(wind, rigidbody->velocity, Time::GetD
 | 項目 | 中身 |
 |---|---|
 | Target | 出す・消す Entity（文字と背景をまとめた親を入れると、子も一緒）。自分と自分の親は選ばない |
-| Source | 誰が入ったら反応するか。`FollowTarget`（メインカメラの Camera Follow の Target＝プレイヤー）・`Entity`（Source Entity。子の Collider も数える）・`AnyRigidbody`（Rigidbody を付けた物）・`AnyMover`（Rigidbody か Character Controller を付けた物） |
+| Source | 誰が入ったら反応するか。`FollowTarget`（メインカメラの Camera Follow・Camera Orbit の Target＝プレイヤー）・`Entity`（Source Entity。子の Collider も数える）・`AnyRigidbody`（Rigidbody を付けた物）・`AnyMover`（Rigidbody か Character Controller を付けた物） |
 | On Enter・On Exit | 入ったとき・出たとき。`Show`（出す）・`Hide`（消す）・`None` |
 | Once | 入ったとき・出たときの動きを、それぞれ1回だけ |
 | Hide On Start | 再生を始めたら、すぐ Target を消す（初期値オン。エディタでは見えたまま置ける） |
