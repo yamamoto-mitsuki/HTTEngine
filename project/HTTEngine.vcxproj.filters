@@ -759,6 +759,9 @@
     <ClCompile Include="HTTEngine\Systems\Combat\HitSystem.cpp">
       <Filter>HTTEngine\Systems\Combat</Filter>
     </ClCompile>
+    <ClCompile Include="HTTEngine\Systems\Effects\ParticleSpawn.cpp">
+      <Filter>HTTEngine\Systems\Effects</Filter>
+    </ClCompile>
     <ClCompile Include="HTTEngine\Systems\Effects\ParticleSystem.cpp">
       <Filter>HTTEngine\Systems\Effects</Filter>
     </ClCompile>
@@ -1618,6 +1621,9 @@
     </ClInclude>
     <ClInclude Include="HTTEngine\Systems\Combat\HitSystem.h">
       <Filter>HTTEngine\Systems\Combat</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Systems\Effects\ParticleSpawn.h">
+      <Filter>HTTEngine\Systems\Effects</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Systems\Effects\ParticleSystem.h">
       <Filter>HTTEngine\Systems\Effects</Filter>

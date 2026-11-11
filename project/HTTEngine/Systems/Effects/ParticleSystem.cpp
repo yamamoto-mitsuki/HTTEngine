@@ -16,6 +16,7 @@
 #include "HTTEngine/Graphics/Renderer/Renderer.h"
 #include "HTTEngine/Math/Color.h"
 #include "HTTEngine/Math/RandomEngine.h"
+#include "HTTEngine/Systems/Effects/ParticleSpawn.h"
 #include "HTTEngine/Time/EngineTime.h"
 #ifdef USE_IMGUI
 #include "HTTEngine/Editor/Windows/HierarchyWindow.h"
@@ -25,7 +26,7 @@
 namespace {
 constexpr float kMinDuration = 0.01f;          // Duration の下限（秒。0 だとくり返しが止まらないので）
 constexpr float kMinLifetime = 0.01f;          // 寿命の下限（秒。0 で割らないように）
-constexpr float kMinDirectionLengthSq = 1e-4f; // これより短い向きは、向きが決まらないとみなす
+constexpr Vector4 kGizmoColor = {1.0f, 0.6f, 0.9f, 1.0f}; // 粒の出る形の線の色（桃色。Collider・カメラの線と分ける）
 
 /// <summary>
 /// 生きている粒1つ（実行中だけ。保存しない）
@@ -66,6 +67,8 @@ struct ParticleSystemState {
 	std::vector<ParticleData> instances; // 描くときの粒の置き場（Draw の中だけで使う。配列のメモリを使い回す）
 	Handle<Entity> previewEntity;        // 停止中にも流す1つ（Inspector の Preview。無効なら無し）
 	bool wasGameRunning = false;         // ゲームが動いているとして粒を持っているか（Play / Stop の切り替わりで、粒を全部捨てる。SwitchGameRunning）
+	Renderer::LineListConfig gizmoLines; // 出る形の線の置き場（配列のメモリを使い回す）
+	bool showGizmos = true;              // 出る形の線を出すか（View メニュー。1つずつは Component の Show Gizmo）
 };
 std::unique_ptr<ParticleSystemState> state;
 
@@ -123,93 +126,6 @@ float RandomRange(const Vector2& range) {
 	return (low < high) ? RandomEngine::GetFloat(low, high) : low;
 }
 
-// 長さ1のランダムな向き（球の中の点を長さ1に伸ばす。真ん中に近すぎて向きが決まらない点は選び直す）
-Vector3 RandomDirection() {
-	while (true) {
-		const Vector3 point = RandomEngine::GetInsideUnitSphere();
-		const float lengthSq = LengthSq(point);
-		if (lengthSq > kMinDirectionLengthSq) {
-			return point * (1.0f / std::sqrt(lengthSq));
-		}
-	}
-}
-
-//=============================================================================
-// 出る場所と向き（Shape）
-//=============================================================================
-/// <summary>
-/// 粒が出る場所と、飛ぶ向き（どちらも Entity から見た座標）
-/// </summary>
-struct SpawnPoint {
-	Vector3 position;  // 出る場所
-	Vector3 direction; // 飛ぶ向き（長さ1）
-};
-
-// 形の中（From Surface なら表面）から、出る場所と向きを1つ選ぶ
-// 中に均等に散らすため、真ん中からの距離は「0〜1 の乱数」をそのまま使わず、球なら3乗根・円なら平方根にする
-// （球の中の体積は半径の3乗、円の面積は半径の2乗に比例するので、そのままだと真ん中に集まって見える）
-SpawnPoint SampleShape(const ParticleSystemComponent& component) {
-	switch (component.shape) {
-	case ParticleShape::Point:
-		return {
-		    {0.0f, 0.0f, 0.0f},
-            RandomDirection()
-        };
-
-	case ParticleShape::Sphere: {
-		const Vector3 direction = RandomDirection();
-		const float distance = component.fromSurface ? 1.0f : std::cbrt(RandomEngine::GetFloat(0.0f, 1.0f));
-		return {direction * (component.radius * distance), direction};
-	}
-
-	case ParticleShape::Circle: {
-		// XY の面（横から見るゲームで、画面と同じ向きの円）
-		const float angle = RandomEngine::GetFloat(0.0f, MathUtility::kTwoPi);
-		const Vector3 direction = {std::cos(angle), std::sin(angle), 0.0f};
-		const float distance = component.fromSurface ? 1.0f : std::sqrt(RandomEngine::GetFloat(0.0f, 1.0f));
-		return {direction * (component.radius * distance), direction};
-	}
-
-	case ParticleShape::Cone: {
-		// XZ の面の円から出て、上（+Y）へ。縁から出た粒ほど外へ傾ける（縁で Cone Angle。真ん中はまっすぐ上）
-		// → 粒どうしが交差せず、ラッパの形に広がる。Radius 0 でも、傾きは乱数で決まるので広がる
-		const float angle = RandomEngine::GetFloat(0.0f, MathUtility::kTwoPi);
-		const Vector3 outward = {std::cos(angle), 0.0f, std::sin(angle)};
-		const float distance = component.fromSurface ? 1.0f : std::sqrt(RandomEngine::GetFloat(0.0f, 1.0f));
-		const float tilt = component.coneAngle * MathUtility::kDegToRad * distance;
-		const Vector3 direction = outward * std::sin(tilt) + Vector3{0.0f, std::cos(tilt), 0.0f};
-		return {outward * (component.radius * distance), direction};
-	}
-
-	case ParticleShape::Box: {
-		const Vector3 half = {std::abs(component.boxSize.x) * 0.5f, std::abs(component.boxSize.y) * 0.5f, std::abs(component.boxSize.z) * 0.5f};
-		Vector3 position = RandomEngine::GetVector3({-half.x, -half.y, -half.z}, half);
-		if (component.fromSurface) {
-			// 面を1つ選んで（広い面ほど選ばれやすく）、その軸だけ端へ寄せる
-			const float areaX = half.y * half.z; // 左右の面の広さ（の 1/4。比べるだけなので、そろっていればよい）
-			const float areaY = half.x * half.z; // 上下の面
-			const float areaZ = half.x * half.y; // 前後の面
-			const float pick = RandomEngine::GetFloat(0.0f, areaX + areaY + areaZ);
-			const float side = (RandomEngine::GetInt(0, 1) == 0) ? -1.0f : 1.0f;
-			if (pick < areaX) {
-				position.x = half.x * side;
-			} else if (pick < areaX + areaY) {
-				position.y = half.y * side;
-			} else {
-				position.z = half.z * side;
-			}
-		}
-		// 向きは箱の真ん中から外へ（ちょうど真ん中に出た粒は、どの向きでも）
-		const Vector3 direction = (LengthSq(position) > kMinDirectionLengthSq) ? Normalize(position) : RandomDirection();
-		return {position, direction};
-	}
-	}
-	return {
-	    {0.0f, 0.0f, 0.0f},
-        RandomDirection()
-    };
-}
-
 //=============================================================================
 // 出す・動かす
 //=============================================================================
@@ -219,7 +135,7 @@ void EmitParticles(EmitterState& emitter, const ParticleSystemComponent& compone
 	const int room = limit - static_cast<int>(emitter.particles.size());
 	const int spawnCount = (std::min)(count, room);
 	for (int i = 0; i < spawnCount; ++i) {
-		SpawnPoint point = SampleShape(component);
+		ParticleSpawn::SpawnPoint point = ParticleSpawn::Sample(component);
 		// World：出た瞬間のワールド座標にする（この後 Entity が動いても付いていかない）
 		if (component.space == ParticleSpace::World) {
 			point.position = TransformPoint(point.position, worldMatrix);
@@ -387,6 +303,7 @@ void DescribeParticleSystem(ComponentUI& ui, ParticleSystemComponent& value) {
 	ui.Field("Cone Angle###coneAngle", value.coneAngle, Range(0.0f, 90.0f).Tip("Cone の開き（度）。縁から出た粒ほど外へ傾く"));
 	ui.Field("Box Size###boxSize", value.boxSize, AtLeast(0.0f).Tip("Box の大きさ（m）"));
 	ui.Field("From Surface###fromSurface", value.fromSurface, Tip("形の表面（縁）から出す。Circle なら輪から飛び散る"));
+	ui.Field("Show Gizmo###showGizmo", value.showGizmo, Tip("Scene ビューに、粒の出る形を線で出す（エディタだけ。桃色）。Cone は縁から出た粒の開く向きも。View メニューの Particle Shapes で全部まとめて消せる"));
 
 	ui.Separator("Start (Min, Max)");
 	ui.Field("Lifetime###lifetime", value.lifetime, AtLeast(kMinLifetime).Tip("消えるまでの秒。左と右の間でランダム"));
@@ -435,6 +352,10 @@ void ParticleSystem::Initialize() {
 	EntityManager::RegisterComponent<ParticleSystemComponent>();
 	ComponentSerializer::Register<ParticleSystemComponent>("Particle System", &DescribeParticleSystem);
 	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<ParticleSystemComponent>>("Particle System", "Effects", &DescribeParticleSystem));
+
+	// 出る形の線は Scene ビューだけ（置く場所を決める助け。ゲームの絵には入れない）
+	state->gizmoLines.layer = DrawLayer::EditorGizmo;
+	state->gizmoLines.isGizmo = true; // ポストエフェクトの後に、選んだ色のまま描く
 }
 
 void ParticleSystem::Release() { state.reset(); }
@@ -539,6 +460,34 @@ void ParticleSystem::Draw() {
 		config.isSceneHidden = SceneVisibility::IsHidden(emitter.entity); // Hierarchy の目で隠した物は、Scene ビューだけ描かない
 		Renderer::DrawParticleInstances(config);
 	}
+}
+
+//=============================================================================
+// ギズモ
+//=============================================================================
+// 粒が出ているかに関係なく、有効な Particle System の形を全部描く（停止中に置く場所を決めるため）
+void ParticleSystem::DrawGizmos(Camera* camera) {
+	HTT_ASSERT_MSG(state != nullptr, "ParticleSystem::Initialize()を先に呼んでください");
+	if (!state->showGizmos) {
+		return;
+	}
+	Renderer::LineListConfig& gizmo = state->gizmoLines;
+	gizmo.lines.clear(); // 中身だけ消す。確保済みのメモリは残るので、次から再確保が起きにくい
+	gizmo.camera = camera;
+	EntityManager::ForEach<ParticleSystemComponent>([&gizmo](Handle<Entity> entity, const ParticleSystemComponent& component) {
+		// 出さない物（無効・隠した Entity）と、Hierarchy の目で隠した物は描かない
+		if (!component.showGizmo || IsSleeping(entity, component) || SceneVisibility::IsHidden(entity)) {
+			return;
+		}
+		ParticleSpawn::PushShapeGizmo(gizmo.lines, component, WorldMatrixOf(entity), kGizmoColor);
+	});
+	Renderer::DrawLines(gizmo); // 線が0本なら中で何もしない
+	gizmo.camera = nullptr;     // フレームをまたいで持たない
+}
+
+bool& ParticleSystem::GetShowGizmos() {
+	HTT_ASSERT_MSG(state != nullptr, "ParticleSystem::Initialize()を先に呼んでください");
+	return state->showGizmos;
 }
 
 //=============================================================================

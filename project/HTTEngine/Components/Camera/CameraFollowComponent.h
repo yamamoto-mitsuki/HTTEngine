@@ -8,7 +8,9 @@
 // カメラが Entity を追いかける。Camera Component と同じ Entity に付けるComponent（カテゴリ：Camera）
 // どの面の上で動かすかは Plane で決める。カメラの向きは変えない
 // 動かすのは CameraSystem::UpdateFollow（再生中だけ。物理で動いた後・カメラの絵を決める前）。停止中は置いた位置のまま
-// 画面の真ん中に置きたい点（focus）＝ 追う物の位置 ＋ Offset ＋ 追い方（Mode）で決まるずれ。カメラは、focus が「遊び」の外へ出た分だけ、なめらかに追う
+// 画面の真ん中に置きたい点（focus）＝ 追う物の位置 ＋ Offset ＋ 追い方（Mode）で決まるずれ
+// カメラは、focus が Dead Zone（遊び）の外へ出た分だけなめらかに追い、Soft Zone の外へは出さない（Cinemachine の Dead Zone・Soft Zone と同じ）
+// 2つの範囲は、ワールドの長さ（m）か画面の割合で測る（Zone Space）
 
 /// <summary>
 /// 追い方（focus をどこに置くか）。Inspector では、選んだ追い方の値だけが出る
@@ -19,12 +21,20 @@ enum class CameraFollowMode {
 };
 
 /// <summary>
-/// カメラを動かす面。Offset・Dead Zone・Max Lag・Look Ahead の X・Y は、下の「横」と「縦」の向きになる
+/// カメラを動かす面。Offset・Look Ahead と、World の Dead Zone・Soft Zone の X・Y は、下の「横」と「縦」の向きになる
 /// </summary>
 enum class CameraFollowPlane {
 	XY,   // ワールドの X・Y（横から見るゲーム）。横 = X・縦 = Y
 	XZ,   // 地面の X・Z（見下ろしのゲーム）。横 = カメラの右、縦 = カメラの前を地面に寝かせた向き（カメラが回ると一緒に回る）
 	View, // カメラから見た位置を保つ（どの向きのカメラでも）。横 = カメラの右、縦 = カメラの上。奥行きも、追いかけ始めの長さに保つ
+};
+
+/// <summary>
+/// Dead Zone・Soft Zone を何で測るか。Inspector では、選んだ方の値だけが出る
+/// </summary>
+enum class CameraFollowZoneSpace {
+	World,  // ワールドの長さ（m）。Plane の面の上で、画面の真ん中から横・縦に何 m か（カメラが寄っても引いても、追い始める距離は同じ）
+	Screen, // 画面の割合。真ん中が 0、端が ±1（Camera Look At の Screen Position と同じ）。カメラが引くと、ワールドでは広がる
 };
 
 /// <summary>
@@ -37,10 +47,16 @@ struct CameraFollowComponent {
 	CameraFollowPlane plane = CameraFollowPlane::XY;     // カメラを動かす面
 	CameraFollowMode mode = CameraFollowMode::LookAhead; // 追い方
 	Vector2 offset = {0.0f, 1.5f};                       // 追う物から、画面の真ん中をどれだけずらすか（m。XY で Y を上げると、足元が広く見える）
-	Vector2 deadZone = {0.5f, 1.5f};                     // 遊び（m）。画面の真ん中から横・縦にこの範囲で動いても、カメラは動かない
-	bool groundSnapY = true;              // true：追う物が地面にいる間は、縦の遊びを使わずに合わせる（XY のとき。跳んでも画面は揺れず、段に乗ると上がる）。追う物の Rigidbody・Character Controller が地面にいるかを見る（MotionQuery::IsGrounded）
-	float smoothTime = 0.15f;             // 追いつくまでの時間の目安（秒。0 ならすぐ合わせる）
-	Vector2 maxLag = {6.0f, 4.0f};        // 遅れの上限（m）。focus と画面の真ん中が、これより離れない（速く動いても画面から出ないように）
+	// --- 遊び（Dead Zone）と、focus を出さない範囲（Soft Zone）。どちらも画面の真ん中から横・縦への半分の幅 ---
+	CameraFollowZoneSpace zoneSpace = CameraFollowZoneSpace::World; // 2つの範囲を何で測るか
+	Vector2 deadZone = {0.5f, 1.5f};                                // World の遊び（m）。focus がこの中で動いても、カメラは動かない
+	Vector2 softZone = {6.0f, 4.0f};                                // World の Soft Zone（m）。focus はこの外へ出ない（速く動いても画面から出ないように）。Dead Zone より小さい軸は Dead Zone と同じ
+	Vector2 screenDeadZone = {0.1f, 0.1f};                          // Screen の遊び（画面の割合。端が 1）
+	Vector2 screenSoftZone = {0.8f, 0.8f};                          // Screen の Soft Zone（画面の割合。1 より小さいと、focus はいつも画面の中）
+	bool groundSnapY = true;  // true：追う物が地面にいる間は、縦の遊びを使わずに合わせる（XY のとき。跳んでも画面は揺れず、段に乗ると上がる）。追う物の Rigidbody・Character Controller が地面にいるかを見る（MotionQuery::IsGrounded）
+	float smoothTime = 0.15f; // 遊びの外へ出たとき、追いつくまでの時間の目安（秒。0 ならすぐ合わせる）
+	bool showGizmo = true;    // Dead Zone・Soft Zone・focus・Bounds の線を出す（エディタだけ。Screen の範囲は Game ビューだけ。View メニューの Camera Follow Zones で全部まとめて消せる）
+	// --- ステージの端 ---
 	bool useBounds = false;               // true：画面の端が boundsMin〜boundsMax の外を写さない（ステージの端でカメラが止まる。XY・XZ のとき）
 	Vector2 boundsMin = {-10.0f, -10.0f}; // 写してよい範囲の左下（XY はワールドの X・Y、XZ はワールドの X・Z。追う物の奥行き・高さで測る）
 	Vector2 boundsMax = {100.0f, 30.0f};  // 写してよい範囲の右上

@@ -10,7 +10,7 @@
 |---|---|---|
 | Playback | Play On Start・Looping・Duration・Stop Action | Play で流し始める（外すと `ParticleSystem::Play` まで出さない）／Duration 秒ごとにくり返す（Burst もまた）／1回の長さ／出し終わって（Looping でなく Duration が過ぎた・`Stop` を呼んだ）粒が全部消えたらすること（`None`：何もしない・`Destroy`：この Entity を子ごと消す） |
 | Emission | Rate Over Time・Burst Count・Max Particles | 1秒に出す数／1回の始めにまとめて出す数／同時に出ている数の上限（4096 まで。いっぱいの間は出さない） |
-| Shape | Shape・Radius・Cone Angle・Box Size・From Surface | Point（全部の向き）・Sphere・Circle（**XY の面**。横から見る輪）・Cone（+Y へ開く）・Box。From Surface で表面（縁）から。向きは真ん中から外へ。Entity の向きで回る |
+| Shape | Shape・Radius・Cone Angle・Box Size・From Surface・Show Gizmo | Point（全部の向き）・Sphere・Circle（**XY の面**。横から見る輪）・Cone（+Y へ開く）・Box。From Surface で表面（縁）から。向きは真ん中から外へ。Entity の向きで回る。Show Gizmo で形を Scene ビューに桃色の線で出す（Cone は縁から出た粒の開く向きも。View → Gizmos → Particle Shapes で全部まとめて消せる） |
 | Start (Min, Max) | Lifetime・Speed・Size・Color A・Color B・Intensity | 左と右の間でランダム（Size は m で板の1辺）。色は A と B の間。Intensity は全部の粒の明るさの倍率（1 より大きいとブルームで光る） |
 | Over Lifetime | Gravity・Drag・End Size Rate・End Color・Ease・Converge・Converge Ease | 加速（m/s²）／1秒あたりの減速の割合／最後の大きさ（初めに掛ける。0 で縮んで消える）／最後の色（初めに掛ける。A 0 でフェードアウト）／大きさと色の変わり方／中心（Entity の位置）へ集まり、寿命の終わりにちょうど着く（Speed・Gravity・Drag は使わない。From Surface と合わせると輪・球の表面から吸い込まれる）／集まり方（InQuad：だんだん速く） |
 | Rotation | Start Rotation・Angular Velocity・Random Spin Direction・Align To Velocity・Stretch | 画面の上で板を回す（度。**正で左回り**＝Transform の Rotation Z と同じ）。初めの角度・回る速さ（度/秒）は左と右の間でランダム／半分の粒を逆に／絵の右（+X）を進む向きへ／絵の横だけ伸ばす（Align と合わせて線） |

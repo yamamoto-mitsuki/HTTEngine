@@ -42,14 +42,18 @@ void MoveCameraUp(float deltaTime) {
 | Mode | 追い方。`Center`（追う物を真ん中に）／`LookAhead`（追う物の速さ × Look Ahead Time だけ先を真ん中に。止まると戻る）。選んだ追い方の値だけが出る |
 | Look Ahead Time・Max・Smooth Time（LookAhead のとき） | 何秒先を見せるか（X 0.4・Y 0。XY で Y を入れると跳ぶたびに上下に揺れる）・先読みの上限（m）・先読みが変わるまでの時間（指数補間） |
 | Offset | 追う物から、画面の真ん中をどれだけずらすか（m）。XY で Y を上げると足元が広く見える |
-| Dead Zone | 遊び（m）。真ん中から横・縦にこの範囲で動いても、カメラは動かない |
+| Zone Space | Dead Zone・Soft Zone を何で測るか。`World`（Plane の面の上の長さ m。カメラが寄っても引いても、追い始める距離は同じ）／`Screen`（画面の割合。真ん中 0・端 1。Camera Look At の Screen Position と同じ測り方。カメラが引くとワールドでは広がる）。選んだ方の値だけが出る |
+| Dead Zone | 遊び。focus（追う物 ＋ Offset ＋ 先読み）が、画面の真ん中から横・縦にこの範囲で動いても、カメラは動かない |
+| Soft Zone | focus を出さない範囲。Dead Zone の外ではなめらかに（Smooth Time）追い、ここに着いたらすぐ付いていく（速く動いても画面から出ない。前の Max Lag）。Dead Zone より小さい軸は Dead Zone と同じ |
 | Ground Snap Y | Plane が XY のとき。追う物（Rigidbody か Character Controller）が地面にいる間は、縦の遊びを使わずに合わせる。跳んでも画面は揺れず、段に乗ると上がる |
-| Smooth Time | 追いつくまでの時間の目安（秒）。走っている間は「速さ × Smooth Time」くらい遅れる |
-| Max Lag | 遅れの上限（m）。速く動いても、追う物が画面から出ない |
+| Smooth Time | focus が Dead Zone の外へ出たとき、追いつくまでの時間の目安（秒）。走っている間は「速さ × Smooth Time」くらい遅れる |
+| Show Gizmo | 線を出す（エディタだけ）。緑：Dead Zone／青：Soft Zone／黄：focus の十字と、追う物からの線／赤：Bounds。World の範囲・focus・Bounds は Scene・Game ビュー、Screen の範囲は Game ビューだけ（今写しているカメラの物だけ）。View → Gizmos → Camera Follow Zones で全部まとめて消せる |
 | Bounds（Use Bounds・Min・Max） | 画面の端が Min〜Max の外を写さない（ステージの端で止まる）。XY はワールドの X・Y で追う物の奥行きで測る。XZ はワールドの X・Z で追う物の高さで測る（カメラが回っても範囲は回らない）。View には無い |
 
 - 横・縦の向きは、XY はワールドの X・Y。XZ はカメラの右とカメラの前を地面に寝かせた向き、View はカメラの右・上で、カメラの Transform を回すと毎フレーム付いてくる（追う物のまわりを回る動きになる）。
-- Camera Follow が読む向きは Transform の向きだけ。Camera Look At の向きは読まない。
+- Camera Follow が読む向きは Transform の向きだけ。Camera Look At の向きは読まない（Screen の範囲も、Transform の向きと Camera の Fov Y で測る）。
+- 範囲の線は focus を通る面の上に描くので、Game ビューでは画面の上の範囲にぴったり重なる（Screen なら画面の四角、XZ の World なら地面の台形）。
+- 「画面の真ん中」は、カメラの前の向きが追う物を通る面（XY：追う物の奥行き、XZ：追う物の高さ）と交わる点。傾けたカメラでも、追い始め・Ground Snap Y で focus は画面の真ん中に来る。Bounds の画面の端も、画面の四隅をその面に当てて測る（下へ傾けると、下の方が遠くまで写る）。
 - 動かすのは物理の後・`CameraSystem::Update` の前（[1フレームの順番](01-Overview.md#1フレームの順番) の 5）なので、追う物と1フレームずれない。
 - 自分で動かしたいカメラ（演出など）は、Camera Follow を外す（Enabled）か、付けずに SYSTEM・Script で Transform を動かす（上の例）。
 

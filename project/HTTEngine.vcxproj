@@ -276,6 +276,7 @@
     <ClCompile Include="HTTEngine\Math\Vector4.cpp" />
     <ClCompile Include="HTTEngine\Scene\SceneManager.cpp" />
     <ClCompile Include="HTTEngine\String\ConvertString.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Effects\ParticleSpawn.cpp" />
     <ClCompile Include="HTTEngine\Systems\Effects\ParticleSystem.cpp" />
     <ClCompile Include="HTTEngine\Systems\Physics\CharacterControllerSystem.cpp" />
     <ClCompile Include="HTTEngine\Systems\Physics\PhysicsSystem.cpp" />
@@ -565,6 +566,7 @@
     <ClInclude Include="HTTEngine\Scene\IScene.h" />
     <ClInclude Include="HTTEngine\Scene\SceneManager.h" />
     <ClInclude Include="HTTEngine\String\ConvertString.h" />
+    <ClInclude Include="HTTEngine\Systems\Effects\ParticleSpawn.h" />
     <ClInclude Include="HTTEngine\Systems\Effects\ParticleSystem.h" />
     <ClInclude Include="HTTEngine\Systems\Physics\CharacterControllerSystem.h" />
     <ClInclude Include="HTTEngine\Systems\Physics\PhysicsSystem.h" />

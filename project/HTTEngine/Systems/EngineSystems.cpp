@@ -283,6 +283,7 @@ void EngineSystems::Draw(Camera* gameCamera, IBLEnvironment* gameEnvironment) {
 	CharacterControllerSystem::DrawGizmos(gameCamera); // 上れる段の高さ・地面の向き（Collider のギズモと一緒に出す・消す）
 	WindZoneSystem::DrawGizmos(gameCamera); // 風の範囲と向き（Collider のギズモと一緒に出す・消す）
 	DecalRenderSystem::DrawGizmos(gameCamera); // デカールの箱（Scene ビューだけ）
+	ParticleSystem::DrawGizmos(gameCamera);    // 粒の出る形（Scene ビューだけ）
 	HitSystem::DrawGizmos(gameCamera);      // 攻撃の形（段階で色が変わる）・ジャスト判定の範囲・Hurtbox
 	AnimationSystem::DrawGizmos(gameCamera);
 #endif

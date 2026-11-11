@@ -105,6 +105,7 @@ enum class DrawLayer {
 	Default,     // ふつうの物（いつも描く）
 	EditorGrid,  // エディタのグリッド（Scene・Game ビューで別々に切れる。View メニュー）
 	EditorGizmo, // エディタのギズモ（Scene ビューだけ描く。カメラのアイコンなど、ゲームの絵に入れない物）
+	GameViewGuide, // エディタの線のうち、Game ビューだけに描く物（Camera Follow の Screen の範囲など。ゲームのカメラから見た画面の四角なので、Scene ビューのカメラから見ても意味がない）
 };
 
 /// <summary>

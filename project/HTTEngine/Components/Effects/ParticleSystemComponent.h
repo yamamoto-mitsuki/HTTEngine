@@ -71,6 +71,7 @@ struct ParticleSystemComponent {
 	float coneAngle = 25.0f;              // Cone の開き（度。真上から何度まで）
 	Vector3 boxSize = {1.0f, 1.0f, 1.0f}; // Box の大きさ（m）
 	bool fromSurface = false;             // 形の表面（縁）から出す（円の輪から飛び散る）
+	bool showGizmo = true;                // Scene ビューに、形を線で出す（エディタだけ。View メニューの Particle Shapes で全部まとめて消せる）
 
 	// ===== 粒の初めの値（Min〜Max の乱数）=====
 	Vector2 lifetime = {0.5f, 1.0f};           // 消えるまでの秒

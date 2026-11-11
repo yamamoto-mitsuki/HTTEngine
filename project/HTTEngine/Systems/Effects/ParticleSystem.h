@@ -3,6 +3,9 @@
 #include "HTTEngine/Core/Handle.h"
 #include "HTTEngine/ECS/Entity.h"
 
+// 前方宣言
+class Camera;
+
 /// <summary>
 /// ParticleSystemComponent を持つEntityの粒を出し・動かし・描く
 /// <para>粒は実行中だけの状態（保存しない。Play / Stop で消える。停止中は持たない。ただし Inspector の Preview 中の1つだけは動かす）</para>
@@ -27,6 +30,12 @@ public:
 
 	// 粒の描画リクエストを積む（WindowManager::DrawAll から。粒はどのビューでもカメラの方を向く）
 	static void Draw();
+
+	// ===== エディタの線 =====
+	// 粒の出る形を線で描く（Scene ビューだけ。Show Gizmo を入れた物）
+	static void DrawGizmos(Camera* camera);
+	// 線を出すか（メニューバーの View から、全部まとめて切り替える）
+	static bool& GetShowGizmos();
 
 	// ===== ゲームから（Script・SYSTEM の中で）使う =====
 

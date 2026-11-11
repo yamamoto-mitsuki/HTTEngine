@@ -18,6 +18,7 @@
 
 #include "HTTEngine/Systems/Animation/AnimationSystem.h"
 #include "HTTEngine/Systems/Combat/HitSystem.h"
+#include "HTTEngine/Systems/Effects/ParticleSystem.h"
 #include "HTTEngine/Systems/Physics/CollisionSystem.h"
 #include "HTTEngine/Diagnostics/LogManager.h"
 #include "HTTEngine/Diagnostics/HTTAssert.h"
@@ -129,6 +130,8 @@ void DrawViewMenu() {
 		ImGui::MenuItem("Light Ranges", nullptr, &lightGizmo.showRange);
 		ImGui::MenuItem("Camera Icons", nullptr, &CameraGizmo::GetShowIcons());
 		ImGui::MenuItem("Camera Paths", nullptr, &CameraGizmo::GetShowPaths());
+		ImGui::MenuItem("Camera Follow Zones", nullptr, &CameraGizmo::GetShowFollowZones()); // Dead Zone・Soft Zone（Game ビューにも出る。1つずつは Inspector の Show Gizmo）
+		ImGui::MenuItem("Particle Shapes", nullptr, &ParticleSystem::GetShowGizmos());      // 粒の出る形（Scene ビューだけ。1つずつは Inspector の Show Gizmo）
 		ImGui::MenuItem("Colliders", nullptr, &CollisionSystem::GetShowGizmos());
 		ImGui::MenuItem("Hit Shapes", nullptr, &HitSystem::GetShowGizmos()); // 攻撃の形・ジャスト判定の範囲・Hurtbox
 		ImGui::MenuItem("Skeletons", nullptr, &AnimationSystem::GetShowGizmos());

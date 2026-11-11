@@ -1,0 +1,123 @@
+{
+	"version": 5,
+	"entities": [
+		{
+			"id": 1,
+			"name": "GameCamera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [0.0, 3.0, -12.0], "rotation": [8.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]},
+				"Camera": {"fovY": 50.0, "nearZ": 0.1, "farZ": 1000.0, "priority": 0, "blendStyle": "Cut", "blendTime": 1.0, "blendEase": "InOutCubic", "timeMode": "Game"},
+				"Camera Follow": {
+					"enabled": true,
+					"target": 15981731572122588503,
+					"plane": "XY",
+					"mode": "Center",
+					"offset": [0.0, 1.0],
+					"zoneSpace": "Screen",
+					"screenDeadZone": [0.2, 0.25],
+					"screenSoftZone": [0.6, 0.7],
+					"groundSnapY": false,
+					"smoothTime": 0.4,
+					"showGizmo": true,
+					"useBounds": true,
+					"boundsMin": [-14.0, -1.0],
+					"boundsMax": [14.0, 12.0]
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Directional Light",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [0.0, 3.0, 0.0], "rotation": [50.0, -30.0, 0.0], "scale": [1.0, 1.0, 1.0]},
+				"Directional Light": {"color": [1.0, 1.0, 1.0], "intensity": 1.0}
+			}
+		},
+		{
+			"id": 3,
+			"name": "Ground",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [0.0, -0.05, 2.0], "rotation": [0.0, 0.0, 0.0], "scale": [28.0, 0.1, 12.0]},
+				"Collider": {"enabled": true, "isTrigger": false, "shape": "Box", "center": [0.0, 0.0, 0.0], "size": [1.0, 1.0, 1.0]},
+				"Primitive Renderer": {"enabled": true, "shape": "Box", "color": [0.45, 0.47, 0.5, 1.0]}
+			}
+		},
+		{
+			"id": 4,
+			"name": "Step",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [6.0, 1.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [4.0, 2.0, 3.0]},
+				"Collider": {"enabled": true, "isTrigger": false, "shape": "Box", "center": [0.0, 0.0, 0.0], "size": [1.0, 1.0, 1.0]},
+				"Primitive Renderer": {"enabled": true, "shape": "Box", "color": [0.9, 0.5, 0.2, 1.0]}
+			}
+		},
+		{
+			"id": 15981731572122588503,
+			"name": "Player",
+			"parent": 0,
+			"active": true,
+			"prefab": "resources/prefabs/Player.prefab",
+			"components": {
+				"Transform": {"translation": [0.0, 1.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]}
+			}
+		},
+		{
+			"id": 10,
+			"name": "Particle Point",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [-8.0, 1.5, 4.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]},
+				"Particle System": {"enabled": true, "rateOverTime": 20.0, "shape": "Point", "lifetime": [0.6, 1.0], "speed": [0.5, 1.0], "size": [0.08, 0.12], "colorA": [1.0, 0.8, 0.3, 1.0], "colorB": [1.0, 0.5, 0.2, 1.0]}
+			}
+		},
+		{
+			"id": 11,
+			"name": "Particle Sphere",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [-4.0, 1.5, 4.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]},
+				"Particle System": {"enabled": true, "rateOverTime": 20.0, "shape": "Sphere", "radius": 0.8, "lifetime": [0.6, 1.0], "speed": [0.3, 0.6], "size": [0.08, 0.12], "colorA": [0.4, 0.8, 1.0, 1.0], "colorB": [0.6, 0.9, 1.0, 1.0]}
+			}
+		},
+		{
+			"id": 12,
+			"name": "Particle Circle",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [0.0, 1.5, 4.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]},
+				"Particle System": {"enabled": true, "rateOverTime": 30.0, "shape": "Circle", "radius": 1.0, "fromSurface": true, "lifetime": [0.6, 1.0], "speed": [0.5, 1.0], "size": [0.08, 0.12], "colorA": [0.5, 1.0, 0.5, 1.0], "colorB": [0.8, 1.0, 0.6, 1.0]}
+			}
+		},
+		{
+			"id": 13,
+			"name": "Particle Cone",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [4.0, 0.2, 4.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]},
+				"Particle System": {"enabled": true, "rateOverTime": 30.0, "shape": "Cone", "radius": 0.4, "coneAngle": 30.0, "lifetime": [0.8, 1.2], "speed": [1.5, 2.0], "size": [0.08, 0.12], "colorA": [1.0, 0.4, 0.3, 1.0], "colorB": [1.0, 0.7, 0.3, 1.0]}
+			}
+		},
+		{
+			"id": 14,
+			"name": "Particle Box (Rotated)",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {"translation": [8.0, 1.5, 4.0], "rotation": [0.0, 30.0, 15.0], "scale": [1.0, 1.0, 1.0]},
+				"Particle System": {"enabled": true, "rateOverTime": 30.0, "shape": "Box", "boxSize": [2.0, 1.0, 1.0], "fromSurface": true, "lifetime": [0.6, 1.0], "speed": [0.2, 0.4], "size": [0.08, 0.12], "colorA": [0.9, 0.5, 1.0, 1.0], "colorB": [1.0, 0.7, 1.0, 1.0]}
+			}
+		}
+	]
+}

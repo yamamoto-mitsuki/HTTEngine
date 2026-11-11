@@ -28,10 +28,12 @@
 					"plane": "View",
 					"mode": "Center",
 					"offset": [0.0, 1.5],
+					"zoneSpace": "World",
 					"deadZone": [0.5, 0.0],
+					"softZone": [6.0, 4.0],
 					"groundSnapY": true,
 					"smoothTime": 0.15,
-					"maxLag": [6.0, 4.0],
+					"showGizmo": true,
 					"useBounds": false,
 					"boundsMin": [-10.0, -10.0],
 					"boundsMax": [100.0, 30.0]

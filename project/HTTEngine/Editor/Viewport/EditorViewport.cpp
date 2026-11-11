@@ -103,7 +103,7 @@ void EditorViewport::Render(const Camera* gameCamera, const std::wstring& window
 	// 霧・被写界深度も Scene だけ切れる（遠くの物を霧やぼけに隠さずに置きたいとき）。グリッドは Scene・Game 別々に切れる
 	// 背景は Skybox を切ったらエディタのグラデーション（Scene ビューはカメラの Background を見ない。Unity の Scene ビューと同じ）
 	const SceneBackground sceneBackground = flags.sceneSkybox ? SceneBackground{} : MakeSceneViewBackground();
-	const SceneViewOptions sceneOptions = {.fog = flags.sceneFog, .depthOfField = flags.sceneDepthOfField, .editorGrid = flags.sceneGrid, .editorGizmo = true, .sceneHidden = false, .cameraVolume = false, .background = sceneBackground};
+	const SceneViewOptions sceneOptions = {.fog = flags.sceneFog, .depthOfField = flags.sceneDepthOfField, .editorGrid = flags.sceneGrid, .editorGizmo = true, .gameViewGuide = false, .sceneHidden = false, .cameraVolume = false, .background = sceneBackground};
 	const SceneViewOptions gameOptions = {.editorGrid = flags.gameGrid}; // 書かない物は初期値の true（霧・被写界深度はいつも掛ける）
 	SceneRenderer::RenderToTexture(debugCamera_.get(), sceneRT, windowTitle, sceneMode, sceneOptions); // Scene：レンズ以外
 	SceneRenderer::RenderToTexture(gameCamera, gameRT, windowTitle, PostEffectMode::All, gameOptions); // Game：全部
