@@ -1,7 +1,0 @@
-{
-	"settings": {"length": 0.25},
-	"tracks": [
-		{"type": "TimelineTweenTrack", "settings": {"name": "Alpha", "target": "", "component": "Alpha Group", "property": "alpha"},
-		 "clips": [{"start": 0.0, "duration": 0.25, "from": {"mode": "Multiply", "value": [0.0, 0.0, 0.0, 0.0]}, "to": {"mode": "Multiply", "value": [1.0, 0.0, 0.0, 0.0]}, "ease": {"keys":[{"time":0.0,"value":0.0,"interp":"Bezier","handleMode":"Free","inHandle":[0.0,0.0],"outHandle":[0.33333334,0.9999441]},{"time":1.0,"value":1.0,"interp":"Bezier","handleMode":"Free","inHandle":[-0.33333334,6.1035156e-05],"outHandle":[0.0,0.0]}]}}]}
-	]
-}

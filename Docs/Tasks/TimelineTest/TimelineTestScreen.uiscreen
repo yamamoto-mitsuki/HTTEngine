@@ -1,9 +1,0 @@
-{
-	"version": 1,
-	"entities": [
-		{"id": 200, "name": "TimelineTestScreen", "parent": 0, "active": true, "components": {"Transform": {"translation": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]}, "UI Screen": {"pauseGame": true, "showMotion": "None", "hideMotion": "None"}, "Timeline": {"timeline": "resources/timelines/TimelineTest.timeline", "playOnStart": true, "loop": true, "timeMode": "Real"}, "TimelineTesterScreen": {"Enabled": true}}},
-		{"id": 201, "name": "Title", "parent": 200, "active": true, "components": {"Transform": {"translation": [0.0, 0.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]}, "Image": {"color": [1.0, 1.0, 0.4, 1.0], "size": [160.0, 80.0]}}},
-		{"id": 202, "name": "Label", "parent": 200, "active": true, "components": {"Transform": {"translation": [0.0, -80.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]}, "Text": {"text": "UI Screen（7 で閉じる）", "fontSize": 24.0}}},
-		{"id": 203, "name": "Shape", "parent": 200, "active": true, "components": {"Transform": {"translation": [0.0, -130.0, 0.0], "rotation": [0.0, 0.0, 0.0], "scale": [1.0, 1.0, 1.0]}, "Vector Shape": {"shape": "Rectangle", "size": [300.0, 16.0], "gauge": "Linear", "gaugeAmount": 0.0}}}
-	]
-}

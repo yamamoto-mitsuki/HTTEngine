@@ -7,92 +7,17 @@
     <Filter Include="Source\Scripts">
       <UniqueIdentifier>{7d4e9b12-2a6c-4f83-8e51-5b9c0a3d6e24}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source\AttackParts">
-      <UniqueIdentifier>{8d4fdb17-5795-4708-aa13-c2c7dd01a5d6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source\Scripts\Player">
       <UniqueIdentifier>{b1f6c3a2-9d47-4e58-a6c0-3e7f52d81c94}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Source\AttackParts\ChaseTarget.cpp">
-      <Filter>Source\AttackParts</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\AttackParts\SpinAttack.cpp">
-      <Filter>Source\AttackParts</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Scripts\CharacterKeyboardMover.cpp">
-      <Filter>Source\Scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Scripts\ClipCycler.cpp">
-      <Filter>Source\Scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Scripts\HitboxCycler.cpp">
-      <Filter>Source\Scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Scripts\HitTestPlayer.cpp">
-      <Filter>Source\Scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Scripts\ListFieldSample.cpp">
-      <Filter>Source\Scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Scripts\WorldFollowSamples.cpp">
-      <Filter>Source\Scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Scripts\TestBullet.cpp">
-      <Filter>Source\Scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Scripts\CursorTrailSamples.cpp">
-      <Filter>Source\Scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Scripts\BurstEffectSamples.cpp">
-      <Filter>Source\Scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Scripts\TriggerCameraSamples.cpp">
-      <Filter>Source\Scripts</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Scripts\OrbitCameraSamples.cpp">
-      <Filter>Source\Scripts</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Scripts\Player\PlayerController.cpp">
       <Filter>Source\Scripts\Player</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Scripts\CharacterKeyboardMover.h">
-      <Filter>Source\Scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Scripts\ClipCycler.h">
-      <Filter>Source\Scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Scripts\HitboxCycler.h">
-      <Filter>Source\Scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Scripts\HitTestPlayer.h">
-      <Filter>Source\Scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Scripts\ListFieldSample.h">
-      <Filter>Source\Scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Scripts\WorldFollowSamples.h">
-      <Filter>Source\Scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Scripts\TestBullet.h">
-      <Filter>Source\Scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Scripts\CursorTrailSamples.h">
-      <Filter>Source\Scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Scripts\BurstEffectSamples.h">
-      <Filter>Source\Scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Scripts\TriggerCameraSamples.h">
-      <Filter>Source\Scripts</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Scripts\OrbitCameraSamples.h">
-      <Filter>Source\Scripts</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Scripts\Player\PlayerController.h">
       <Filter>Source\Scripts\Player</Filter>
     </ClInclude>

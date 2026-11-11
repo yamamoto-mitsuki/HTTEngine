@@ -27,33 +27,9 @@
   <!-- ===== ソースファイル ===== -->
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Source\AttackParts\ChaseTarget.cpp" />
-    <ClCompile Include="Source\AttackParts\SpinAttack.cpp" />
-    <ClCompile Include="Source\Scripts\CharacterKeyboardMover.cpp" />
-    <ClCompile Include="Source\Scripts\ClipCycler.cpp" />
-    <ClCompile Include="Source\Scripts\HitboxCycler.cpp" />
-    <ClCompile Include="Source\Scripts\HitTestPlayer.cpp" />
-    <ClCompile Include="Source\Scripts\ListFieldSample.cpp" />
-    <ClCompile Include="Source\Scripts\WorldFollowSamples.cpp" />
-    <ClCompile Include="Source\Scripts\TestBullet.cpp" />
-    <ClCompile Include="Source\Scripts\CursorTrailSamples.cpp" />
-    <ClCompile Include="Source\Scripts\BurstEffectSamples.cpp" />
-    <ClCompile Include="Source\Scripts\TriggerCameraSamples.cpp" />
-    <ClCompile Include="Source\Scripts\OrbitCameraSamples.cpp" />
     <ClCompile Include="Source\Scripts\Player\PlayerController.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Scripts\CharacterKeyboardMover.h" />
-    <ClInclude Include="Source\Scripts\ClipCycler.h" />
-    <ClInclude Include="Source\Scripts\HitboxCycler.h" />
-    <ClInclude Include="Source\Scripts\HitTestPlayer.h" />
-    <ClInclude Include="Source\Scripts\ListFieldSample.h" />
-    <ClInclude Include="Source\Scripts\WorldFollowSamples.h" />
-    <ClInclude Include="Source\Scripts\TestBullet.h" />
-    <ClInclude Include="Source\Scripts\CursorTrailSamples.h" />
-    <ClInclude Include="Source\Scripts\BurstEffectSamples.h" />
-    <ClInclude Include="Source\Scripts\TriggerCameraSamples.h" />
-    <ClInclude Include="Source\Scripts\OrbitCameraSamples.h" />
     <ClInclude Include="Source\Scripts\Player\PlayerController.h" />
   </ItemGroup>
 

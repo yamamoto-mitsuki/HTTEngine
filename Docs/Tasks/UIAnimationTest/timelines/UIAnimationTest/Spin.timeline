@@ -1,7 +1,0 @@
-{
-	"settings": {"length": 2.0},
-	"tracks": [
-		{"type": "TimelineValueTrack", "settings": {"name": "Spin", "target": "", "component": "Transform", "property": "rotation"},
-		 "clips": [{"start": 0.0, "duration": 2.0, "curves": {"z": {"keys": [{"time": 0.0, "value": 0.0, "interp": "Linear"}, {"time": 2.0, "value": -360.0}]}}}]}
-	]
-}
