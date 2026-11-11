@@ -140,7 +140,7 @@ void HitboxTelegraphSystem::Initialize() {
 	// Hitbox Telegraph の置き場所・保存・Inspector を登録する（見せ方は DescribeHitboxTelegraph 1つ）
 	EntityManager::RegisterComponent<HitboxTelegraphComponent>();
 	ComponentSerializer::Register<HitboxTelegraphComponent>("Hitbox Telegraph", &DescribeHitboxTelegraph);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<HitboxTelegraphComponent>>("Hitbox Telegraph", "Combat", &DescribeHitboxTelegraph));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<HitboxTelegraphComponent>>("Hitbox Telegraph", "Combat", &DescribeHitboxTelegraph, "攻撃の予告を床に描く（Hitbox が Warning の間）。形は Hitbox の形、見た目はマテリアルで決める。Hitbox と同じ Entity に付ける"));
 }
 
 void HitboxTelegraphSystem::Release() { state.reset(); }

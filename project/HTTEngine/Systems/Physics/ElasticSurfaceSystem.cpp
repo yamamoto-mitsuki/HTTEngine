@@ -340,7 +340,7 @@ void ElasticSurfaceSystem::Initialize() {
 	// Elastic Surface の置き場所・保存・Inspector を登録する。見せ方は DescribeElasticSurface 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<ElasticSurfaceComponent>();
 	ComponentSerializer::Register<ElasticSurfaceComponent>("Elastic Surface", &DescribeElasticSurface);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<ElasticSurfaceComponent>>("Elastic Surface", "Physics", &DescribeElasticSurface));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<ElasticSurfaceComponent>>("Elastic Surface", "Physics", &DescribeElasticSurface, "弾む面（トランポリン）。Rigidbody を付けた物が乗ると沈んで、押し返して跳ねさせる"));
 }
 
 // ===== 解放 =====

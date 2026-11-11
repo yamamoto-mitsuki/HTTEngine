@@ -179,7 +179,7 @@ void AnimationSystem::Initialize() {
 	// Animatorの置き場所・保存・保存・Inspectorを登録
 	EntityManager::RegisterComponent<AnimatorComponent>();
 	ComponentSerializer::Register<AnimatorComponent>("Animator", &DescribeAnimator);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<AnimatorComponent>>("Animator", "Animation", &DescribeAnimator));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<AnimatorComponent>>("Animator", "Animation", &DescribeAnimator, "同じ Entity の Model Renderer のモデルを、アニメーションのファイルのクリップで動かす（再生するクリップは名前で選ぶ）"));
 }
 
 void AnimationSystem::Release() { state.reset(); }

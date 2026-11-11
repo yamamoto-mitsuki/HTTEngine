@@ -137,7 +137,7 @@ void DescribeTriggerActivator(ComponentUI& ui, TriggerActivatorComponent& value)
 	ui.Separator("Source");
 	ui.Field(
 	    "Source###source", value.source,
-	    Tip("誰が入ったら反応するか。FollowTarget：カメラが追っている物（プレイヤー） / Entity：Source Entity に入れた物 / AnyRigidbody：Rigidbody を付けた物なら、どれでも / AnyMover：Rigidbody か Character Controller を付けた物なら、どれでも"));
+	    Tip("誰が入ったら反応するか"));
 	// --- 選んだ相手の値だけを見せる（保存も、使っている方だけが書かれる。Camera Follow の Mode と同じ）---
 	switch (value.source) {
 	case TriggerSource::FollowTarget:
@@ -151,8 +151,8 @@ void DescribeTriggerActivator(ComponentUI& ui, TriggerActivatorComponent& value)
 	}
 	// ===== どうするか =====
 	ui.Separator("Action");
-	ui.Field("On Enter###onEnter", value.onEnter, Tip("入ったとき。Show：出す / Hide：消す / None：何もしない"));
-	ui.Field("On Exit###onExit", value.onExit, Tip("出たとき。Show：出す / Hide：消す / None：何もしない（出したままにする）"));
+	ui.Field("On Enter###onEnter", value.onEnter, Tip("入ったときに、Target をどうするか"));
+	ui.Field("On Exit###onExit", value.onExit, Tip("出たときに、Target をどうするか（None なら出したまま）"));
 	ui.Field("Once###once", value.once, Tip("入ったとき・出たときの動きを、それぞれ1回だけにする（一度読んだ説明は、もう出さない）"));
 	ui.Field("Hide On Start###hideOnStart", value.hideOnStart, Tip("再生を始めたら、すぐ Target を消す（エディタでは見えたまま置ける）。最初から出しておいて、出たら消すなら外す"));
 	// ===== フェード =====
@@ -171,7 +171,7 @@ void TriggerActivatorSystem::Initialize() {
 	// Trigger Activator の置き場所・保存・Inspector を登録する（見せ方は DescribeTriggerActivator 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<TriggerActivatorComponent>();
 	ComponentSerializer::Register<TriggerActivatorComponent>("Trigger Activator", &DescribeTriggerActivator);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<TriggerActivatorComponent>>("Trigger Activator", "Gameplay", &DescribeTriggerActivator));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<TriggerActivatorComponent>>("Trigger Activator", "Gameplay", &DescribeTriggerActivator, "同じ Entity の Collider（Is Trigger）の範囲に入ったら・出たら、Target（別の Entity）を出す・消す（近づくと出る説明・看板）"));
 }
 
 void TriggerActivatorSystem::Release() {} // 持っている物は無い（実行中の値は、全部 Component の中）

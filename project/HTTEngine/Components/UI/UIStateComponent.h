@@ -5,6 +5,7 @@
 
 #include <externals/magic_enum/magic_enum.hpp>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/String/FixedString.h"
 #include "HTTEngine/Time/EngineTime.h"
 
@@ -34,6 +35,18 @@ enum class UIClickAction {
 	CloseOwnScreen, // この要素が入っている画面を消す
 	SwitchScreen,   // この要素が入っている画面を消して、Screen の名前の画面を出す（2つの動きは同時に進む）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(UIClickAction) {
+	using enum UIClickAction;
+	return MakeEnumTips<UIClickAction>({
+	    {None, "何もしない（Script で UIStateSystem::IsClicked を見る）"},
+	    {OpenScreen, "Screen の名前の画面を出す"},
+	    {CloseScreen, "Screen の名前の画面を消す"},
+	    {CloseOwnScreen, "この要素が入っている画面を消す"},
+	    {SwitchScreen, "この要素が入っている画面を消して、Screen の名前の画面を出す（2つの動きは同時に進む）"},
+	});
+}
 
 /// <summary>
 /// 要素の状態で Timeline を再生する（Timeline の対象を空にすると、この Entity 自身を動かす）

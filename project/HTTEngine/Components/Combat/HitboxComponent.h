@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/ECS/Entity.h"
 #include "HTTEngine/ECS/Layers.h"
 #include "HTTEngine/Math/Geometry/HitShape.h"
@@ -20,6 +21,16 @@ enum class HitboxPhase {
 	Warning, // 予告（当たらない。床の予告の図形を出す。Active になる Just Lead Time 秒前から、ジャスト判定の範囲が有効）
 	Active,  // 当たる（Active になるたびに、新しい攻撃の回になる＝当てた相手の記録が空になる）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(HitboxPhase) {
+	using enum HitboxPhase;
+	return MakeEnumTips<HitboxPhase>({
+	    {Off, "何もしない（当たらない。ジャスト判定の範囲も無い）"},
+	    {Warning, "予告（当たらない。床の予告を出す。Active になる Just Lead Time 秒前から、ジャスト判定の範囲が有効）"},
+	    {Active, "当たる（Active になるたびに新しい攻撃の回になり、当てた相手の記録が空になる）"},
+	});
+}
 
 
 /// <summary>

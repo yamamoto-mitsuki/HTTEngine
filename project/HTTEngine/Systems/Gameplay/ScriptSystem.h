@@ -35,8 +35,8 @@ public:
 
 	// ===== 種類の登録（SCRIPT(...) から。ゲームは直接呼ばない）=====
 	// 保存の表（ComponentSerializer）と Inspector の表（ComponentEditorRegistry）にも載せる
-	// category は Add Component のカテゴリ（"Gameplay" か "Gameplay/サブカテゴリ"）
-	static void RegisterType(const char* name, std::type_index type, CreateFunction create, const char* sourceFile, std::string category);
+	// category は Add Component のカテゴリ（"Gameplay" か "Gameplay/サブカテゴリ"）、description は何をする Script かの説明（無ければ nullptr）
+	static void RegisterType(const char* name, std::type_index type, CreateFunction create, const char* sourceFile, std::string category, const char* description);
 
 	// ===== 毎フレーム（SceneManager が再生中だけ呼ぶ）=====
 	// 呼ぶ Script を選ぶ関数（Script が付いている Entity を受け取って、呼ぶなら true）

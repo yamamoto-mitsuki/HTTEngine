@@ -229,6 +229,6 @@ PhysicMaterial PhysicMaterialManager::Combine(const PhysicMaterial& a, const Phy
 void PhysicMaterialManager::Describe(ComponentUI& ui, PhysicMaterial& value) {
 	ui.Field("Friction###friction", value.friction, AtLeast(0.0f).Tip("摩擦（滑っているときに止める強さ。0：止まらない。0.5 くらいで普通、1 でよく止まる。新しいファイル・選んでいない Collider は 0.6）"));
 	ui.Field("Bounciness###bounciness", value.bounciness, Range(0.0f, 1.0f).Tip("跳ね返り（0：ぶつかった向きの速さが0になる 1：同じ速さで跳ね返る）。ゆっくり（1m/s より遅く）ぶつかったときは跳ねない"));
-	ui.Field("Friction Combine###frictionCombine", value.frictionCombine, Tip("相手と摩擦をどう混ぜるか（Average：平均 / Minimum：小さい方 / Multiply：掛け算 / Maximum：大きい方）。2つで違うときは下の方を使う"));
+	ui.Field("Friction Combine###frictionCombine", value.frictionCombine, Tip("相手と摩擦をどう混ぜるか。2つで違うときは、一覧の下の方を使う"));
 	ui.Field("Bounce Combine###bounceCombine", value.bounceCombine, Tip("相手と跳ね返りをどう混ぜるか（よく跳ねるボールは Maximum にすると、何に当たっても跳ねる）"));
 }

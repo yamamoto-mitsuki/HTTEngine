@@ -168,7 +168,7 @@ void ArrowStripSystem::Initialize() {
 	// Arrow Strip の置き場所・保存・Inspector を登録する（見せ方は DescribeArrowStrip 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<ArrowStripComponent>();
 	ComponentSerializer::Register<ArrowStripComponent>("Arrow Strip", &DescribeArrowStrip);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<ArrowStripComponent>>("Arrow Strip", "Rendering3D", &DescribeArrowStrip));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<ArrowStripComponent>>("Arrow Strip", "Rendering3D", &DescribeArrowStrip, "「> > >」のような矢印を、線に沿って並べて流す（進む向き・行き先を見せる）"));
 }
 
 void ArrowStripSystem::Release() { state.reset(); }

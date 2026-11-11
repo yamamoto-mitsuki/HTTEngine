@@ -2,6 +2,7 @@
 #include <set>
 #include <string>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Math/Easing.h"
 #include "HTTEngine/Timeline/TimelineTrack.h"
 
@@ -13,6 +14,16 @@ enum class TimelineCameraExit {
 	Ease, // Exit Time の秒をかけて、通常のカメラへ補間する（Timeline の長さに入る）
 	Hold, // 次のクリップまで、このカメラのまま。後ろにクリップが無ければ TimelineSystem::Stop まで
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(TimelineCameraExit) {
+	using enum TimelineCameraExit;
+	return MakeEnumTips<TimelineCameraExit>({
+	    {Cut, "すぐ通常のカメラへ戻す"},
+	    {Ease, "Exit Time の秒をかけて、通常のカメラへ補間する（Timeline の長さに入る）"},
+	    {Hold, "次のクリップまで、このカメラのまま（後ろにクリップが無ければ TimelineSystem::Stop まで）"},
+	});
+}
 
 /// <summary>
 /// カメラのクリップ。この時間の間に写すカメラを持つ

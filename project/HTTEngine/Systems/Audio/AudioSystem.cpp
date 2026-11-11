@@ -244,7 +244,7 @@ void AudioSystem::Initialize() {
 	// AudioSource の置き場所・保存・Inspector を登録する。見せ方は DescribeAudioSource 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<AudioSourceComponent>();
 	ComponentSerializer::Register<AudioSourceComponent>("Audio Source", &DescribeAudioSource);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<AudioSourceComponent>>("Audio Source", "Audio", &DescribeAudioSource));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<AudioSourceComponent>>("Audio Source", "Audio", &DescribeAudioSource, "音を鳴らす。鳴らすのは Play On Start か、Script の AudioSystem::Play・PlayOneShot"));
 
 	// 種類ごとの音量を Parameters ウィンドウに出す（Save すると Parameters/Audio/Volume.json に残り、次の起動で読む）
 	GlobalVariables* gv = GlobalVariables::GetInstance();

@@ -1,6 +1,8 @@
 #pragma once
 #include <memory>
 
+#include "HTTEngine/Core/EnumTips.h"
+
 /// <summary>
 /// 動くのに使う時間の種類（Component の Time Mode の項目）
 /// </summary>
@@ -8,6 +10,15 @@ enum class TimeMode {
 	Game, // ゲームの時間（スローで遅くなり、ヒットストップ・ポーズで止まる）
 	Real, // 止まらない時間（スロー・ヒットストップ・ポーズの間も同じ速さで動く。エディタの一時停止では止まる）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(TimeMode) {
+	using enum TimeMode;
+	return MakeEnumTips<TimeMode>({
+	    {Game, "ゲームの時間。スローで遅くなり、ヒットストップ・ポーズで止まる"},
+	    {Real, "止まらない時間。スロー・ヒットストップ・ポーズの間も同じ速さで動く（エディタの一時停止では止まる）"},
+	});
+}
 
 
 // 時間計測クラス

@@ -149,10 +149,13 @@ template<class T> class ScriptRegistrar {
 
 public:
 	// subCategory は Add Component の Gameplay の下の分け方（空なら Gameplay の直下）
+	// description は Inspector の見出し・Add Component の項目にマウスを乗せると出る説明（書かなければ nullptr＝説明なし）
 	// where は書かなくてよい。既定の引数は「呼んだ側」で作られるので、SCRIPT(...) を書いたファイルと行が入る
-	ScriptRegistrar(const char* name, const char* subCategory, std::source_location where = std::source_location::current()) {
+	ScriptRegistrar(const char* name, const char* subCategory, const char* description = nullptr, std::source_location where = std::source_location::current()) {
 		const char* sourceFile = where.file_name();
-		ComponentRegistryDetail::AddPending([name, subCategory, sourceFile] { ScriptSystem::RegisterType(name, typeid(T), &Create, sourceFile, MakeGameplayCategory(subCategory)); });
+		ComponentRegistryDetail::AddPending([name, subCategory, description, sourceFile] {
+			ScriptSystem::RegisterType(name, typeid(T), &Create, sourceFile, MakeGameplayCategory(subCategory), description);
+		});
 	}
 
 private:
@@ -162,9 +165,10 @@ private:
 
 
 /// <summary>
-/// Script を登録する。.cpp に SCRIPT(クラス名); か SCRIPT(クラス名, "サブカテゴリ"); と1行書く
+/// Script を登録する。.cpp に SCRIPT(クラス名); か SCRIPT(クラス名, "サブカテゴリ"); か SCRIPT(クラス名, "サブカテゴリ", "説明"); と1行書く
+/// <para>説明は Inspector の見出し・Add Component の項目にマウスを乗せると出る（サブカテゴリ無しで説明だけなら SCRIPT(クラス名, "", "説明")）</para>
 /// <para>Add Component → Gameplay（→ サブカテゴリ）に出る。COMPONENT(...) と同じ所に並ぶ（見分けは「Script」の印と、Inspector の見出しの (Script)）</para>
 /// <para>クラス名がそのまま、Inspector の見出しとシーンファイルの名前になる（変えると、前に保存した物は読めなくなる）</para>
 /// </summary>
-// "" __VA_ARGS__ は、サブカテゴリを書かなければ ""、書けば "" "Player" ＝ "Player"（並んだ文字列はつながる。COMPONENT と同じ）
+// "" __VA_ARGS__ は、サブカテゴリを書かなければ ""、書けば "" "Player" ＝ "Player"（並んだ文字列はつながる。COMPONENT と同じ）。説明はその後ろの引数になる
 #define SCRIPT(Type, ...) inline const ScriptRegistrar<Type> scriptRegistrarOf_##Type(#Type, "" __VA_ARGS__)

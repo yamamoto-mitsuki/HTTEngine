@@ -294,7 +294,7 @@ void DescribeText(ComponentUI& ui, TextComponent& value) {
 	ui.Field("Line Spacing###lineSpacing", value.lineSpacing, AtLeast(0.0f).Tip("行の間の倍率（1 でフォントの決めた間。小さくすると詰まる）"));
 	ui.Field("Letter Spacing###letterSpacing", value.letterSpacing, Tip("文字と文字の間に足す（ピクセル。マイナスで詰める）"));
 	ui.Field("Order###order", value.order, Tip("重ねる順（大きいほど手前。Image の Order とも比べる）"));
-	ui.Field("Blend###blend", value.blend, Tip("Normal：透明な所が透ける / Add：足して光る"));
+	ui.Field("Blend###blend", value.blend, Tip("重ね方"));
 	ui.Separator("Outline");
 	ui.Field("Outline Width###outlineWidth", value.outlineWidth, AtLeast(0.0f).Tip("縁取りの太さ（ピクセル。0 なら無し。文字の大きさの 1/6 くらいで止まる）"));
 	ui.ColorField("Outline Color###outlineColor", value.outlineColor);
@@ -312,7 +312,7 @@ void DescribeText(ComponentUI& ui, TextComponent& value) {
 	ui.Field("Shine Duration###shineDuration", value.shineDuration, AtLeast(0.01f).Tip("光が端から端まで通る秒数"));
 	ui.Field("Shine Interval###shineInterval", value.shineInterval, AtLeast(0.0f).Tip("光が通ってから、次に通るまでの秒数"));
 	ui.Separator("Motion");
-	ui.Field("Motion###motion", value.motion, Tip("文字1つずつの動き（Wave：波 / Bounce：跳ねる / Shake：震える）"));
+	ui.Field("Motion###motion", value.motion, Tip("文字1つずつの動き"));
 	ui.Field("Amount###motionAmount", value.motionAmount, Tip("動く大きさ（ピクセル）"));
 	ui.Field("Speed###motionSpeed", value.motionSpeed, AtLeast(0.0f).Tip("動く速さ（1秒に何回）"));
 	ui.Field("Spread###motionSpread", value.motionSpread, Tip("隣の文字との、動きのずれ（1回の動きの割合。0.1 なら隣は 1/10 回分遅れる。0 なら全部一緒）"));
@@ -329,7 +329,7 @@ void TextRenderSystem::Initialize() {
 	// Text の置き場所・保存・Inspector を登録する。見せ方は DescribeText 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<TextComponent>();
 	ComponentSerializer::Register<TextComponent>("Text", &DescribeText);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<TextComponent>>("Text", "UI", &DescribeText));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<TextComponent>>("Text", "UI", &DescribeText, "画面に重ねる文字。Script から text を書き換えて使う。縁取り・影・文字ごとの動きを付けられる"));
 }
 
 void TextRenderSystem::Release() { state.reset(); }

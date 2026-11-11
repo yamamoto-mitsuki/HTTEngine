@@ -286,7 +286,7 @@ void DescribeVectorShape(ComponentUI& ui, VectorShapeComponent& value) {
 	ui.Field("Anchor###anchor", value.anchor, Tip("画面のどこから位置を数えるか（位置は Transform の Translation の x・y。ピクセルで、上が＋）"));
 	ui.Field("Pivot###pivot", value.pivot, Tip("図形のどこを位置に合わせるか（0,0=左下 0,1=左上 1,1=右上）"));
 	ui.Field("Order###order", value.order, Tip("重ねる順（大きいほど手前。Image・Text の Order とも比べる）"));
-	ui.Field("Blend###blend", value.blend, Tip("重ね方（Normal：透明な所が透ける / Add：足して光る）。None は縁のなめらかさが無くなる"));
+	ui.Field("Blend###blend", value.blend, Tip("重ね方"));
 
 	ui.Separator("Shape");
 	const bool usesCorner = (value.shape == VectorShapeType::RoundedRectangle) || (value.shape == VectorShapeType::Parallelogram);
@@ -301,7 +301,7 @@ void DescribeVectorShape(ComponentUI& ui, VectorShapeComponent& value) {
 	ui.EndDisabled();
 
 	ui.Separator("Paint");
-	ui.Field("Style###style", value.style, Tip("Fill：塗りだけ / Fill And Stroke：塗りと縁取り / Stroke：線だけ"));
+	ui.Field("Style###style", value.style, Tip("塗りと縁取りのどちらを描くか"));
 	ui.ColorField("Color###color", value.color);
 
 	ui.Separator("Stroke");
@@ -313,7 +313,7 @@ void DescribeVectorShape(ComponentUI& ui, VectorShapeComponent& value) {
 	ui.EndDisabled();
 
 	ui.Separator("Gradient");
-	ui.Field("Gradient###gradient", value.gradient, Tip("None：Color の1色 / Linear：直線 / Radial：真ん中から外へ"));
+	ui.Field("Gradient###gradient", value.gradient, Tip("色の付け方"));
 	ui.BeginDisabled(value.gradient == VectorShapeGradient::None);
 	ui.ColorField("Gradient Color###gradientColor", value.gradientColor);
 	ui.Field("Gradient Range###gradientRange", value.gradientRange, Tip("色が変わる範囲（図形の中の場所。0〜1）。x までは Color、y から先は Gradient Color"));
@@ -323,7 +323,7 @@ void DescribeVectorShape(ComponentUI& ui, VectorShapeComponent& value) {
 	ui.EndDisabled();
 
 	ui.Separator("Gauge");
-	ui.Field("Gauge###gauge", value.gauge, Tip("図形のどこまで見せるか（None：全部 / Linear：直線で切る / Radial：真ん中のまわりに扇形で切る）。縁取りも一緒に切る"));
+	ui.Field("Gauge###gauge", value.gauge, Tip("図形のどこまで見せるか（ゲージ）。縁取りも一緒に切る"));
 	ui.BeginDisabled(value.gauge == VectorShapeGauge::None);
 	ui.Field("Amount###gaugeAmount", value.gaugeAmount, Range(0.0f, 1.0f).Tip("見せる割合（0〜1）"));
 	ui.EndDisabled();
@@ -346,7 +346,7 @@ void VectorShapeSystem::Initialize() {
 	// Vector Shape の置き場所・保存・Inspector を登録する。見せ方は DescribeVectorShape 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<VectorShapeComponent>();
 	ComponentSerializer::Register<VectorShapeComponent>("Vector Shape", &DescribeVectorShape);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<VectorShapeComponent>>("Vector Shape", "UI", &DescribeVectorShape));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<VectorShapeComponent>>("Vector Shape", "UI", &DescribeVectorShape, "画像を使わずに計算で描く UI の図形（四角・角丸・円・リング）。塗り・縁取り・グラデーション・ゲージ"));
 }
 
 void VectorShapeSystem::Release() {}

@@ -88,6 +88,45 @@ std::string_view CategorySegment(std::string_view path, size_t depth) {
 	return path.substr(start, slash == std::string_view::npos ? std::string_view::npos : slash - start);
 }
 
+// カテゴリのパスの、depth 段目までの部分（"Gameplay/Movement/Enemy" の1段目までは "Gameplay/Movement"）。カテゴリの説明を探すのに使う
+std::string_view CategoryPrefix(std::string_view path, size_t depth) {
+	size_t end = 0;
+	for (size_t i = 0; i <= depth; ++i) {
+		end = path.find('/', end);
+		if (end == std::string_view::npos) {
+			return path; // これより下の段は無い（全部）
+		}
+		if (i < depth) {
+			++end; // "/" の次から、次の "/" を探す
+		}
+	}
+	return path.substr(0, end);
+}
+
+// 直前の項目（Component の見出し・Add Component の項目）にマウスを乗せていたら、Component の説明と書いてあるファイルを出す
+// flags は足す条件（押せない項目の上でも出すなら ImGuiHoveredFlags_AllowWhenDisabled）
+void DrawComponentTooltip(const ComponentEditor& editor, ImGuiHoveredFlags flags = 0) {
+	const char* description = editor.GetDescription();
+	const char* file = editor.GetSourceFile();
+	if ((description == nullptr && file == nullptr) || !ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip | flags)) {
+		return;
+	}
+	if (!EditorWidgets::BeginWrappedTooltip()) {
+		return;
+	}
+	if (description != nullptr) {
+		ImGui::TextUnformatted(description);
+	}
+	// ゲームの物は、書いてあるファイル（ゲームの Component はどこに置いてもよいので、探さなくて済むように）
+	if (file != nullptr) {
+		ImGui::TextDisabled("%s", ShortenSourcePath(file).c_str());
+	}
+	EditorWidgets::EndWrappedTooltip();
+}
+
+// 直前の項目（Add Component のカテゴリ）にマウスを乗せていたら、カテゴリの説明を出す
+void DrawCategoryTooltip(std::string_view path) { EditorWidgets::ItemTooltip(ComponentEditorRegistry::FindCategoryDescription(path)); }
+
 // Component と Component の境目（見出しの帯だけだと、どこまでが1つの Component か分かりにくいので、間を空けて線を引く）
 void DrawComponentSeparator() {
 	ImGui::Spacing();
@@ -224,10 +263,8 @@ void DrawAddComponentItem(Handle<Entity> handle, const ComponentEditor& editor) 
 		const float tagWidth = ImGui::CalcTextSize(tag).x;
 		ImGui::GetWindowDrawList()->AddText(ImVec2(rectMax.x - tagWidth, rectMin.y), ImGui::GetColorU32(ImGuiCol_TextDisabled), tag);
 	}
-	// ゲームの物は、書いてあるファイルを出す（押せない物の上でも出す）
-	if (const char* file = editor.GetSourceFile(); file != nullptr && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip | ImGuiHoveredFlags_AllowWhenDisabled)) {
-		ImGui::SetTooltip("%s", ShortenSourcePath(file).c_str());
-	}
+	// 説明と、ゲームの物は書いてあるファイルを出す（付いていて押せない物の上でも出す）
+	DrawComponentTooltip(editor, ImGuiHoveredFlags_AllowWhenDisabled);
 }
 
 // [begin, end) は同じ上位カテゴリの並び。depth段目の名前で切って、入れ子のメニューにする
@@ -251,7 +288,9 @@ void DrawAddComponentLevel(Handle<Entity> handle, const std::vector<const Compon
 		if (filter.IsActive()) {
 			ImGui::SetNextItemOpen(true);
 		}
-		if (ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth)) {
+		const bool isOpen = ImGui::TreeNodeEx(name.c_str(), ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_SpanAvailWidth);
+		DrawCategoryTooltip(CategoryPrefix(items[index]->GetCategory(), depth)); // "Gameplay/Movement" の説明
+		if (isOpen) {
 			DrawAddComponentLevel(handle, items, index, groupEnd, depth + 1, filter);
 			ImGui::TreePop();
 		}
@@ -320,6 +359,7 @@ void DrawCategoryColumn(const std::vector<CategoryRange>& categories, ImGuiTextF
 				selectedCategory = category.name;
 				filter.Clear();
 			}
+			DrawCategoryTooltip(category.name);
 		}
 	}
 	ImGui::EndChild();
@@ -337,6 +377,13 @@ void DrawComponentColumn(Handle<Entity> handle, const std::vector<const Componen
 				DrawAddComponentLevel(handle, items, category.begin, category.end, 1, filter);
 			}
 		} else {
+			// 選んでいるカテゴリの説明を、一覧の上に灰色で（何のカテゴリかが、マウスを乗せなくても分かるように）
+			if (const char* description = ComponentEditorRegistry::FindCategoryDescription(selected->name); description != nullptr) {
+				ImGui::PushStyleColor(ImGuiCol_Text, ImGui::GetStyleColorVec4(ImGuiCol_TextDisabled));
+				ImGui::TextWrapped("%s", description);
+				ImGui::PopStyleColor();
+				ImGui::Separator();
+			}
 			DrawAddComponentLevel(handle, items, selected->begin, selected->end, 1, filter);
 		}
 	}
@@ -491,10 +538,8 @@ void InspectorWindow::DrawComponent(Handle<Entity> handle, const ComponentEditor
 	const std::string title = editor.IsScript() ? std::format("{} (Script)", editor.GetName()) : std::string(editor.GetName());
 	const bool isOpen = ImGui::CollapsingHeader(title.c_str(), ImGuiTreeNodeFlags_DefaultOpen);
 
-	// --- 見出しにマウスを乗せると、書いてあるファイルを出す（ゲームのComponentはどこに置いてもよいので、探さなくて済むように）---
-	if (const char* file = editor.GetSourceFile(); file != nullptr && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip)) {
-		ImGui::SetTooltip("%s", ShortenSourcePath(file).c_str());
-	}
+	// --- 見出しにマウスを乗せると、何をする Component かの説明と、書いてあるファイル（ゲームの物だけ）を出す ---
+	DrawComponentTooltip(editor);
 
 	// --- 見出しの右クリック ---
 	if (ImGui::BeginPopupContextItem("componentMenu")) {

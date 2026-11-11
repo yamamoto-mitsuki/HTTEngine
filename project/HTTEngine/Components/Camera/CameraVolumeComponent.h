@@ -1,6 +1,8 @@
 #pragma once
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
+
 // カメラごとのポストエフェクトの値。Camera Component と同じ Entity に付けるComponent（カテゴリ：Camera）
 // チェックを入れた項目だけ、このカメラの値を使う。外した項目は全体の設定（Settings → PostEffect・Depth Of Field Component）のまま
 // カメラが切り替わるときは、位置・向きと一緒に同じ速さで値も補間する
@@ -23,6 +25,17 @@ enum class CameraVolumeFocus {
 	LookAtTarget, // Camera Look At が見ている点の奥行き
 	FollowTarget, // このカメラの Camera Follow・Camera Orbit の Target の奥行き
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(CameraVolumeFocus) {
+	using enum CameraVolumeFocus;
+	return MakeEnumTips<CameraVolumeFocus>({
+	    {Global, "全体の設定（Depth Of Field Component の Focus）のまま"},
+	    {Distance, "カメラから Focus Distance（m）の奥行きに合わせる"},
+	    {LookAtTarget, "Camera Look At が見ている点の奥行きに合わせる"},
+	    {FollowTarget, "このカメラの Camera Follow・Camera Orbit の Target の奥行きに合わせる"},
+	});
+}
 
 /// <summary>
 /// カメラごとのポストエフェクトの値（Unity の Cinemachine の Volume Settings の小さい版）

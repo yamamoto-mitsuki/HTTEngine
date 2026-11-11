@@ -348,8 +348,8 @@ void CameraFollow::Describe(ComponentUI& ui, CameraFollowComponent& value) {
 	ui.Field("Target###target", value.target, Tip("追う Entity（Hierarchy からドラッグ）。再生中だけ追う。動かすのは Plane の面の上だけ（カメラの向きは置いたまま）"));
 	ui.Field(
 	    "Plane###plane", value.plane,
-	    Tip("カメラを動かす面。XY：ワールドの X・Y（横から見る）/ XZ：地面（見下ろし。カメラの向きが変わると横・縦も回る）/ View：カメラの右・上（どの向きのカメラでも。奥行きも保つ）"));
-	ui.Field("Mode###mode", value.mode, Tip("追い方。Center：追う物を真ん中に / LookAhead：進む向きの先を見せる（速さ × Time。止まると真ん中に戻る）"));
+	    Tip("カメラを動かす面"));
+	ui.Field("Mode###mode", value.mode, Tip("追い方"));
 	// --- 選んだ追い方の値だけを見せる（保存も、使っている方だけが書かれる。Collider の Shape と同じ）---
 	switch (value.mode) {
 	case CameraFollowMode::Center:
@@ -368,7 +368,7 @@ void CameraFollow::Describe(ComponentUI& ui, CameraFollowComponent& value) {
 	ui.Field("Offset###offset", value.offset, Tip("追う物から、画面の真ん中をどれだけずらすか（m）。X が横、Y が縦。XY で Y を上げると、足元が広く見える"));
 	ui.Field(
 	    "Zone Space###zoneSpace", value.zoneSpace,
-	    Tip("Dead Zone・Soft Zone を何で測るか。World：Plane の面の上の長さ（m。カメラが引いても、追い始める距離は同じ）/ Screen：画面の割合（真ん中 0・端 1。カメラが引くと、ワールドでは広がる）"));
+	    Tip("Dead Zone・Soft Zone を何で測るか"));
 	// --- 選んだ測り方の値だけを見せる（保存も、使っている方だけ）---
 	switch (value.zoneSpace) {
 	case CameraFollowZoneSpace::World:

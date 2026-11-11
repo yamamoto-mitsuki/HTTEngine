@@ -74,13 +74,14 @@ template<class T> class DescribedComponentEditor final : public TypedComponentEd
 public:
 	using DescribeFunction = void (*)(ComponentUI& ui, T& value);
 
-	// sourceFile は書いてあるファイル（Inspector の見出しにマウスを乗せると出る）。分からなければ nullptr
-	DescribedComponentEditor(const char* name, std::string category, DescribeFunction describe, const char* sourceFile = nullptr)
-	    : name_(name), category_(std::move(category)), describe_(describe), sourceFile_(sourceFile) {}
+	// description は何をする Component かの説明、sourceFile は書いてあるファイル（どちらも Inspector の見出しにマウスを乗せると出る）。無ければ nullptr
+	DescribedComponentEditor(const char* name, std::string category, DescribeFunction describe, const char* description = nullptr, const char* sourceFile = nullptr)
+	    : name_(name), category_(std::move(category)), describe_(describe), description_(description), sourceFile_(sourceFile) {}
 
 	const char* GetName() const override { return name_; }
 	const char* GetCategory() const override { return category_.c_str(); }
 	const char* GetSourceFile() const override { return sourceFile_; }
+	const char* GetDescription() const override { return description_; }
 
 protected:
 	void DrawComponent(T& value) const override { describe_(GetInspectorUI(), value); }
@@ -89,6 +90,7 @@ private:
 	const char* name_;          // COMPONENT(型名) の型名がそのまま表示名になる
 	std::string category_;      // "Gameplay" か "Gameplay/サブカテゴリ"
 	DescribeFunction describe_; // ②に書いた見せ方
+	const char* description_;   // 何をする Component かの説明（文字列リテラルなので、プログラムの終わりまで消えない）
 	const char* sourceFile_;    // COMPONENT(...) を書いたファイル（コンパイラが決めた文字列なので、プログラムの終わりまで消えない）
 };
 
@@ -117,14 +119,17 @@ void AddSystem(const char* name, std::function<void(float)> run);
 /// </summary>
 template<class T> class ComponentRegistrar {
 public:
+	// 引数の並びは COMPONENT(型名, "サブカテゴリ", "説明") の並び（後ろの2つは書かなくてよいので、見せ方を先頭に置く）
+	// description は Inspector の見出し・Add Component の項目にマウスを乗せると出る説明（書かなければ nullptr＝説明なし）
 	// where は書かなくてよい。既定の引数は「呼んだ側」で作られるので、COMPONENT(...) を書いたファイルと行が入る
-	ComponentRegistrar(const char* name, const char* subCategory, void (*describe)(ComponentUI&, T&), std::source_location where = std::source_location::current()) {
+	ComponentRegistrar(void (*describe)(ComponentUI&, T&), const char* name, const char* subCategory, const char* description = nullptr,
+	                   std::source_location where = std::source_location::current()) {
 		const char* sourceFile = where.file_name();
-		ComponentRegistryDetail::AddPending([name, subCategory, describe, sourceFile]() {
+		ComponentRegistryDetail::AddPending([describe, name, subCategory, description, sourceFile]() {
 			EntityManager::RegisterComponent<T>();            // 置き場所
 			ComponentSerializer::Register<T>(name, describe); // 保存・読み込み（Releaseでも要る）
 			ComponentEditorRegistry::Register(                // Inspector
-			    std::make_unique<DescribedComponentEditor<T>>(name, MakeGameplayCategory(subCategory), describe, sourceFile));
+			    std::make_unique<DescribedComponentEditor<T>>(name, MakeGameplayCategory(subCategory), describe, description, sourceFile));
 		});
 	}
 };
@@ -233,18 +238,42 @@ public:
 };
 
 //=============================================================================
-// ゲーム側が書くのはこの2つだけ
+// ゲーム側が書くのはこの2つだけ（カテゴリに説明を付けたいときは COMPONENT_CATEGORY も）
 //=============================================================================
 
 /// <summary>
-/// Componentの見せ方を書く。COMPONENT(型名) または COMPONENT(型名, "サブカテゴリ")
+/// Componentの見せ方を書く。COMPONENT(型名)・COMPONENT(型名, "サブカテゴリ")・COMPONENT(型名, "サブカテゴリ", "説明")
 /// <para>中では ui（見せ方の道具）と value（Componentの中身）が使える。カテゴリは Gameplay で固定</para>
+/// <para>説明は Inspector の見出し・Add Component の項目にマウスを乗せると出る（サブカテゴリ無しで説明だけなら COMPONENT(型名, "", "説明")）</para>
 /// </summary>
 // [[maybe_unused]] は「使わなくても警告しないで」の印。中身の無いComponent（印だけのタグ）でも警告が出ないようにしている
+// "" __VA_ARGS__ は、何も書かなければ ""、書けば "" "Movement", "説明" ＝ "Movement", "説明"（並んだ文字列はつながる）
 #define COMPONENT(Type, ...)                                                                                                                                                                           \
 	inline void Describe_##Type([[maybe_unused]] ComponentUI& ui, [[maybe_unused]] Type& value);                                                                                                       \
-	inline const ComponentRegistrar<Type> registrarOf_##Type(#Type, "" __VA_ARGS__, &Describe_##Type);                                                                                                 \
+	inline const ComponentRegistrar<Type> registrarOf_##Type(&Describe_##Type, #Type, "" __VA_ARGS__);                                                                                                 \
 	inline void Describe_##Type([[maybe_unused]] ComponentUI& ui, [[maybe_unused]] Type& value)
+
+/// <summary>
+/// COMPONENT_CATEGORY(...) が1つ作る物。作られた時点では「登録待ちの表」に並ぶだけ
+/// </summary>
+class ComponentCategoryRegistrar {
+public:
+	// subCategory は COMPONENT・SCRIPT に書くサブカテゴリと同じ書き方（"Movement" なら Gameplay → Movement）
+	ComponentCategoryRegistrar(const char* subCategory, const char* description) {
+		ComponentRegistryDetail::AddPending([subCategory, description] { ComponentEditorRegistry::RegisterCategoryDescription(MakeGameplayCategory(subCategory), description); });
+	}
+};
+
+// 2つの字句をつなぐ（__LINE__ を先に数字にしてからつなぐため、2段にしている）
+#define HTT_CONCAT_INNER(a, b) a##b
+#define HTT_CONCAT(a, b) HTT_CONCAT_INNER(a, b)
+
+/// <summary>
+/// Add Component の Gameplay の下のカテゴリに説明を付ける。.cpp に COMPONENT_CATEGORY("Movement", "動かす物"); と1行書く
+/// <para>Add Component でカテゴリにマウスを乗せると出る。同じカテゴリの COMPONENT のファイルのどれか1つに書けばよい</para>
+/// </summary>
+// static：このファイルの中だけの変数にする（別のファイルの同じ行に書いても、名前がぶつからない）
+#define COMPONENT_CATEGORY(subCategory, description) static const ComponentCategoryRegistrar HTT_CONCAT(componentCategoryRegistrar_, __LINE__)(subCategory, description)
 
 /// <summary>
 /// 毎フレームの処理を登録する。関数の引数に書いたComponentを全部持つEntityだけが呼ばれる

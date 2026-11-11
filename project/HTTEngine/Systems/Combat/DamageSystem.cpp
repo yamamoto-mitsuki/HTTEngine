@@ -56,10 +56,10 @@ void DamageSystem::Initialize() {
 	// Health・Damage Source の置き場所・保存・Inspector を登録する
 	EntityManager::RegisterComponent<HealthComponent>();
 	ComponentSerializer::Register<HealthComponent>("Health", &DescribeHealth);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<HealthComponent>>("Health", "Combat", &DescribeHealth));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<HealthComponent>>("Health", "Combat", &DescribeHealth, "HP と無敵の設定（攻撃を受ける本体）。同じ Entity か子の Hurtbox に当たった攻撃で減り、0 になると倒れる"));
 	EntityManager::RegisterComponent<DamageSourceComponent>();
 	ComponentSerializer::Register<DamageSourceComponent>("Damage Source", &DescribeDamageSource);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<DamageSourceComponent>>("Damage Source", "Combat", &DescribeDamageSource));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<DamageSourceComponent>>("Damage Source", "Combat", &DescribeDamageSource, "攻撃が当たったときのダメージの量・種類と、手応え（ヒットストップ・カメラの揺れ）。Hitbox と同じ Entity に付ける"));
 
 	// 当たりの層に答え方を登録する（当たりの層は、Health・Damage Source を知らない）
 	HitSystem::SetReceiverFinder(&DamageSystem::FindReceiver);

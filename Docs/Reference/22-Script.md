@@ -51,6 +51,7 @@ void PlayerController::Update() {
 ```
 
 - **`SCRIPT(クラス名)` を .cpp に1行書く**と、Add Component に出る（Inspector の見出しに `(Script)` の印）。クラス名がそのまま保存の名前になるので、**クラス名を変えると前に保存した物は読めない**。
+- 3つ目に説明を書くと、Inspector の見出し・Add Component の項目にマウスを乗せたときに出る：`SCRIPT(PlayerController, "Player", "プレイヤーの移動と回避");`（サブカテゴリ無しなら `SCRIPT(クラス名, "", "説明")`）。
 - 引数の無いコンストラクタで作れること（エンジンが名前から作る）。
 - `Fields` に書いた値だけが保存される（Inspector の見た目とシーンファイルの項目になる）。C++ はクラスの変数を自動で調べられないので、自分で並べる。ラベルに `"Enabled"` は使わない（エンジンが使う）。
 

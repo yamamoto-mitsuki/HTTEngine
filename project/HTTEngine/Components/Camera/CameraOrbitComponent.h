@@ -1,6 +1,7 @@
 #pragma once
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/ECS/Entity.h"
 #include "HTTEngine/Math/Vector3.h"
 
@@ -17,6 +18,16 @@ enum class CameraOrbitHeading {
 	TargetForward, // 追う物の前の向き（追うものの後ろにつく。追う物が振り変えると回り込む）
 	LookAt,        // 同じ Entity の Camera Look At が見る点の向き（見る点と反対の側に付く）。Camera Look At が無い・見る点が無いときは、向きをそのまま保つ
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(CameraOrbitHeading) {
+	using enum CameraOrbitHeading;
+	return MakeEnumTips<CameraOrbitHeading>({
+	    {World, "ワールドの決まった向き（Yaw 0 で +Z を向き、追う物の -Z の側に付く）。Script で Yaw を書き換えると回せる"},
+	    {TargetForward, "追う物の前の向き（追う物の後ろに付く。追う物が振り向くと回り込む）"},
+	    {LookAt, "同じ Entity の Camera Look At が見る点の向き（見る点と反対の側に付く＝相手を見ながら、追う物の後ろに付くロックオン）。見る点が無いときは向きをそのまま保つ"},
+	});
+}
 
 // ===== 追う物のまわりを回るカメラ =====
 struct CameraOrbitComponent {

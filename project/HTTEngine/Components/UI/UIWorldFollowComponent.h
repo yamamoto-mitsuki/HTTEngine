@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/ECS/Entity.h"
 #include "HTTEngine/Math/Vector2.h"
 #include "HTTEngine/Math/Vector3.h"
@@ -28,6 +29,16 @@ enum class OffscreenMode {
 	Hide,        // 隠す（画面の中に入ったら、また出る）
 	ClampToEdge, // 画面の端（Edge Margin だけ内側）に寄せる。カメラの後ろなら、向きの合う端に寄せる
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(OffscreenMode) {
+	using enum OffscreenMode;
+	return MakeEnumTips<OffscreenMode>({
+	    {Keep, "そのまま（画面の外に出る。カメラの後ろなら隠す）"},
+	    {Hide, "隠す（画面の中に入ったら、また出る）"},
+	    {ClampToEdge, "画面の端（Edge Margin だけ内側）に寄せる。カメラの後ろなら、向きの合う端に寄せる"},
+	});
+}
 
 /// <summary>
 /// UI をワールドの物・ワールドの点に重ね続ける

@@ -1,6 +1,7 @@
 #pragma once
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Math/Geometry/Capsule.h"
 #include "HTTEngine/Math/Geometry/Sphere.h"
 #include "HTTEngine/Math/Matrix4x4.h"
@@ -22,6 +23,18 @@ enum class HitShapeType {
 	Sphere,  // 球（空中の攻撃・弾）
 	Capsule, // カプセル（中心から前 +Z へ Length の線分を、Radius で太らせた形。剣を振る・太いレーザー）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(HitShapeType) {
+	using enum HitShapeType;
+	return MakeEnumTips<HitShapeType>({
+	    {Circle, "床に置く円（Inner Radius を入れるとドーナツ）"},
+	    {Sector, "床に置く扇（前 +Z を真ん中に Angle 度開く。Inner Radius を入れると扇のドーナツ）"},
+	    {Line, "床に置く線（幅 Width の長方形。中心から前 +Z へ Length だけ伸びる）"},
+	    {Sphere, "空中の球（空中の攻撃・弾）"},
+	    {Capsule, "空中のカプセル（中心から前 +Z へ Length の線分を、Radius で太らせた形。剣を振る・太いレーザー）"},
+	});
+}
 
 
 /// <summary>

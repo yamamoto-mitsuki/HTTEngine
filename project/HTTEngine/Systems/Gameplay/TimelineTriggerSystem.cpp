@@ -34,7 +34,7 @@ void DescribeTimelineTrigger(ComponentUI& ui, TimelineTriggerComponent& value) {
 	ui.Separator("Source");
 	ui.Field(
 	    "Source###source", value.source,
-	    Tip("誰が入ったら反応するか。FollowTarget：カメラが追っている物（プレイヤー） / Entity：Source Entity に入れた物 / AnyRigidbody：Rigidbody を付けた物なら、どれでも / AnyMover：Rigidbody か Character Controller を付けた物なら、どれでも"));
+	    Tip("誰が入ったら反応するか"));
 	// --- 選んだ相手の値だけを見せる（Trigger Activator と同じ）---
 	switch (value.source) {
 	case TriggerSource::FollowTarget:
@@ -53,7 +53,7 @@ void DescribeTimelineTrigger(ComponentUI& ui, TimelineTriggerComponent& value) {
 	    "On Exit###exitTimeline", value.exitTimeline, AssetType::Timeline,
 	    Tip("出たときに再生する Timeline（選ばなければ何もしない。入ったときの再生は最後まで流れる）。Tween の From を Current にすると、途中で出てもその値から戻る"));
 	ui.Field("Once###once", value.once, Tip("入ったとき・出たときの再生を、それぞれ1回だけにする（一度見せた演出は、もう流さない）"));
-	ui.Field("Time Mode###timeMode", value.timeMode, Tip("Game：ポーズ・スロー・ヒットストップで止まる / Real：ゲームの時間が止まっても動く"));
+	ui.Field("Time Mode###timeMode", value.timeMode, Tip("再生に使う時間"));
 }
 } // namespace
 
@@ -64,7 +64,7 @@ void TimelineTriggerSystem::Initialize() {
 	// Timeline Trigger の置き場所・保存・Inspector を登録する（見せ方は DescribeTimelineTrigger 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<TimelineTriggerComponent>();
 	ComponentSerializer::Register<TimelineTriggerComponent>("Timeline Trigger", &DescribeTimelineTrigger);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<TimelineTriggerComponent>>("Timeline Trigger", "Gameplay", &DescribeTimelineTrigger));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<TimelineTriggerComponent>>("Timeline Trigger", "Gameplay", &DescribeTimelineTrigger, "同じ Entity の Collider（Is Trigger）の範囲に入ったら・出たら、Timeline を再生する。Script を書かずに演出を置ける"));
 }
 
 void TimelineTriggerSystem::Release() {} // 持っている物は無い（実行中の値は、全部 Component の中。再生は TimelineSystem が持つ）

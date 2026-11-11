@@ -1,4 +1,5 @@
 ﻿#pragma once
+#include "HTTEngine/Core/EnumTips.h"
 
 namespace Ease {
 
@@ -23,6 +24,27 @@ enum class Type {
 	InBounce,
 	OutElastic,
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(Type) {
+	using enum Type;
+	return MakeEnumTips<Type>({
+	    {Linear, "一定の速さ"},
+	    {InQuad, "だんだん速く（ゆっくり始まる）"},
+	    {OutQuad, "だんだん遅く（ゆっくり止まる）"},
+	    {InCubic, "だんだん速く（InQuad より強く）"},
+	    {OutCubic, "だんだん遅く（OutQuad より強く）"},
+	    {InOutCubic, "ゆっくり始まって、ゆっくり止まる"},
+	    {InSine, "だんだん速く（弱め）"},
+	    {OutSine, "だんだん遅く（弱め）"},
+	    {InOutSine, "ゆっくり始まって、ゆっくり止まる（弱め）"},
+	    {InBack, "一度少し戻ってから進む"},
+	    {OutBack, "少し行き過ぎてから戻って止まる"},
+	    {OutBounce, "終わりで跳ねる（ボールが落ちて弾む）"},
+	    {InBounce, "始めで跳ねる"},
+	    {OutElastic, "終わりでばねのように揺れて止まる"},
+	});
+}
 
 /// <summary>
 /// tを0〜1にクランプする

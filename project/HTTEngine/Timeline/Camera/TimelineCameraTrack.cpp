@@ -42,7 +42,7 @@ void TimelineCameraClip::Fields(ComponentUI& ui) {
 	ui.Field("Blend In###blendIn", blendIn, AtLeast(0.0f).Tip("前のクリップと重なっていないとき、この秒をかけて補間する。0 ならすぐ切り替える"));
 	ui.Field("Blend Ease###blendEase", blendEase, Tip("始まりの補間と、前のクリップとの重なりの補間の速さの変え方"));
 	ui.Separator("Exit");
-	ui.Field("Exit###exit", exit, Tip("終わった後の戻し方。Cut：すぐ通常のカメラへ / Ease：Exit Time の秒で補間する / Hold：次のクリップか TimelineSystem::Stop まで、このカメラのまま"));
+	ui.Field("Exit###exit", exit, Tip("終わった後の、通常のカメラへの戻し方"));
 	ui.BeginDisabled(exit == TimelineCameraExit::Cut);
 	ui.Field("Exit Time###exitTime", exitTime, AtLeast(0.0f).Tip("戻す補間の秒。Ease のときは Timeline の長さに入る。Hold は TimelineSystem::Stop で止めたときに使う"));
 	ui.Field("Exit Ease###exitEase", exitEase, Tip("戻す補間の速さの変え方"));

@@ -1,6 +1,8 @@
 #pragma once
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
+
 // 被写界深度（ピントの合った所だけはっきり見え、手前と奥がぼける）。シーンに1つ、どの Entity に付けてもよい Component（カテゴリ：Rendering3D）
 // 値は DepthOfFieldSystem が毎フレーム SceneRenderer へ渡し、ポストエフェクト（DepthOfFieldPass）が深度でぼかす
 // 有効な物が2つ以上あれば、先に見つかった1つだけを使う。1つも無ければぼかさない。停止中のエディタでも掛かる（Scene ビューは View → Scene View → Depth of Field で切れる）
@@ -13,6 +15,15 @@ enum class DepthOfFieldFocus {
 	FollowTarget, // メインカメラの Camera Follow・Camera Orbit の Target（遊ぶキャラ）の奥行きに合わせる。Target が無ければ Focus Distance の初期値
 	Distance,     // カメラから Focus Distance（m）の奥行きに合わせる
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(DepthOfFieldFocus) {
+	using enum DepthOfFieldFocus;
+	return MakeEnumTips<DepthOfFieldFocus>({
+	    {FollowTarget, "メインカメラの Camera Follow・Camera Orbit の Target の奥行きに合わせる（Target が無ければ Focus Distance）"},
+	    {Distance, "カメラから Focus Distance（m）の奥行きに合わせる"},
+	});
+}
 
 /// <summary>
 /// 被写界深度（Unity の Post Processing の Depth of Field の小さい版）

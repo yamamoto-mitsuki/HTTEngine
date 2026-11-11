@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Math/Easing.h"
 #include "HTTEngine/Time/EngineTime.h"
 
@@ -20,6 +21,17 @@ enum class UIScreenMotionType {
 	Scale, // 小さい所から大きくなる・小さくなって消える（Scale を動かす）
 };
 
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(UIScreenMotionType) {
+	using enum UIScreenMotionType;
+	return MakeEnumTips<UIScreenMotionType>({
+	    {None, "動かない（すぐ出る。消すときは最後まで出たまま）"},
+	    {Fade, "だんだん見えてくる・見えなくなる（Alpha Group の Alpha を動かす）"},
+	    {Slide, "画面の外の方（Side の側）から滑り込む・外の方へ出ていく"},
+	    {Scale, "小さい所から大きくなる・小さくなって消える"},
+	});
+}
+
 /// <summary>
 /// 滑り込むときの、画面のどちら側か（出すときは「どこから」、消すときは「どこへ」）
 /// </summary>
@@ -29,6 +41,17 @@ enum class UIScreenSide {
 	Top,
 	Bottom,
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(UIScreenSide) {
+	using enum UIScreenSide;
+	return MakeEnumTips<UIScreenSide>({
+	    {Left, "左から来る・左へ行く"},
+	    {Right, "右から来る・右へ行く"},
+	    {Top, "上から来る・上へ行く"},
+	    {Bottom, "下から来る・下へ行く"},
+	});
+}
 
 /// <summary>
 /// 出し方・消し方1つ分（UI Screen Component に「出す」「消す」の2つ持つ）

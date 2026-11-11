@@ -1,6 +1,7 @@
 #pragma once
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Graphics/Renderer/SceneBackground.h"
 #include "HTTEngine/Math/Easing.h"
 #include "HTTEngine/Math/Vector3.h"
@@ -21,6 +22,15 @@ enum class CameraBlendStyle {
 	Cut,  // すぐ切り替える
 	Ease, // Blend Time の秒をかけて、イージングで補間する
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(CameraBlendStyle) {
+	using enum CameraBlendStyle;
+	return MakeEnumTips<CameraBlendStyle>({
+	    {Cut, "すぐ切り替える"},
+	    {Ease, "Time の秒をかけて、前のカメラから位置・向き・ポストエフェクトの値をなめらかに補間する"},
+	});
+}
 
 
 /// <summary>

@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Math/Vector3.h"
 
 // 当たり判定の形と大きさ。Entityに付けるComponent（カテゴリ：Physics）
@@ -17,6 +18,17 @@ enum class ColliderShape {
 	Capsule, // カプセル（縦の線分を半径で太らせた形。円柱の上下に半球）。中心・半径・高さ。Entityを回してもいつも立ったまま
 	Polygon, // 多角形を押し出した形。同じ Entity の Polygon Shape の点を使う（横から見るゲームの足場）。球・カプセルとだけ当たる（箱・多角形とは当たらない）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(ColliderShape) {
+	using enum ColliderShape;
+	return MakeEnumTips<ColliderShape>({
+	    {Sphere, "球。中心と半径"},
+	    {Box, "箱。中心と大きさ。Entity を回しても箱は回らない（軸にそろった箱）"},
+	    {Capsule, "カプセル（円柱の上下に半球）。中心・半径・高さ。Entity を回しても、いつも立ったまま"},
+	    {Polygon, "多角形を押し出した形。同じ Entity の Polygon Shape の点を使う（横から見るゲームの足場）。球・カプセルとだけ当たる（箱・多角形とは当たらない）"},
+	});
+}
 
 /// <summary>
 /// 当たり判定

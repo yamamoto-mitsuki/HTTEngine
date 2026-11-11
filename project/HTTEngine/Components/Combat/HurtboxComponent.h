@@ -1,6 +1,7 @@
 #pragma once
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Math/Vector3.h"
 
 // 攻撃を受ける形（やられ判定）。Entity に付ける Component（カテゴリ：Combat。当たりの層）
@@ -15,6 +16,15 @@ enum class HurtboxShape {
 	Sphere,  // 球
 	Capsule, // カプセル（ローカルの上 +Y に立つ。Entity と一緒に回る）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(HurtboxShape) {
+	using enum HurtboxShape;
+	return MakeEnumTips<HurtboxShape>({
+	    {Sphere, "球"},
+	    {Capsule, "カプセル（ローカルの上 +Y に立つ。Entity と一緒に回る）"},
+	});
+}
 
 
 /// <summary>

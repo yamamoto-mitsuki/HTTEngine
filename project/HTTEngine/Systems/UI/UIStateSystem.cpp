@@ -204,7 +204,7 @@ void DescribeUIState(ComponentUI& ui, UIStateComponent& value) {
 	ui.Field("Interactable###interactable", value.interactable, Tip("外すと Disabled（マウスに反応しない）"));
 	ui.Field("Use Mouse###useMouse", value.useMouse, Tip("マウスで Hover・Pressed になる・クリックできる"));
 	ui.Field("Start Visible###startVisible", value.startVisible, Tip("最初から見えている。外すと、最初に Hide の最後の形にする（UIStateSystem::SetVisible(true) で出す）"));
-	ui.Field("Time Mode###timeMode", value.timeMode, Tip("Real：ゲームが止まっていても動く / Game：ポーズ・スロー・ヒットストップで止まる"));
+	ui.Field("Time Mode###timeMode", value.timeMode, Tip("状態の Timeline の再生に使う時間"));
 	ui.Separator("States");
 	for (size_t i = 0; i < kStateFields.size(); ++i) {
 		const StateField& field = kStateFields[i];
@@ -214,10 +214,7 @@ void DescribeUIState(ComponentUI& ui, UIStateComponent& value) {
 	ui.AssetField("Show###show", value.showTimeline, AssetType::Timeline, Tip("UIStateSystem::SetVisible(true) で再生する"));
 	ui.AssetField("Hide###hide", value.hideTimeline, AssetType::Timeline, Tip("UIStateSystem::SetVisible(false) で再生する。消えている間はマウスに反応しない"));
 	ui.Separator("Click");
-	ui.Field(
-	    "Action###clickAction", value.clickAction,
-	    Tip("クリックしたときにすること。None：何もしない（Script で UIStateSystem::IsClicked を見る）/ Open Screen・Close Screen：Screen の画面を出す・消す / Close Own "
-	        "Screen：この要素が入っている画面を消す / Switch Screen：この要素が入っている画面を消して、Screen の画面を出す"));
+	ui.Field("Action###clickAction", value.clickAction, Tip("クリックしたときにすること"));
 	const bool usesScreen = value.clickAction == UIClickAction::OpenScreen || value.clickAction == UIClickAction::CloseScreen || value.clickAction == UIClickAction::SwitchScreen;
 	ui.BeginDisabled(!usesScreen);
 	ui.Field("Screen###screen", value.screen, Tip("画面の名前（resources/ui/〇〇.uiscreen の 〇〇）"));
@@ -234,7 +231,7 @@ void UIStateSystem::Initialize() {
 	// UI State の置き場所・保存・Inspector を登録する（見せ方は DescribeUIState 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<UIStateComponent>();
 	ComponentSerializer::Register<UIStateComponent>("UI State", &DescribeUIState);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<UIStateComponent>>("UI State", "UI", &DescribeUIState));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<UIStateComponent>>("UI State", "UI", &DescribeUIState, "UI の要素の状態（マウスが乗った・押した・選んだ・使えない）で Timeline を再生する。クリックで画面を開く・閉じるもできる"));
 	EntityManager::AddDestroyListener(&UIStateSystem::OnEntityDestroyed);
 }
 

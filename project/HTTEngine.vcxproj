@@ -362,6 +362,8 @@
     <ClInclude Include="HTTEngine\Components\UI\UIWorldFollowComponent.h" />
     <ClInclude Include="HTTEngine\Components\UI\VectorShapeComponent.h" />
     <ClInclude Include="HTTEngine\Core\AssetMoveRegistry.h" />
+    <ClInclude Include="HTTEngine\Core\EnumTips.h" />
+    <ClInclude Include="HTTEngine\Core\EnumTipTable.h" />
     <ClInclude Include="HTTEngine\Core\FixedList.h" />
     <ClInclude Include="HTTEngine\Core\NameList.h" />
     <ClInclude Include="HTTEngine\Curve\Curve.h" />

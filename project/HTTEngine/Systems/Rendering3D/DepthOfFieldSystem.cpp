@@ -21,7 +21,7 @@ void DescribeDepthOfField(ComponentUI& ui, DepthOfFieldComponent& value) {
 	ui.Label("シーンに1つ。ピントの合った所だけはっきり見え、手前と奥がぼける（Scene ビューは View → Scene View → Depth of Field で切れる）");
 	// ===== ピント =====
 	ui.Separator("Focus");
-	ui.Field("Focus###focus", value.focus, Tip("ピントの合わせ方。FollowTarget：メインカメラの Camera Follow・Camera Orbit の Target の奥行き / Distance：カメラから Focus Distance の奥行き"));
+	ui.Field("Focus###focus", value.focus, Tip("ピントの合わせ方"));
 	// --- 選んだ合わせ方の値だけを見せる（保存も、使っている方だけが書かれる。Camera Follow の Mode と同じ）---
 	switch (value.focus) {
 	case DepthOfFieldFocus::FollowTarget:
@@ -70,7 +70,7 @@ void DepthOfFieldSystem::Initialize() {
 	// Depth Of Field の置き場所・保存・Inspector を登録する（見せ方は DescribeDepthOfField 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<DepthOfFieldComponent>();
 	ComponentSerializer::Register<DepthOfFieldComponent>("Depth Of Field", &DescribeDepthOfField);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<DepthOfFieldComponent>>("Depth Of Field", "Rendering3D", &DescribeDepthOfField));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<DepthOfFieldComponent>>("Depth Of Field", "Rendering3D", &DescribeDepthOfField, "被写界深度。ピントの合った所だけはっきり見せ、手前と奥をぼかす。シーンに1つ、どの Entity に付けてもよい"));
 }
 
 void DepthOfFieldSystem::Release() {} // 持っている物は無い（SceneRenderer は先に消えていることがあるので、ここでは触らない）

@@ -192,7 +192,7 @@ void DescribeCamera(ComponentUI& ui, CameraComponent& value) {
 	ui.Field("Priority###priority", value.priority, Tip("有効な Camera が複数あるとき、大きい方を使う（切り替えはこの値か、Entity の有効・無効で）"));
 	ui.Separator("Background");
 	ui.Field("Type###backgroundType", value.backgroundType,
-	    Tip("物が描かれていない所の塗り方。Skybox：天球 / SolidColor：Color の1色 / Gradient：Sky・Horizon・Ground の3色（SolidColor・Gradient は霧が掛からない。環境光（IBL）は天球のまま）"));
+	    Tip("物が描かれていない所の塗り方（どれを選んでも、環境光（IBL）は天球のまま）"));
 	// 使わない色も、保存のために毎回並べる（Describe は Inspector と保存の両方。並べないと保存されない）
 	ui.BeginDisabled(value.backgroundType != BackgroundType::SolidColor);
 	ui.ColorField("Color###backgroundColor", value.backgroundColor, Tip("SolidColor のときの色"));
@@ -204,7 +204,7 @@ void DescribeCamera(ComponentUI& ui, CameraComponent& value) {
 	ui.Field("Horizon Width###gradientHorizonWidth", value.gradientHorizonWidth, Range(0.0f, 1.0f).Tip("地平線の色が残る幅（見る向きの上下。0.15 なら上下に約 9°、1 なら真上・真下まで）。その間をなめらかにぼかして Sky・Ground へ移る"));
 	ui.EndDisabled();
 	ui.Separator("Blend");
-	ui.Field("Style###blendStyle", value.blendStyle, Tip("このカメラへ切り替わるときの動き方。Cut：すぐ切り替える / Ease：Time の秒をかけて補間する（Camera Volume の値も一緒に）"));
+	ui.Field("Style###blendStyle", value.blendStyle, Tip("このカメラへ切り替わるときの動き方"));
 	ui.BeginDisabled(value.blendStyle != CameraBlendStyle::Ease);
 	ui.Field("Time###blendTime", value.blendTime, AtLeast(0.0f).Tip("補間にかける秒。0 ならすぐ切り替える"));
 	ui.Field("Ease###blendEase", value.blendEase, Tip("補間の速さの変え方"));
@@ -212,7 +212,7 @@ void DescribeCamera(ComponentUI& ui, CameraComponent& value) {
 	ui.Separator("Time");
 	ui.Field(
 	    "Time Mode###timeMode", value.timeMode,
-	    Tip("このカメラの切り替え・Camera Follow・Camera Orbit・Camera Look At・Camera Shake が使う時間。Game：スローで遅くなり、ヒットストップ・ポーズで止まる / Real：止まらない"));
+	    Tip("このカメラの切り替え・Camera Follow・Camera Orbit・Camera Look At・Camera Shake が使う時間"));
 }
 
 //=============================================================================
@@ -431,31 +431,31 @@ void CameraSystem::Initialize() {
 
 	EntityManager::RegisterComponent<CameraComponent>();
 	ComponentSerializer::Register<CameraComponent>("Camera", &DescribeCamera);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraComponent>>("Camera", "Camera", &DescribeCamera));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraComponent>>("Camera", "Camera", &DescribeCamera, "ゲームの絵を撮るカメラ。位置・向きは Transform。いくつも置いたときは Priority の一番高い物が写る（切り替えは Blend で補間）"));
 
 	EntityManager::RegisterComponent<CameraFollowComponent>();
 	ComponentSerializer::Register<CameraFollowComponent>("Camera Follow", &CameraFollow::Describe);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraFollowComponent>>("Camera Follow", "Camera", &CameraFollow::Describe));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraFollowComponent>>("Camera Follow", "Camera", &CameraFollow::Describe, "カメラが Target を追いかける（カメラの向きは変えない）。どの面の上で動かすか・遊び（Dead Zone）・追い方を決める。Camera と同じ Entity に付ける"));
 
 	EntityManager::RegisterComponent<CameraLookAtComponent>();
 	ComponentSerializer::Register<CameraLookAtComponent>("Camera Look At", &CameraLookAt::Describe);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraLookAtComponent>>("Camera Look At", "Camera", &CameraLookAt::Describe));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraLookAtComponent>>("Camera Look At", "Camera", &CameraLookAt::Describe, "カメラに注視点（Target）を見させる。変えるのは写す向きだけで、Transform の向きは変えない。Camera と同じ Entity に付ける"));
 
 	EntityManager::RegisterComponent<CameraOrbitComponent>();
 	ComponentSerializer::Register<CameraOrbitComponent>("Camera Orbit", &CameraOrbit::Describe);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraOrbitComponent>>("Camera Orbit", "Camera", &CameraOrbit::Describe));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraOrbitComponent>>("Camera Orbit", "Camera", &CameraOrbit::Describe, "カメラを Target のまわりの球の上に置き、回り込ませる（三人称の後ろに付くカメラ・ロックオン）。Camera と同じ Entity に付ける"));
 
 	EntityManager::RegisterComponent<CameraShakeComponent>();
 	ComponentSerializer::Register<CameraShakeComponent>("Camera Shake", &CameraShake::Describe);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraShakeComponent>>("Camera Shake", "Camera", &CameraShake::Describe));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraShakeComponent>>("Camera Shake", "Camera", &CameraShake::Describe, "カメラを揺らす。ずっと続く小さな揺れ（ノイズ）と、CameraSystem::AddImpulse で受ける衝撃の揺れ。Camera と同じ Entity に付ける"));
 
 	EntityManager::RegisterComponent<CameraVolumeComponent>();
 	ComponentSerializer::Register<CameraVolumeComponent>("Camera Volume", &CameraVolume::Describe);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraVolumeComponent>>("Camera Volume", "Camera", &CameraVolume::Describe));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraVolumeComponent>>("Camera Volume", "Camera", &CameraVolume::Describe, "このカメラの間だけ使うポストエフェクトの値（ブルーム・色・ピントなど）。チェックした項目だけ全体の設定を上書きする。Camera と同じ Entity に付ける"));
 
 	EntityManager::RegisterComponent<CameraPathComponent>();
 	ComponentSerializer::Register<CameraPathComponent>("Camera Path", &CameraPath::Describe);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraPathComponent>>("Camera Path", "Camera", &CameraPath::Describe));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CameraPathComponent>>("Camera Path", "Camera", &CameraPath::Describe, "カメラを、子の Entity を順に通るなめらかな線の上で動かす（Position を Timeline で動かすと演出になる）。Camera と同じ Entity に付ける"));
 }
 
 void CameraSystem::Release() { state.reset(); }

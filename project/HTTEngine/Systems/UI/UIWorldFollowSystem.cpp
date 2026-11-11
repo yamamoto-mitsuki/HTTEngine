@@ -212,7 +212,7 @@ void UIWorldFollowSystem::Initialize() {
 	// 置き場所・保存・Inspector を登録する。見せ方は DescribeUIWorldFollow 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<UIWorldFollowComponent>();
 	ComponentSerializer::Register<UIWorldFollowComponent>("UI World Follow", &DescribeUIWorldFollow);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<UIWorldFollowComponent>>("UI World Follow", "UI", &DescribeUIWorldFollow));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<UIWorldFollowComponent>>("UI World Follow", "UI", &DescribeUIWorldFollow, "画面に重ねる UI を、ワールドの物・点に重ね続ける（敵の上のマーク・名札・画面の端の矢印）"));
 	// ワールド行列を作るたびに、置いた所を入れてもらう
 	EntityManager::AddTransformAdjuster(&ApplyPlacement);
 }

@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Graphics/Pipeline/RenderStates.h"
 #include "HTTEngine/Math/Vector2.h"
 #include "HTTEngine/Math/Vector4.h"
@@ -19,6 +20,16 @@ enum class SurfaceType {
 	Transparent, // 半透明（色の A の分だけ透ける。奥行きを書かずに、不透明な物の後で、カメラから遠い順に描く）
 	Additive,    // 加算（色を足して光らせる。奥行きを書かずに、遠い順に描く）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(SurfaceType) {
+	using enum SurfaceType;
+	return MakeEnumTips<SurfaceType>({
+	    {Opaque, "不透明"},
+	    {Transparent, "Color の A の分だけ透ける（氷・水）。不透明な物の後に、カメラから遠い順に描く"},
+	    {Additive, "色を足して光る（光の玉）。不透明な物の後に、カメラから遠い順に描く"},
+	});
+}
 
 /// <summary>
 /// モデルのファイルを使わない形の見た目（Primitive Renderer の球・箱、Elastic Surface の板・支柱で共通）
@@ -45,6 +56,15 @@ enum class PrimitiveShape {
 	Sphere, // 球
 	Box,    // 箱
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(PrimitiveShape) {
+	using enum PrimitiveShape;
+	return MakeEnumTips<PrimitiveShape>({
+	    {Sphere, "球（Scale 1 で直径 1）"},
+	    {Box, "箱（Scale 1 で 1 辺 1）"},
+	});
+}
 
 /// <summary>
 /// 決まった形を描く設定

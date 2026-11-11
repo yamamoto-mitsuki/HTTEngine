@@ -316,7 +316,7 @@ bool UpdateScreen(OpenUIScreen& screen, float deltaTime) {
 // ===== 出し方・消し方1つ分（id は保存の名前の頭。"show" → "showMotion"・"showDuration" …）=====
 // 選んだ動きの値だけ見せる（保存も、使っている方だけが書かれる）
 void DescribeMotion(ComponentUI& ui, UIScreenMotion& motion, const char* id) {
-	ui.Field(std::format("Motion###{}Motion", id).c_str(), motion.type, Tip("None：動かない / Fade：だんだん見える・消える / Slide：画面の外の方から滑り込む / Scale：小さい所から大きくなる"));
+	ui.Field(std::format("Motion###{}Motion", id).c_str(), motion.type, Tip("要素の動き方"));
 	switch (motion.type) {
 	case UIScreenMotionType::None:
 		return; // 秒数もイージングも使わない
@@ -342,7 +342,7 @@ void DescribeUIScreen(ComponentUI& ui, UIScreenComponent& value) {
 	ui.Label("画面のファイルの一番上の Entity に付ける。Timeline を選ぶとそれを再生し、選ばなければ直下の子が上から順に1つずつ Motion で動く");
 	ui.Field("Pause Game###pauseGame", value.pauseGame, Tip("出している間、ゲームを止める（時間が0・Script を呼ばない）。この画面の中の Script は動く"));
 	ui.BeginDisabled(value.pauseGame);
-	ui.Field("Time Mode###timeMode", value.timeMode, Tip("出す・消す動きの時間。Real：ゲームが止まっていても動く / Game：ポーズ・スローで止まる（Pause Game を入れた画面は、いつも Real）"));
+	ui.Field("Time Mode###timeMode", value.timeMode, Tip("出す・消す動きに使う時間（Pause Game を入れた画面は、いつも Real）"));
 	ui.EndDisabled();
 	ui.Separator("Show");
 	ui.AssetField("Timeline###showTimeline", value.showTimeline, AssetType::Timeline, Tip("出すときに再生する Timeline（この Entity を再生する Entity にする）。選ぶと下の Motion は使わない"));
@@ -385,10 +385,10 @@ void UIScreen::Initialize() {
 	// UI Screen・UI Screen Element の置き場所・保存・Inspector を登録する（見せ方は Describe〜 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<UIScreenComponent>();
 	ComponentSerializer::Register<UIScreenComponent>("UI Screen", &DescribeUIScreen);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<UIScreenComponent>>("UI Screen", "UI", &DescribeUIScreen));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<UIScreenComponent>>("UI Screen", "UI", &DescribeUIScreen, "画面（ポーズ・クリアなど）の出し方・消し方。.uiscreen のファイルの一番上の Entity に付け、UIScreen::Open・Close で出し入れする"));
 	EntityManager::RegisterComponent<UIScreenElementComponent>();
 	ComponentSerializer::Register<UIScreenElementComponent>("UI Screen Element", &DescribeUIScreenElement);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<UIScreenElementComponent>>("UI Screen Element", "UI", &DescribeUIScreenElement));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<UIScreenElementComponent>>("UI Screen Element", "UI", &DescribeUIScreenElement, "画面の要素1つだけ、UI Screen の出し方・消し方（Motion）を変える（後ろを暗くする幕はフェードだけ、など）。画面の一番上の Entity の直下の子に付ける"));
 }
 
 void UIScreen::Release() { state.reset(); }

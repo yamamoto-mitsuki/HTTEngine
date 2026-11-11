@@ -196,7 +196,7 @@ void WindZoneSystem::Initialize() {
 	// Wind Zone の置き場所・保存・Inspector を登録する（見せ方は DescribeWindZone 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<WindZoneComponent>();
 	ComponentSerializer::Register<WindZoneComponent>("Wind Zone", &DescribeWindZone);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<WindZoneComponent>>("Wind Zone", "Physics", &DescribeWindZone));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<WindZoneComponent>>("Wind Zone", "Physics", &DescribeWindZone, "箱の範囲の中の Rigidbody を、風の向き（ローカルの +X）へ押す"));
 }
 
 void WindZoneSystem::Release() { state.reset(); }

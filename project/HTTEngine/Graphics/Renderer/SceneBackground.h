@@ -1,4 +1,5 @@
 #pragma once
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Math/Vector3.h"
 
 /// <summary>
@@ -10,6 +11,16 @@ enum class BackgroundType {
 	SolidColor, // 1色で塗る（霧は掛けない）
 	Gradient,   // 上（Sky）・地平線（Horizon）・下（Ground）の3色を、見る向きの上下で混ぜる（霧は掛けない）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(BackgroundType) {
+	using enum BackgroundType;
+	return MakeEnumTips<BackgroundType>({
+	    {Skybox, "天球の絵で塗る"},
+	    {SolidColor, "Color の1色で塗る（霧は掛からない）"},
+	    {Gradient, "Sky（上）・Horizon（地平線）・Ground（下）の3色を、見る向きの上下で混ぜる（霧は掛からない）"},
+	});
+}
 
 /// <summary>
 /// 背景の塗り方。SceneRenderer が Skybox::Draw に渡す

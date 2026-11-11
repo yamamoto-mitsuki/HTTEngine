@@ -56,7 +56,7 @@ void FogSystem::Initialize() {
 	// Fog の置き場所・保存・Inspector を登録する（見せ方は DescribeFog 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<FogComponent>();
 	ComponentSerializer::Register<FogComponent>("Fog", &DescribeFog);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<FogComponent>>("Fog", "Rendering3D", &DescribeFog));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<FogComponent>>("Fog", "Rendering3D", &DescribeFog, "霧（遠いほど・低いほど色が混ざる）。シーンに1つ、どの Entity に付けてもよい"));
 }
 
 void FogSystem::Release() {} // 持っている物は無い（SceneRenderer は先に消えていることがあるので、ここでは触らない）

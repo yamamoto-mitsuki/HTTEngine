@@ -13,6 +13,7 @@
 
 #include <externals/magic_enum/magic_enum.hpp>
 
+#include "HTTEngine/Core/EnumTipTable.h"
 #include "HTTEngine/Core/FixedList.h"
 #include "HTTEngine/ECS/Entity.h"
 #include "HTTEngine/Math/Vector2.h"
@@ -268,14 +269,16 @@ public:
 	}
 
 	// ===== enum（選択肢の名前は magic_enum が型から作る。保存も名前で行うので、並びを変えても読める）=====
+	// 選択肢ごとの説明は、enum の型に EnumTips を書く（EnumTips.h）。style の Tip は項目そのものの説明
 	template<class E>
 	    requires std::is_enum_v<E>
 	void Field(const char* label, E& value, FieldStyle style = {}) {
-		constexpr auto names = magic_enum::enum_names<E>(); // 選択肢の名前（宣言の順）
+		constexpr auto names = magic_enum::enum_names<E>();                   // 選択肢の名前（宣言の順）
+		static constexpr auto tips = MakeEnumTipTable<E>();  // 選択肢の説明（names と同じ並び）
 		const auto current = magic_enum::enum_index(value); // 今の値が何番目か（magic_enumが知らない値なら無し）
 		size_t index = current.value_or(0);
 		const size_t before = index;
-		EnumField(label, index, names, style);
+		EnumField(label, index, names, tips, style);
 		// 変わったときだけ書き戻す（知らない値を、触っていないのに先頭の選択肢へ変えてしまわないように）
 		if (index != before && index < names.size()) {
 			value = magic_enum::enum_value<E>(index);
@@ -363,8 +366,8 @@ public:
 	}
 
 protected:
-	// enumの中身。何番目の選択肢かで受け渡す（names は選択肢の名前）
-	virtual void EnumField(const char* label, size_t& index, std::span<const std::string_view> names, FieldStyle style) = 0;
+	// enumの中身。何番目の選択肢かで受け渡す（names は選択肢の名前、tips は選択肢の説明で names と同じ並び。説明の無い物は nullptr）
+	virtual void EnumField(const char* label, size_t& index, std::span<const std::string_view> names, std::span<const char* const> tips, FieldStyle style) = 0;
 	// 一覧の中身（list で数・並び・要素を扱う）。何もしない係（Timeline の値を書く・集める係）は、そのまま（一覧の中の値は扱わない）
 	virtual void ListFieldErased(const char* label, ListAccess& list, FieldStyle style) {
 		(void)label;

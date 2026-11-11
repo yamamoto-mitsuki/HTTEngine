@@ -290,7 +290,7 @@ void DescribeParticleSystem(ComponentUI& ui, ParticleSystemComponent& value) {
 	ui.Field("Play On Start###playOnStart", value.playOnStart, Tip("Play で流し始める。外すと ParticleSystem::Play を呼ぶまで出さない（使ったら飛び散る物）"));
 	ui.Field("Looping###looping", value.looping, Tip("Duration 秒ごとにくり返す（Burst もまた出る）。外すと1回で出すのをやめる"));
 	ui.Field("Duration###duration", value.duration, AtLeast(kMinDuration).Tip("1回の長さ（秒）"));
-	ui.Field("Stop Action###stopAction", value.stopAction, Tip("出し終わったら（出すのをやめて＝Looping でなく Duration が過ぎた・Stop を呼んだ、粒が全部消えたら）すること。Destroy：この Entity を消す（子も一緒。飛び散る物の Prefab に）"));
+	ui.Field("Stop Action###stopAction", value.stopAction, Tip("出し終わったら（出すのをやめて＝Looping でなく Duration が過ぎた・Stop を呼んだ、粒が全部消えたら）すること"));
 
 	ui.Separator("Emission");
 	ui.Field("Rate Over Time###rateOverTime", value.rateOverTime, AtLeast(0.0f).Tip("1秒に出す数。0 で Burst だけ"));
@@ -298,7 +298,7 @@ void DescribeParticleSystem(ComponentUI& ui, ParticleSystemComponent& value) {
 	ui.Field("Max Particles###maxParticles", value.maxParticles, Range(1.0f, static_cast<float>(ParticleSystem::kMaxParticles)).Tip("同時に出ている数の上限。いっぱいの間は出さない"));
 
 	ui.Separator("Shape");
-	ui.Field("Shape###shape", value.shape, Tip("Point：点から全部の向き／Sphere：球から外へ／Circle：XY の円から外へ／Cone：上（+Y）へ開く／Box：箱から外へ"));
+	ui.Field("Shape###shape", value.shape, Tip("粒が出る場所と、飛ぶ向き"));
 	ui.Field("Radius###radius", value.radius, AtLeast(0.0f).Tip("Sphere・Circle・Cone の半径（m）"));
 	ui.Field("Cone Angle###coneAngle", value.coneAngle, Range(0.0f, 90.0f).Tip("Cone の開き（度）。縁から出た粒ほど外へ傾く"));
 	ui.Field("Box Size###boxSize", value.boxSize, AtLeast(0.0f).Tip("Box の大きさ（m）"));
@@ -322,7 +322,7 @@ void DescribeParticleSystem(ComponentUI& ui, ParticleSystemComponent& value) {
 	ui.Label("最後の色は初めの色に掛ける（A 0 でフェードアウト）");
 	ui.Field("Ease###ease", value.ease, Tip("大きさと色の変わり方（OutBack などは大きさが少し行き過ぎる）"));
 	ui.Field("Converge###converge", value.converge, Tip("中心（Entity の位置）へ集まる。寿命の終わりにちょうど着く（Speed・Gravity・Drag は使わない）。Shape の From Surface と合わせると、輪・球の表面から吸い込まれる"));
-	ui.Field("Converge Ease###convergeEase", value.convergeEase, Tip("集まり方。InQuad：だんだん速く吸い込まれる／OutQuad：初め速く、中心でゆっくり止まる"));
+	ui.Field("Converge Ease###convergeEase", value.convergeEase, Tip("中心へ集まるときの速さの変わり方"));
 
 	ui.Separator("Rotation");
 	ui.Field("Start Rotation###startRotation", value.startRotation, Tip("初めの角度（度）。左と右の間でランダム。画面の上で、正で左回り（-180, 180 で全部の向き）"));
@@ -333,8 +333,8 @@ void DescribeParticleSystem(ComponentUI& ui, ParticleSystemComponent& value) {
 
 	ui.Separator("Renderer");
 	ui.AssetField("Texture###texture", value.textureHandle, AssetType::Texture, Tip("粒の絵（白で作って、色は Color で付ける）。無ければ丸いぼかし"));
-	ui.Field("Blend###blend", value.blend, Tip("Add：光る粒（重なるほど明るい）／Normal：普通（奥から順には並べないので、重なると縁が汚いことがある）"));
-	ui.Field("Space###space", value.space, Tip("World：出た所に残る／Local：Entity と一緒に動く・回る"));
+	ui.Field("Blend###blend", value.blend, Tip("重ね方"));
+	ui.Field("Space###space", value.space, Tip("出た粒が、Entity に付いていくか"));
 	ui.Field("Use Fog###useFog", value.useFog, Tip("霧（Fog）を混ぜる。外すと霧の中でもそのままの色（光る粒をくっきり）"));
 	ui.Field(
 	    "Use Depth Of Field###useDepthOfField", value.useDepthOfField, Tip("被写界深度でぼかす（奥の層の葉・湯気など）。ぼけ方は粒の後ろにある物の距離で決まるので、ピントの合う所の粒は外しておく"));
@@ -351,7 +351,7 @@ void ParticleSystem::Initialize() {
 	// Particle System の置き場所・保存・Inspector を登録する。見せ方は DescribeParticleSystem 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<ParticleSystemComponent>();
 	ComponentSerializer::Register<ParticleSystemComponent>("Particle System", &DescribeParticleSystem);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<ParticleSystemComponent>>("Particle System", "Effects", &DescribeParticleSystem));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<ParticleSystemComponent>>("Particle System", "Effects", &DescribeParticleSystem, "小さな板（粒）をたくさん出して、動かして消す（火花・煙・キラキラ）"));
 
 	// 出る形の線は Scene ビューだけ（置く場所を決める助け。ゲームの絵には入れない）
 	state->gizmoLines.layer = DrawLayer::EditorGizmo;

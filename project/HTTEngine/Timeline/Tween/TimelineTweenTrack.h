@@ -3,6 +3,7 @@
 #include <set>
 #include <string>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Core/Handle.h"
 #include "HTTEngine/Curve/Curve.h"
 #include "HTTEngine/ECS/Entity.h"
@@ -20,6 +21,18 @@ enum class TimelineTweenMode {
 	Multiply,  // 元の値 × Value（元の大きさ・透明度に対する割合）
 	Parameter, // 実行中に TimelineSystem::SetParameter で渡した値（渡していなければ Value）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(TimelineTweenMode) {
+	using enum TimelineTweenMode;
+	return MakeEnumTips<TimelineTweenMode>({
+	    {Current, "クリップが始まったときの今の値（途中から別の動きに替わっても、値が飛ばない）"},
+	    {Value, "下の Value の値"},
+	    {Add, "元の値 ＋ Value（元の位置からずらす）"},
+	    {Multiply, "元の値 × Value（元の大きさ・透明度に対する割合）"},
+	    {Parameter, "実行中に TimelineSystem::SetParameter で渡した値（渡していなければ Value）"},
+	});
+}
 
 /// <summary>
 /// Tween の端1つ（From か To）

@@ -313,7 +313,7 @@ void DrawTweenPoint(TimelineEditorState& state, const char* label, TimelineTween
 	ImGui::PushID(label);
 	ImGui::SeparatorText(label);
 	GetInspectorUI().Field(
-	    "Mode###mode", point.mode, Tip("Current：始まったときの今の値 / Value：下の値 / Add：元の値 ＋ 下の値 / Multiply：元の値 × 下の値 / Parameter：TimelineSystem::SetParameter で渡す値"));
+	    "Mode###mode", point.mode, Tip("値の決め方"));
 	if (point.mode == TimelineTweenMode::Parameter) {
 		GetInspectorUI().Field("Name###parameter", point.parameter, Tip("TimelineSystem::SetParameter に渡す名前。渡していないときは下の値"));
 	}

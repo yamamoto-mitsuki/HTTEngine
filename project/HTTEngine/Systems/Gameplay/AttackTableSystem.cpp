@@ -508,7 +508,7 @@ void AttackTableSystem::Initialize() {
 	// Attack Table の置き場所・保存・Inspector を登録する（見せ方は DescribeAttackTableComponent 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<AttackTableComponent>();
 	ComponentSerializer::Register<AttackTableComponent>("Attack Table", &DescribeAttackTableComponent);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<AttackTableComponent>>("Attack Table", "Gameplay", &DescribeAttackTableComponent));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<AttackTableComponent>>("Attack Table", "Gameplay", &DescribeAttackTableComponent, "攻撃表の AI。攻撃表のファイル（.attacktable）に書いた攻撃から、条件に合う物を選んで順に出す（ボス・敵）"));
 	// 敵が消えるときに、攻撃の途中なら OnEnd を呼べるようにする
 	EntityManager::AddDestroyListener(&AttackTableSystem::OnEntityDestroyed);
 }

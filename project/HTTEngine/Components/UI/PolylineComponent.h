@@ -3,6 +3,7 @@
 #include <array>
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Components/UI/ImageComponent.h"
 #include "HTTEngine/Components/UI/VectorShapeComponent.h"
 #include "HTTEngine/Graphics/Pipeline/RenderStates.h"
@@ -28,6 +29,16 @@ enum class PolylineCap {
 	Round,  // 端の点を中心に、太さの半分の半円
 	Square, // 端の点から、太さの半分だけ伸ばして切る
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(PolylineCap) {
+	using enum PolylineCap;
+	return MakeEnumTips<PolylineCap>({
+	    {Butt, "端の点でまっすぐ切る"},
+	    {Round, "端の点を中心に、太さの半分の半円"},
+	    {Square, "端の点から、太さの半分だけ伸ばして切る"},
+	});
+}
 
 /// <summary>
 /// 点をつないだ UI の線・形

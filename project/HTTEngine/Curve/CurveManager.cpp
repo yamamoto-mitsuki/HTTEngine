@@ -186,8 +186,8 @@ Curve CurveManager::FromJson(const SceneJson& json, std::set<std::string>& warni
 void CurveManager::DescribeKey(ComponentUI& ui, CurveKey& value, bool isInUsed, bool isOutUsed) {
 	ui.Field("Time###time", value.time, Drag(0.01f).Tip("キーの時間"));
 	ui.Field("Value###value", value.value, Drag(0.01f).Tip("キーの値"));
-	ui.Field("Interpolation###interp", value.interp, Tip("このキーから次のキーまでのつなぎ方（Constant：次のキーまで今の値のまま / Linear：直線 / Bezier：ハンドルで曲げる）"));
-	ui.Field("Handle Mode###handleMode", value.handleMode, Tip("Aligned：入りと出の傾きをそろえる（なめらかにつながる） / Free：別々に動かす（折れ目を作れる）"));
+	ui.Field("Interpolation###interp", value.interp, Tip("このキーから次のキーまでのつなぎ方"));
+	ui.Field("Handle Mode###handleMode", value.handleMode, Tip("入りと出のハンドルの動かし方"));
 	ui.BeginDisabled(!isInUsed);
 	ui.Field("In Handle###inHandle", value.inHandle, Drag(0.01f).Tip("入りのハンドル。キーからの差（x：時間、y：値）。時間は 0 以下で、前のキーまでの長さを超えない"));
 	ui.EndDisabled();

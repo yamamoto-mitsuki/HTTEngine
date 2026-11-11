@@ -78,7 +78,7 @@ COMPONENT(TrailFadeShooter, "Test") {
 	ui.Field("Speed###speed", value.speed, AtLeast(0.0f).Tip("弾の速さ（m/s）"));
 	ui.Field("Flight Time###flightTime", value.flightTime, AtLeast(0.0f).Tip("弾が飛ぶ秒（過ぎたら End のやり方でいなくなる）"));
 	ui.Field("End###end", value.end, Tip("弾がいなくなる形"));
-	ui.Field("After Owner###afterOwner", value.afterOwner, Tip("弾の Trail の After Owner（弾がいなくなった後の尾。Discard：すぐ消える／Shrink：縮む／Fade：形はそのままで薄くなる）"));
+	ui.Field("After Owner###afterOwner", value.afterOwner, Tip("弾の Trail の After Owner（弾がいなくなった後の尾の消え方）"));
 	ui.Field("Fade Seconds###fadeSeconds", value.fadeSeconds, AtLeast(0.0f).Tip("弾の Trail の Fade Seconds（Fade のとき、薄くしきるまでの秒）"));
 	ui.Field("Trail Life Time###trailLifeTime", value.trailLifeTime, AtLeast(0.0f).Tip("弾の Trail の Life Time（点が消えるまでの秒）"));
 	ui.Field("Blend###blend", value.blend, Tip("弾の Trail の Blend（Add・Normal のどちらでも薄くなる）"));

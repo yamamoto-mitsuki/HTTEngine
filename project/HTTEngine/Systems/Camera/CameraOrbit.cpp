@@ -89,7 +89,7 @@ void CameraOrbit::Describe(ComponentUI& ui, CameraOrbitComponent& value) {
 	ui.Separator("Heading");
 	ui.Field(
 	    "Heading###heading", value.heading,
-	    Tip("カメラが追う物のどちら側に付くか。World：ワールドの決まった向き（Yaw 0 で +Z を向く）/ TargetForward：追う物の前の向き（追う物の後ろに付く）/ LookAt：Camera Look At が見る点の向き（見る点と反対の側に付く。相手を見ながら、追う物の後ろに付くロックオン）"));
+	    Tip("カメラが、追う物のどちら側に付くか（Yaw の角度を足した向き）"));
 	ui.Field(
 	    "Yaw###yaw", value.yaw,
 	    Tip("横の角度（度。＋ で上から見て時計回り）。World：向きそのもの / TargetForward・LookAt：決まった向きに足す角度（20 くらいずらすと、斜め後ろから肩越しに見る）"));

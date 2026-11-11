@@ -226,17 +226,17 @@ void DescribeTrail(ComponentUI& ui, TrailComponent& value) {
 	ui.Field("Emitting###emitting", value.emitting, Tip("動いたら自動で点を足す。外すと TrailSystem::AddPoint で足した点だけ（描いた線）"));
 	ui.Field("Min Vertex Distance###minVertexDistance", value.minVertexDistance, AtLeast(0.0f).Tip("自動で足すとき、この距離動くたびに1点"));
 	ui.Field("Life Time###lifeTime", value.lifeTime, AtLeast(0.0f).Tip("点が消えるまでの秒。0 で消えない"));
-	ui.Field("After Owner###afterOwner", value.afterOwner, Tip("持ち主（Entity かこの Component）が消えた後の消え方（新しい点は足さない）。Discard：すぐ捨てる／Shrink：点が寿命で消えて縮む（Life Time 0 なら捨てる）／Fade：形はそのままで、Fade Seconds かけて薄くして消す"));
+	ui.Field("After Owner###afterOwner", value.afterOwner, Tip("持ち主（Entity かこの Component）が消えた後の消え方（新しい点は足さない）"));
 	ui.Field("Fade Seconds###fadeSeconds", value.fadeSeconds, AtLeast(0.0f).Tip("After Owner が Fade のとき、薄くしきるまでの秒。0 ならすぐ捨てる"));
 	ui.Field("Max Points###maxPoints", value.maxPoints, AtLeast(static_cast<float>(kMinPoints)).Tip("超えたら古い方から消す"));
 	ui.Separator("Appearance");
 	ui.Field("Width###width", value.width, AtLeast(0.0f).Tip("新しい方の端の太さ"));
 	ui.Field("End Width Rate###endWidthRate", value.endWidthRate, Range(0.0f, 1.0f).Tip("古い方の端の太さ（Width に掛ける）。1 でずっと同じ太さ"));
-	ui.Field("Alignment###alignment", value.alignment, Tip("View：カメラの方を向く／Ground：地面に寝かせる"));
+	ui.Field("Alignment###alignment", value.alignment, Tip("帯の面の向き"));
 	ui.ColorField("Color###color", value.color);
 	ui.Field("Intensity###intensity", value.intensity, AtLeast(0.0f).Tip("明るさの倍率（色はそのまま）。1 より大きくすると HDR の明るさになり、ブルーム（Threshold 1）で光る"));
 	ui.AssetField("Texture###texture", value.textureHandle, AssetType::Texture, Tip("U が古い方 0 → 新しい方 1、V が幅の向き。無ければ白"));
-	ui.Field("Blend###blend", value.blend, Tip("Add で光る線（重なるほど明るい）"));
+	ui.Field("Blend###blend", value.blend, Tip("重ね方"));
 }
 } // namespace
 
@@ -251,7 +251,7 @@ void TrailSystem::Initialize() {
 	// Trail の置き場所・保存・Inspector を登録する。見せ方は DescribeTrail 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<TrailComponent>();
 	ComponentSerializer::Register<TrailComponent>("Trail", &DescribeTrail);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<TrailComponent>>("Trail", "Effects", &DescribeTrail));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<TrailComponent>>("Trail", "Effects", &DescribeTrail, "動いた跡を帯にして描く（剣の残像・弾の尾・地面に残る線）"));
 }
 
 void TrailSystem::Release() { state.reset(); }

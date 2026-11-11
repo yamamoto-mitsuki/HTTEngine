@@ -18,12 +18,15 @@ class ScriptEditor final : public ComponentEditor {
 public:
 	// name・sourceFile はコンパイラが決めた文字列（SCRIPT(...) の型の名前・ファイル）なので、プログラムの終わりまで消えない
 	// category は "Gameplay" か "Gameplay/サブカテゴリ"（COMPONENT(...) と同じ所に並ぶ）
-	ScriptEditor(const char* name, std::type_index type, const char* sourceFile, std::string category) : name_(name), type_(type), sourceFile_(sourceFile), category_(std::move(category)) {}
+	// description は SCRIPT(...) に書いた説明（文字列リテラル。書かなければ nullptr）
+	ScriptEditor(const char* name, std::type_index type, const char* sourceFile, std::string category, const char* description)
+	    : name_(name), type_(type), sourceFile_(sourceFile), category_(std::move(category)), description_(description) {}
 
 	// ===== 種類の情報 =====
 	const char* GetName() const override { return name_; }
 	const char* GetCategory() const override { return "Scripts"; }
 	const char* GetSourceFile() const override { return sourceFile_; }
+	const char* GetDescription() const override { return description_; }
 	bool IsScript() const override { return true; }
 
 	// ===== 実体の出し入れ =====
@@ -45,4 +48,5 @@ private:
 	std::type_index type_;   // どの型の Script か
 	const char* sourceFile_; // SCRIPT(...) を書いたファイル（見出しにマウスを乗せると出る・Edit Script で開く）
 	std::string category_;   // Add Component のカテゴリ（"Gameplay/サブカテゴリ"）
+	const char* description_; // 何をする Script かの説明（見出し・Add Component の項目にマウスを乗せると出る。無ければ nullptr）
 };

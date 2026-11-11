@@ -11,7 +11,7 @@
 | シーンの保存・Play / Stop で何が戻るか・**シーンを切り替える（`LoadScene`）**・幕を付けて切り替える | [02 ゲームの入口](Reference/02-GameEntry.md) |
 | Entity を作る・消す・**同じ Entity を何個でも作る（Prefab）** | [03 Entity](Reference/03-Entity.md) |
 | Component を付ける・取る | [04 Component](Reference/04-Component.md) |
-| **自分の Component を書く（`COMPONENT` / `SYSTEM`）**・`ui.Field` で書ける物 | [05 ゲーム固有 Component](Reference/05-GameComponent.md) |
+| **自分の Component を書く（`COMPONENT` / `SYSTEM`）**・`ui.Field` で書ける物・**マウスを乗せると出る説明（項目・enum の選択肢・Component・カテゴリ）** | [05 ゲーム固有 Component](Reference/05-GameComponent.md) |
 | **敵が複数いるときのフラグの持ち方**（状態を Component・Script・System のどこに置くか） | [06 状態をどこに置くか](Reference/06-StatePlacement.md) |
 | 位置・回転（クォータニオンと角度）・親子（**見た目を変えずに親を付け替える**） | [07 Transform](Reference/07-Transform.md) |
 | モデルを出す・マテリアルの上書き・**モデル無しで球・箱を出す**・足場の形・**床・壁に塗る（Decal）**・霧・被写界深度・ブルーム・トーンマップ・色の調整・図形とスプライト | [08 描画](Reference/08-Rendering.md) |

@@ -213,12 +213,8 @@ float DragSpeed(const FieldStyle& style, float defaultSpeed) {
 	return defaultSpeed;
 }
 
-// 直前の項目にマウスを乗せたら説明を出す
-void DrawTooltip(const FieldStyle& style) {
-	if (style.tooltip != nullptr && ImGui::IsItemHovered()) {
-		ImGui::SetTooltip("%s", style.tooltip);
-	}
-}
+// 直前の項目にマウスを乗せたら説明を出す（長い説明は折り返す）
+void DrawTooltip(const FieldStyle& style) { EditorWidgets::ItemTooltip(style.tooltip); }
 
 // ===== アセットの一覧（フォルダを掘るのは、最初に開いたときと Refresh のときだけ）=====
 constexpr std::array<const char*, 2> kAssetSearchRoots = {"resources", "HTTEngine/Resources"}; // 探すフォルダ（ゲーム側とエンジン側）。無いフォルダは飛ばす
@@ -730,22 +726,9 @@ public:
 	bool Button(const char* label) override { return ImGui::Button(label); }
 
 protected:
-	void EnumField(const char* label, size_t& index, std::span<const std::string_view> names, FieldStyle style) override {
-		// string_view は末尾に0があるとは限らないので、ImGuiに渡す前に std::string にする
-		const std::string current = index < names.size() ? std::string(names[index]) : std::string("?");
-		if (ImGui::BeginCombo(label, current.c_str())) {
-			for (size_t i = 0; i < names.size(); ++i) {
-				const std::string name(names[i]);
-				if (ImGui::Selectable(name.c_str(), i == index)) {
-					index = i;
-				}
-				if (i == index) {
-					ImGui::SetItemDefaultFocus(); // 開いたときに今の選択へスクロールする
-				}
-			}
-			ImGui::EndCombo();
-		}
-		DrawTooltip(style);
+	// 閉じているときは項目の説明（Tip）と今の選択肢の説明、開いたら選択肢ごとの説明（EnumTips）を出す
+	void EnumField(const char* label, size_t& index, std::span<const std::string_view> names, std::span<const char* const> tips, FieldStyle style) override {
+		EditorWidgets::EnumComboWithTips(label, index, names, tips, style.tooltip);
 	}
 
 	// 一覧：見出し（名前と数）を開くと、要素の見出しが並ぶ。要素の見出しを開くと、その要素の項目
@@ -911,7 +894,7 @@ public:
 	bool Button(const char*) override { return false; }
 
 protected:
-	void EnumField(const char*, size_t&, std::span<const std::string_view>, FieldStyle) override {}
+	void EnumField(const char*, size_t&, std::span<const std::string_view>, std::span<const char* const>, FieldStyle) override {}
 };
 } // namespace
 

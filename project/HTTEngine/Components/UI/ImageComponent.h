@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Graphics/Pipeline/RenderStates.h"
 #include "HTTEngine/Math/Vector2.h"
 #include "HTTEngine/Math/Vector4.h"
@@ -25,6 +26,22 @@ enum class ScreenAnchor {
 	Bottom,      // 下の真ん中
 	BottomRight, // 右下
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(ScreenAnchor) {
+	using enum ScreenAnchor;
+	return MakeEnumTips<ScreenAnchor>({
+	    {TopLeft, "画面の左上から数える"},
+	    {Top, "画面の上の真ん中から数える"},
+	    {TopRight, "画面の右上から数える"},
+	    {Left, "画面の左の真ん中から数える"},
+	    {Center, "画面の真ん中から数える"},
+	    {Right, "画面の右の真ん中から数える"},
+	    {BottomLeft, "画面の左下から数える"},
+	    {Bottom, "画面の下の真ん中から数える"},
+	    {BottomRight, "画面の右下から数える"},
+	});
+}
 
 /// <summary>
 /// 画面に重ねる絵（Unity の UI の Image）

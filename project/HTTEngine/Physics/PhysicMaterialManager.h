@@ -4,6 +4,8 @@
 #include <string>
 #include <string_view>
 
+#include "HTTEngine/Core/EnumTips.h"
+
 // 前方宣言
 class ComponentUI;
 
@@ -18,6 +20,17 @@ enum class PhysicMaterialCombine {
 	Multiply, // 掛け算
 	Maximum,  // 大きい方
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(PhysicMaterialCombine) {
+	using enum PhysicMaterialCombine;
+	return MakeEnumTips<PhysicMaterialCombine>({
+	    {Average, "2つの平均"},
+	    {Minimum, "小さい方"},
+	    {Multiply, "掛け算"},
+	    {Maximum, "大きい方"},
+	});
+}
 
 // 摩擦の既定（Physic Material を選んでいない Collider・新しく作った .physmat・ファイルに書いていないとき）。Unity の既定の Physic Material と同じ
 // 0 にすると、押された箱・転がった物が床の上でいつまでも滑り続ける

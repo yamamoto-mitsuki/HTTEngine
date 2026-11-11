@@ -9,7 +9,7 @@
 | **Hierarchy の並び** | 作った順（Entity を消しても、ほかの並びは変わらない）。並び替える機能は無い |
 | **画面の編集（Edit UI Screen）** | `.uiscreen` をダブルクリック。Hierarchy は画面の中身だけ（一番上に Done・Cancel）、Scene ビューに水色の枠。後ろのシーンは見えるが選べない。中身は「シーンに保存しない」印（`Entity::isDontSave`）付き |
 | **Hierarchy のフォルダ** | ＋ → **Folder**。整理するための入れ物（印の `FolderComponent` を付けた Entity）。中へはドラッグで入れる。Transform は原点のまま使う（Inspector に出さない・ギズモも出ない）。フォルダを入れられるのは一番上か、ほかのフォルダの中だけ。無効にすると中身ごと無効。フォルダの右クリック → Create Folder で中にフォルダ |
-| **Inspector** | 選んだEntityのComponentを編集。下の **+ Add Component** で足す、見出しの右クリックで外す |
+| **Inspector** | 選んだEntityのComponentを編集。下の **+ Add Component** で足す、見出しの右クリックで外す。マウスを乗せると説明が出る（見出し：何をする Component か。項目：その値の意味。enum の欄は開いて選択肢に乗せると、その選択肢の意味）。Add Component ではカテゴリ・Component に乗せると説明が出て、右の列の上に選んだカテゴリの説明が出る |
 | **Transform の XYZ ボタン** | Position・Rotation・Scale の左。押すと X・Y・Z を一緒に変える（Position・Rotation は同じだけ足す、Scale は同じ倍＝形を保つ。0 からは同じだけ足す）。押している間は黄色。保存しない（エディタを閉じると外れる） |
 | **Scene / Game** | Sceneは編集用（デバッグカメラ・ギズモ）、Gameは製品の絵。Polygon Shape の **Edit Shape**・Arrow Strip の **Edit Path**・Polyline の **Edit Points** の間は、Scene ビューで点を動かす（移動のギズモは出ない） |
 | **Scene ビューの UI** | Image・Vector Shape・Polyline・Text をクリックで選び、**ドラッグで動かす**（1 ピクセルずつ。1回のドラッグで1件の履歴）。Vector Shape は枠の白い印をドラッグすると **Size が変わる**（反対の辺は動かない）。UI は 3D の物より先に選ぶ（重なっていたら手前に描いてある物）。UI には3D の移動のギズモは出ない。UI の後ろの物を選ぶときは **View → Scene View → Pick UI** を外す |

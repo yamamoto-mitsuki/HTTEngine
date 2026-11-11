@@ -266,7 +266,7 @@ void CollisionSystem::Initialize() {
 	// Collider の置き場所・保存・Inspector を登録する。見せ方は DescribeCollider 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<ColliderComponent>();
 	ComponentSerializer::Register<ColliderComponent>("Collider", &DescribeCollider);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<ColliderComponent>>("Collider", "Physics", &DescribeCollider));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<ColliderComponent>>("Collider", "Physics", &DescribeCollider, "当たり判定の形と大きさ。重なった・ぶつかったは Script の OnTrigger〜・OnCollision〜 で受ける。止まるのは Rigidbody・Character Controller を付けた物"));
 }
 
 void CollisionSystem::Release() { state.reset(); }

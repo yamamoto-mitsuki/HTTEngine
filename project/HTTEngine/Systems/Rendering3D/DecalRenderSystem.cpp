@@ -58,7 +58,7 @@ void DecalRenderSystem::Initialize() {
 	// Decal Renderer の置き場所・保存・Inspector を登録する（見せ方は DescribeDecalRenderer 1つ）
 	EntityManager::RegisterComponent<DecalRendererComponent>();
 	ComponentSerializer::Register<DecalRendererComponent>("Decal Renderer", &DescribeDecalRenderer);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<DecalRendererComponent>>("Decal Renderer", "Rendering3D", &DescribeDecalRenderer));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<DecalRendererComponent>>("Decal Renderer", "Rendering3D", &DescribeDecalRenderer, "箱の中にある床・壁などに、マテリアルで模様を塗る（影・魔法陣・予告の印）。箱は Transform の大きさ"));
 }
 
 void DecalRenderSystem::Release() { state.reset(); }

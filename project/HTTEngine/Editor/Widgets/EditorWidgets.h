@@ -2,12 +2,15 @@
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
+#include <span>
 #include <string>
+#include <string_view>
 #include <type_traits>
 
 #include <externals/imgui/imgui.h>
 #include <externals/magic_enum/magic_enum.hpp>
 
+#include "HTTEngine/Core/EnumTipTable.h"
 #include "HTTEngine/String/FileNameRule.h"
 #include "HTTEngine/Editor/Widgets/ImeInput.h"
 
@@ -107,30 +110,91 @@ inline bool PlusButton(const char* label, ImVec2 size = ImVec2(0.0f, 0.0f)) {
 	return pressed;
 }
 
+// ===== 説明の吹き出し =====
+inline constexpr float kTooltipWrapEm = 32.0f; // 吹き出しの文字を折り返す幅（文字の大きさの何倍か。長い説明が画面の端まで1行に伸びないように）
+
+// 折り返す吹き出しを始める。true のときだけ中身を描いて、EndWrappedTooltip を呼ぶ
+inline bool BeginWrappedTooltip() {
+	if (!ImGui::BeginTooltip()) {
+		return false;
+	}
+	ImGui::PushTextWrapPos(ImGui::GetFontSize() * kTooltipWrapEm);
+	return true;
+}
+inline void EndWrappedTooltip() {
+	ImGui::PopTextWrapPos();
+	ImGui::EndTooltip();
+}
+
 /// <summary>
-/// enumをコンボボックスで選ばせる。選択肢の名前はmagic_enumが型から作る
+/// 直前の項目にマウスを乗せていたら、text を折り返した吹き出しで出す（text が nullptr なら何もしない）
+/// <para>flags は足す条件（押せない項目の上でも出すなら ImGuiHoveredFlags_AllowWhenDisabled）</para>
 /// </summary>
-template<typename E> bool EnumCombo(const char* label, E& value) {
+inline void ItemTooltip(const char* text, ImGuiHoveredFlags flags = 0) {
+	if (text != nullptr && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip | flags) && BeginWrappedTooltip()) {
+		ImGui::TextUnformatted(text);
+		EndWrappedTooltip();
+	}
+}
+
+/// <summary>
+/// enum の選択肢の一覧（説明付き）。Inspector の enum の項目と EnumCombo の中身
+/// <para>names は選択肢の名前、tips は選択肢の説明（names と同じ並び。無い物は nullptr）、tooltip は項目そのものの説明（無ければ nullptr）</para>
+/// <para>閉じているときは「項目の説明」と「今の選択肢の説明」、開いているときは「マウスを乗せた選択肢の説明」を出す</para>
+/// <para>選び直したら index を変えて true</para>
+/// </summary>
+inline bool EnumComboWithTips(const char* label, size_t& index, std::span<const std::string_view> names, std::span<const char* const> tips, const char* tooltip = nullptr) {
+	// string_view は末尾に0があるとは限らないので、ImGuiに渡す前に std::string にする
+	const std::string current = index < names.size() ? std::string(names[index]) : std::string("?");
+	if (!ImGui::BeginCombo(label, current.c_str())) {
+		// --- 閉じた欄 ---（開いている間は出さない。選択肢の説明とぶつからないように）
+		const char* currentTip = (index < tips.size()) ? tips[index] : nullptr;
+		if ((tooltip != nullptr || currentTip != nullptr) && ImGui::IsItemHovered(ImGuiHoveredFlags_ForTooltip) && BeginWrappedTooltip()) {
+			if (tooltip != nullptr) {
+				ImGui::TextUnformatted(tooltip);
+			}
+			if (currentTip != nullptr) {
+				if (tooltip != nullptr) {
+					ImGui::Separator();
+				}
+				ImGui::Text("%s：%s", current.c_str(), currentTip);
+			}
+			EndWrappedTooltip();
+		}
+		return false;
+	}
+
+	// --- 開いた一覧 ---
+	bool changed = false;
+	for (size_t i = 0; i < names.size(); ++i) {
+		const std::string name(names[i]);
+		if (ImGui::Selectable(name.c_str(), i == index)) {
+			index = i;
+			changed = true;
+		}
+		ItemTooltip((i < tips.size()) ? tips[i] : nullptr);
+		if (i == index) {
+			ImGui::SetItemDefaultFocus(); // 開いたときに今の選択へスクロールする
+		}
+	}
+	ImGui::EndCombo();
+	return changed;
+}
+
+/// <summary>
+/// enumをコンボボックスで選ばせる。選択肢の名前はmagic_enumが型から作り、説明は enum の型の EnumTips（EnumTips.h）を出す
+/// <para>tooltip は項目そのものの説明（無ければ nullptr）</para>
+/// </summary>
+template<typename E> bool EnumCombo(const char* label, E& value, const char* tooltip = nullptr) {
 	static_assert(std::is_enum_v<E>, "EnumCombo は enum 専用です");
 	constexpr auto names = magic_enum::enum_names<E>();
-	size_t current = magic_enum::enum_index(value).value_or(0);
-	bool changed = false;
-	std::string currentName(names[current]);
-	if (ImGui::BeginCombo(label, currentName.c_str())) {
-		for (size_t i = 0; i < names.size(); ++i) {
-			std::string name(names[i]);
-			bool isSelected = (i == current);
-			if (ImGui::Selectable(name.c_str(), isSelected)) {
-				value = magic_enum::enum_value<E>(i);
-				changed = true;
-			}
-			if (isSelected) {
-				ImGui::SetItemDefaultFocus(); // 開いたときに今の選択へスクロールする
-			}
-		}
-		ImGui::EndCombo();
+	static constexpr auto tips = MakeEnumTipTable<E>(); // 選択肢の説明（names と同じ並び）
+	size_t index = magic_enum::enum_index(value).value_or(0);
+	if (!EnumComboWithTips(label, index, names, tips, tooltip)) {
+		return false;
 	}
-	return changed;
+	value = magic_enum::enum_value<E>(index);
+	return true;
 }
 
 } // namespace EditorWidgets

@@ -508,7 +508,7 @@ void CharacterControllerSystem::Initialize() {
 	// Character Controller の置き場所・保存・Inspector を登録する。見せ方は DescribeCharacterController 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<CharacterControllerComponent>();
 	ComponentSerializer::Register<CharacterControllerComponent>("Character Controller", &DescribeCharacterController);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CharacterControllerComponent>>("Character Controller", "Physics", &DescribeCharacterController));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<CharacterControllerComponent>>("Character Controller", "Physics", &DescribeCharacterController, "歩くキャラクターの動き方。坂で滑らず、小さな段を上り、跳ね返らない。形は同じ Entity の Collider（Sphere・Capsule）、動かすのは velocity"));
 	// 速さ・地面にいるかを、動き方の窓口から聞けるようにする（当たりの知らせ・カメラの追いかけ・Trigger が使う）
 	MotionQuery::Register(&GetControllerMotion);
 }

@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Math/Vector4.h"
 
 // 軌跡（通った跡・描いた線を、帯にして描く）。Entityに付けるComponent（カテゴリ：Rendering3D）
@@ -17,6 +18,15 @@ enum class TrailAlignment {
 	Ground, // 地面に寝かせる（帯の面が真上を向く。上から見る線・地面に残るインク）
 };
 
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(TrailAlignment) {
+	using enum TrailAlignment;
+	return MakeEnumTips<TrailAlignment>({
+	    {View, "カメラの方を向く（動いた跡・剣の残像）"},
+	    {Ground, "地面に寝かせる（帯の面が真上を向く。上から見る線・地面に残るインク）"},
+	});
+}
+
 /// <summary>
 /// 持ち主（Entity かこの Component）が消えた後の、尾の消え方
 /// <para>離れた尾は TrailSystem が設定を写して持つ（ゲームからは触れない）。どれも新しい点は足さない</para>
@@ -27,6 +37,16 @@ enum class TrailAfterOwner {
 	Fade,    // 形はそのままで、Fade Seconds かけて尾全体を薄くして消す（点は古くしない。Life Time 0 の尾も消える）
 };
 
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(TrailAfterOwner) {
+	using enum TrailAfterOwner;
+	return MakeEnumTips<TrailAfterOwner>({
+	    {Discard, "消えたフレームに捨てる"},
+	    {Shrink, "点が古い方から寿命で消えて、尾が縮む（Life Time 0 の尾は消えないので、残さずに捨てる）"},
+	    {Fade, "形はそのままで、Fade Seconds かけて尾全体を薄くして消す（Life Time 0 の尾も消える）"},
+	});
+}
+
 /// <summary>
 /// 重ね方
 /// </summary>
@@ -34,6 +54,15 @@ enum class TrailBlend {
 	Normal, // 普通（透けるのはテクスチャと色のアルファの分）
 	Add,    // 足す（光る線。重なるほど明るい）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(TrailBlend) {
+	using enum TrailBlend;
+	return MakeEnumTips<TrailBlend>({
+	    {Normal, "普通（透けるのはテクスチャと色のアルファの分）"},
+	    {Add, "足す（光る線。重なるほど明るい）"},
+	});
+}
 
 
 /// <summary>

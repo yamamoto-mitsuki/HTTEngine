@@ -301,7 +301,7 @@ void PhysicsSystem::Initialize() {
 	// Rigidbody の置き場所・保存・Inspector を登録する。見せ方は DescribeRigidbody 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<RigidbodyComponent>();
 	ComponentSerializer::Register<RigidbodyComponent>("Rigidbody", &DescribeRigidbody);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<RigidbodyComponent>>("Rigidbody", "Physics", &DescribeRigidbody));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<RigidbodyComponent>>("Rigidbody", "Physics", &DescribeRigidbody, "重力と速さで動き、ぶつかったら止まる・跳ね返る。動かすのは velocity。自分にも Collider を付ける"));
 	// 速さ・乗っているかを、動き方の窓口から聞けるようにする（当たりの知らせ・カメラの追いかけ・Trigger が使う）
 	MotionQuery::Register(&GetRigidbodyMotion);
 

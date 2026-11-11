@@ -176,7 +176,7 @@ void DescribePolyline(ComponentUI& ui, PolylineComponent& value) {
 	ui.Field("Enabled###enabled", value.enabled);
 	ui.Field("Anchor###anchor", value.anchor, Tip("画面のどこから位置を数えるか（位置は Transform の Translation の x・y。ピクセルで、上が＋）"));
 	ui.Field("Order###order", value.order, Tip("重ねる順（大きいほど手前。Image・Vector Shape・Text の Order とも比べる）"));
-	ui.Field("Blend###blend", value.blend, Tip("重ね方（Normal：透明な所が透ける / Add：足して光る）。None は縁のなめらかさが無くなる"));
+	ui.Field("Blend###blend", value.blend, Tip("重ね方"));
 
 	// ===== 点（Edit Points は Inspector だけ。保存・読み込みのときは Button がいつも false）=====
 	ui.Separator("Points");
@@ -203,7 +203,7 @@ void DescribePolyline(ComponentUI& ui, PolylineComponent& value) {
 	}
 
 	ui.Separator("Paint");
-	ui.Field("Style###style", value.style, Tip("Fill：塗りだけ / Fill And Stroke：塗りと線 / Stroke：線だけ。塗れるのは閉じた形だけ"));
+	ui.Field("Style###style", value.style, Tip("塗りと線のどちらを描くか。塗れるのは閉じた形だけ"));
 	ui.BeginDisabled(!value.HasFill());
 	ui.ColorField("Color###color", value.color);
 	ui.EndDisabled();
@@ -214,7 +214,7 @@ void DescribePolyline(ComponentUI& ui, PolylineComponent& value) {
 	ui.ColorField("Stroke Color###strokeColor", value.strokeColor);
 	ui.EndDisabled();
 	ui.BeginDisabled(value.style == VectorShapeStyle::Fill || value.closed);
-	ui.Field("Cap###cap", value.cap, Tip("開いた線の端の形（Butt：端でまっすぐ切る / Round：半円 / Square：太さの半分伸ばして切る）"));
+	ui.Field("Cap###cap", value.cap, Tip("開いた線の端の形"));
 	ui.EndDisabled();
 }
 } // namespace
@@ -230,7 +230,7 @@ void PolylineSystem::Initialize() {
 	// Polyline の置き場所・保存・Inspector を登録する。見せ方は DescribePolyline 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<PolylineComponent>();
 	ComponentSerializer::Register<PolylineComponent>("Polyline", &DescribePolyline);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<PolylineComponent>>("Polyline", "UI", &DescribePolyline));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<PolylineComponent>>("Polyline", "UI", &DescribePolyline, "点をつないだ UI の線（閉じれば塗った形）。角を丸められる"));
 }
 
 void PolylineSystem::Release() { state.reset(); }

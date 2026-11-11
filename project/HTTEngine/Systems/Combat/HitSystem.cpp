@@ -635,10 +635,10 @@ void HitSystem::Initialize() {
 	// Hitbox・Hurtbox の置き場所・保存・Inspector を登録する（見せ方は1つの関数で、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<HitboxComponent>();
 	ComponentSerializer::Register<HitboxComponent>("Hitbox", &DescribeHitbox);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<HitboxComponent>>("Hitbox", "Combat", &DescribeHitbox));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<HitboxComponent>>("Hitbox", "Combat", &DescribeHitbox, "攻撃の当たる形と、当たる時間の窓（Off・Warning・Active）。当たると Script の OnHitDealt・OnHitTaken が呼ばれる"));
 	EntityManager::RegisterComponent<HurtboxComponent>();
 	ComponentSerializer::Register<HurtboxComponent>("Hurtbox", &DescribeHurtbox);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<HurtboxComponent>>("Hurtbox", "Combat", &DescribeHurtbox));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<HurtboxComponent>>("Hurtbox", "Combat", &DescribeHurtbox, "攻撃を受ける形（やられ判定）。押し合う形の Collider とは別。体の部分ごとに分けるなら、子の Entity に1つずつ付ける"));
 	EntityManager::AddDestroyListener(&HitSystem::OnEntityDestroyed);
 }
 

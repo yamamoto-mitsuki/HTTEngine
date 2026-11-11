@@ -268,8 +268,8 @@ void DescribeSpriteRenderer(ComponentUI& ui, SpriteRendererComponent& value) {
 	ui.Field("Pivot###pivot", value.pivot, Tip("板のどこを位置に合わせるか（0,0=左下 0.5,0=足元 1,1=右上）"));
 	ui.Field("Flip X###flipX", value.flipX, Tip("左右反転"));
 	ui.Field("Flip Y###flipY", value.flipY, Tip("上下反転"));
-	ui.Field("Billboard###billboard", value.billboard, Tip("カメラの方を向く（Full：いつも正面 / AxisY：縦に立てたまま回る）"));
-	ui.Field("Blend###blend", value.blend, Tip("Normal：透明な所が透ける / Add：足して光る"));
+	ui.Field("Billboard###billboard", value.billboard, Tip("カメラの方を向かせるか"));
+	ui.Field("Blend###blend", value.blend, Tip("重ね方"));
 	ui.Field("Alpha Clip###alphaClip", value.alphaClip, Tip("半分より透明な所を捨てて奥行きを書く（たくさん重ねても前後が崩れない。縁はギザギザ）"));
 	DescribeSource(ui, value);
 }
@@ -290,7 +290,7 @@ void DescribeImage(ComponentUI& ui, ImageComponent& value) {
 	ui.Field("Order###order", value.order, Tip("重ねる順（大きいほど手前）"));
 	ui.Field("Flip X###flipX", value.flipX, Tip("左右反転"));
 	ui.Field("Flip Y###flipY", value.flipY, Tip("上下反転"));
-	ui.Field("Blend###blend", value.blend, Tip("Normal：透明な所が透ける / Add：足して光る"));
+	ui.Field("Blend###blend", value.blend, Tip("重ね方"));
 	// --- 繰り返し（模様）。オンの間は Sheet・Rect を使わない（灰色にするだけで、保存はする）---
 	ui.Separator("Tile");
 	ui.Field("Tiled###tiled", value.tiled, Tip("画像全体を並べて繰り返す（ドット・しま模様など）。Size を変えても模様は伸びず、並ぶ数が変わる"));
@@ -318,14 +318,14 @@ void SpriteRenderSystem::Initialize() {
 	// 3つの Component の置き場所・保存・Inspector を登録する。見せ方はそれぞれ Describe〜 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<SpriteRendererComponent>();
 	ComponentSerializer::Register<SpriteRendererComponent>("Sprite Renderer", &DescribeSpriteRenderer);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<SpriteRendererComponent>>("Sprite Renderer", "Rendering2D", &DescribeSpriteRenderer));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<SpriteRendererComponent>>("Sprite Renderer", "Rendering2D", &DescribeSpriteRenderer, "3D の空間に画像の板を置く（表は -Z の側）。画面に重ねる絵は UI の Image を使う"));
 	EntityManager::RegisterComponent<ImageComponent>();
 	ComponentSerializer::Register<ImageComponent>("Image", &DescribeImage);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<ImageComponent>>("Image", "UI", &DescribeImage));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<ImageComponent>>("Image", "UI", &DescribeImage, "画面に重ねる絵（HUD・ゲージ・ボタン・フェードの幕）。位置は Transform の X・Y を画面のピクセルとして読む"));
 	// Alpha Group は描く物ではないが、Image・Text・Sprite Renderer の3つが読むので、ここで登録する
 	EntityManager::RegisterComponent<AlphaGroupComponent>();
 	ComponentSerializer::Register<AlphaGroupComponent>("Alpha Group", &DescribeAlphaGroup);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<AlphaGroupComponent>>("Alpha Group", "UI", &DescribeAlphaGroup));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<AlphaGroupComponent>>("Alpha Group", "UI", &DescribeAlphaGroup, "自分と子の UI・Sprite を、まとめて透明にする（Alpha を動かすと全部いっしょにフェードする）"));
 }
 
 void SpriteRenderSystem::Release() {} // 持っている物は無い（Image の重ねる順は RenderQueue が並べる）

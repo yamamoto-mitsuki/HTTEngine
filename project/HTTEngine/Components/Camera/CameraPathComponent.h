@@ -1,6 +1,7 @@
 #pragma once
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/ECS/Entity.h"
 
 // カメラを線に沿って動かす。Camera Component と同じ Entity に付けるComponent（カテゴリ：Camera）
@@ -15,6 +16,15 @@ enum class CameraPathRotation {
 	Keep,      // 変えない（Transform の向き。Camera Look At があれば注視点を見る）
 	AlongPath, // 線の進む向きを見る
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(CameraPathRotation) {
+	using enum CameraPathRotation;
+	return MakeEnumTips<CameraPathRotation>({
+	    {Keep, "向きは変えない（Transform の向き。Camera Look At があれば注視点を見る）"},
+	    {AlongPath, "線の進む向きを見る"},
+	});
+}
 
 /// <summary>
 /// 線に沿って動くカメラ（Unity の Cinemachine の Spline Dolly の小さい版）

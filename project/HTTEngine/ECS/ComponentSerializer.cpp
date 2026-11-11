@@ -118,7 +118,7 @@ public:
 
 protected:
 	// enumは名前で書く（途中に選択肢を足しても、並べ替えても読めるように）
-	void EnumField(const char* label, size_t& index, std::span<const std::string_view> names, FieldStyle) override {
+	void EnumField(const char* label, size_t& index, std::span<const std::string_view> names, std::span<const char* const>, FieldStyle) override {
 		if (index < names.size()) {
 			Put(label, std::string(names[index]));
 		}
@@ -247,7 +247,7 @@ public:
 	}
 
 protected:
-	void EnumField(const char* label, size_t& index, std::span<const std::string_view> names, FieldStyle) override {
+	void EnumField(const char* label, size_t& index, std::span<const std::string_view> names, std::span<const char* const>, FieldStyle) override {
 		const SceneJson* item = Find(label, &SceneJson::is_string);
 		if (item == nullptr) {
 			return;
@@ -385,7 +385,7 @@ public:
 	bool Button(const char*) override { return false; }
 
 protected:
-	void EnumField(const char* label, size_t& index, std::span<const std::string_view> names, FieldStyle) override {
+	void EnumField(const char* label, size_t& index, std::span<const std::string_view> names, std::span<const char* const>, FieldStyle) override {
 		const SceneJson* item = Find(label);
 		if (item == nullptr || !item->is_string()) {
 			return;
@@ -465,7 +465,7 @@ public:
 	bool Button(const char*) override { return false; }
 
 protected:
-	void EnumField(const char*, size_t&, std::span<const std::string_view>, FieldStyle) override {}
+	void EnumField(const char*, size_t&, std::span<const std::string_view>, std::span<const char* const>, FieldStyle) override {}
 
 private:
 	// 名前が合えば、書いたことにする
@@ -536,7 +536,7 @@ public:
 	bool Button(const char*) override { return false; }
 
 protected:
-	void EnumField(const char*, size_t&, std::span<const std::string_view>, FieldStyle) override {}
+	void EnumField(const char*, size_t&, std::span<const std::string_view>, std::span<const char* const>, FieldStyle) override {}
 
 private:
 	void Add(const char* label, const float* values, size_t count, bool isColor) {

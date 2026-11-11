@@ -1,6 +1,7 @@
 #pragma once
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/ECS/Entity.h"
 #include "HTTEngine/Math/Vector2.h"
 #include "HTTEngine/Math/Vector3.h"
@@ -20,6 +21,15 @@ enum class CameraFollowMode {
 	LookAhead, // 進む向きの先を見せる（追う物の速さ × Look Ahead Time だけ先を真ん中に。止まると真ん中に戻る）
 };
 
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(CameraFollowMode) {
+	using enum CameraFollowMode;
+	return MakeEnumTips<CameraFollowMode>({
+	    {Center, "追う物を画面の真ん中に置く（Offset の分だけずらせる）"},
+	    {LookAhead, "進む向きの先を見せる（速さ × Look Ahead Time だけ先を真ん中に。止まると真ん中に戻る）"},
+	});
+}
+
 /// <summary>
 /// カメラを動かす面。Offset・Look Ahead と、World の Dead Zone・Soft Zone の X・Y は、下の「横」と「縦」の向きになる
 /// </summary>
@@ -29,6 +39,16 @@ enum class CameraFollowPlane {
 	View, // カメラから見た位置を保つ（どの向きのカメラでも）。横 = カメラの右、縦 = カメラの上。奥行きも、追いかけ始めの長さに保つ
 };
 
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(CameraFollowPlane) {
+	using enum CameraFollowPlane;
+	return MakeEnumTips<CameraFollowPlane>({
+	    {XY, "ワールドの X・Y の面で動かす（横から見るゲーム）。横 = X、縦 = Y"},
+	    {XZ, "地面の X・Z の面で動かす（見下ろしのゲーム）。横 = カメラの右、縦 = カメラの前を地面に寝かせた向き（カメラが回ると一緒に回る）"},
+	    {View, "カメラから見た位置を保つ（どの向きのカメラでも）。横 = カメラの右、縦 = カメラの上。奥行きも、追い始めの長さのまま"},
+	});
+}
+
 /// <summary>
 /// Dead Zone・Soft Zone を何で測るか。Inspector では、選んだ方の値だけが出る
 /// </summary>
@@ -36,6 +56,15 @@ enum class CameraFollowZoneSpace {
 	World,  // ワールドの長さ（m）。Plane の面の上で、画面の真ん中から横・縦に何 m か（カメラが寄っても引いても、追い始める距離は同じ）
 	Screen, // 画面の割合。真ん中が 0、端が ±1（Camera Look At の Screen Position と同じ）。カメラが引くと、ワールドでは広がる
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(CameraFollowZoneSpace) {
+	using enum CameraFollowZoneSpace;
+	return MakeEnumTips<CameraFollowZoneSpace>({
+	    {World, "ワールドの長さ（m）で測る。Plane の面の上で、画面の真ん中から横・縦に何 m か（カメラが寄っても引いても、追い始める距離は同じ）"},
+	    {Screen, "画面の割合で測る。真ん中が 0、端が 1（カメラが引くと、ワールドでは広がる）"},
+	});
+}
 
 /// <summary>
 /// カメラの追いかけ（Unity の Cinemachine の Position Composer の小さい版）

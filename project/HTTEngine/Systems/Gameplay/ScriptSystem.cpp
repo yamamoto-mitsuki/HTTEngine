@@ -123,7 +123,7 @@ void ScriptSystem::Release() {
 //=============================================================================
 // 種類の登録
 //=============================================================================
-void ScriptSystem::RegisterType(const char* name, std::type_index type, CreateFunction create, const char* sourceFile, std::string category) {
+void ScriptSystem::RegisterType(const char* name, std::type_index type, CreateFunction create, const char* sourceFile, std::string category, const char* description) {
 	if (FindType(type) != nullptr || FindTypeByName(name) != nullptr) {
 		LogManager::Error(std::format("Script \"{}\" が2つ登録されました。後の方は使えません", name));
 		return;
@@ -156,7 +156,7 @@ void ScriptSystem::RegisterType(const char* name, std::type_index type, CreateFu
 	    });
 
 	// --- Inspector の区画・Add Component のメニュー（COMPONENT(...) と同じ Gameplay に並ぶ）---
-	ComponentEditorRegistry::Register(std::make_unique<ScriptEditor>(name, type, sourceFile, std::move(category)));
+	ComponentEditorRegistry::Register(std::make_unique<ScriptEditor>(name, type, sourceFile, std::move(category), description));
 }
 
 //=============================================================================

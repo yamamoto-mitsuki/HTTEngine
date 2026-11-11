@@ -37,10 +37,46 @@ SYSTEM(SpinUpdate);
 | `ui.Field("Name", value.name)` | 文字の入力欄（Component は `FixedString<N>`、Script は `std::string` も書ける） |
 | `ui.ColorField("Color", value.color)` | 色見本（`Vector3` か `Vector4`） |
 | `ui.ListField("Stages", value.stages, [](ComponentUI& ui, Stage& s) { ui.Field("Time", s.time); })` | **一覧**（Component は `FixedList<T, N>`、Script は `std::vector`）。足す・消す・並べ替える。中の書き方は COMPONENT の中と同じ |
-| `ui.Field("Mode", value.mode)` | **enum** はコンボ（名前は magic_enum が作る） |
+| `ui.Field("Mode", value.mode)` | **enum** はコンボ（名前は magic_enum が作る）。選択肢ごとの説明は下の「enum の選択肢に説明を付ける」 |
 | `ui.Field("Target", value.target)` | **`EntityRef`**（別の Entity への参照）は相手の名前の台。Hierarchy から Entity をドラッグして入れる。右クリックで外す。相手が消えていると `(missing)` |
 | `ui.AssetField("Model", value.model, AssetType::Model)` | **アセットの番号**（`uint32_t`。`AssetType` はモデル・テクスチャ・音・アニメ・Prefab・フォント・マテリアル・カーブ・Timeline など）。resources 以下のファイルから選ぶ |
 | `ui.Separator("見出し")` / `ui.Label("説明")` / `ui.Space()` | 飾り（保存はされない） |
+
+## 説明を付ける（マウスを乗せると出る）
+
+| 何に | 書き方 | 出る所 |
+|---|---|---|
+| 項目 | `ui.Field("HP", value.hp, Tip("体力"))` | その項目 |
+| enum の選択肢 | enum の宣言の横に `EnumTips` 関数（下） | 選択肢の一覧を開いて、1つに乗せたとき。閉じた欄に乗せると、項目の説明と今の選択肢の説明 |
+| Component | `COMPONENT(Spin, "Movement", "決まった速さで回り続ける")` | Inspector の見出し・Add Component の項目 |
+| カテゴリ | `COMPONENT_CATEGORY("Movement", "動かす物");`（同じカテゴリの .cpp のどれか1つに1行） | Add Component のカテゴリ |
+
+```cpp
+#include <HTTEngine/Core/EnumTips.h> // GameComponent.h を読んでいれば要らない
+
+enum class EnemyMove { Walk, Fly };
+
+// enum の型に1つだけ書く（同じ enum を何か所で使っても、説明はここだけ）
+constexpr auto EnumTips(EnemyMove) {
+	using enum EnemyMove; // 中では EnemyMove:: を付けずに書ける
+	return MakeEnumTips<EnemyMove>({
+	    {Walk, "地面を歩く（重力で落ちる）"},
+	    {Fly, "空を飛ぶ（重力を受けない）"},
+	});
+}
+
+COMPONENT(Enemy, "Enemy", "敵の動き方と HP") {
+	ui.Field("Move", value.move, Tip("動き方")); // Tip は項目そのものの説明だけ。選択肢の説明は上の EnumTips
+}
+```
+
+- `EnumTips` は enum と**同じ名前空間**に書く（引数の型から探すので、登録は要らない）。`constexpr` を付ける。
+- 説明だけでサブカテゴリが無いときは `COMPONENT(Spin, "", "説明")`。Script は `SCRIPT(PlayerController, "Player", "説明")`（[22 Script](22-Script.md)）。
+
+```cpp
+// ✗ 項目の Tip に選択肢を並べる（長い1行になって読みにくい。選択肢の説明は EnumTips へ）
+ui.Field("Move", value.move, Tip("Walk：地面を歩く / Fly：空を飛ぶ"));
+```
 
 ## `ui.Field` に書いた物は、そのまま保存される
 

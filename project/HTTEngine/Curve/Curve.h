@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Math/Easing.h"
 #include "HTTEngine/Math/Vector2.h"
 
@@ -13,6 +14,16 @@ enum class CurveInterp {
 	Bezier,   // 3次ベジェ（このキーの出のハンドルと、次のキーの入りのハンドルを使う）
 };
 
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(CurveInterp) {
+	using enum CurveInterp;
+	return MakeEnumTips<CurveInterp>({
+	    {Constant, "次のキーの時間まで、今の値のまま"},
+	    {Linear, "次のキーまで直線"},
+	    {Bezier, "ハンドルで曲げる（このキーの出のハンドルと、次のキーの入りのハンドル）"},
+	});
+}
+
 /// <summary>
 /// 1つのキーの、入りと出のハンドルの関係
 /// </summary>
@@ -20,6 +31,15 @@ enum class CurveHandleMode {
 	Aligned, // 片方を動かすと、もう片方も同じ傾きになる（なめらかにつながる）
 	Free,    // 別々に動く（折れ目を作れる）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(CurveHandleMode) {
+	using enum CurveHandleMode;
+	return MakeEnumTips<CurveHandleMode>({
+	    {Aligned, "入りと出の傾きをそろえる（なめらかにつながる）"},
+	    {Free, "入りと出を別々に動かす（折れ目を作れる）"},
+	});
+}
 
 /// <summary>
 /// キーのどちら側のハンドルか

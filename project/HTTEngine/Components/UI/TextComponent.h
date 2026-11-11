@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Components/UI/ImageComponent.h"
 #include "HTTEngine/Graphics/Pipeline/RenderStates.h"
 #include "HTTEngine/Math/Vector2.h"
@@ -24,6 +25,16 @@ enum class TextAlign {
 	Right,  // 右にそろえる
 };
 
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(TextAlign) {
+	using enum TextAlign;
+	return MakeEnumTips<TextAlign>({
+	    {Left, "左にそろえる"},
+	    {Center, "真ん中にそろえる"},
+	    {Right, "右にそろえる"},
+	});
+}
+
 /// <summary>
 /// 文字1つずつの動き（どれも、文字ごとに少しずつ時間をずらして動かす）
 /// </summary>
@@ -33,6 +44,17 @@ enum class TextMotion {
 	Bounce, // 跳ねる
 	Shake,  // 震える
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(TextMotion) {
+	using enum TextMotion;
+	return MakeEnumTips<TextMotion>({
+	    {None, "動かない"},
+	    {Wave, "波のように上下する"},
+	    {Bounce, "跳ねる"},
+	    {Shake, "震える"},
+	});
+}
 
 /// <summary>
 /// 画面に重ねる文字（Unity の UI の Text）

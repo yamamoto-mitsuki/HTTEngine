@@ -1,6 +1,7 @@
 #pragma once
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/ECS/Entity.h"
 
 // 同じ Entity の Collider の範囲に入ったら・出たら、Target（別の Entity）を出す・消す。Entityに付けるComponent（カテゴリ：Gameplay）
@@ -19,6 +20,17 @@ enum class TriggerSource {
 	AnyMover,     // 動き方の Component（Rigidbody・Character Controller）を付けた物なら、どれでも
 };
 
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(TriggerSource) {
+	using enum TriggerSource;
+	return MakeEnumTips<TriggerSource>({
+	    {FollowTarget, "メインカメラの Camera Follow・Camera Orbit の Target（プレイヤー。何も選ばなくてよい）"},
+	    {Entity, "Source Entity に入れた Entity（子に付けた Collider も、その Entity として数える）"},
+	    {AnyRigidbody, "Rigidbody を付けた物なら、どれでも"},
+	    {AnyMover, "動き方の Component（Rigidbody・Character Controller）を付けた物なら、どれでも"},
+	});
+}
+
 /// <summary>
 /// 入ったとき・出たときに、Target をどうするか
 /// </summary>
@@ -27,6 +39,16 @@ enum class TriggerAction {
 	Show, // 出す（有効にして、Fade In Time でだんだん見せる）
 	Hide, // 消す（Fade Out Time でだんだん消して、消えきったら無効にする）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(TriggerAction) {
+	using enum TriggerAction;
+	return MakeEnumTips<TriggerAction>({
+	    {None, "何もしない"},
+	    {Show, "出す（有効にして、Fade In Time でだんだん見せる）"},
+	    {Hide, "消す（Fade Out Time でだんだん消して、消えきったら無効にする）"},
+	});
+}
 
 /// <summary>
 /// 今のフェード（実行中だけの値）

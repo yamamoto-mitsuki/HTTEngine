@@ -170,7 +170,7 @@ void DescribeTimelineComponent(ComponentUI& ui, TimelineComponent& value) {
 	ui.Field("Play On Start###playOnStart", value.playOnStart, Tip("再生が始まったら、すぐ再生する（外すと TimelineSystem::Play を呼ぶまで止まっている）"));
 	ui.Field("Loop###loop", value.loop, Tip("最後まで行ったら最初へ戻る"));
 	ui.Field("Speed###speed", value.speed, AtLeast(0.0f).Tip("再生速度（1 で普通）"));
-	ui.Field("Time Mode###timeMode", value.timeMode, Tip("Game：スロー・ヒットストップ・ポーズで止まる / Real：ゲームの時間が止まっても動く（エディタの一時停止では止まる）"));
+	ui.Field("Time Mode###timeMode", value.timeMode, Tip("再生に使う時間"));
 }
 } // namespace
 
@@ -181,7 +181,7 @@ void TimelineSystem::Initialize() {
 	// Timeline の置き場所・保存・Inspector を登録する（見せ方は DescribeTimelineComponent 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<TimelineComponent>();
 	ComponentSerializer::Register<TimelineComponent>("Timeline", &DescribeTimelineComponent);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<TimelineComponent>>("Timeline", "Animation", &DescribeTimelineComponent));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<TimelineComponent>>("Timeline", "Animation", &DescribeTimelineComponent, "Timeline のファイル（.timeline）を再生する。値・カメラ・イベントなどのトラックを、時間に合わせて動かす"));
 	EntityManager::AddDestroyListener(&TimelineSystem::OnEntityDestroyed);
 	// エンジンのトラック（.lib の中の TIMELINE_TRACK はリンカに捨てられるので、ここで登録する）
 	TimelineTrackRegistrar<TimelineValueTrack>("TimelineValueTrack", "Component の1つの項目をカーブで動かす");

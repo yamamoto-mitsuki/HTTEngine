@@ -3,6 +3,7 @@
 #include <cstring>
 #include <memory>
 #include <span>
+#include <string_view>
 #include <type_traits>
 #include <vector>
 
@@ -22,7 +23,7 @@
 //   Audio       音
 //   Gameplay    ゲーム固有の物（COMPONENT(...) と SCRIPT(...) で書いた物は全部ここ。"Gameplay/サブカテゴリ" に分けられる）
 //
-// 上の段の並び順は ComponentEditor.cpp の kTopLevelOrder が決める。そこに無い名前は後ろに回る
+// 上の段の並び順と説明は ComponentEditor.cpp の kTopLevelCategories が決める。そこに無い名前は後ろに回る
 
 
 /// <summary>
@@ -39,6 +40,7 @@ public:
 	virtual const char* GetCategory() const = 0;                  // Add Componentでどのカテゴリに出すか（"Gameplay/Movement" のように "/" で入れ子）
 	virtual bool IsOptional() const { return true; }              // Add・Removeの対象か（Transformのように必ず持つものはfalse）
 	virtual const char* GetSourceFile() const { return nullptr; } // 書いてあるファイル（COMPONENT(...)・SCRIPT(...) の物だけ。分からなければnullptr）
+	virtual const char* GetDescription() const { return nullptr; } // 何をする Component かの説明（Inspector の見出し・Add Component の項目にマウスを乗せると出る。無ければnullptr）
 	virtual bool IsScript() const { return false; }               // Script か（Inspector の見出しに「(Script)」を付ける。Unity と同じ）
 
 	// ===== 実体の出し入れ（実体を持っているManagerへの窓口）=====
@@ -105,6 +107,13 @@ public:
 	// 登録する。同じ名前のものが登録済みなら何もしない（シーンを作り直すたびに増えないように）
 	static void Register(std::unique_ptr<ComponentEditor> editor);
 	static const std::vector<std::unique_ptr<ComponentEditor>>& GetAll();
+
+	// ===== カテゴリの説明（Add Component で、カテゴリにマウスを乗せると出る・右の列の上に出る）=====
+	// 上の段（"Camera" など）の説明は ComponentEditor.cpp の kTopLevelCategories に書く。ここで足すのは、その下（"Gameplay/Movement" など）
+	// path は "/" で区切ったカテゴリのパス。description はプログラムの終わりまで消えない文字（文字列リテラル）。同じ path に2回足したら後の物
+	static void RegisterCategoryDescription(std::string_view path, const char* description);
+	// path の説明（無ければ nullptr）
+	static const char* FindCategoryDescription(std::string_view path);
 
 	/// <summary>
 	/// T の ComponentEditor（登録されていなければ nullptr）

@@ -22,7 +22,7 @@ void CameraPath::Describe(ComponentUI& ui, CameraPathComponent& value) {
 	ui.Field("Enabled###enabled", value.enabled, Tip("外すと Transform の位置のまま"));
 	ui.Field("Path###path", value.path, Tip("線の Entity（Hierarchy からドラッグ）。子の Entity を上から順に通る。子が 2 つ以上要る"));
 	ui.Field("Position###position", value.position, Range(0.0f, 1.0f).Tip("線の上の位置。0：始まり 〜 1：終わり（長さに対する割合）。Timeline のキーで動かす"));
-	ui.Field("Rotation###rotation", value.rotation, Tip("向きの決め方。Keep：Transform の向き（Camera Look At があれば注視点を見る） / AlongPath：線の進む向きを見る"));
+	ui.Field("Rotation###rotation", value.rotation, Tip("向きの決め方"));
 }
 
 //=============================================================================

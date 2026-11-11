@@ -6,6 +6,7 @@
 
 #include <d3d12.h>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Math/MathIncludes.h"
 
 
@@ -52,6 +53,19 @@ enum class ShadingType {
 	PBR,         // Cook-Torrance（GGX）物理ベース
 };
 
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(ShadingType) {
+	using enum ShadingType;
+	return MakeEnumTips<ShadingType>({
+	    {Unlit, "光を使わず、色そのまま"},
+	    {Lambert, "陰だけ（光の向きで暗くなる）"},
+	    {HalfLambert, "陰だけ（Lambert より、暗い側がやわらかい）"},
+	    {Phong, "陰とハイライト（Specular・Shininess）"},
+	    {BlinnPhong, "陰とハイライト（Phong より、ハイライトの広がりが自然）"},
+	    {PBR, "物理ベース（Metallic・Roughness で、金属らしさ・ざらざら具合を決める）"},
+	});
+}
+
 // ブレンド設定
 enum class BlendMode {
 	None,     // ブレンド無し
@@ -62,6 +76,19 @@ enum class BlendMode {
 	Screen,   // スクリーン: Src * (1 - Dest) + Dest * 1
 };
 
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(BlendMode) {
+	using enum BlendMode;
+	return MakeEnumTips<BlendMode>({
+	    {None, "重ねない（そのまま上書きする。UI の図形は縁のなめらかさが無くなる）"},
+	    {Normal, "普通（透明な所が透ける）"},
+	    {Add, "足して光る（重なるほど明るい）"},
+	    {Subtract, "引いて暗くする"},
+	    {Multiply, "掛けて暗くする（影・色の付いたガラス）"},
+	    {Screen, "明るくする（Add より白く飛びにくい）"},
+	});
+}
+
 // ラスタライザ設定
 enum RasterizerType {
 	SolidBack,  // 通常描画:      背面カリング + 塗りつぶし
@@ -70,12 +97,33 @@ enum RasterizerType {
 	Wireframe,  // デバック用:    ワイヤー（塗りつぶさない）
 };
 
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(RasterizerType) {
+	using enum RasterizerType;
+	return MakeEnumTips<RasterizerType>({
+	    {SolidBack, "普通（裏の面は描かない）"},
+	    {SolidNone, "両面を描く"},
+	    {SolidFront, "表の面を描かない（影の絵を作る用）"},
+	    {Wireframe, "線だけ（形を確かめる用）"},
+	});
+}
+
 // 深度設定
 enum DepthMode {
 	TestWrite,   // 深度テストあり・書き込み有: 不透明3D
 	TestNoWrite, // 深度テストあり・書き込み無: 半透明3D
 	Disable,     // 深度テストなし・書き込み無: 2D, UI, フルスクリーン
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(DepthMode) {
+	using enum DepthMode;
+	return MakeEnumTips<DepthMode>({
+	    {TestWrite, "奥行きを比べて、書く（不透明な 3D）"},
+	    {TestNoWrite, "奥行きを比べるが、書かない（半透明な 3D）"},
+	    {Disable, "奥行きを使わない（2D・UI・画面全体）"},
+	});
+}
 
 // ステンシルのビットの分け方（1つの値の中を、使い道ごとにビットで分ける。分けた所しか読まない・書かない）
 inline constexpr uint8_t kStencilUIMaskBits = 0x7F;  // 下の 7 ビット：UI のマスク（外にあるマスクの数。入れ子は 8 段までなので足りる）
@@ -99,6 +147,16 @@ enum class BillboardMode {
 	Full,  // カメラの向きに完全に合わせる（アイコン、エフェクト、名札）
 	AxisY, // Y軸まわりだけ回す（木、キャラの立ち絵。カメラが上から見ても傾かない）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(BillboardMode) {
+	using enum BillboardMode;
+	return MakeEnumTips<BillboardMode>({
+	    {None, "向かせない（Transform の回転のまま）"},
+	    {Full, "いつもカメラの正面を向く（アイコン・エフェクト・名札）"},
+	    {AxisY, "縦に立てたまま、Y 軸のまわりだけ回す（木・キャラの立ち絵。カメラが上から見ても傾かない）"},
+	});
+}
 
 // 描く物の層（ビューごとに、描く・描かないを選べる。Unity の Layer とカメラの Culling Mask の小さい版）
 enum class DrawLayer {

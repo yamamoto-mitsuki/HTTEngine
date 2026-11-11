@@ -96,7 +96,7 @@ void UIMaskSystem::Initialize() {
 	// UI Mask の置き場所・保存・Inspector を登録する（見せ方は DescribeUIMask 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<UIMaskComponent>();
 	ComponentSerializer::Register<UIMaskComponent>("UI Mask", &DescribeUIMask);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<UIMaskComponent>>("UI Mask", "UI", &DescribeUIMask));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<UIMaskComponent>>("UI Mask", "UI", &DescribeUIMask, "子の UI を、この Entity の図形（Vector Shape か Polyline）の形で切り抜く"));
 }
 
 void UIMaskSystem::Release() {} // 持っている物は無い（描く順は毎フレーム、Component から求める）

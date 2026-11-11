@@ -197,10 +197,10 @@ void PolygonShapeSystem::Initialize() {
 	// Polygon Shape・Polygon Renderer の置き場所・保存・Inspector を登録する（見せ方は Describe〇〇 1つで、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<PolygonShapeComponent>();
 	ComponentSerializer::Register<PolygonShapeComponent>("Polygon Shape", &DescribePolygonShape);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<PolygonShapeComponent>>("Polygon Shape", "Rendering3D", &DescribePolygonShape));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<PolygonShapeComponent>>("Polygon Shape", "Rendering3D", &DescribePolygonShape, "横から見た多角形を、奥へ押し出した形を持つ（足場）。見た目は Polygon Renderer、当たりは Collider の Polygon が使う"));
 	EntityManager::RegisterComponent<PolygonRendererComponent>();
 	ComponentSerializer::Register<PolygonRendererComponent>("Polygon Renderer", &DescribePolygonRenderer);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<PolygonRendererComponent>>("Polygon Renderer", "Rendering3D", &DescribePolygonRenderer));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<PolygonRendererComponent>>("Polygon Renderer", "Rendering3D", &DescribePolygonRenderer, "同じ Entity の Polygon Shape の形を描く。テクスチャはワールドの座標で貼る（伸ばしても絵が伸びない）"));
 }
 
 void PolygonShapeSystem::Release() { state.reset(); }

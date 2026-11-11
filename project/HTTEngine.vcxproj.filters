@@ -1085,6 +1085,12 @@
     <ClInclude Include="HTTEngine\Core\AssetMoveRegistry.h">
       <Filter>HTTEngine\Core</Filter>
     </ClInclude>
+    <ClInclude Include="HTTEngine\Core\EnumTips.h">
+      <Filter>HTTEngine\Core</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Core\EnumTipTable.h">
+      <Filter>HTTEngine\Core</Filter>
+    </ClInclude>
     <ClInclude Include="HTTEngine\Core\FixedList.h">
       <Filter>HTTEngine\Core</Filter>
     </ClInclude>

@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <type_traits>
 
+#include "HTTEngine/Core/EnumTips.h"
 #include "HTTEngine/Math/Easing.h"
 #include "HTTEngine/Math/Vector2.h"
 #include "HTTEngine/Math/Vector3.h"
@@ -22,6 +23,18 @@ enum class ParticleShape {
 	Box,    // 箱の中（From Surface なら表面）から、外へ
 };
 
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(ParticleShape) {
+	using enum ParticleShape;
+	return MakeEnumTips<ParticleShape>({
+	    {Point, "Entity の位置から、全部の向きへ"},
+	    {Sphere, "球の中（From Surface なら表面）から、外へ"},
+	    {Circle, "XY の面の円の中（From Surface なら輪）から、外へ（横から見るゲームで、輪から飛び散る）"},
+	    {Cone, "XZ の面の円から、上（+Y）を中心に Cone Angle まで開いて"},
+	    {Box, "箱の中（From Surface なら表面）から、外へ"},
+	});
+}
+
 /// <summary>
 /// 重ね方
 /// </summary>
@@ -29,6 +42,15 @@ enum class ParticleBlend {
 	Add,    // 足す（光る粒。重なるほど明るい）
 	Normal, // 普通（奥から順には並べないので、重なると縁が汚くなることがある）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(ParticleBlend) {
+	using enum ParticleBlend;
+	return MakeEnumTips<ParticleBlend>({
+	    {Add, "足す（光る粒。重なるほど明るい）"},
+	    {Normal, "普通（奥から順には並べないので、重なると縁が汚くなることがある）"},
+	});
+}
 
 /// <summary>
 /// 出た粒が、Entity に付いていくか
@@ -38,6 +60,15 @@ enum class ParticleSpace {
 	Local, // Entity と一緒に動く・回る（動く物にまとわりつくキラキラ）
 };
 
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(ParticleSpace) {
+	using enum ParticleSpace;
+	return MakeEnumTips<ParticleSpace>({
+	    {World, "出た所に残る（Entity が動いても付いていかない。煙・火花）"},
+	    {Local, "Entity と一緒に動く・回る（動く物にまとわりつくキラキラ）"},
+	});
+}
+
 /// <summary>
 /// 出し終わったとき（出すのをやめて、粒が全部消えたとき）にすること。Unity の Stop Action
 /// <para>出すのをやめる＝Looping でなく Duration が過ぎた・ゲームが ParticleSystem::Stop を呼んだ。一度も Play していない物（Play On Start を外して Play を呼んでいない・Emit だけ）は出し終わりにならない</para>
@@ -46,6 +77,15 @@ enum class ParticleStopAction {
 	None,    // 何もしない（Entity は残る。また Play できる）
 	Destroy, // この Component を持つ Entity を消す（子も一緒に消える。飛び散る物の Prefab を Instantiate して、出し終わったら勝手に消す）
 };
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(ParticleStopAction) {
+	using enum ParticleStopAction;
+	return MakeEnumTips<ParticleStopAction>({
+	    {None, "何もしない（Entity は残る。また Play できる）"},
+	    {Destroy, "この Entity を消す（子も一緒に消える。飛び散る物の Prefab を出して、出し終わったら勝手に消す）"},
+	});
+}
 
 /// <summary>
 /// パーティクルの設定
