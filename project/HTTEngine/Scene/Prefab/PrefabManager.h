@@ -3,18 +3,36 @@
 #include <cstdint>
 #include <set>
 #include <string>
+#include <vector>
 #include <filesystem>
 
 #include "HTTEngine/Core/Handle.h"
 #include "HTTEngine/ECS/ComponentSerializer.h"
 #include "HTTEngine/ECS/Entity.h"
 #include "HTTEngine/Math/Vector3.h"
+#include "HTTEngine/Scene/Prefab/PrefabRecords.h"
 
 // Prefab の置き場所と、名前の後ろに付く部分（"resources/prefabs/Box.prefab" の Prefab の名前は "Box"）
 inline constexpr const char* kPrefabFolder = "resources/prefabs/";
 inline constexpr const char* kPrefabFileExtension = ".prefab";
 // 名前から Prefab のファイルの場所を作る（"Box" → "resources/prefabs/Box.prefab"）
 inline std::string MakePrefabFilePath(const std::string& name) { return std::string(kPrefabFolder) + name + kPrefabFileExtension; }
+
+/// <summary>
+/// Prefab から作りかけの物（Entity と Transform まではできていて、ほかの Component と「置いた物の印」がまだ付いていない）
+/// <para>Instantiate は、これを次のフレームの頭（Flush）まで PrefabManager の中に取っておく</para>
+/// <para>シーンを読むときは、CreateInstance が返した物を呼ぶ側が持ち、全部の Entity がそろってから FinishInstance に渡す</para>
+/// </summary>
+struct PrefabPendingLoad {
+	uint32_t prefab = 0;                          // どの Prefab から作ったか（印に書く）
+	std::shared_ptr<const EntityRecords> records; // 作ったときの中身（置いた番号。途中で Prefab を保存し直しても、作ったときの中身で付ける）
+	std::vector<Handle<Entity>> created;          // records の i 番目から作った Entity（[0] が一番上）
+
+	// 作れたか（読めない Prefab から作ろうとした物は false）
+	bool IsValid() const { return !created.empty(); }
+	// 一番上の Entity（作れていなければ無効な Handle）
+	Handle<Entity> GetRoot() const { return created.empty() ? Handle<Entity>{} : created.front(); }
+};
 
 
 /// <summary>
@@ -68,10 +86,16 @@ public:
 	/// <param name="parent">親（無効な Handle なら一番上に置く）</param>
 	static Handle<Entity> Instantiate(uint32_t prefab, const Vector3& position, Handle<Entity> parent = {});
 	/// <summary>
-	/// シーンファイルを読むとき用。entry（シーンファイルの "prefab" の付いた1項目）のとおりに作り、Component・印まで今すぐ付ける（フレームの境目でだけ呼ぶ）
-	/// <para>一番上の番号・名前・有効・Component（Transform など）は entry のとおり。親は付けない（呼ぶ側が付ける）</para>
-	/// <para>中の番号がほかの Entity とぶつかったら、新しい番号で作って warnings に書く。読めていない番号なら無効な Handle</para>
+	/// シーンファイルを読むとき用の1段目。entry（シーンファイルの "prefab" の付いた1項目）のとおりに Entity を作り、Transform だけ付ける（フレームの境目でだけ呼ぶ）
+	/// <para>一番上の番号・名前・有効・Transform は entry のとおり。親は付けない（呼ぶ側が付ける）</para>
+	/// <para>ほかの Component はまだ付けない。シーンの全部の Entity を作り終えてから FinishInstance に渡す
+	/// （Component の中の、シーンのほかの Entity を指す項目が、相手がまだ居なくて外れないように）</para>
+	/// <para>中の番号がほかの Entity とぶつかったら、新しい番号で作って warnings に書く。読めていない番号なら IsValid が false の物を返す</para>
 	/// </summary>
+	static PrefabPendingLoad CreateInstance(uint32_t prefab, const SceneJson& entry, std::set<std::string>& warnings);
+	// シーンファイルを読むとき用の2段目。CreateInstance で作った物に、Transform 以外の Component・Script・置いた物の印を付ける（フレームの境目でだけ呼ぶ）
+	static void FinishInstance(const PrefabPendingLoad& pending, std::set<std::string>& warnings);
+	// CreateInstance と FinishInstance を続けて呼ぶ（シーンがもうできているとき。Inspector の Revert）。一番上の Entity を返す（作れなければ無効な Handle）
 	static Handle<Entity> InstantiateNow(uint32_t prefab, const SceneJson& entry, std::set<std::string>& warnings);
 	// エディタから置く（ImGui を描いている途中で Entity を増やさないように、次のフレームの頭に作る。原点に置く）
 	static void RequestPlace(uint32_t prefab);

@@ -34,7 +34,7 @@ void FlushWarnings(const std::set<std::string>& warnings) {
 // Entity → JSON
 //=============================================================================
 // ===== Entity 1つ分（{"id", "name", "parent", "active", "components"}）。id・parentId は書く番号（0は親なし）=====
-// idMap を渡すと、Component の中の Entity への参照を表で付け替えて書く（Prefab に書くとき）
+// idMap を渡すと、Component の中の Entity への参照を表で付け替えて書く（Prefab に書くとき。Prefab の外の Entity への参照は 0 になる）
 SceneJson SaveEntity(const Entity& entity, EntityId id, EntityId parentId, std::set<std::string>& warnings, const EntityIdMap* idMap = nullptr) {
 	SceneJson components = SceneJson::object();
 	ComponentSerializer::Save(entity.self, components, warnings, idMap);
@@ -71,8 +71,9 @@ bool IsDontSave(const Entity& entity) {
 // ===== Prefab から置いた物 1つ分（{"id", "name", "parent", "active", "prefab", "components", "overrides", "removed"}）=====
 // 中身は書かない（読むときに Prefab のファイルから作り直す）。置いた所ごとに変えた所（上書き）だけを書く（PrefabOverrides::MakeInstanceEntry）
 // shift・idMap を渡すと、番号を Prefab のファイルの番号にして書く（Prefab の中の入れ子。シーンなら 0 と nullptr）
+// idMap は MakeInstanceEntry にも渡す（Prefab の外の Entity への参照は、Prefab には書かない。ふつうの Entity の Component と同じ決まり）
 SceneJson SaveInstance(const Entity& entity, EntityId shift, const EntityIdMap* idMap, std::set<std::string>& warnings) {
-	SceneJson item = PrefabOverrides::MakeInstanceEntry(entity.self, warnings);
+	SceneJson item = PrefabOverrides::MakeInstanceEntry(entity.self, warnings, idMap);
 	return (idMap != nullptr) ? PrefabRecords::ShiftEntry(std::move(item), shift, *idMap) : item;
 }
 
@@ -107,11 +108,12 @@ SceneJson SaveAll(bool isFile) {
 //=============================================================================
 // ===== Prefab から置いた物を作る（中身は Prefab のファイルから。Prefab が読めなければ、印だけ付けた空の Entity）=====
 // 一番上の名前・有効・Transform は、item（シーンファイルの1項目）のとおりになる
-Handle<Entity> LoadInstance(const SceneJson& item, const std::string& path, std::set<std::string>& warnings) {
+// ここで作るのは Entity と Transform まで。ほかの Component は、作りかけの物を pending に入れて返し、LoadAll の3周目で付ける
+Handle<Entity> LoadInstance(const SceneJson& item, const std::string& path, PrefabPendingLoad& pending, std::set<std::string>& warnings) {
 	const uint32_t prefab = PrefabManager::Load(ToPath(path));
-	const Handle<Entity> root = PrefabManager::InstantiateNow(prefab, item, warnings);
-	if (root.IsValid()) {
-		return root;
+	pending = PrefabManager::CreateInstance(prefab, item, warnings);
+	if (pending.IsValid()) {
+		return pending.GetRoot();
 	}
 	// --- ファイルが無い（まだ pull していない など）。印と上書きは残すので、このまま保存しても参照・上書きは消えない ---
 	warnings.insert(std::format("Prefab が読めないので、空の Entity にしました（ファイルが届いてからシーンを開き直すと、中身ができます）: {}", path));
@@ -139,7 +141,9 @@ bool LoadAll(const SceneJson& root) {
 
 	// ===== 1周目：Entityを作る（親はまだ付けない。ファイルの並びが崩れていても困らないように、全部そろってから付ける）=====
 	std::vector<Handle<Entity>> created(entities.size()); // 作れなかった所は無効なHandleのまま
-	std::vector<bool> isInstance(entities.size());        // Prefab から置いた物か（Component はもう付いているので、3周目で読まない）
+	std::vector<bool> isInstance(entities.size());        // Prefab から置いた物か（3周目で、ファイルの "components" ではなく作りかけの物から付ける）
+	// Prefab から置いた物の作りかけ（Entity と Transform まで）。ふつうの Entity・読めなかった Prefab の所は空のまま
+	std::vector<PrefabPendingLoad> pendingInstances(entities.size());
 	for (size_t i = 0; i < entities.size(); ++i) {
 		const SceneJson& item = entities[i];
 		const EntityId id = item.value("id", EntityId{0});
@@ -151,7 +155,7 @@ bool LoadAll(const SceneJson& root) {
 		// "prefab" があれば Prefab から置いた物（中身も一緒にできる。一番上の Transform などもファイルの値になる）
 		const auto prefab = item.find(kPrefabEntryKey);
 		isInstance[i] = (prefab != item.end() && prefab->is_string());
-		created[i] = isInstance[i] ? LoadInstance(item, prefab->get<std::string>(), warnings) : EntityManager::CreateWithId(id, name, {});
+		created[i] = isInstance[i] ? LoadInstance(item, prefab->get<std::string>(), pendingInstances[i], warnings) : EntityManager::CreateWithId(id, name, {});
 		EntityManager::Get(created[i])->isActive = item.value("active", true);
 		EntityManager::Get(created[i])->layer = ReadEntityLayer(item);
 	}
@@ -171,9 +175,20 @@ bool LoadAll(const SceneJson& root) {
 	}
 
 	// ===== 3周目：Componentを付ける（全Entityがそろった後なので、Componentの中のEntityへの参照も引ける）=====
+	// ファイルの並びの順に付ける（Prefab から置いた物も、ふつうの Entity も同じ扱い）
 	for (size_t i = 0; i < entities.size(); ++i) {
+		if (!created[i].IsValid()) {
+			continue;
+		}
+		// --- Prefab から置いた物：中身（Prefab のファイル＋置いた所ごとの上書き）の Component と、置いた物の印 ---
+		// 読めなかった Prefab の所は pendingInstances[i] が空で、何もしない（LoadInstance が Transform まで付けてある）
+		if (isInstance[i]) {
+			PrefabManager::FinishInstance(pendingInstances[i], warnings);
+			continue;
+		}
+		// --- ふつうの Entity：ファイルの "components" ---
 		const auto componentsIt = entities[i].find("components");
-		if (!created[i].IsValid() || isInstance[i] || componentsIt == entities[i].end() || !componentsIt->is_object()) {
+		if (componentsIt == entities[i].end() || !componentsIt->is_object()) {
 			continue;
 		}
 		ComponentSerializer::Load(created[i], *componentsIt, warnings);

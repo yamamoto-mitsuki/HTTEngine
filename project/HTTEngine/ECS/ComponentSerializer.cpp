@@ -82,10 +82,15 @@ public:
 	void Field(const char* label, EntityRef& value, FieldStyle) override {
 		const bool isAlive = EntityManager::Find(value).IsValid();
 		EntityId id = isAlive ? value.id : EntityId{0};
-		// Prefab に書くときは、表にある番号（Prefab の中の相手）を、ファイルの番号に直す。表に無い相手はそのまま（作るときに外れる）
-		if (idMap_ != nullptr) {
+		// Prefab に書くときは、表にある番号（Prefab の中の相手）を、ファイルの番号に直す
+		// 表に無い相手は Prefab の外の Entity（そのシーンにしか居ない）なので、0 で書く。番号をそのまま書くと、
+		// 置いた所ごとの上書きを作るときの基準（Prefab の中身）にその番号が入り、同じ相手を指しても「違い無し」になってシーンに残らない
+		if (idMap_ != nullptr && id != 0) {
 			if (const auto found = idMap_->find(id); found != idMap_->end()) {
 				id = found->second;
+			} else {
+				warnings_.insert(std::format("{}: \"{}\" の相手は Prefab の外の Entity なので、Prefab のファイルには書きません（シーンに置いた物なら、置いた所ごとの上書きとしてシーンに残ります）", typeName_, KeyOf(label)));
+				id = 0;
 			}
 		}
 		Put(label, id);

@@ -41,22 +41,13 @@ struct PrefabAsset {
 };
 
 /// <summary>
-/// 作ったけれど、まだ Transform 以外の Component を付けていない物（次のフレームの頭の Flush で付ける）
-/// </summary>
-struct PendingLoad {
-	uint32_t prefab = 0;                          // どの Prefab から作ったか（印に書く）
-	std::shared_ptr<const EntityRecords> records; // 作ったときの中身（置いた番号。途中で Prefab を保存し直しても、作ったときの中身で付ける）
-	std::vector<Handle<Entity>> created;          // records の i 番目から作った Entity
-};
-
-/// <summary>
 /// PrefabManager が持つ物（Initialize で作り、Release で消す）
 /// </summary>
 struct PrefabState {
-	std::vector<PrefabAsset> assets;       // 読み込んだ Prefab（番号 - 1 が添字。番号は1から、0は未選択）
-	std::vector<PendingLoad> pendingLoads; // Component を付ける予約
-	std::vector<uint32_t> placeRequests;   // エディタから置く予約
-	uint64_t generation = 1;               // どれかの Prefab の中身が変わるたびに増える（PrefabAsset::contentIds を作り直す合図）
+	std::vector<PrefabAsset> assets;             // 読み込んだ Prefab（番号 - 1 が添字。番号は1から、0は未選択）
+	std::vector<PrefabPendingLoad> pendingLoads; // Component を付ける予約
+	std::vector<uint32_t> placeRequests;         // エディタから置く予約
+	uint64_t generation = 1;                     // どれかの Prefab の中身が変わるたびに増える（PrefabAsset::contentIds を作り直す合図）
 };
 std::unique_ptr<PrefabState> state;
 
@@ -202,8 +193,8 @@ const std::unordered_set<EntityId>& ContentIdsOf(uint32_t handle, std::vector<ui
 // 作る
 //=============================================================================
 // ===== 並べた中身（PrefabRecords::Expand）から Entity を作り、親子をつなぐ（Component はまだ。Transform は Entity と一緒にできている）=====
-PendingLoad CreateEntities(uint32_t prefab, std::shared_ptr<const EntityRecords> records, Handle<Entity> parent) {
-	PendingLoad pending;
+PrefabPendingLoad CreateEntities(uint32_t prefab, std::shared_ptr<const EntityRecords> records, Handle<Entity> parent) {
+	PrefabPendingLoad pending;
 	pending.prefab = prefab;
 	pending.records = std::move(records);
 	const EntityRecords& items = *pending.records;
@@ -236,7 +227,7 @@ PendingLoad CreateEntities(uint32_t prefab, std::shared_ptr<const EntityRecords>
 // ===== Component を付ける。isTransform なら Transform だけ、そうでなければ Transform 以外を全部 =====
 // Transform は Entity を作ったときから持っているので、上書きするだけ（Component の配列は増えない＝フレームの途中でも安全）
 // ほかの Component は配列が増えるので、フレームの境目でだけ付ける
-void LoadComponents(const PendingLoad& pending, bool isTransform, std::set<std::string>& warnings) {
+void LoadComponents(const PrefabPendingLoad& pending, bool isTransform, std::set<std::string>& warnings) {
 	for (size_t i = 0; i < pending.created.size(); ++i) {
 		if (!EntityManager::IsAlive(pending.created[i])) {
 			continue; // 作ってから今までに消された（Destroy・Stop）
@@ -260,7 +251,7 @@ void LoadComponents(const PendingLoad& pending, bool isTransform, std::set<std::
 }
 
 // ===== 一番上に「置いた物の印」を付ける（Component が増えるので、フレームの境目でだけ呼ぶ）=====
-void Link(const PendingLoad& pending) {
+void Link(const PrefabPendingLoad& pending) {
 	const Handle<Entity> root = pending.created.front();
 	if (!EntityManager::IsAlive(root)) {
 		return;
@@ -397,7 +388,7 @@ bool PrefabManager::Save(Handle<Entity> root, const std::string& path) {
 	}
 
 	// --- もう読み込んでいる Prefab なら、中身を差し替える。まだなら読み込む ---
-	// このあと作る物から新しい中身になる。作りかけの物（PendingLoad）は前の中身を shared_ptr で持っているので、そのまま付け終われる
+	// このあと作る物から新しい中身になる。作りかけの物（PrefabPendingLoad）は前の中身を shared_ptr で持っているので、そのまま付け終われる
 	uint32_t handle = cachedHandle;
 	if (PrefabAsset* asset = Find(handle)) {
 		SetEntities(*asset, std::make_shared<const SceneJson>(json.at("entities")));
@@ -450,7 +441,7 @@ Handle<Entity> PrefabManager::Instantiate(uint32_t prefab, const Vector3& positi
 	}
 
 	// ===== Entity を作り、Transform だけ今すぐ付ける =====
-	PendingLoad pending = CreateEntities(prefab, std::make_shared<const EntityRecords>(std::move(records)), parent);
+	PrefabPendingLoad pending = CreateEntities(prefab, std::make_shared<const EntityRecords>(std::move(records)), parent);
 	LoadComponents(pending, true, warnings);
 	FlushWarnings(warnings);
 	// 一番上の位置を、渡された位置にする（回転・大きさは Prefab のまま）
@@ -464,7 +455,7 @@ Handle<Entity> PrefabManager::Instantiate(uint32_t prefab, const Vector3& positi
 	return root;
 }
 
-Handle<Entity> PrefabManager::InstantiateNow(uint32_t prefab, const SceneJson& entry, std::set<std::string>& warnings) {
+PrefabPendingLoad PrefabManager::CreateInstance(uint32_t prefab, const SceneJson& entry, std::set<std::string>& warnings) {
 	HTT_ASSERT_MSG(state != nullptr, "PrefabManager::Initialize()を先に呼んでください");
 	// --- 中身を並べ、ファイルの項目（一番上の名前・有効・Transform・上書きなど）を当てる ---
 	EntityRecords records = PrefabRecords::Expand(prefab, entry.value("id", EntityId{0}), warnings);
@@ -483,12 +474,25 @@ Handle<Entity> PrefabManager::InstantiateNow(uint32_t prefab, const SceneJson& e
 		} while (!PrefabRecords::AreIdsFree(moved));
 		records = std::move(moved);
 	}
-	// --- 作って、Component・印までその場で付ける（フレームの境目なので安全）---
-	const PendingLoad pending = CreateEntities(prefab, std::make_shared<const EntityRecords>(std::move(records)), {});
+	// --- Entity を作り、Transform だけ付ける（Transform はほかの Entity を指さないので、今付けてよい）---
+	// ほかの Component は FinishInstance で付ける（シーンのほかの Entity を指す項目が、相手がまだ居なくて外れないように）
+	PrefabPendingLoad pending = CreateEntities(prefab, std::make_shared<const EntityRecords>(std::move(records)), {});
 	LoadComponents(pending, true, warnings);
+	return pending;
+}
+
+void PrefabManager::FinishInstance(const PrefabPendingLoad& pending, std::set<std::string>& warnings) {
+	if (!pending.IsValid()) {
+		return; // 作れなかった物（読めない Prefab）
+	}
 	LoadComponents(pending, false, warnings);
 	Link(pending);
-	return pending.created.front();
+}
+
+Handle<Entity> PrefabManager::InstantiateNow(uint32_t prefab, const SceneJson& entry, std::set<std::string>& warnings) {
+	const PrefabPendingLoad pending = CreateInstance(prefab, entry, warnings);
+	FinishInstance(pending, warnings);
+	return pending.GetRoot();
 }
 
 void PrefabManager::RequestPlace(uint32_t prefab) {
@@ -510,9 +514,9 @@ void PrefabManager::Flush() {
 
 	// ===== Component・Script・印を付ける（Transform は作ったときに付けたので飛ばす）=====
 	// フレームの境目なので、予約せずその場で付けてよい（シーンを読むときと同じ）
-	const std::vector<PendingLoad> loads = std::exchange(state->pendingLoads, {});
+	const std::vector<PrefabPendingLoad> loads = std::exchange(state->pendingLoads, {});
 	std::set<std::string> warnings;
-	for (const PendingLoad& pending : loads) {
+	for (const PrefabPendingLoad& pending : loads) {
 		LoadComponents(pending, false, warnings);
 		Link(pending);
 	}

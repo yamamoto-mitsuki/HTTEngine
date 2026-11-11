@@ -76,7 +76,7 @@ shape.transform.rotation = ...; // Transform はすぐ使える
 // shape.GetComponent<RigidbodyComponent>() はまだ nullptr（ほかの Component・Script は次のフレームの頭に付く。AddComponent と同じ予約）
 ```
 
-- 作るたびに新しい EntityId になり、Component・Script の中の「Prefab の中の Entity への参照」（`EntityRef`・`GameObject`）は、作った方を指すように付け替わる。Prefab の外の Entity を指していた項目は外れる（警告が出る）。
+- 作るたびに新しい EntityId になり、Component・Script の中の「Prefab の中の Entity への参照」（`EntityRef`・`GameObject`）は、作った方を指すように付け替わる。**Prefab の外の Entity（シーンに置いたほかの物）への参照は、Prefab のファイルには入らない**（書くときに警告が出る）。シーンに置いた物なら、その参照は置いた所ごとの上書きとしてシーンに残る（Inspector の Target などへ、シーンごとに入れる）。`Instantiate` で作った物は空で始まるので、Script で入れる。
 - 置いた物は Prefab とつながっている（一番上に `Prefab Instance` の印）。**シーンファイルには「どの Prefab を、どこに置いたか」だけを書く**（一番上の名前・有効・親・Transform と、あとから足した子）。中身は開くたびに Prefab から作るので、Prefab を直すと、次に開いたシーンから新しい中身になる（シーンファイルは変わらない。チームでぶつかりにくい）。
 - 中の子の番号は「Prefab のファイルの番号 XOR ずれ」（ずれは置いた物ごとに1つ）なので、開き直しても同じ。シーンのほかの物から、置いた物の中の子を指してよい。
 - シーンで中身（子も含む全部の Component・名前・有効・親）を直すと、シーンファイルには **Prefab と違う項目だけ** が書かれる（`"overrides"` など。体力だけ変えた敵なら `"Health": 200` だけ）。上書きしていない項目は、Prefab を直すと届く。Revert は一番外側の置いた物ごと（あとから足した子も消える）。

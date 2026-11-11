@@ -20,9 +20,10 @@ constexpr const char* kTransformName = "Transform"; // Transform の保存の名
 std::unordered_map<EntityId, SceneJson> unreadEntries;
 
 // ===== Entity 1つ分の今の Component（Save と同じ形）=====
-SceneJson SaveComponents(Handle<Entity> handle, std::set<std::string>& warnings) {
+// insideIds を渡すと、表に無い相手（Prefab の外の Entity）への参照を 0 で書く（表にある相手は、同じ番号のまま）
+SceneJson SaveComponents(Handle<Entity> handle, std::set<std::string>& warnings, const EntityIdMap* insideIds) {
 	SceneJson components = SceneJson::object();
-	ComponentSerializer::Save(handle, components, warnings);
+	ComponentSerializer::Save(handle, components, warnings, insideIds);
 	return components;
 }
 } // namespace
@@ -31,12 +32,22 @@ SceneJson SaveComponents(Handle<Entity> handle, std::set<std::string>& warnings)
 //=============================================================================
 // 上書きを作る
 //=============================================================================
-SceneJson PrefabOverrides::MakeInstanceEntry(Handle<Entity> root, std::set<std::string>& warnings) {
+SceneJson PrefabOverrides::MakeInstanceEntry(Handle<Entity> root, std::set<std::string>& warnings, const EntityIdMap* prefabIds) {
 	const Entity* entity = EntityManager::Get(root);
 	const PrefabInstanceComponent* link = EntityManager::Get<PrefabInstanceComponent>(root);
 	if (entity == nullptr || link == nullptr) {
 		return {};
 	}
+	// ===== Prefab に書くとき：その Prefab に入る Entity の表（番号 → 同じ番号）=====
+	// 比べる基準（Expand）は今の番号で並ぶので、今の Component も今の番号のまま書く。表に無い相手（Prefab の外）だけが 0 になる
+	// 0 にしてから比べるので、外の相手を指しているだけの項目は「Prefab と同じ」になり、入れ子の項目に要らない上書きが残らない
+	EntityIdMap insideMap;
+	if (prefabIds != nullptr) {
+		for (const auto& pair : *prefabIds) {
+			insideMap[pair.first] = pair.first; // first が今の番号（second はファイルに書く番号。ここでは使わない）
+		}
+	}
+	const EntityIdMap* insideIds = (prefabIds != nullptr) ? &insideMap : nullptr;
 	// ===== 置いた所ごとに必ず書く物（一番上の番号・名前・親・有効・レイヤー・Prefab のパス・Transform）=====
 	const Entity* parent = EntityManager::Get(entity->parent);
 	SceneJson entry = SceneJson::object();
@@ -46,7 +57,7 @@ SceneJson PrefabOverrides::MakeInstanceEntry(Handle<Entity> root, std::set<std::
 	entry["active"] = entity->isActive;
 	WriteEntityLayer(entry, entity->layer); // Default なら書かない（読むときも、無ければ Default）
 	entry[kPrefabEntryKey] = link->path.ToString();
-	SceneJson nowRoot = SaveComponents(root, warnings);
+	SceneJson nowRoot = SaveComponents(root, warnings, insideIds);
 	nowRoot.erase(kPrefabInstanceComponentName); // 印は書かない（"prefab" で分かる）
 	SceneJson components = SceneJson::object();
 	if (const auto transform = nowRoot.find(kTransformName); transform != nowRoot.end()) {
@@ -123,7 +134,7 @@ SceneJson PrefabOverrides::MakeInstanceEntry(Handle<Entity> root, std::set<std::
 		const SceneJson* base = PrefabRecords::FindComponents(record);
 		SceneJson patches = SceneJson::object();
 		SceneJson removedOne = SceneJson::array();
-		PrefabDiff::DiffComponents((base != nullptr) ? *base : SceneJson::object(), SaveComponents(handle, warnings), patches, removedOne);
+		PrefabDiff::DiffComponents((base != nullptr) ? *base : SceneJson::object(), SaveComponents(handle, warnings, insideIds), patches, removedOne);
 		if (!patches.empty()) {
 			override["components"] = std::move(patches);
 		}

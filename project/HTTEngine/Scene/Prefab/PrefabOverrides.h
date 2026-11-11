@@ -10,7 +10,7 @@
 /// <summary>
 /// Prefab から置いた物の、置いた所ごとの上書き（Unity の Override）
 /// <para>Prefab のとおりに並べた物（PrefabRecords::Expand）と今の物を JSON で比べ、違う所だけをシーンファイルの1項目の形にする</para>
-/// <para>読むときに上書きを当てるのは PrefabRecords::ApplyEntry（PrefabManager::InstantiateNow から）</para>
+/// <para>読むときに上書きを当てるのは PrefabRecords::ApplyEntry（PrefabManager::CreateInstance から）</para>
 /// </summary>
 class PrefabOverrides {
 public:
@@ -21,7 +21,9 @@ public:
 	/// <para>"overrides"：中身1つずつの、違う名前・有効・親・Component。"removed"：消した中身。あとから足した子は書かない（シーンにふつうに書く）</para>
 	/// <para>置いた物でなければ null</para>
 	/// </summary>
-	static SceneJson MakeInstanceEntry(Handle<Entity> root, std::set<std::string>& warnings);
+	/// <param name="prefabIds">Prefab のファイルに書くとき（入れ子）だけ渡す。その Prefab に入る Entity の番号の表（SceneSerializer::SaveTree の idMap）。
+	/// 渡すと、表に無い相手（Prefab の外の Entity）への参照を 0 として比べる（Prefab には、外の相手を書かない）</param>
+	static SceneJson MakeInstanceEntry(Handle<Entity> root, std::set<std::string>& warnings, const EntityIdMap* prefabIds = nullptr);
 	// 置いた所ごとの上書きがあるか（一番上の名前・有効・親・Transform と、あとから足した子は数えない）
 	static bool HasOverrides(Handle<Entity> root);
 	// Prefab が読めなかった置いた物の、ファイルの項目を覚える（MakeInstanceEntry が、上書きをそのまま書き戻す）
