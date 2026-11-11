@@ -19,6 +19,7 @@
 #include "HTTEngine/Graphics/PostEffect/PostOverride.h"
 #include "HTTEngine/Graphics/Renderer/GameScreen.h"
 #include "HTTEngine/Graphics/Renderer/SceneRenderer.h"
+#include "HTTEngine/Math/Color.h"
 #include "HTTEngine/Math/MathUtility.h"
 #include "HTTEngine/Math/RandomEngine.h"
 #include "HTTEngine/Systems/Camera/CameraFollow.h"
@@ -131,6 +132,21 @@ void UseDefaultCamera() {
 	ApplyProjection(CameraComponent{}.fovY, CameraComponent{}.nearZ, CameraComponent{}.farZ);
 }
 
+// Camera Component の背景 → 描くときの背景（色は Inspector で選んだ sRGB → シェーダーで塗るリニアへ。Component が無ければ天球）
+SceneBackground MakeBackground(const CameraComponent* camera) {
+	if (camera == nullptr) {
+		return {};
+	}
+	SceneBackground background;
+	background.type = camera->backgroundType;
+	background.color = SrgbToLinear(camera->backgroundColor);
+	background.skyColor = SrgbToLinear(camera->gradientSkyColor);
+	background.horizonColor = SrgbToLinear(camera->gradientHorizonColor);
+	background.groundColor = SrgbToLinear(camera->gradientGroundColor);
+	background.horizonWidth = (std::max)(camera->gradientHorizonWidth, 0.0f); // 0 なら地平線で Sky と Ground がくっきり分かれる
+	return background;
+}
+
 //=============================================================================
 // 時間
 //=============================================================================
@@ -155,6 +171,19 @@ void DescribeCamera(ComponentUI& ui, CameraComponent& value) {
 	ui.Field("Near###nearZ", value.nearZ, AtLeast(0.001f).Tip("これより近い物は映らない"));
 	ui.Field("Far###farZ", value.farZ, AtLeast(0.01f).Tip("これより遠い物は映らない"));
 	ui.Field("Priority###priority", value.priority, Tip("有効な Camera が複数あるとき、大きい方を使う（切り替えはこの値か、Entity の有効・無効で）"));
+	ui.Separator("Background");
+	ui.Field("Type###backgroundType", value.backgroundType,
+	    Tip("物が描かれていない所の塗り方。Skybox：天球 / SolidColor：Color の1色 / Gradient：Sky・Horizon・Ground の3色（SolidColor・Gradient は霧が掛からない。環境光（IBL）は天球のまま）"));
+	// 使わない色も、保存のために毎回並べる（Describe は Inspector と保存の両方。並べないと保存されない）
+	ui.BeginDisabled(value.backgroundType != BackgroundType::SolidColor);
+	ui.ColorField("Color###backgroundColor", value.backgroundColor, Tip("SolidColor のときの色"));
+	ui.EndDisabled();
+	ui.BeginDisabled(value.backgroundType != BackgroundType::Gradient);
+	ui.ColorField("Sky###gradientSkyColor", value.gradientSkyColor, Tip("真上を見たときの色"));
+	ui.ColorField("Horizon###gradientHorizonColor", value.gradientHorizonColor, Tip("真横（地平線）を見たときの色"));
+	ui.ColorField("Ground###gradientGroundColor", value.gradientGroundColor, Tip("真下を見たときの色"));
+	ui.Field("Horizon Width###gradientHorizonWidth", value.gradientHorizonWidth, Range(0.0f, 1.0f).Tip("地平線の色が残る幅（見る向きの上下。0.15 なら上下に約 9°、1 なら真上・真下まで）。その間をなめらかにぼかして Sky・Ground へ移る"));
+	ui.EndDisabled();
 	ui.Separator("Blend");
 	ui.Field("Style###blendStyle", value.blendStyle, Tip("このカメラへ切り替わるときの動き方。Cut：すぐ切り替える / Ease：Time の秒をかけて補間する（Camera Volume の値も一緒に）"));
 	ui.BeginDisabled(value.blendStyle != CameraBlendStyle::Ease);
@@ -457,6 +486,7 @@ void CameraSystem::Update(bool isGameRunning) {
 		state->mainEntity = {};
 		UseDefaultCamera();
 		SceneRenderer::SetCameraPostOverrides({});
+		SceneRenderer::SetCameraBackground({}); // Camera が無ければ天球
 		ResetOutput();
 		return;
 	}
@@ -489,6 +519,8 @@ void CameraSystem::Update(bool isGameRunning) {
 	state->output = output;
 	state->hasOutput = true;
 	state->mainEntity = (request.has_value() && request->to.IsValid()) ? request->to : best;
+	// 背景は今使っているカメラの物（補間の途中は切り替わった先。色は補間しない）
+	SceneRenderer::SetCameraBackground(MakeBackground(EntityManager::Get<CameraComponent>(state->mainEntity)));
 
 	// ===== 6. 頼みは1フレームだけ（頼まなくなれば、次のフレームから通常のカメラ）=====
 	state->lastOverride = isGameRunning ? state->overrideRequest : std::nullopt;

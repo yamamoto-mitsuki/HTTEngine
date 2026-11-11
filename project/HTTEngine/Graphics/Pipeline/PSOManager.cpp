@@ -27,6 +27,7 @@ RenderTextureFormat GetTargetFormat(DrawCategory category) {
 	case DrawCategory::Text:
 	case DrawCategory::VectorShape:
 	case DrawCategory::Polyline:
+	case DrawCategory::GizmoLine: // ギズモの線もトーンマップの後に描く（選んだ色のまま出す）
 		return RenderTextureFormat::SDR;
 	}
 	return RenderTextureFormat::SDR;
@@ -101,7 +102,8 @@ uint32_t PSOManager::GetShaderProgramID(DrawCategory category, ShadingType type)
 // ===== TopologyID =====
 TopologyID PSOManager::GetTopologyID(DrawCategory category) {
 	switch (category) {
-	case DrawCategory::Line: // 線の描画のみIDがLine
+	case DrawCategory::Line:      // 線
+	case DrawCategory::GizmoLine: // ギズモの線
 		return TopologyID::Line;
 	default:
 		return TopologyID::Triangle;

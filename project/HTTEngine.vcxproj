@@ -517,6 +517,7 @@
     <ClInclude Include="HTTEngine\Graphics\Renderer\Renderer.h" />
     <ClInclude Include="HTTEngine\Graphics\Renderer\RenderContext.h" />
     <ClInclude Include="HTTEngine\Graphics\Renderer\RenderQueue.h" />
+    <ClInclude Include="HTTEngine\Graphics\Renderer\SceneBackground.h" />
     <ClInclude Include="HTTEngine\Graphics\Renderer\SceneRenderer.h" />
     <ClInclude Include="HTTEngine\Graphics\RenderTarget\RenderTexture.h" />
     <ClInclude Include="HTTEngine\Graphics\RenderTarget\RenderTextureCube.h" />
@@ -624,6 +625,7 @@
     <None Include="HTTEngine\Shader\Data\IBL\IBLCommon.hlsli.shader" />
     <None Include="HTTEngine\Shader\Data\IBL\IrradianceConvolution.PS.shader" />
     <None Include="HTTEngine\Shader\Data\IBL\Prefilter.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Line\GizmoLine.PS.shader" />
     <None Include="HTTEngine\Shader\Data\Line\Line3d.hlsli.shader" />
     <None Include="HTTEngine\Shader\Data\Line\Line3d.PS.shader" />
     <None Include="HTTEngine\Shader\Data\Line\Line3d.VS.shader" />

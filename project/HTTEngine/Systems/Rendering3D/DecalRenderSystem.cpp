@@ -53,6 +53,7 @@ void DecalRenderSystem::Initialize() {
 	state->gizmoLines.fadeStartDistance = kNoFadeStart;
 	state->gizmoLines.fadeEndDistance = kNoFadeEnd;
 	state->gizmoLines.layer = DrawLayer::EditorGizmo; // Scene ビューだけ（ゲームの絵に入れない）
+	state->gizmoLines.isGizmo = true;                 // ポストエフェクトの後に、選んだ色のまま描く
 
 	// Decal Renderer の置き場所・保存・Inspector を登録する（見せ方は DescribeDecalRenderer 1つ）
 	EntityManager::RegisterComponent<DecalRendererComponent>();

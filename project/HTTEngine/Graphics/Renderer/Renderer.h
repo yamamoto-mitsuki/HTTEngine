@@ -344,6 +344,9 @@ public:
 		Vector4 color = {1.0f, 1.0f, 1.0f, 1.0f};     // 色
 		Camera* camera = nullptr;        // カメラ設定
 		DepthMode depthMode = DepthMode::TestWrite; // Disable にすると、物の後ろ・中でも見える（骨のギズモなど）
+		// true：ギズモの線。トーンマップ・ブルーム・色の調整の後に、選んだ色のまま描く（ブルームで光らない・被写界深度でぼけない）
+		// false：ゲームの線。3D の絵（HDR）に描き、ポストエフェクトを受ける
+		bool isGizmo = false;
 	};
 
 	//=============================================================================

@@ -1406,6 +1406,9 @@
     <ClInclude Include="HTTEngine\Graphics\Renderer\RenderQueue.h">
       <Filter>HTTEngine\Graphics\Renderer</Filter>
     </ClInclude>
+    <ClInclude Include="HTTEngine\Graphics\Renderer\SceneBackground.h">
+      <Filter>HTTEngine\Graphics\Renderer</Filter>
+    </ClInclude>
     <ClInclude Include="HTTEngine\Graphics\Renderer\SceneRenderer.h">
       <Filter>HTTEngine\Graphics\Renderer</Filter>
     </ClInclude>
@@ -1948,6 +1951,9 @@
     </None>
     <None Include="HTTEngine\Shader\Data\VectorShape\VectorShape.PS.shader">
       <Filter>HTTEngine\Shader\Data\VectorShape</Filter>
+    </None>
+    <None Include="HTTEngine\Shader\Data\Line\GizmoLine.PS.shader">
+      <Filter>HTTEngine\Shader\Data\Line</Filter>
     </None>
   </ItemGroup>
 </Project>

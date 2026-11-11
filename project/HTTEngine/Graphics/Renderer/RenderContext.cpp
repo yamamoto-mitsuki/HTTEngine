@@ -388,7 +388,7 @@ void RenderContext::DrawPolyline(const PolylineRequest& req) {
 //=============================================================================
 // Line3D描画
 //=============================================================================
-void RenderContext::DrawLines(const LineRequest& req) {
+void RenderContext::DrawLines(const LineRequest& req, uint32_t programId, const MaterialLineData& material) {
 	// 奇数は切り捨て。描く線が無ければ何もしない
 	size_t vertexCount = req.vertices.size() & ~size_t(1);
 	if (vertexCount == 0) {
@@ -396,11 +396,10 @@ void RenderContext::DrawLines(const LineRequest& req) {
 	}
 	auto* cmdList = DirectXCommon::GetCommandList();
 	FrameUploadBuffer& upload = instance_->frameUploadBuffer_;
-	uint32_t prog = PSOManager::GetShaderProgramID(DrawCategory::Line);
-	const RootSignatureInfo& rs = PSOManager::GetRootSignatureInfo(prog);
+	const RootSignatureInfo& rs = PSOManager::GetRootSignatureInfo(programId);
 
 	// ===== このフレーム用のバッファに書く =====
-	D3D12_GPU_VIRTUAL_ADDRESS materialAddress = upload.PushConstant(req.materialData);
+	D3D12_GPU_VIRTUAL_ADDRESS materialAddress = upload.PushConstant(material);
 	D3D12_GPU_VIRTUAL_ADDRESS transformAddress = upload.PushConstant(req.objectTransformData);
 	FrameUploadBuffer::Allocation vertices = upload.PushArray(req.vertices.data(), vertexCount);
 

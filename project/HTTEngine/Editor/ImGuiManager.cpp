@@ -137,6 +137,7 @@ void DrawViewMenu() {
 		ImGui::SeparatorText("Scene View");
 		ImGui::MenuItem("Post Effects", nullptr, &viewFlags.sceneEffects);
 		ImGui::MenuItem("Fog", nullptr, &viewFlags.sceneFog);
+		ImGui::MenuItem("Skybox", nullptr, &viewFlags.sceneSkybox);
 		ImGui::MenuItem("Depth of Field", nullptr, &viewFlags.sceneDepthOfField, viewFlags.sceneEffects); // Post Effects を切っていると押せない
 		ImGui::MenuItem("Grid###sceneGrid", nullptr, &viewFlags.sceneGrid);
 		ImGui::MenuItem("Pick UI", nullptr, &viewFlags.scenePickUI);

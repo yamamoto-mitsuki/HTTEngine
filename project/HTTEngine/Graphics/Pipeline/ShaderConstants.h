@@ -186,9 +186,9 @@ struct MaterialLineData {
 	Vector3 cameraWorldPos;  // カメラのワールド座標
 	float fadeStartDistance; // フェード開始距離
 	float fadeEndDistance;   // フェード終了距離(この距離でalpha=0)
+	uint32_t depthIndex = 0; // 3D の絵の深度（gTextures[] の番号。ギズモの線だけが読む。RenderQueue::FlushGizmoLine が入れる）
+	uint32_t testsDepth = 1; // 1：物の後ろは描かない 0：いつも描く（ギズモの線だけが読む。DepthMode::Disable の線が 0）
 	float pad0 = 0.0f;
-	float pad1 = 0.0f;
-	float pad2 = 0.0f;
 };
 
 // IBLの索引
@@ -263,4 +263,13 @@ struct SkyboxData {
 	float intensity = 1.0f;
 	int cubeIndex;
 	float padA[2];
+	// --- 背景の塗り方（SceneBackground。色は全部リニア）---
+	Vector3 solidColor = {0.0f, 0.0f, 0.0f};   // SolidColor の色
+	uint32_t backgroundType = 0;               // BackgroundType の番号（0：天球の絵 1：SolidColor 2：Gradient）
+	Vector3 skyColor = {0.0f, 0.0f, 0.0f};     // Gradient の真上の色
+	float horizonWidth = 0.15f;                // Gradient の地平線の色が残る幅（見る向きの y）
+	Vector3 horizonColor = {0.0f, 0.0f, 0.0f}; // Gradient の地平線の色
+	float padB = 0.0f;
+	Vector3 groundColor = {0.0f, 0.0f, 0.0f};  // Gradient の真下の色
+	float padC = 0.0f;
 };

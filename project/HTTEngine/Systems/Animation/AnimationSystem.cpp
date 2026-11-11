@@ -174,6 +174,7 @@ void AnimationSystem::Initialize() {
 	state->gizmoLines.fadeStartDistance = kNoFadeStart;
 	state->gizmoLines.fadeEndDistance = kNoFadeEnd;
 	state->gizmoLines.depthMode = DepthMode::Disable;
+	state->gizmoLines.isGizmo = true; // ポストエフェクトの後に、選んだ色のまま描く
 
 	// Animatorの置き場所・保存・保存・Inspectorを登録
 	EntityManager::RegisterComponent<AnimatorComponent>();

@@ -52,6 +52,7 @@ void LightGizmo::Initialize() {
 	rangeLines_.fadeStartDistance = kNoFadeStart;
 	rangeLines_.fadeEndDistance = kNoFadeEnd;
 	rangeLines_.layer = DrawLayer::EditorGizmo; // Scene ビューだけに描く
+	rangeLines_.isGizmo = true;                 // ポストエフェクトの後に、選んだ色のまま描く
 }
 
 

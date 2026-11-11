@@ -148,4 +148,5 @@ struct LineRequest : DrawTarget {
 
 	// --- 描画設定 ---
 	DepthMode depthMode = DepthMode::TestWrite;
+	bool isGizmo = false; // ギズモの線（ポストエフェクトの後に描く。RenderQueue::FlushGizmoLine）
 };

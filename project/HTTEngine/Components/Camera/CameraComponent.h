@@ -1,7 +1,9 @@
 #pragma once
 #include <type_traits>
 
+#include "HTTEngine/Graphics/Renderer/SceneBackground.h"
 #include "HTTEngine/Math/Easing.h"
+#include "HTTEngine/Math/Vector3.h"
 #include "HTTEngine/Time/EngineTime.h"
 
 // ゲームの絵を撮るカメラ。Entityに付けるComponent（カテゴリ：Camera）
@@ -29,6 +31,14 @@ struct CameraComponent {
 	float nearZ = 0.1f;   // これより近い物は映らない
 	float farZ = 1000.0f; // これより遠い物は映らない
 	int priority = 0;     // 有効な Camera が複数あるとき、大きい方を使う（同じなら先に見つけた方）
+	// --- 背景（物が描かれていない所）---
+	// 色は全部 sRGB（Inspector で選ぶ色）。CameraSystem がリニアに直して SceneRenderer へ渡す
+	BackgroundType backgroundType = BackgroundType::Skybox; // Skybox：天球 / SolidColor：backgroundColor の1色 / Gradient：下の3色
+	Vector3 backgroundColor = {0.192f, 0.302f, 0.475f};     // SolidColor の色（既定は Unity の新しいカメラと同じ青）
+	Vector3 gradientSkyColor = {0.36f, 0.58f, 0.86f};       // Gradient の真上の色（既定は青空）
+	Vector3 gradientHorizonColor = {0.86f, 0.90f, 0.95f};   // Gradient の地平線の色（既定は白っぽい空）
+	Vector3 gradientGroundColor = {0.42f, 0.40f, 0.38f};    // Gradient の真下の色（既定は灰色の地面）
+	float gradientHorizonWidth = 0.15f;                     // 地平線の色が残る幅（見る向きの上下 y。0.15 なら上下に約 9°。その間をなめらかに Sky・Ground へ移る）
 	// --- このカメラへ切り替わるときの動き方 ---
 	CameraBlendStyle blendStyle = CameraBlendStyle::Cut; // 切り替え方
 	float blendTime = 1.0f;                              // 補間にかける秒（Ease のとき）

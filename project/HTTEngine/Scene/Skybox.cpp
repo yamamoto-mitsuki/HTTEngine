@@ -44,7 +44,7 @@ void Skybox::LoadDefaultTexture() {
 //=============================================================================
 // 描画
 //=============================================================================
-void Skybox::Draw(const Camera* camera, D3D12_GPU_VIRTUAL_ADDRESS cameraCB) {
+void Skybox::Draw(const Camera* camera, D3D12_GPU_VIRTUAL_ADDRESS cameraCB, const SceneBackground& background) {
 	// 早期リターン
 	HTT_ASSERT_MSG(cube_, "テクスチャが設定されていません。SetEquirectで設定してください。");
 	HTT_ASSERT_MSG(camera, "カメラが設定されていません。");
@@ -60,6 +60,13 @@ void Skybox::Draw(const Camera* camera, D3D12_GPU_VIRTUAL_ADDRESS cameraCB) {
 	cb->viewProj = view * camera->GetProjectionMatrix();
 	cb->intensity = intensity_;
 	cb->cubeIndex = cube_->GetSRVSlot();
+	// 背景の塗り方（1色・グラデーションも、天球と同じ所をここで塗る。postRT_ のクリアの色は作ったときの色から変えない）
+	cb->backgroundType = static_cast<uint32_t>(background.type); // シェーダーの kBackground〜 と同じ番号
+	cb->solidColor = background.color;
+	cb->skyColor = background.skyColor;
+	cb->horizonColor = background.horizonColor;
+	cb->groundColor = background.groundColor;
+	cb->horizonWidth = background.horizonWidth;
 	++slot_;
 
 	auto* cmdList = DirectXCommon::GetCommandList();

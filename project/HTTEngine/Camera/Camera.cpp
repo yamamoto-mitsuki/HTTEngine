@@ -75,6 +75,7 @@ void Camera::DrawFrustum(Camera* viewCamera) const {
 	}};
 	Renderer::LineListConfig config;
 	config.camera = viewCamera;
+	config.isGizmo = true; // ポストエフェクトの後に、選んだ色のまま描く
 	config.color = debugColor;
 	config.fadeStartDistance = 10000.0f; // フェードさせない
 	config.fadeEndDistance = 20000.0f;

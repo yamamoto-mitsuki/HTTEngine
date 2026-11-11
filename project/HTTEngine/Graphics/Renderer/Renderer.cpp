@@ -599,6 +599,7 @@ void Renderer::DrawLines(const LineListConfig& config) {
 	Matrix4x4 identity = MakeIdentity4x4();
 	req.objectTransformData.worldMatrix = identity;
 	req.depthMode = config.depthMode;
+	req.isGizmo = config.isGizmo;
 	req.vertices.reserve(config.lines.size() * 2);
 	// 全体色は先に1回だけ直しておく（sRGB → リニア）
 	const Vector4 base = SrgbToLinear(config.color);

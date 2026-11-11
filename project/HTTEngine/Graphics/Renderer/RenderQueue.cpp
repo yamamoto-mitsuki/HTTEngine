@@ -37,6 +37,7 @@ void RenderQueue::Clear() {
 	instance_->particleRequests_.clear();
 	instance_->requests2d_.clear();
 	instance_->lineRequests_.clear();
+	instance_->gizmoLineRequests_.clear();
 	instance_->decalRequests_.clear();
 }
 
@@ -100,7 +101,11 @@ void RenderQueue::Request(VectorShapeRequest&& req) { instance_->requests2d_.emp
 void RenderQueue::Request(PolylineRequest&& req) { instance_->requests2d_.emplace_back(std::move(req)); }
 
 // ===== Line群リクエスト =====
-void RenderQueue::Request(LineRequest&& req) { instance_->lineRequests_.push_back(std::move(req)); }
+// ギズモの線は、ポストエフェクトの後に別に描く（FlushGizmoLine）
+void RenderQueue::Request(LineRequest&& req) {
+	std::vector<LineRequest>& requests = req.isGizmo ? instance_->gizmoLineRequests_ : instance_->lineRequests_;
+	requests.push_back(std::move(req));
+}
 
 // ===== デカールのリクエスト =====
 void RenderQueue::Request(DecalRequest&& req) {
@@ -321,6 +326,7 @@ void RenderQueue::FlushLine(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_A
 	auto* cmdList = DirectXCommon::GetCommandList();
 	// SRVヒープセット
 	const D3D12_GPU_DESCRIPTOR_HANDLE heapStart = DirectXCommon::BindSRVHeap(cmdList);
+	const uint32_t program = PSOManager::GetShaderProgramID(DrawCategory::Line); // 線のシェーダー
 	// 並び替え初期値
 	bool lineStateSet = false;        // 最初だけセットするため
 	uint32_t scopeIndex = UINT32_MAX; // GPUProfiler用
@@ -343,7 +349,7 @@ void RenderQueue::FlushLine(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_A
 			PSOKey psoKey = PSOManager::GetPSOKey(DrawCategory::Line, ShadingType::Unlit);
 			scopeIndex = GPUProfiler::Begin(cmdList, PSOManager::GetStateName(psoKey));
 			// RootSignature
-			const RootSignatureInfo& rs = PSOManager::GetRootSignatureInfo(PSOManager::GetShaderProgramID(DrawCategory::Line));
+			const RootSignatureInfo& rs = PSOManager::GetRootSignatureInfo(program);
 			cmdList->SetGraphicsRootSignature(rs.rootSignature.Get());
 			// カメラ
 			auto camSlot = rs.slotOf.find(RootBind::Camera);
@@ -360,7 +366,54 @@ void RenderQueue::FlushLine(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_A
 		}
 
 		// Draw Callする関数へ
-		RenderContext::DrawLines(req);
+		RenderContext::DrawLines(req, program, req.materialData);
+	}
+	// GPUProfiler: 計測終了
+	if (scopeIndex != UINT32_MAX) {
+		GPUProfiler::End(cmdList, scopeIndex);
+	}
+}
+
+
+//=============================================================================
+// ギズモの線の描画を発行
+//=============================================================================
+// ポストエフェクトの後の絵（SDR）に描く。深度は結ばず（描画先と 3D の絵は大きさが違う）、シェーダーが depthIndex の深度を読んで比べる
+void RenderQueue::FlushGizmoLine(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB, uint32_t depthIndex) {
+	auto* cmdList = DirectXCommon::GetCommandList();
+	const D3D12_GPU_DESCRIPTOR_HANDLE heapStart = DirectXCommon::BindSRVHeap(cmdList);
+	const uint32_t program = PSOManager::GetShaderProgramID(DrawCategory::GizmoLine);
+	// 深度はシェーダーで比べるので、PSO はいつも Disable（線の DepthMode は、testsDepth にして送る）
+	const PSOKey psoKey = PSOManager::GetPSOKey(DrawCategory::GizmoLine, ShadingType::Unlit, BlendMode::Normal, RasterizerType::SolidBack, DepthMode::Disable);
+	bool isStateSet = false;          // 最初の1本でだけ、RootSignature・PSO を結ぶ
+	uint32_t scopeIndex = UINT32_MAX; // GPUProfiler用
+
+	for (const LineRequest& req : instance_->gizmoLineRequests_) {
+		// このビューで描かない物は飛ばす（別のウィンドウ・切ってある層・目で隠した物）
+		if (!IsDrawnInView(req, windowTitle)) {
+			continue;
+		}
+		// --- 最初のみ RootSignature, PipelineState を結ぶ ---
+		if (!isStateSet) {
+			scopeIndex = GPUProfiler::Begin(cmdList, PSOManager::GetStateName(psoKey));
+			const RootSignatureInfo& rs = PSOManager::GetRootSignatureInfo(program);
+			cmdList->SetGraphicsRootSignature(rs.rootSignature.Get());
+			// カメラ（VS の位置・PS の深度から戻す行列）
+			if (auto camSlot = rs.slotOf.find(RootBind::Camera); cameraCB && camSlot != rs.slotOf.end()) {
+				cmdList->SetGraphicsRootConstantBufferView(camSlot->second, cameraCB);
+			}
+			// テクスチャ（深度を gTextures[] で読む）
+			if (auto texSlot = rs.slotOf.find(RootBind::BindlessTexture); texSlot != rs.slotOf.end()) {
+				cmdList->SetGraphicsRootDescriptorTable(texSlot->second, heapStart);
+			}
+			cmdList->SetPipelineState(PSOManager::GetPSO(psoKey).Get());
+			isStateSet = true;
+		}
+		// --- 深度の番号と、比べるかどうかを入れた写しを送る ---
+		MaterialLineData material = req.materialData;
+		material.depthIndex = depthIndex;
+		material.testsDepth = (req.depthMode != DepthMode::Disable) ? 1u : 0u;
+		RenderContext::DrawLines(req, program, material);
 	}
 	// GPUProfiler: 計測終了
 	if (scopeIndex != UINT32_MAX) {

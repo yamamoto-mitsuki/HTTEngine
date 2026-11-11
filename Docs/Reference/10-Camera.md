@@ -10,6 +10,7 @@
 | Field Of View | 縦の視野角（**度**）。小さいほど望遠 |
 | Near / Far | 映る距離の範囲 |
 | Priority | 有効な Camera が複数あるとき、大きい方を使う。切り替えは、この値か Entity の有効・無効で |
+| Background（Type・Color・Sky・Horizon・Ground・Horizon Width） | 物が描かれていない所の塗り方。`Skybox`（天球）／`SolidColor`（Color の1色）／`Gradient`（見る向きの上下で、真上の Sky・地平線の Horizon・真下の Ground を混ぜる。Horizon Width は地平線の色が残る幅で、0.15 なら上下に約 9°。その間をなめらかにぼかす）。SolidColor・Gradient は霧が掛からない。環境光（IBL）は天球のまま。Scene ビューは見ない（初めはエディタのグラデーション。View → Skybox で天球に切り替える） |
 | Blend（Style・Time・Ease） | このカメラへ切り替わるときの動き方。`Cut`（すぐ切り替える）／`Ease`（Time の秒をかけて、位置・向き・視野角・Camera Volume の値を補間する） |
 | Time Mode | このカメラの切り替え・Camera Follow・Camera Look At・Camera Shake が使う時間。`Game`（スローで遅くなり、ヒットストップ・ポーズで止まる）／`Real`（止まらない。エディタの一時停止では止まる） |
 

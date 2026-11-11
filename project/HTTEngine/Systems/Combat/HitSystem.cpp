@@ -630,6 +630,7 @@ void HitSystem::Initialize() {
 	state = std::make_unique<HitState>();
 	state->gizmoLines.fadeStartDistance = kNoFadeStart;
 	state->gizmoLines.fadeEndDistance = kNoFadeEnd;
+	state->gizmoLines.isGizmo = true; // ポストエフェクトの後に、選んだ色のまま描く
 
 	// Hitbox・Hurtbox の置き場所・保存・Inspector を登録する（見せ方は1つの関数で、保存と Inspector の両方に使う）
 	EntityManager::RegisterComponent<HitboxComponent>();

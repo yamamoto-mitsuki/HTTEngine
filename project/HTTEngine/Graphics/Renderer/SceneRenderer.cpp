@@ -77,6 +77,9 @@ DepthOfFieldSettings SceneRenderer::GetViewDepthOfField() {
 	return settings;
 }
 
+// ===== このビューの背景 =====
+SceneBackground SceneRenderer::GetViewBackground() { return instance_->viewOptions_.background.value_or(instance_->cameraBackground_); }
+
 //=============================================================================
 // Viewport と Scissorの設定
 //=============================================================================
@@ -95,11 +98,10 @@ void SceneRenderer::SetViewportAndScissor(const ViewRect& rect) {
 // 3D の PSO は HDR の絵に描く形なので、ポストエフェクトを切ったビューもここを通る（その後、トーンマップだけ掛けて画面へ）
 // 半透明・線・パーティクルは、被写界深度でぼかした後に描く（深度を書かないので、深度でぼけ方を決められない。
 // 先に描くと、後ろにある物（空など）と同じだけぼける。Unreal の半透明の「Render After DOF」と同じ考え）
-RenderTexture* SceneRenderer::RenderWorldForPost(const Camera* camera, const std::wstring& windowTitle) {
+RenderTexture* SceneRenderer::RenderWorldForPost(const Camera* camera, D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle) {
 	RenderTexture* work = instance_->postRT_.get();
 	const ViewRect workRect = {0.0f, 0.0f, static_cast<float>(work->GetWidth()), static_cast<float>(work->GetHeight())};
 	const DepthOfFieldSettings depthOfField = GetViewDepthOfField();
-	D3D12_GPU_VIRTUAL_ADDRESS camCB = camera ? UploadCameraCB(camera) : 0;
 
 	// --- 不透明な物と空 ---
 	work->PreDraw();
@@ -134,7 +136,7 @@ void SceneRenderer::RenderOpaque(const Camera* camera, D3D12_GPU_VIRTUAL_ADDRESS
 	}
 	if (instance_->skybox_) {
 		GPU_SCOPE(cmdList, "Skybox");
-		instance_->skybox_->Draw(camera, camCB);
+		instance_->skybox_->Draw(camera, camCB, GetViewBackground()); // 天球か1色（Camera の Background・Scene ビューの Skybox）
 	}
 	// UseDepthOfFieldの粒は、ここ（被写界深度の前）で描いて一緒にぼかす。深度は書かないので、ぼけ方は粒の後ろにある物の距離で決まる
 	{
@@ -155,6 +157,22 @@ void SceneRenderer::RenderTransparent(D3D12_GPU_VIRTUAL_ADDRESS camCB, const std
 		GPU_SCOPE(cmdList, "Particle");
 		RenderQueue::FlushParticle(windowTitle, camCB, false); // 普通の粒（被写界深度の後。ぼけない）
 	}
+}
+
+// ===== ギズモの線。トーンマップの後に重ねるので、選んだ色のまま出る（ブルームで光らない・被写界深度でぼけない）=====
+// 描画先は 3D の絵（postRT_）と大きさが違うので、深度は結べない。postRT_ の深度を SRV で読める状態にして、シェーダーで比べる
+void SceneRenderer::RenderGizmoLines(D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle, const ViewRect& rect) {
+	if (camCB == 0) {
+		return; // カメラが無い（線の位置を画面へ戻せない）
+	}
+	auto* cmdList = DirectXCommon::GetCommandList();
+	SetViewportAndScissor(rect);
+	GPU_SCOPE(cmdList, "Gizmo Line");
+	// ここでの postRT_ は、色が PS で読む状態・深度が書く状態（被写界深度を掛けたときも、DepthOfFieldPass が戻している）
+	RenderTexture* scene = instance_->postRT_.get();
+	scene->BeginShaderRead();
+	RenderQueue::FlushGizmoLine(windowTitle, camCB, scene->GetDepthSRVSlot());
+	scene->EndShaderRead();
 }
 
 // ===== 2D。ポストエフェクトの後に重ねるので、ぼけたり歪んだりしない =====
@@ -178,12 +196,15 @@ void SceneRenderer::RenderToTexture(const Camera* camera, RenderTexture* target,
 	}
 	ApplyViewOptions(viewOptions);
 	const ViewRect rect = {0.0f, 0.0f, static_cast<float>(target->GetWidth()), static_cast<float>(target->GetHeight())};
+	// カメラの定数（霧はビューの設定で決まるので、ApplyViewOptions の後。3D とギズモの線の両方が使う）
+	const D3D12_GPU_VIRTUAL_ADDRESS camCB = camera ? UploadCameraCB(camera) : 0;
 	// 一旦 HDR の絵へ描き、光の層を作ってから target へ合成する（露出・トーンマップで 0〜1 に収める）
-	RenderTexture* scene = RenderWorldForPost(camera, windowTitle);
+	RenderTexture* scene = RenderWorldForPost(camera, camCB, windowTitle);
 	instance_->postProcess_->Prepare(*scene, GetViewPostOverrides(), mode); // 張り替える処理はここで全部済ませる
 	target->PreDraw();                                                      // その後に描画先を張る
 	instance_->postProcess_->Composite(rect, mode);
-	RenderUI(windowTitle, rect); // UIは効果の外側に重ねる
+	RenderGizmoLines(camCB, windowTitle, rect); // ギズモの線は効果の外側（UI の下）
+	RenderUI(windowTitle, rect);                // UIは効果の外側に重ねる
 	target->PostDraw();
 }
 
@@ -191,7 +212,8 @@ void SceneRenderer::RenderToTexture(const Camera* camera, RenderTexture* target,
 void SceneRenderer::RenderToWindow(const Camera* camera, RenderWindow* window, const std::wstring& windowTitle, float windowWidth, float windowHeight) {
 	HTT_ASSERT_MSG(instance_->postProcess_ != nullptr, "InitializePost を先に呼んでください（3D は HDR の絵に描いてから画面へ写すので、その置き場が要る）");
 	ApplyViewOptions({}); // ウィンドウ（製品版のゲーム）は全部掛ける
-	RenderTexture* scene = RenderWorldForPost(camera, windowTitle);
+	const D3D12_GPU_VIRTUAL_ADDRESS camCB = camera ? UploadCameraCB(camera) : 0; // 3D とギズモの線の両方が使う
+	RenderTexture* scene = RenderWorldForPost(camera, camCB, windowTitle);
 
 	// 効果のパスでRTVが切り替わっているので、ウィンドウへ張り直す
 	instance_->postProcess_->Prepare(*scene, GetViewPostOverrides());
@@ -200,7 +222,8 @@ void SceneRenderer::RenderToWindow(const Camera* camera, RenderWindow* window, c
 	const ViewRect rect = GameScreen::CalcFitRect(windowWidth, windowHeight);
 	window->ClearBars(rect, windowWidth, windowHeight);
 	instance_->postProcess_->Composite(rect);
-	RenderUI(windowTitle, rect); // UIは効果の外側に重ねる
+	RenderGizmoLines(camCB, windowTitle, rect); // ギズモの線（Collider のギズモなどを出したとき）
+	RenderUI(windowTitle, rect);                // UIは効果の外側に重ねる
 }
 
 //=============================================================================

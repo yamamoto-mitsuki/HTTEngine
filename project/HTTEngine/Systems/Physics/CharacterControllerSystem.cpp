@@ -503,6 +503,7 @@ void CharacterControllerSystem::Initialize() {
 	// 線は距離でフェードさせない
 	state->gizmoLines.fadeStartDistance = kNoFadeStart;
 	state->gizmoLines.fadeEndDistance = kNoFadeEnd;
+	state->gizmoLines.isGizmo = true; // ポストエフェクトの後に、選んだ色のまま描く
 
 	// Character Controller の置き場所・保存・Inspector を登録する。見せ方は DescribeCharacterController 1つで、保存と Inspector の両方に使う
 	EntityManager::RegisterComponent<CharacterControllerComponent>();

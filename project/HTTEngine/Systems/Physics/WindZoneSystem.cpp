@@ -263,6 +263,7 @@ void WindZoneSystem::DrawGizmos(Camera* camera) {
 	Renderer::LineListConfig& gizmo = state->gizmoLines;
 	gizmo.lines.clear();
 	gizmo.camera = camera;
+	gizmo.isGizmo = true; // ポストエフェクトの後に、選んだ色のまま描く
 	for (const WorldWindZone& zone : state->zones) {
 		const OBB& box = zone.box;
 		// --- 箱：8つの角を、12本の辺で結ぶ ---

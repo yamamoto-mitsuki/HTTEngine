@@ -1,0 +1,131 @@
+{
+	"version": 1,
+	"entities": [
+		{
+			"id": 1,
+			"name": "Main Camera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 3.0, -8.0],
+					"rotation": [15.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Camera": {
+					"fovY": 60.0,
+					"nearZ": 0.1,
+					"farZ": 1000.0,
+					"priority": 0,
+					"backgroundType": "SolidColor",
+					"backgroundColor": [0.25, 0.15, 0.35]
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Directional Light",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 3.0, 0.0],
+					"rotation": [50.0, -30.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Directional Light": {
+					"color": [1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 3,
+			"name": "Ground",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, -0.05, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [20.0, 0.1, 20.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.6, 0.6, 0.6, 1.0]
+				}
+			}
+		},
+		{
+			"id": 4,
+			"name": "Cube",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.5, 0.0],
+					"rotation": [0.0, 30.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.9, 0.5, 0.2, 1.0]
+				},
+				"Collider": {
+					"enabled": true,
+					"isTrigger": false,
+					"shape": "Box",
+					"center": [0.0, 0.0, 0.0],
+					"physicMaterial": "",
+					"size": [1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 5,
+			"name": "Tall Box",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [2.5, 1.5, 1.5],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 3.0, 1.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.3, 0.6, 0.9, 1.0]
+				},
+				"Collider": {
+					"enabled": true,
+					"isTrigger": true,
+					"shape": "Box",
+					"center": [0.0, 0.0, 0.0],
+					"physicMaterial": "",
+					"size": [1.0, 1.0, 1.0]
+				}
+			}
+		},
+		{
+			"id": 6,
+			"name": "Point Light",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-2.0, 1.5, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Point Light": {
+					"color": [1.0, 0.8, 0.6],
+					"intensity": 3.0,
+					"radius": 3.0,
+					"decay": 1.0
+				}
+			}
+		}
+	]
+}

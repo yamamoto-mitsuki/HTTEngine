@@ -74,8 +74,9 @@ public:
 
 	/// <summary>
 	/// 3Dライン群を描画する（LINELIST。奇数個の頂点は最後を切り捨て）
+	/// <para>programId：線のシェーダー（Line か GizmoLine）。material：送るマテリアル（ギズモの線は深度の番号を入れた写し）</para>
 	/// </summary>
-	static void DrawLines(const LineRequest& req);
+	static void DrawLines(const LineRequest& req, uint32_t programId, const MaterialLineData& material);
 
 	/// <summary>
 	/// GPUページフォルトのアドレスがどのバッファ内かログに出力する

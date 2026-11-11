@@ -12,9 +12,27 @@
 #include "HTTEngine/Graphics/Renderer/GameScreen.h"
 #include "HTTEngine/Graphics/Renderer/SceneRenderer.h"
 #include "HTTEngine/Input/InputManager.h"
+#include "HTTEngine/Math/Color.h"
 
 namespace {
 constexpr const char* kGVGroup = "Scene View"; // ImGui登録グループ名
+// Scene ビューで Skybox を切ったときの背景（Unity の Scene ビューのような、落ち着いた色のグラデーション。sRGB）
+// 明るすぎない色にして、ギズモの線（白・黄・オレンジなど）が見分けやすいようにする
+constexpr Vector3 kSceneViewSkyColor = {0.47f, 0.53f, 0.62f};     // 真上（くすんだ青）
+constexpr Vector3 kSceneViewHorizonColor = {0.70f, 0.72f, 0.75f}; // 地平線（明るい灰色）
+constexpr Vector3 kSceneViewGroundColor = {0.30f, 0.30f, 0.31f};  // 真下（暗い灰色）
+constexpr float kSceneViewHorizonWidth = 0.15f;                   // 地平線の色が残る幅（Camera の Gradient の Horizon Width と同じ意味。上下に約 9°）
+
+// Scene ビューで Skybox を切ったときの背景（色はシェーダーで塗るリニアへ直す）
+SceneBackground MakeSceneViewBackground() {
+	SceneBackground background;
+	background.type = BackgroundType::Gradient;
+	background.skyColor = SrgbToLinear(kSceneViewSkyColor);
+	background.horizonColor = SrgbToLinear(kSceneViewHorizonColor);
+	background.groundColor = SrgbToLinear(kSceneViewGroundColor);
+	background.horizonWidth = kSceneViewHorizonWidth;
+	return background;
+}
 } // namespace
 
 
@@ -83,7 +101,9 @@ void EditorViewport::Render(const Camera* gameCamera, const std::wstring& window
 	// Scene はレンズだけ外す（絵を歪ませると、ギズモ・クリックで選ぶ位置が物とずれる）。View メニューで全部切れる
 	const PostEffectMode sceneMode = flags.sceneEffects ? PostEffectMode::NoLens : PostEffectMode::None;
 	// 霧・被写界深度も Scene だけ切れる（遠くの物を霧やぼけに隠さずに置きたいとき）。グリッドは Scene・Game 別々に切れる
-	const SceneViewOptions sceneOptions = {.fog = flags.sceneFog, .depthOfField = flags.sceneDepthOfField, .editorGrid = flags.sceneGrid, .editorGizmo = true, .sceneHidden = false, .cameraVolume = false};
+	// 背景は Skybox を切ったらエディタのグラデーション（Scene ビューはカメラの Background を見ない。Unity の Scene ビューと同じ）
+	const SceneBackground sceneBackground = flags.sceneSkybox ? SceneBackground{} : MakeSceneViewBackground();
+	const SceneViewOptions sceneOptions = {.fog = flags.sceneFog, .depthOfField = flags.sceneDepthOfField, .editorGrid = flags.sceneGrid, .editorGizmo = true, .sceneHidden = false, .cameraVolume = false, .background = sceneBackground};
 	const SceneViewOptions gameOptions = {.editorGrid = flags.gameGrid}; // 書かない物は初期値の true（霧・被写界深度はいつも掛ける）
 	SceneRenderer::RenderToTexture(debugCamera_.get(), sceneRT, windowTitle, sceneMode, sceneOptions); // Scene：レンズ以外
 	SceneRenderer::RenderToTexture(gameCamera, gameRT, windowTitle, PostEffectMode::All, gameOptions); // Game：全部

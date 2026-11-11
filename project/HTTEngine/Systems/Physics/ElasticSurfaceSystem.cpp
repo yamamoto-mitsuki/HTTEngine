@@ -270,6 +270,7 @@ void DrawDebugLines(const ElasticSurfaceSimulation& simulation, const ElasticSur
 	Renderer::LineListConfig config;
 	config.camera = camera;
 	config.depthMode = DepthMode::Disable;
+	config.isGizmo = true; // ポストエフェクトの後に、選んだ色のまま描く
 	config.fadeStartDistance = kNoFadeDistance;
 	config.fadeEndDistance = kNoFadeDistance * 2.0f;
 	config.lines.reserve(count);

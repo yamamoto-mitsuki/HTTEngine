@@ -213,6 +213,8 @@ Renderer::DrawSphere(config);
 
 `DrawModel` / `DrawSprite` / `DrawSprite3d` / `DrawTriangle` / `DrawSphere` / `DrawAABB` / `DrawOBB` / `DrawLines` / `DrawRect3d` / `DrawQuad2d` / `DrawQuad3d` / `DrawParticle` / **`DrawMesh`** がある（ほかに Text・UI・デカール用の `DrawText2d` / `DrawVectorShape` / `DrawPolyline` / `DrawDecal` もあるが、ふつうは Component で描く）。
 
+- `Renderer::DrawLines` の線は、3D の絵（HDR）に描くので、ブルーム・トーンマップ・色の調整を受ける。デバッグの線を**選んだ色のまま**見たいときは `config.isGizmo = true`（ポストエフェクトの後に描く。物の後ろは描かない。`depthMode = DepthMode::Disable` なら物の後ろでも見える）。エンジンのギズモ（Collider・Hit Shape など）は全部 `isGizmo`。
+
 `DrawMesh` は頂点と番号を自分で並べる形（毎フレーム形が変わる物。軌跡の帯は Trail がこれで描いている）。頂点はワールド座標、既定は両面描き。
 
 ```cpp

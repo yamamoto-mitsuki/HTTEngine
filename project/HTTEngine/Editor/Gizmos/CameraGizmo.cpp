@@ -67,6 +67,7 @@ void CameraGizmo::Initialize() {
 	lines.fadeStartDistance = kNoFadeStart;
 	lines.fadeEndDistance = kNoFadeEnd;
 	lines.layer = DrawLayer::EditorGizmo;
+	lines.isGizmo = true; // ポストエフェクトの後に、選んだ色のまま描く
 }
 
 //=============================================================================
