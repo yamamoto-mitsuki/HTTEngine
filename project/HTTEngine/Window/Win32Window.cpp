@@ -230,14 +230,13 @@ LRESULT CALLBACK Win32Window::WindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPA
 	}
 
 #ifdef USE_IMGUI
-	// ウィンドウのサイズ制限
+	// ウィンドウの小ささの制限（エディタの窓が並ばなくなる大きさより小さくしない）
+	// 大きさの上限は付けない。ptMaxTrackSize は最大化の大きさも抑えるので、画面の解像度が高い PC では最大化しても画面の一部にしかならない
 	case WM_GETMINMAXINFO: {
 		if (self && self->isImGuiTarget_) {
 			MINMAXINFO* info = reinterpret_cast<MINMAXINFO*>(lparam);
 			info->ptMinTrackSize.x = 800;
 			info->ptMinTrackSize.y = 500;
-			info->ptMaxTrackSize.x = 1920;
-			info->ptMaxTrackSize.y = 1080;
 		}
 		break;
 	}
