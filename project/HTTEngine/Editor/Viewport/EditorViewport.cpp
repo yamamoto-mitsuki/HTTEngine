@@ -4,6 +4,7 @@
 #include <string_view>
 
 #include "HTTEngine/Camera/Camera.h"
+#include "HTTEngine/Editor/Keymap/EditorKeymap.h"
 #include "HTTEngine/UI/GlobalVariables.h"
 #include "HTTEngine/Editor/Gizmos/SceneGizmo.h"
 #include "HTTEngine/Editor/Viewport/EditorOverlay.h"
@@ -63,12 +64,27 @@ void EditorViewport::Initialize() {
 // 更新
 //=============================================================================
 void EditorViewport::Update() {
-	// Sceneビューにあるときだけ操作
+	// Sceneビューにあるときだけ操作（どのキー・ボタンで動かすかは EditorKeymap。Settings → Editor → Keymap で変えられる）
 	if (sceneView_.IsHovered()) {
-		debugCamera_->Update();
+		debugCamera_->ApplyInput(ReadCameraInput());
 	}
 	// ImGuiの調整項目と同期
 	SyncGV();
+}
+
+//=============================================================================
+// Scene ビューのカメラの操作の量
+//=============================================================================
+DebugCamera::Input EditorViewport::ReadCameraInput() {
+	// マウスの動き（エディタの決まりで読む。Scene ビューの上かは、呼ぶ側が見ている）
+	const Vector2 mouse = {static_cast<float>(InputManager::GetMouseDeltaX(InputGate::Editor)), static_cast<float>(InputManager::GetMouseDeltaY(InputGate::Editor))};
+	const Vector2 zero = {0.0f, 0.0f};
+	DebugCamera::Input input;
+	input.rotate = EditorKeymap::IsPressed(EditorAction::SceneRotate) ? mouse : zero;
+	input.pan = EditorKeymap::IsPressed(EditorAction::ScenePan) ? mouse : zero;
+	input.dollyDrag = EditorKeymap::IsPressed(EditorAction::SceneDollyDrag) ? -mouse.y : 0.0f; // マウスを上へ動かす（Y は下が+）と前へ
+	input.dollyWheel = EditorKeymap::GetValue(EditorAction::SceneDollyWheel);
+	return input;
 }
 
 //=============================================================================

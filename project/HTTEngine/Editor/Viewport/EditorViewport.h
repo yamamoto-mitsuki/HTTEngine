@@ -51,6 +51,10 @@ public:
 #endif
 
 private:
+#ifdef USE_IMGUI
+	// Scene ビューのカメラの操作の量（EditorKeymap の割り当てとマウスの動きから）
+	static DebugCamera::Input ReadCameraInput();
+#endif
 	// --- 調整項目 ---
 	void RegisterGV(); // 登録
 	void ApplyGV();    // 保存値の反映

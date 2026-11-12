@@ -22,6 +22,7 @@
 #include "HTTEngine/Graphics/Text/FontManager.h"
 #include "HTTEngine/Scene/SceneManager.h"
 #ifdef USE_IMGUI
+#include "HTTEngine/Editor/Keymap/EditorKeymap.h"
 #include "HTTEngine/Editor/Windows/ControlWindow.h"
 #endif
 
@@ -117,6 +118,10 @@ void WindowManager::UpdateAll() {
 		}
 
 		#ifdef USE_IMGUI
+		// エディタの操作の割り当てを読む（ImGui のウィンドウは1つだけなので、1フレームに1回。このウィンドウが手前かを見るので、SetActiveWindow の後）
+		if (w.window->GetWindowConfig().isImGui) {
+			EditorKeymap::Update();
+		}
 		if (w.editor) {
 			w.editor->Update(); // デバッグカメラ更新
 		}

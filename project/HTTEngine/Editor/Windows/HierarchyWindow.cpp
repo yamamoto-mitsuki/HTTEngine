@@ -9,6 +9,7 @@
 #include "HTTEngine/Diagnostics/LogManager.h"
 #include "HTTEngine/Editor/Assets/AssetIcons.h"
 #include "HTTEngine/Editor/History/EditorHistory.h"
+#include "HTTEngine/Editor/Keymap/EditorKeymap.h"
 #include "HTTEngine/Editor/Widgets/EditorWidgets.h"
 #include "HTTEngine/Editor/Windows/UIScreenEditor.h"
 #include "HTTEngine/Editor/Viewport/SceneVisibility.h"
@@ -324,21 +325,21 @@ void HierarchyWindow::DrawEmptySpace() {
 // メニュー
 //=============================================================================
 void HierarchyWindow::DrawEntityMenu(Handle<Entity> handle) {
-	if (ImGui::MenuItem("Rename", "F2")) {
+	if (ImGui::MenuItem("Rename", EditorKeymap::GetShortcutText(EditorAction::Rename).c_str())) {
 		StartRename(handle);
 	}
 	ImGui::Separator();
-	if (ImGui::MenuItem("Copy", "Ctrl+C")) {
+	if (ImGui::MenuItem("Copy", EditorKeymap::GetShortcutText(EditorAction::Copy).c_str())) {
 		EditorHistory::Copy(handle);
 	}
 	// Paste：このEntityと同じ親の下（兄弟）に貼る　Paste As Child：このEntityの子として貼る
-	if (ImGui::MenuItem("Paste", "Ctrl+V", false, EditorHistory::CanPaste())) {
+	if (ImGui::MenuItem("Paste", EditorKeymap::GetShortcutText(EditorAction::Paste).c_str(), false, EditorHistory::CanPaste())) {
 		EditorHistory::RequestPaste(ParentOf(handle));
 	}
 	if (ImGui::MenuItem("Paste As Child", nullptr, false, EditorHistory::CanPaste())) {
 		EditorHistory::RequestPaste(handle);
 	}
-	if (ImGui::MenuItem("Duplicate", "Ctrl+D", false, !IsUIScreenRoot(handle))) {
+	if (ImGui::MenuItem("Duplicate", EditorKeymap::GetShortcutText(EditorAction::Duplicate).c_str(), false, !IsUIScreenRoot(handle))) {
 		EditorHistory::RequestDuplicate(handle);
 	}
 	ImGui::Separator();
@@ -486,20 +487,20 @@ void HierarchyWindow::HandleShortcuts() {
 	if (!ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) || renaming_.IsValid() || ImGui::GetIO().WantTextInput) {
 		return;
 	}
-	if (ImGui::IsKeyPressed(ImGuiKey_F2, false)) {
+	// キーは EditorKeymap（修飾キーまでちょうど同じときだけ。Ctrl+Shift+C では Ctrl+C は効かない）
+	if (EditorKeymap::IsTriggered(EditorAction::Rename)) {
 		StartRename(selected_); // 選んでいなければ何もしない
 	}
-	if (ImGui::IsKeyPressed(ImGuiKey_Delete, false) && selected_.IsValid() && !IsUIScreenRoot(selected_)) {
+	if (EditorKeymap::IsTriggered(EditorAction::Delete) && selected_.IsValid() && !IsUIScreenRoot(selected_)) {
 		EditorHistory::RequestDestroy(selected_);
 	}
-	// IsKeyChordPressed：修飾キーまで完全に一致したときだけ（Ctrl+Shift+Cでは反応しない）
-	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_C) && selected_.IsValid()) {
+	if (EditorKeymap::IsTriggered(EditorAction::Copy) && selected_.IsValid()) {
 		EditorHistory::Copy(selected_);
 	}
-	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_V)) {
+	if (EditorKeymap::IsTriggered(EditorAction::Paste)) {
 		EditorHistory::RequestPaste(ParentOf(selected_)); // 選んでいるEntityの兄弟に貼る（選んでいなければroot）
 	}
-	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_D) && selected_.IsValid() && !IsUIScreenRoot(selected_)) {
+	if (EditorKeymap::IsTriggered(EditorAction::Duplicate) && selected_.IsValid() && !IsUIScreenRoot(selected_)) {
 		EditorHistory::RequestDuplicate(selected_);
 	}
 }

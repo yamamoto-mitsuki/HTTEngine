@@ -18,6 +18,7 @@
 #include "HTTEngine/ECS/EntityManager.h"
 #include "HTTEngine/Editor/History/EditorHistory.h"
 #include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Editor/Keymap/EditorKeymap.h"
 #include "HTTEngine/Editor/Timeline/TimelineEditorState.h"
 #include "HTTEngine/Editor/Widgets/ToolIcons.h"
 #include "HTTEngine/Editor/Windows/HierarchyWindow.h"
@@ -409,7 +410,7 @@ void DrawToolbar(Timeline& timeline) {
 	if (ImGui::Button("Fit")) {
 		state.needsFit = true;
 	}
-	ImGui::SetItemTooltip("全体が見える範囲にする（F）");
+	ImGui::SetItemTooltip("%s", EditorKeymap::WithShortcut("全体が見える範囲にする", EditorAction::Frame).c_str());
 	// --- 開いている物 ---
 	ImGui::SameLine();
 	const Entity* owner = EntityManager::Get(state.owner);

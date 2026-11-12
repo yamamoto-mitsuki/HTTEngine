@@ -4,7 +4,6 @@
 #include <algorithm>
 
 #include "HTTEngine/Camera/Camera.h"
-#include "HTTEngine/Input/InputManager.h"
 
 void DebugCamera::Initialize(float fovY, float aspectRatio, float nearZ, float farZ) {
 	fovY_ = fovY;
@@ -15,72 +14,61 @@ void DebugCamera::Initialize(float fovY, float aspectRatio, float nearZ, float f
 	ReCalcViewMatrix();
 }
 
-void DebugCamera::Update() {
-	Rotate();
-	Zoom();
-	Translate();
+void DebugCamera::Update() { ReCalcViewMatrix(); }
+
+//=============================================================
+// 操作の量で動かす
+//=============================================================
+void DebugCamera::ApplyInput(const Input& input) {
+	Rotate(input.rotate);
+	Dolly(input.dollyDrag * dollyDragSpeed + input.dollyWheel * dollyWheelSpeed);
+	Pan(input.pan);
 	ReCalcViewMatrix();
 }
 
-//=============================================================
-// ホイールボタン押しながらドラッグ → オービット回転
-//=============================================================
-void DebugCamera::Rotate() {
-	// ---- マウス移動量を取得 ----
-	float dx = static_cast<float>(InputManager::GetMouseDeltaX());
-	float dy = static_cast<float>(InputManager::GetMouseDeltaY());
-
-	if (std::abs(dx) < mouseDeltaThreshold) {
-		dx = 0.0f;
+// ===== 向きを変える（その場で回る）=====
+void DebugCamera::Rotate(Vector2 amount) {
+	// 手振れ：小さい動きは無視する
+	if (std::abs(amount.x) < mouseDeltaThreshold) {
+		amount.x = 0.0f;
 	}
-	if (std::abs(dy) < mouseDeltaThreshold) {
-		dy = 0.0f;
+	if (std::abs(amount.y) < mouseDeltaThreshold) {
+		amount.y = 0.0f;
 	}
-
-	if (InputManager::IsMouseButtonPressed(2)) {
-		transform_.rotation.x -= dy * orbitSpeed;
-		transform_.rotation.y -= dx * orbitSpeed;
-		transform_.rotation.x = std::clamp(transform_.rotation.x, pitchMin, pitchMax);
-	}
+	transform_.rotation.x -= amount.y * rotateSpeed;
+	transform_.rotation.y -= amount.x * rotateSpeed;
+	transform_.rotation.x = std::clamp(transform_.rotation.x, pitchMin, pitchMax);
 }
 
-void DebugCamera::Zoom() {
-	float dw = static_cast<float>(InputManager::GetMouseDeltaWheel());
-
-	if (std::abs(dw) < mouseDeltaThreshold) {
-		dw = 0.0f;
+// ===== 向いている方へ前後に動く =====
+void DebugCamera::Dolly(float distance) {
+	if (distance == 0.0f) {
+		return;
 	}
-
-	if (dw != 0.0f) {
-		// カメラが向いている前方向を求める
-		float cosPitch = std::cos(transform_.rotation.x);
-		float sinPitch = std::sin(transform_.rotation.x);
-		float cosYaw = std::cos(transform_.rotation.y);
-		float sinYaw = std::sin(transform_.rotation.y);
-
-		// 前方向ベクトル（左手座標系）
-		Vector3 forward = {cosPitch * sinYaw, -sinPitch, cosPitch * cosYaw};
-
-		transform_.translation.x += forward.x * dw * zoomSpeed;
-		transform_.translation.y += forward.y * dw * zoomSpeed;
-		transform_.translation.z += forward.z * dw * zoomSpeed;
-		transform_.rotation.x = std::clamp(transform_.rotation.x, pitchMin, pitchMax);
-	}
+	// カメラが向いている前方向を求める
+	const float cosPitch = std::cos(transform_.rotation.x);
+	const float sinPitch = std::sin(transform_.rotation.x);
+	const float cosYaw = std::cos(transform_.rotation.y);
+	const float sinYaw = std::sin(transform_.rotation.y);
+	// 前方向ベクトル（左手座標系）
+	const Vector3 forward = {cosPitch * sinYaw, -sinPitch, cosPitch * cosYaw};
+	transform_.translation.x += forward.x * distance;
+	transform_.translation.y += forward.y * distance;
+	transform_.translation.z += forward.z * distance;
 }
 
-void DebugCamera::Translate() {
-	if (InputManager::IsMouseButtonPressed(1)) {
-		float dx = static_cast<float>(InputManager::GetMouseDeltaX());
-		float dy = static_cast<float>(InputManager::GetMouseDeltaY());
-		float cosYaw = std::cos(transform_.rotation.y);
-		float sinYaw = std::sin(transform_.rotation.y);
-		// カメラの右方向
-		Vector3 right = {cosYaw, 0.0f, -sinYaw};
-
-		transform_.translation.x -= right.x * dx * panSpeed;
-		transform_.translation.z -= right.z * dx * panSpeed;
-		transform_.translation.y += dy * panSpeed;
+// ===== 上下左右に動く =====
+void DebugCamera::Pan(const Vector2& amount) {
+	if (amount.x == 0.0f && amount.y == 0.0f) {
+		return;
 	}
+	const float cosYaw = std::cos(transform_.rotation.y);
+	const float sinYaw = std::sin(transform_.rotation.y);
+	// カメラの右方向
+	const Vector3 right = {cosYaw, 0.0f, -sinYaw};
+	transform_.translation.x -= right.x * amount.x * panSpeed;
+	transform_.translation.z -= right.z * amount.x * panSpeed;
+	transform_.translation.y += amount.y * panSpeed;
 }
 
 void DebugCamera::ReCalcViewMatrix() {

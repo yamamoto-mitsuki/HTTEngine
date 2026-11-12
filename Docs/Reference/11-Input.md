@@ -64,3 +64,9 @@ InputManager::StopVibration();
 // ✗ だめな例
 if (GetAsyncKeyState(VK_SPACE)) { … } // ✗ Windowsを直接叩くとImGuiに文字を打っている間も反応する
 ```
+
+## エディタの操作のキー
+
+エディタのショートカット・Scene ビューのカメラのボタンは、決め打ちではなく **Settings → Editor → Keymap** で人ごとに変えられる（[17章](17-Editor.md)）。中身は Input Action の表（`Input/Action/InputActionMap`）で、ゲームのキーコンフィグも同じ表で作る予定。
+
+- `InputManager` の `IsKeyPressed` などには、読む決まり `InputGate` を渡せる。ゲームは書かない（`InputGate::Game`：ImGui のパネルを触っている間は「押していない」）。`InputGate::Editor` はエディタの操作用（パネルを触っていても読む。文字を打っている間だけ読まない）

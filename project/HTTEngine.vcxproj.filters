@@ -97,6 +97,9 @@
     <Filter Include="HTTEngine\Editor\History">
       <UniqueIdentifier>{18ce755a-fa60-43d4-8d8f-df8470ae444f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="HTTEngine\Editor\Keymap">
+      <UniqueIdentifier>{4e8b2d17-9a3c-4f6e-b1d5-7c2a9e4f8b36}</UniqueIdentifier>
+    </Filter>
     <Filter Include="HTTEngine\Editor\Inspector">
       <UniqueIdentifier>{206b49bb-a79b-4e32-9759-eee494c647eb}</UniqueIdentifier>
     </Filter>
@@ -156,6 +159,9 @@
     </Filter>
     <Filter Include="HTTEngine\Input">
       <UniqueIdentifier>{59852f1b-d6f9-45c9-9ad5-c6dec1d200f0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="HTTEngine\Input\Action">
+      <UniqueIdentifier>{7c3e9a51-2f4b-4d8e-9b6a-1e5d3c8f2a47}</UniqueIdentifier>
     </Filter>
     <Filter Include="HTTEngine\Math">
       <UniqueIdentifier>{bdf37b58-daec-4bea-8982-3f1baad20f32}</UniqueIdentifier>
@@ -465,6 +471,12 @@
     <ClCompile Include="HTTEngine\Editor\Widgets\ImeInput.cpp">
       <Filter>HTTEngine\Editor\Widgets</Filter>
     </ClCompile>
+    <ClCompile Include="HTTEngine\Editor\Widgets\InputActionTable.cpp">
+      <Filter>HTTEngine\Editor\Widgets</Filter>
+    </ClCompile>
+    <ClCompile Include="HTTEngine\Editor\Keymap\EditorKeymap.cpp">
+      <Filter>HTTEngine\Editor\Keymap</Filter>
+    </ClCompile>
     <ClCompile Include="HTTEngine\Editor\Widgets\ToolIcons.cpp">
       <Filter>HTTEngine\Editor\Widgets</Filter>
     </ClCompile>
@@ -635,6 +647,15 @@
     </ClCompile>
     <ClCompile Include="HTTEngine\Input\XInputGamepad.cpp">
       <Filter>HTTEngine\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="HTTEngine\Input\Action\InputActionMap.cpp">
+      <Filter>HTTEngine\Input\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="HTTEngine\Input\Action\InputBinding.cpp">
+      <Filter>HTTEngine\Input\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="HTTEngine\Input\Action\InputRebinder.cpp">
+      <Filter>HTTEngine\Input\Action</Filter>
     </ClCompile>
     <ClCompile Include="HTTEngine\Math\Easing.cpp">
       <Filter>HTTEngine\Math</Filter>
@@ -1265,6 +1286,12 @@
     <ClInclude Include="HTTEngine\Editor\Widgets\ImeInput.h">
       <Filter>HTTEngine\Editor\Widgets</Filter>
     </ClInclude>
+    <ClInclude Include="HTTEngine\Editor\Widgets\InputActionTable.h">
+      <Filter>HTTEngine\Editor\Widgets</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Editor\Keymap\EditorKeymap.h">
+      <Filter>HTTEngine\Editor\Keymap</Filter>
+    </ClInclude>
     <ClInclude Include="HTTEngine\Editor\Widgets\ToolIcons.h">
       <Filter>HTTEngine\Editor\Widgets</Filter>
     </ClInclude>
@@ -1465,6 +1492,15 @@
     </ClInclude>
     <ClInclude Include="HTTEngine\Input\XInputGamepad.h">
       <Filter>HTTEngine\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Input\Action\InputActionMap.h">
+      <Filter>HTTEngine\Input\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Input\Action\InputBinding.h">
+      <Filter>HTTEngine\Input\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Input\Action\InputRebinder.h">
+      <Filter>HTTEngine\Input\Action</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Math\Color.h">
       <Filter>HTTEngine\Math</Filter>

@@ -12,6 +12,7 @@
 #include "HTTEngine/Collision/Collision.h"
 #include "HTTEngine/Editor/History/EditorHistory.h"
 #include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Editor/Keymap/EditorKeymap.h"
 #include "HTTEngine/Systems/Rendering2D/SpriteRenderSystem.h"
 
 namespace {
@@ -212,9 +213,9 @@ void HandleMouse(const PointList& list, const PointMapping& mapping, const Scree
 	}
 }
 
-// ===== キー：Delete で選んだ点を消す（minCount より少なくはしない）=====
+// ===== キー：Delete（EditorKeymap の「消す」）で選んだ点を消す（minCount より少なくはしない）=====
 void HandleDelete(const PointList& list) {
-	if (edit.dragPoint >= 0 || edit.selectedPoint < 0 || edit.selectedPoint >= *list.count || !ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
+	if (edit.dragPoint >= 0 || edit.selectedPoint < 0 || edit.selectedPoint >= *list.count || !EditorKeymap::IsTriggered(EditorAction::Delete)) {
 		return;
 	}
 	if (*list.count <= list.minCount) {

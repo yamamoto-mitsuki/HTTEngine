@@ -13,22 +13,44 @@
 // 静的メンバ変数
 std::string SettingsWindow::selected_;
 bool SettingsWindow::focusRequest_ = false;
+std::vector<SettingsPage> SettingsWindow::pages_;
 
 namespace {
 constexpr float kListWidth = 170.0f; // 左の一覧の最初の幅（境目をドラッグで変えられる）
+} // namespace
 
-// そのページ（グループ）が登録されているか
-bool HasPage(const std::string& groupName) {
+//=============================================================================
+// ページ
+//=============================================================================
+// ===== 足す =====
+void SettingsWindow::AddPage(SettingsPage page) {
+	pages_.push_back(std::move(page));
+}
+
+// ===== 足したページを名前で =====
+const SettingsPage* SettingsWindow::FindPage(const std::string& name) {
+	for (const SettingsPage& page : pages_) {
+		if (page.name == name) {
+			return &page;
+		}
+	}
+	return nullptr;
+}
+
+// ===== そのページ（グループか、足したページ）があるか =====
+bool SettingsWindow::HasPage(const std::string& name) {
+	if (FindPage(name)) {
+		return true;
+	}
 	GlobalVariables* gv = GlobalVariables::GetInstance();
 	for (const SettingsSection section : {SettingsSection::Project, SettingsSection::Editor}) {
 		const std::vector<std::string> names = gv->GetGroupNames(section);
-		if (std::find(names.begin(), names.end(), groupName) != names.end()) {
+		if (std::find(names.begin(), names.end(), name) != names.end()) {
 			return true;
 		}
 	}
 	return false;
 }
-} // namespace
 
 //=============================================================================
 // 描画
@@ -82,7 +104,12 @@ void SettingsWindow::DrawPageList() {
 	// --- Project：ゲーム全体（Parameters/<名前>/。製品版にも入る）---
 	ImGui::SeparatorText("Project");
 	for (const std::string& name : gv->GetGroupNames(SettingsSection::Project)) {
-		DrawPageItem(name);
+		DrawPageItem(name, gv->IsGroupDirty(name));
+	}
+	for (const SettingsPage& page : pages_) {
+		if (page.section == SettingsSection::Project) {
+			DrawPageItem(page.name, page.isDirty());
+		}
 	}
 
 	// --- Scene：開いているシーンの設定（シーンファイルに入る）---
@@ -95,51 +122,86 @@ void SettingsWindow::DrawPageList() {
 	// --- Editor：エディタだけ（Parameters/Editor/<名前>/。製品版では使わない）---
 	ImGui::SeparatorText("Editor");
 	for (const std::string& name : gv->GetGroupNames(SettingsSection::Editor)) {
-		DrawPageItem(name);
+		DrawPageItem(name, gv->IsGroupDirty(name));
+	}
+	for (const SettingsPage& page : pages_) {
+		if (page.section == SettingsSection::Editor) {
+			DrawPageItem(page.name, page.isDirty());
+		}
 	}
 }
 
-void SettingsWindow::DrawPageItem(const std::string& groupName) {
+void SettingsWindow::DrawPageItem(const std::string& name, bool isDirty) {
 	// * ＝保存していない変更がある。「###」の後ろを ID にする（* が付いても別の項目にならないように）
-	const bool isDirty = GlobalVariables::GetInstance()->IsGroupDirty(groupName);
-	const std::string label = std::format("{}{}###{}", groupName, isDirty ? " *" : "", groupName);
-	if (ImGui::Selectable(label.c_str(), selected_ == groupName)) {
-		selected_ = groupName;
+	const std::string label = std::format("{}{}###{}", name, isDirty ? " *" : "", name);
+	if (ImGui::Selectable(label.c_str(), selected_ == name)) {
+		selected_ = name;
 	}
 }
 
 //=============================================================================
 // 右のページ
 //=============================================================================
+// ===== ページ =====
 void SettingsWindow::DrawPage() {
 	if (selected_.empty()) {
 		ImGui::TextDisabled("設定がまだ登録されていません");
 		return;
 	}
-	GlobalVariables* gv = GlobalVariables::GetInstance();
-	const bool isDirty = gv->IsGroupDirty(selected_);
 
-	// --- 見出し：名前（* 付き）と、右端に Revert・Save（変更が無ければ押せない）---
+	// --- AddPage で足したページ：見出しだけここで描き、中身と保存は持ち主に任せる ---
+	if (const SettingsPage* page = FindPage(selected_)) {
+		switch (DrawPageHeader(page->name, page->isDirty(), page->saveLocation, page->revertTooltip.c_str())) {
+		case HeaderAction::Revert:
+			page->revert();
+			break;
+		case HeaderAction::Save:
+			page->save();
+			break;
+		case HeaderAction::None:
+			break;
+		}
+		page->draw();
+		return;
+	}
+
+	// --- GlobalVariables のグループ ---
+	GlobalVariables* gv = GlobalVariables::GetInstance();
+	switch (DrawPageHeader(selected_, gv->IsGroupDirty(selected_), gv->GetSaveDirectory(selected_), "保存した値に戻します（Ctrl+Z で、戻す前にもどせます）")) {
+	case HeaderAction::Revert:
+		gv->RevertGroup(selected_); // 保存した値に戻す
+		break;
+	case HeaderAction::Save:
+		gv->SaveGroup(selected_);
+		break;
+	case HeaderAction::None:
+		break;
+	}
+	// 中身（カテゴリと項目）
+	gv->DrawGroup(selected_);
+}
+
+// ===== 見出し：名前（* 付き）と、右端に Revert・Save（変更が無ければ押せない）=====
+SettingsWindow::HeaderAction SettingsWindow::DrawPageHeader(const std::string& name, bool isDirty, const std::string& saveLocation, const char* revertTooltip) {
+	HeaderAction action = HeaderAction::None;
 	const ImGuiStyle& style = ImGui::GetStyle();
 	const float right = ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x; // この行の右端
 	const float buttonsWidth = ImGui::CalcTextSize("Revert").x + ImGui::CalcTextSize("Save").x + style.FramePadding.x * 4.0f + style.ItemSpacing.x;
 	ImGui::AlignTextToFramePadding();
-	ImGui::Text("%s%s", selected_.c_str(), isDirty ? " *" : "");
+	ImGui::Text("%s%s", name.c_str(), isDirty ? " *" : "");
 	ImGui::SameLine(right - buttonsWidth);
 	ImGui::BeginDisabled(!isDirty);
 	if (ImGui::Button("Revert")) {
-		gv->RevertGroup(selected_); // 保存した値に戻す
+		action = HeaderAction::Revert;
 	}
-	ImGui::SetItemTooltip("保存した値に戻します（Ctrl+Z で、戻す前にもどせます）");
+	ImGui::SetItemTooltip("%s", revertTooltip);
 	ImGui::SameLine();
 	if (ImGui::Button("Save")) {
-		gv->SaveGroup(selected_);
+		action = HeaderAction::Save;
 	}
 	ImGui::EndDisabled();
-	ImGui::TextDisabled("保存先: %s", gv->GetSaveDirectory(selected_).c_str());
+	ImGui::TextDisabled("保存先: %s", saveLocation.c_str());
 	ImGui::Separator();
-
-	// --- 中身（カテゴリと項目）---
-	gv->DrawGroup(selected_);
+	return action;
 }
 #endif

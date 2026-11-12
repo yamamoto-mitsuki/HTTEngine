@@ -11,6 +11,12 @@
 #include "HTTEngine/Input/KeyboardInput.h"
 #include "HTTEngine/Input/XInputGamepad.h"
 
+// ===== キーボード・マウスをどの決まりで読むか =====
+enum class InputGate : uint8_t {
+	Game,   // ゲーム：ImGui がキーボード・マウスを使っている間も押していない（エディタのパネルを触っている間に、ゲームが動かないように）
+	Editor, // エディタの操作: ImGuiの入力欄に文字を打っている間だけ押していない（パネルを触っている間も読める。マウスはどこにあっても読める）
+};
+
 
 /// <summary>
 /// すべての入力処理を管理するクラス
@@ -39,30 +45,30 @@ public:
 	static void Update();
 
 	//============================================================
-	// キーボード
+	// キーボード（gate は読む決まり。ゲームは書かない＝Game）
 	//============================================================
 
 	/// <summary>指定したキーが押されているか。</summary>
-	static bool IsKeyPressed(uint8_t key);
+	static bool IsKeyPressed(uint8_t key, InputGate gate = InputGate::Game);
 
 	/// <summary>指定したキーを押した瞬間か。</summary>
-	static bool IsKeyTriggered(uint8_t key);
+	static bool IsKeyTriggered(uint8_t key, InputGate gate = InputGate::Game);
 
 	/// <summary>指定したキーを離した瞬間か。</summary>
-	static bool IsKeyReleased(uint8_t key);
+	static bool IsKeyReleased(uint8_t key, InputGate gate = InputGate::Game);
 
 	//============================================================
-	// マウス ボタン番号: 0=左, 1=右, 2=中
+	// マウス ボタン番号: 0=左, 1=右, 2=中, 3・4=横（戻る・進む）
 	//============================================================
 
 	/// <summary>指定ボタンが押されているか。</summary>
-	static bool IsMouseButtonPressed(int button);
+	static bool IsMouseButtonPressed(int button, InputGate gate = InputGate::Game);
 
 	/// <summary>指定ボタンを押した瞬間か。</summary>
-	static bool IsMouseButtonTriggered(int button);
+	static bool IsMouseButtonTriggered(int button, InputGate gate = InputGate::Game);
 
 	/// <summary>指定ボタンを離した瞬間か。</summary>
-	static bool IsMouseButtonReleased(int button);
+	static bool IsMouseButtonReleased(int button, InputGate gate = InputGate::Game);
 
 	/// <summary>
 	/// マウスの位置を、ウィンドウの中のピクセルで（左上が 0,0。右と下が +）。エディタ・エンジン用
@@ -133,13 +139,13 @@ public:
 	/// <para>ゲームで使うときは「1 カウントを何ピクセルにするか」の倍率（感度）を掛けてピクセルの量にし、GameScreen::PixelToNdc で画面の位置の量にする</para>
 	/// <para>カーソルを閉じ込めている間（SetCursorConfined）は、画面の端でカーソルが止まっていても動いた分を返す</para>
 	/// </summary>
-	static long GetMouseDeltaX();
+	static long GetMouseDeltaX(InputGate gate = InputGate::Game);
 
 	/// <summary>前フレームからのY移動量 (下が正)。単位は GetMouseDeltaX と同じ（マウスが数えた数）</summary>
-	static long GetMouseDeltaY();
+	static long GetMouseDeltaY(InputGate gate = InputGate::Game);
 
-	/// <summary>ホイール移動量 (上スクロールが正)。</summary>
-	static long GetMouseDeltaWheel();
+	/// <summary>ホイール移動量 (上スクロールが正)。1 目盛りで WHEEL_DELTA（120）</summary>
+	static long GetMouseDeltaWheel(InputGate gate = InputGate::Game);
 
 	//============================================================
 	// Xbox コントローラー
@@ -247,6 +253,8 @@ private:
 	static bool IsMouseCapturedByImGui();
 	static bool IsKeyboardCapturedByImGui();
 	static bool IsTypingInImGui(); // ImGui の入力欄に文字を打っている最中か
+	static bool IsKeyboardBlocked(InputGate gate); // キーボードを「何も押していない」扱いにするか（gate の決まりで）
+	static bool IsMouseBlocked(InputGate gate);    // マウス（ボタン・動き）を「何も押していない・動いていない」扱いにするか（gate の決まりで。また閉じ込めたクリックは別）
 	static bool IsActive() { return GetInstance()->activeHwnd_ != nullptr; }
 	static bool IsGamepadBlocked() { return !IsActive() || IsTypingInImGui(); } // パッドを「何も押していない」扱いにするか
 	// ゲーム画面がウィンドウのどこにあるか（左上・大きさ。クライアント座標）

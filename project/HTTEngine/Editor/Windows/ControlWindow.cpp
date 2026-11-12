@@ -7,6 +7,7 @@
 #include <externals/imgui/imgui.h>
 
 #include "HTTEngine/Editor/Gizmos/SceneGizmo.h"
+#include "HTTEngine/Editor/Keymap/EditorKeymap.h"
 #include "HTTEngine/Editor/Widgets/ToolIcons.h"
 #include "HTTEngine/Scene/IScene.h"
 #include "HTTEngine/Scene/SceneManager.h"
@@ -26,12 +27,14 @@ constexpr float kSnapFieldWidth = 72.0f; // スナップの量の入力欄の幅
 struct ToolButton {
 	GizmoOperation operation; // 押すと、この操作になる
 	ToolIcon icon;            // 絵
-	const char* tooltip;      // 説明（ボタンの名前にも使う）
+	const char* id;           // ボタンの ID
+	const char* name;         // 説明（後ろに、今の割り当てのキーを付ける）
+	EditorAction shortcut;    // Scene ビューで切り替えるキー
 };
 constexpr auto kToolButtons = std::to_array<ToolButton>({
-    {GizmoOperation::Move,   ToolIcon::Move,   "移動（W）"},
-    {GizmoOperation::Rotate, ToolIcon::Rotate, "回転（E）"},
-    {GizmoOperation::Scale,  ToolIcon::Scale,  "拡縮（R）"},
+    {GizmoOperation::Move,   ToolIcon::Move,   "move",   "移動", EditorAction::ToolMove},
+    {GizmoOperation::Rotate, ToolIcon::Rotate, "rotate", "回転", EditorAction::ToolRotate},
+    {GizmoOperation::Scale,  ToolIcon::Scale,  "scale",  "拡縮", EditorAction::ToolScale},
 });
 } // namespace
 
@@ -59,9 +62,10 @@ void ControlWindow::Draw(SceneManager* sceneManager) {
 void ControlWindow::DrawGizmoTools() {
 	GizmoSettings& settings = SceneGizmo::GetSettings();
 
-	// --- 移動・回転・拡縮（Scene ビューで W・E・R を押しても切り替わる）---
+	// --- 移動・回転・拡縮（Scene ビューで W・E・R（EditorKeymap の割り当て）を押しても切り替わる）---
 	for (const ToolButton& tool : kToolButtons) {
-		if (ToolIcons::Button(tool.tooltip, tool.icon, settings.operation == tool.operation, tool.tooltip)) {
+		const std::string tooltip = EditorKeymap::WithShortcut(tool.name, tool.shortcut); // "移動（W）"
+		if (ToolIcons::Button(tool.id, tool.icon, settings.operation == tool.operation, tooltip.c_str())) {
 			settings.operation = tool.operation;
 		}
 		ImGui::SameLine(0.0f, kToolSpacing);
@@ -164,11 +168,11 @@ void ControlWindow::DrawSaveButton(SceneManager& sceneManager) {
 		sceneManager.RequestSave();
 	}
 	ImGui::EndDisabled();
-	ImGui::SetItemTooltip("シーンを保存（Ctrl+S）。停止中だけ");
+	ImGui::SetItemTooltip("%s。停止中だけ", EditorKeymap::WithShortcut("シーンを保存", EditorAction::SaveScene).c_str());
 
 	// --- Ctrl+S（文字の入力中は、入力欄のほうを優先する。名前の変更中に Ctrl+S を押しても保存しない）---
 	const bool isTyping = ImGui::GetIO().WantTextInput || ImGui::IsAnyItemActive();
-	if (canSave && !isTyping && ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_S)) {
+	if (canSave && !isTyping && EditorKeymap::IsTriggered(EditorAction::SaveScene)) {
 		sceneManager.RequestSave();
 	}
 }

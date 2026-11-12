@@ -9,6 +9,7 @@
 #include "HTTEngine/Editor/Assets/AssetMover.h"
 #include "HTTEngine/Editor/Assets/ProjectFiles.h"
 #include "HTTEngine/Editor/Inspector/AssetInspector.h"
+#include "HTTEngine/Editor/Keymap/EditorKeymap.h"
 #include "HTTEngine/Editor/Timeline/TimelineWindow.h"
 #include "HTTEngine/Editor/Widgets/EditorWidgets.h"
 #include "HTTEngine/Editor/Windows/CodeWindow.h"
@@ -107,10 +108,10 @@ void ProjectWindow::DrawItemMenu(const Item& item) {
 
 	// --- 名前を変える・消す（開いているシーンと、それが入っているフォルダ・Source/ の中の物はできない）---
 	const bool isLocked = IsLocked(item);
-	if (ImGui::MenuItem("Rename", "F2", false, !isLocked)) {
+	if (ImGui::MenuItem("Rename", EditorKeymap::GetShortcutText(EditorAction::Rename).c_str(), false, !isLocked)) {
 		StartRename(item);
 	}
-	if (ImGui::MenuItem("Delete", "Del", false, !isLocked)) {
+	if (ImGui::MenuItem("Delete", EditorKeymap::GetShortcutText(EditorAction::Delete).c_str(), false, !isLocked)) {
 		deleteTarget_ = item.path;
 		deleteRequest_ = true;
 	}
@@ -210,10 +211,10 @@ void ProjectWindow::HandleShortcuts() {
 	if (item == nullptr || IsLocked(*item)) {
 		return;
 	}
-	if (ImGui::IsKeyPressed(ImGuiKey_F2, false)) {
+	if (EditorKeymap::IsTriggered(EditorAction::Rename)) {
 		StartRename(*item);
 	}
-	if (ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
+	if (EditorKeymap::IsTriggered(EditorAction::Delete)) {
 		deleteTarget_ = item->path;
 		deleteRequest_ = true;
 	}

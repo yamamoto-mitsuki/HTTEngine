@@ -5,6 +5,7 @@
 
 #include <externals/imgui/imgui.h>
 
+#include "HTTEngine/Editor/Keymap/EditorKeymap.h"
 #include "HTTEngine/Editor/Widgets/EditorWidgets.h"
 #include "HTTEngine/Scene/SceneManager.h"
 #include "HTTEngine/String/FileNameRule.h"
@@ -99,7 +100,7 @@ void SceneDialogs::DrawFileMenuItems() {
 	const bool canEdit = CanEditScene();
 	const bool hasFile = canEdit && sceneManager->GetSceneFile() != nullptr;
 
-	if (ImGui::MenuItem("New Scene...", "Ctrl+N", false, canEdit)) {
+	if (ImGui::MenuItem("New Scene...", EditorKeymap::GetShortcutText(EditorAction::NewScene).c_str(), false, canEdit)) {
 		RequestNew();
 	}
 	// resources/scenes/ のシーンの一覧（開いているシーンにはチェック）
@@ -117,10 +118,10 @@ void SceneDialogs::DrawFileMenuItems() {
 		ImGui::EndMenu();
 	}
 	ImGui::Separator();
-	if (ImGui::MenuItem("Save", "Ctrl+S", false, hasFile)) {
+	if (ImGui::MenuItem("Save", EditorKeymap::GetShortcutText(EditorAction::SaveScene).c_str(), false, hasFile)) {
 		sceneManager->RequestSave();
 	}
-	if (ImGui::MenuItem("Save As...", "Ctrl+Shift+S", false, hasFile)) {
+	if (ImGui::MenuItem("Save As...", EditorKeymap::GetShortcutText(EditorAction::SaveSceneAs).c_str(), false, hasFile)) {
 		RequestSaveAs();
 	}
 }
@@ -226,10 +227,10 @@ void SceneDialogs::HandleShortcuts() {
 	if (ImGui::GetIO().WantTextInput || ImGui::IsAnyItemActive() || ImGui::IsPopupOpen("", ImGuiPopupFlags_AnyPopupId)) {
 		return;
 	}
-	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_N)) {
+	if (EditorKeymap::IsTriggered(EditorAction::NewScene)) {
 		RequestNew();
 	}
-	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_S)) {
+	if (EditorKeymap::IsTriggered(EditorAction::SaveSceneAs)) {
 		RequestSaveAs();
 	}
 }

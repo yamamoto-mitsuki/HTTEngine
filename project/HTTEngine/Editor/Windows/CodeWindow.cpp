@@ -21,6 +21,7 @@
 
 #include "HTTEngine/Core/AssetMoveRegistry.h"
 #include "HTTEngine/Diagnostics/LogManager.h"
+#include "HTTEngine/Editor/Keymap/EditorKeymap.h"
 #include "HTTEngine/Editor/Widgets/EditorWidgets.h"
 #include "HTTEngine/String/ConvertString.h"
 
@@ -373,7 +374,7 @@ void DrawToolbar(CodeFile& file) {
 		FindNext(file);
 		findFocusRequest = true; // Enter で欄から抜けるので、続けて Enter を押せるように戻す
 	}
-	ImGui::SetItemTooltip("検索（Ctrl+F）。Enter で次を探す。大文字・小文字は区別しない");
+	ImGui::SetItemTooltip("%s。Enter で次を探す。大文字・小文字は区別しない", EditorKeymap::WithShortcut("検索", EditorAction::Find).c_str());
 	ImGui::SameLine();
 	if (ImGui::Button("Next")) {
 		FindNext(file);
@@ -545,8 +546,8 @@ void CodeWindow::Draw() {
 	}
 	ReloadChangedFiles();
 
-	// --- Ctrl+F で検索欄へ（このウィンドウを触っているときだけ）---
-	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_F)) {
+	// --- Ctrl+F（EditorKeymap の「検索」）で検索欄へ（このウィンドウを触っているときだけ。検索欄に文字を打っている間は効かない）---
+	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && EditorKeymap::IsTriggered(EditorAction::Find)) {
 		findFocusRequest = true;
 	}
 

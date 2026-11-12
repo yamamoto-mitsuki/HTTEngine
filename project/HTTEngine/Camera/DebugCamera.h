@@ -2,6 +2,7 @@
 #include <numbers>
 
 #include "HTTEngine/Camera/Camera.h"
+#include "HTTEngine/Math/Vector2.h"
 #include "HTTEngine/Math/Vector3.h"
 #include "HTTEngine/Math/Matrix4x4.h"
 #include "HTTEngine/Math/Transform.h"
@@ -20,21 +21,29 @@ public:
 	float pitchMin = -static_cast<float>(std::numbers::pi) / 2.0f + 0.01f;
 	float pitchMax = static_cast<float>(std::numbers::pi) / 2.0f - 0.01f;
 	// 速度係数
-	float orbitSpeed = 0.001f; // オービット回転の速さ
-	float panSpeed = 0.025f;    // パン移動の速さ
-	float zoomSpeed = 0.01f;   // ズームの速さ
-	// 距離の下限
-	float distanceMin = -50.0f;
+	float rotateSpeed = 0.001f;    // 向きを変える速さ（マウスが数えた数 1 あたりのラジアン）
+	float panSpeed = 0.025f;       // 平行移動の速さ（マウスが数えた数 1 あたりの距離）
+	float dollyDragSpeed = 0.05f;  // ドラッグで前後に動く速さ（マウスが数えた数 1 あたりの距離）
+	float dollyWheelSpeed = 1.2f;  // ホイールで前後に動く速さ（1 目盛りあたりの距離）
 	// 手振れの補正
-	float mouseDeltaThreshold = 2.0f; // 操作時にこの値以下は無視
+	float mouseDeltaThreshold = 2.0f; // 向きを変えるとき、この値より小さい動きは無視
+
+	/// <summary>
+	/// 1フレームの操作の量（EditorViewport が、EditorKeymap の割り当てとマウスの動きから作る）
+	/// </summary>
+	struct Input {
+		Vector2 rotate = {0.0f, 0.0f}; // 向きを変える量（マウスが数えた数。右・下が+）
+		Vector2 pan = {0.0f, 0.0f};    // 平行移動の量（マウスが数えた数。右・下が+）
+		float dollyDrag = 0.0f;        // ドラッグで前後に動く量（マウスが数えた数。前が+）
+		float dollyWheel = 0.0f;       // ホイールで前後に動く量（目盛り。前が+）
+	};
 
 public:
 
 	void Initialize(float fovY, float aspectRatio, float nearZ, float farZ) override;
 	void Update() override;
-	void Rotate();
-	void Zoom();
-	void Translate();
+	// 操作の量で動かして、ビュー行列を作り直す（どのキー・ボタンで動かすかは、呼ぶ側が決める）
+	void ApplyInput(const Input& input);
 	Matrix4x4 CalcWVP(const Matrix4x4& worldMatrix) const override;
 	void ReCalcViewMatrix();
 
@@ -55,4 +64,9 @@ public:
 	const Vector3& GetScale() const { return transform_.scale; }
 	const Vector3& GetRotation() const { return transform_.rotation; }
 	const Vector3& GetTranslation() const { return transform_.translation; }
+
+private:
+	void Rotate(Vector2 amount);       // 向きを変える
+	void Pan(const Vector2& amount);   // 上下左右に動く
+	void Dolly(float distance);        // 向いている方へ前後に動く
 };

@@ -32,38 +32,32 @@ void InputManager::Release() { GetInstance()->FinalizeInternal(); }
 void InputManager::Update() { GetInstance()->UpdateInternal(); }
 
 // ---- キーボード ----
-bool InputManager::IsKeyPressed(uint8_t key) {
-	if (!IsActive()) return false;
-	if (IsKeyboardCapturedByImGui()) return false;
+bool InputManager::IsKeyPressed(uint8_t key, InputGate gate) {
+	if (IsKeyboardBlocked(gate)) return false;
 	return GetInstance()->keyboard_.IsPressed(key);
 }
-bool InputManager::IsKeyTriggered(uint8_t key) {
-	if (!IsActive()) return false;
-	if (IsKeyboardCapturedByImGui()) return false;
+bool InputManager::IsKeyTriggered(uint8_t key, InputGate gate) {
+	if (IsKeyboardBlocked(gate)) return false;
 	return GetInstance()->keyboard_.IsTriggered(key);
 }
-bool InputManager::IsKeyReleased(uint8_t key) {
-	if (!IsActive()) return false;
-	if (IsKeyboardCapturedByImGui()) return false;
+bool InputManager::IsKeyReleased(uint8_t key, InputGate gate) {
+	if (IsKeyboardBlocked(gate)) return false;
 	return GetInstance()->keyboard_.IsReleased(key);
 }
 
 // ---- マウス ----
-bool InputManager::IsMouseButtonPressed(int b) {
-	if (!IsActive()) return false;
-	if (IsMouseCapturedByImGui()) return false;
+bool InputManager::IsMouseButtonPressed(int b, InputGate gate) {
+	if (IsMouseBlocked(gate)) return false;
 	if (GetInstance()->isMouseButtonSwallowed_) return false; // また閉じ込めたクリック（ボタンを全部離すまで）
 	return GetInstance()->mouse_.IsButtonPressed(b);
 }
-bool InputManager::IsMouseButtonTriggered(int b) {
-	if (!IsActive()) return false;
-	if (IsMouseCapturedByImGui()) return false;
+bool InputManager::IsMouseButtonTriggered(int b, InputGate gate) {
+	if (IsMouseBlocked(gate)) return false;
 	if (GetInstance()->isMouseButtonSwallowed_) return false; // また閉じ込めたクリック（ボタンを全部離すまで）
 	return GetInstance()->mouse_.IsButtonTriggered(b);
 }
-bool InputManager::IsMouseButtonReleased(int b) {
-	if (!IsActive()) return false;
-	if (IsMouseCapturedByImGui()) return false;
+bool InputManager::IsMouseButtonReleased(int b, InputGate gate) {
+	if (IsMouseBlocked(gate)) return false;
 	if (GetInstance()->isMouseButtonSwallowed_) return false; // また閉じ込めたクリック（ボタンを全部離すまで）
 	return GetInstance()->mouse_.IsButtonReleased(b);
 }
@@ -188,19 +182,16 @@ void InputManager::UpdateEditorCursorConfine() {
 }
 #endif
 
-long InputManager::GetMouseDeltaX() {
-	if (!IsActive()) return 0;
-	if (IsMouseCapturedByImGui()) return 0;
+long InputManager::GetMouseDeltaX(InputGate gate) {
+	if (IsMouseBlocked(gate)) return 0;
 	return GetInstance()->mouse_.GetDeltaX();
 }
-long InputManager::GetMouseDeltaY() {
-	if (!IsActive()) return 0;
-	if (IsMouseCapturedByImGui()) return 0;
+long InputManager::GetMouseDeltaY(InputGate gate) {
+	if (IsMouseBlocked(gate)) return 0;
 	return GetInstance()->mouse_.GetDeltaY();
 }
-long InputManager::GetMouseDeltaWheel() {
-	if (!IsActive()) return 0;
-	if (IsMouseCapturedByImGui()) return 0;
+long InputManager::GetMouseDeltaWheel(InputGate gate) {
+	if (IsMouseBlocked(gate)) return 0;
 	return GetInstance()->mouse_.GetDeltaWheel();
 }
 
@@ -332,6 +323,27 @@ bool InputManager::IsTypingInImGui() {
 #else
 	return false;
 #endif
+}
+
+// ===== gate の決まりで「押していない」扱いにするか =====
+// Game：ImGui がキーボード・マウスを使っている間も止める。Editor：文字を打っている間だけ止める（マウスは止めない）
+bool InputManager::IsKeyboardBlocked(InputGate gate) {
+	if (!IsActive()) {
+		return true;
+	}
+	if (gate == InputGate::Editor) {
+		return IsTypingInImGui();
+	}
+	return IsKeyboardCapturedByImGui();
+}
+bool InputManager::IsMouseBlocked(InputGate gate) {
+	if (!IsActive()) {
+		return true;
+	}
+	if (gate == InputGate::Editor) {
+		return false; // どのパネルの上で効かせるかは、読む側（Scene ビューの上か など）が決める
+	}
+	return IsMouseCapturedByImGui();
 }
 
 void InputManager::GetGameViewRect(Vector2& topLeft, Vector2& size) {

@@ -21,6 +21,7 @@
 #include "HTTEngine/Editor/Gizmos/UIGizmo.h"
 #include "HTTEngine/Editor/History/EditorHistory.h"
 #include "HTTEngine/Editor/Inspector/ComponentEditor.h"
+#include "HTTEngine/Editor/Keymap/EditorKeymap.h"
 #include "HTTEngine/Editor/Viewport/ScenePicking.h"
 #include "HTTEngine/Editor/Windows/HierarchyWindow.h"
 #include "HTTEngine/Editor/Windows/UIScreenEditor.h"
@@ -292,16 +293,17 @@ void HandleShortcuts(DebugCamera& camera, bool isHovered) {
 	if (ImGui::GetIO().WantTextInput || ImGuizmo::IsUsing()) {
 		return;
 	}
-	if (ImGui::IsKeyPressed(ImGuiKey_W, false)) {
+	// キーは EditorKeymap（Settings → Editor → Keymap で変えられる）
+	if (EditorKeymap::IsTriggered(EditorAction::ToolMove)) {
 		settings.operation = GizmoOperation::Move;
 	}
-	if (ImGui::IsKeyPressed(ImGuiKey_E, false)) {
+	if (EditorKeymap::IsTriggered(EditorAction::ToolRotate)) {
 		settings.operation = GizmoOperation::Rotate;
 	}
-	if (ImGui::IsKeyPressed(ImGuiKey_R, false)) {
+	if (EditorKeymap::IsTriggered(EditorAction::ToolScale)) {
 		settings.operation = GizmoOperation::Scale;
 	}
-	if (ImGui::IsKeyPressed(ImGuiKey_F, false)) {
+	if (EditorKeymap::IsTriggered(EditorAction::Frame)) {
 		FocusSelected(camera);
 	}
 }

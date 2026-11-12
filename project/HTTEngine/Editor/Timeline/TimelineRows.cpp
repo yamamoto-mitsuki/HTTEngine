@@ -10,6 +10,7 @@
 
 #include "HTTEngine/Components/Camera/CameraComponent.h"
 #include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Editor/Keymap/EditorKeymap.h"
 #include "HTTEngine/Editor/Timeline/TimelineEditorState.h"
 #include "HTTEngine/Editor/Windows/HierarchyWindow.h"
 #include "HTTEngine/Timeline/TimelineEdit.h"
@@ -461,10 +462,10 @@ void HandleKeyboard(TimelineEditorState& state) {
 	if (!ImGui::IsWindowHovered(ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) || ImGui::GetIO().WantTextInput || ImGui::IsAnyItemActive()) {
 		return;
 	}
-	if (ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
+	if (EditorKeymap::IsTriggered(EditorAction::Delete)) {
 		DeleteSelected(state);
 	}
-	if (ImGui::IsKeyPressed(ImGuiKey_F, false)) {
+	if (EditorKeymap::IsTriggered(EditorAction::Frame)) {
 		state.needsFit = true;
 	}
 }

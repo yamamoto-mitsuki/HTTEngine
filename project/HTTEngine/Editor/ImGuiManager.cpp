@@ -28,6 +28,7 @@
 #include "HTTEngine/Editor/Gizmos/LightGizmo.h"
 #include "HTTEngine/Editor/Gizmos/CameraGizmo.h"
 #include "HTTEngine/Editor/History/EditorHistory.h"
+#include "HTTEngine/Editor/Keymap/EditorKeymap.h"
 #include "HTTEngine/Editor/Viewport/EditorViewport.h"
 // Timeline
 #include "HTTEngine/Editor/Timeline/TimelineWindow.h"
@@ -49,16 +50,16 @@
 std::unique_ptr<ImGuiManager> ImGuiManager::instance_ = nullptr;
 
 namespace {
-// エディタ全体で効くショートカット（どのウィンドウを触っていても効く）
+// エディタ全体で効くショートカット（どのウィンドウを触っていても効く。キーは EditorKeymap）
 // 文字の入力中・ドラッグ中は何もしない（入力欄の中のCtrl+Zは、ImGuiが文字のUndoに使う）
 void HandleGlobalShortcuts() {
 	if (ImGui::GetIO().WantTextInput || ImGui::IsAnyItemActive()) {
 		return;
 	}
-	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_Z)) {
+	if (EditorKeymap::IsTriggered(EditorAction::Undo)) {
 		EditorHistory::RequestUndo();
 	}
-	if (ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiKey_Y) || ImGui::IsKeyChordPressed(ImGuiMod_Ctrl | ImGuiMod_Shift | ImGuiKey_Z)) {
+	if (EditorKeymap::IsTriggered(EditorAction::Redo)) {
 		EditorHistory::RequestRedo();
 	}
 }
@@ -105,10 +106,10 @@ void DrawFileMenu() {
 // Edit メニュー
 void DrawEditMenu() {
 	if (ImGui::BeginMenu("Edit")) {
-		if (ImGui::MenuItem("Undo", "Ctrl+Z", false, EditorHistory::CanUndo())) {
+		if (ImGui::MenuItem("Undo", EditorKeymap::GetShortcutText(EditorAction::Undo).c_str(), false, EditorHistory::CanUndo())) {
 			EditorHistory::RequestUndo();
 		}
-		if (ImGui::MenuItem("Redo", "Ctrl+Y", false, EditorHistory::CanRedo())) {
+		if (ImGui::MenuItem("Redo", EditorKeymap::GetShortcutText(EditorAction::Redo).c_str(), false, EditorHistory::CanRedo())) {
 			EditorHistory::RequestRedo();
 		}
 		ImGui::Separator();
@@ -197,6 +198,8 @@ void ImGuiManager::Initialize(Win32Window* window) {
 
 	// InspectorにエンジンのComponent（Transform・ModelRenderer）を登録する
 	InspectorWindow::Initialize();
+	// エディタの操作の割り当て（保存した人ごとの割り当てを読み、Settings に Keymap のページを足す）
+	EditorKeymap::Initialize();
 	// Project ウィンドウのアイコンの画像（HTTEngine/Resources/Editor/Icons/）を読む
 	AssetIcons::Initialize();
 

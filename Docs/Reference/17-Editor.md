@@ -18,10 +18,12 @@
 | **Save（Ctrl+S）** | Control ウィンドウ。停止中だけ。シーンファイル（`resources/scenes/〇〇.scene.json`）に書く。1つ前は `.bak` に残る |
 | **カーブ（`.curve`）** | Project で選ぶと Inspector に出る。クリックで選ぶ・つまんで動かす、ダブルクリックでキーを足す（線の近くなら形を変えない）、Delete で消す、ホイールで拡大縮小（Ctrl：時間だけ、Shift：値だけ）、中ボタンか Alt+左ボタンで移動、F で全体。Ease Preset はキーを選んでいれば次のキーまでの区間に、選んでいなければ全体に入る。直すと自動で保存（1つ前は `.bak`） |
 | **Timeline（`.timeline`）** | Project で Create → Timeline。Timeline ウィンドウで直す（ダブルクリック・Inspector の Open Timeline・Timeline の付いた Entity を選ぶ）。トラック・クリップ・キー・カーブ・停止中のプレビュー。直すと自動で保存（1つ前は `.bak`）。Ctrl+Z で戻せる |
-| **Undo / Redo** | Ctrl+Z / Ctrl+Y。作成・削除・名前・有効・親子・Componentの追加削除・Inspectorの値変更・**Settings（PostEffect など）の値変更**・**カーブの編集**が、やった順に戻る。Play・Stop・シーン切り替えで履歴は消える |
+| **Undo / Redo** | Ctrl+Z / Ctrl+Y（Ctrl+Shift+Z でも Redo）。作成・削除・名前・有効・親子・Componentの追加削除・Inspectorの値変更・**Settings（PostEffect など）の値変更**・**カーブの編集**が、やった順に戻る。Play・Stop・シーン切り替えで履歴は消える |
 | **Project** | `resources/` のファイル。左にフォルダの木、右に中身（画像は小さい絵）。ダブルクリックで開く（シーン・`.uiscreen`・`.timeline`・コード）。右クリックで Create（Folder・Scene・Physic Material・Attack Table・Curve・Material・Timeline・UI Screen）・Rename（F2。ほかのシーン・Prefab などに書いてあるパスも書き換える。コードは書き換えず警告だけ）・Delete（ごみ箱へ）・Copy Path・Show in Explorer、Prefab は Place in Scene（原点に置く）。`.physmat`・`.material`・`.curve`・`.attacktable` などは選ぶと Inspector で直せる。右上の数字でアイコンの大きさ |
 | **File** | New Scene（Ctrl+N）・Open Scene・Save（Ctrl+S）・Save As（Ctrl+Shift+S）。停止中だけ |
 | **Settings（Edit → Settings）** | 調整項目（前の Parameters ウィンドウ）。Project：Audio（音量）・PostEffect・Physics（World → Gravity）・Layers・DamageTypes・ゲームのグループ／Scene：開いているシーンの名前だけ（まだ項目は無い）／Editor：Scene View（Scene ビューのカメラ）。ページごとに Save / Revert、保存していなければ `*`（[16章](16-LogAssertParams.md)） |
+| **Keymap（Settings → Editor → Keymap）** | エディタの操作のキー・ボタンを人ごとに変える。割り当てのボタンを押してから、新しいキー・ボタンを押すと入れ替わる（Ctrl・Shift・Alt を押しながら押すと組になる。Esc でやめる）。＋で足す・×で外す・「既定」で戻す。ほかとぶつかると赤くなり、相手の名前と「相手の方を外す」が出る。上のボタンでカメラの操作を **Unity 風・Blender 風** にできる。Save で `Parameters/Editor/Keymap.json`（git に入らないので人ごと）。この章に書いたキーは、全部既定の割り当て |
+| **Scene ビューのカメラ** | 既定は、ホイールボタンを押しながらドラッグで向きを変える（その場で回る）・右ドラッグで平行移動・ホイールで前後。Keymap で変えられる（前後に動くドラッグも足せる） |
 | **View → Gizmos** | Light Icons・Light Ranges（ライトのアイコンと範囲）・Camera Icons・Camera Paths（カメラのアイコンと線）・Camera Orbits（Camera Orbit の回る輪・回る中心）・Particle Shapes（粒の出る形）は Scene ビューだけに出る。Camera Follow Zones（Camera Follow の Dead Zone・Soft Zone・Bounds。Zone Space が Screen の範囲だけは Game ビューだけ）・Colliders（Collider の線。Character Controller・Wind Zone の線も一緒）・Hit Shapes（攻撃の形・ジャスト判定の範囲・Hurtbox）・Skeletons（骨）は Game ビューにも出る（Release では出ない）。Camera Follow と Particle System は、1つずつ Inspector の Show Gizmo でも消せる |
 | **View → Scene View → Post Effects** | Scene ビューにもポストエフェクト（ブルームなど）を掛けるか（既定 ON）。Lens は Scene ビューでは掛けない（ギズモ・クリックの位置がずれるので） |
 | **View → Scene View → Fog** | Scene ビューにも霧（Fog）を掛けるか（既定 ON）。Game ビューにはいつも掛ける |

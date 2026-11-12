@@ -12,6 +12,7 @@
 
 #include "HTTEngine/Curve/CurveManager.h"
 #include "HTTEngine/ECS/ComponentUI.h"
+#include "HTTEngine/Editor/Keymap/EditorKeymap.h"
 #include "HTTEngine/Math/MathUtility.h"
 
 namespace {
@@ -107,7 +108,7 @@ void CurveEditor::DrawToolbar(Curve& curve) {
 	if (ImGui::Button("Frame")) {
 		needsFrame_ = true;
 	}
-	ImGui::SetItemTooltip("全体が見える範囲にする（F）");
+	ImGui::SetItemTooltip("%s", EditorKeymap::WithShortcut("全体が見える範囲にする", EditorAction::Frame).c_str());
 	ImGui::SameLine();
 	ImGui::TextDisabled("%s", isSegment ? "Preset: Segment" : "Preset: Whole");
 }
@@ -252,10 +253,10 @@ void CurveEditor::HandleKeyboard(Curve& curve) {
 	if (!ImGui::IsItemHovered() && !ImGui::IsItemFocused()) {
 		return;
 	}
-	if (ImGui::IsKeyPressed(ImGuiKey_F, false)) {
+	if (EditorKeymap::IsTriggered(EditorAction::Frame)) {
 		needsFrame_ = true;
 	}
-	if (selectedKey_ >= 0 && ImGui::IsKeyPressed(ImGuiKey_Delete, false)) {
+	if (selectedKey_ >= 0 && EditorKeymap::IsTriggered(EditorAction::Delete)) {
 		RemoveSelectedKey(curve);
 	}
 }

@@ -200,6 +200,8 @@
     <ClCompile Include="HTTEngine\ECS\GameComponent.cpp" />
     <ClCompile Include="HTTEngine\Editor\Inspector\LightEditor.cpp" />
     <ClCompile Include="HTTEngine\Editor\Widgets\ImeInput.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Widgets\InputActionTable.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Keymap\EditorKeymap.cpp" />
     <ClCompile Include="HTTEngine\Editor\Inspector\ModelRendererEditor.cpp" />
     <ClCompile Include="HTTEngine\Editor\Inspector\ComponentEditor.cpp" />
     <ClCompile Include="HTTEngine\Editor\History\EditorHistory.cpp" />
@@ -273,6 +275,9 @@
     <ClCompile Include="HTTEngine\Input\KeyboardInput.cpp" />
     <ClCompile Include="HTTEngine\Input\MouseInput.cpp" />
     <ClCompile Include="HTTEngine\Input\XInputGamepad.cpp" />
+    <ClCompile Include="HTTEngine\Input\Action\InputActionMap.cpp" />
+    <ClCompile Include="HTTEngine\Input\Action\InputBinding.cpp" />
+    <ClCompile Include="HTTEngine\Input\Action\InputRebinder.cpp" />
     <ClCompile Include="HTTEngine\Math\Matrix3x3.cpp" />
     <ClCompile Include="HTTEngine\Math\Matrix4x4.cpp" />
     <ClCompile Include="HTTEngine\Math\Vector4.cpp" />
@@ -463,6 +468,8 @@
     <ClInclude Include="HTTEngine\Editor\Inspector\LightEditor.h" />
     <ClInclude Include="HTTEngine\ECS\ComponentStorage.h" />
     <ClInclude Include="HTTEngine\Editor\Widgets\ImeInput.h" />
+    <ClInclude Include="HTTEngine\Editor\Widgets\InputActionTable.h" />
+    <ClInclude Include="HTTEngine\Editor\Keymap\EditorKeymap.h" />
     <ClInclude Include="HTTEngine\Editor\Inspector\ModelRendererEditor.h" />
     <ClInclude Include="HTTEngine\Editor\Inspector\ComponentEditor.h" />
     <ClInclude Include="HTTEngine\Editor\History\EditorHistory.h" />
@@ -563,6 +570,9 @@
     <ClInclude Include="HTTEngine\Input\KeyboardInput.h" />
     <ClInclude Include="HTTEngine\Input\MouseInput.h" />
     <ClInclude Include="HTTEngine\Input\XInputGamepad.h" />
+    <ClInclude Include="HTTEngine\Input\Action\InputActionMap.h" />
+    <ClInclude Include="HTTEngine\Input\Action\InputBinding.h" />
+    <ClInclude Include="HTTEngine\Input\Action\InputRebinder.h" />
     <ClInclude Include="HTTEngine\Math\Matrix3x3.h" />
     <ClInclude Include="HTTEngine\Math\Matrix4x4.h" />
     <ClInclude Include="HTTEngine\Math\Vector2.h" />
