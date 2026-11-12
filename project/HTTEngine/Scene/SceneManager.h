@@ -62,6 +62,8 @@ public:
 	void RequestReload() { isReloadRequested_ = true; }
 	// シーンファイルに保存する（停止中だけ。実際に書くのは次のフレームの頭）
 	void RequestSave() { isSaveRequested_ = true; }
+	// RequestSave をまだ済ませていないか（済んだかは、その後の IsDirty で分かる。エディタの「保存してから閉じる」が待つのに使う）
+	bool IsSaveRequested() const { return isSaveRequested_; }
 
 	// ===== ゲッター =====
 	IScene* GetCurrentScene() { return currentScene_.get(); }

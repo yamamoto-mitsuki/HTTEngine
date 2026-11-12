@@ -19,8 +19,8 @@ private:
 	static void DrawGizmoTools();
 	// 真ん中：再生・一時停止・やり直し
 	static void DrawPlayButtons(SceneManager& sceneManager);
-	// 右：保存（Ctrl+S も）
-	static void DrawSaveButton(SceneManager& sceneManager);
+	// 右：保存（Ctrl+S も。シーンとエディタの設定。中身は SceneDialogs::RequestSave）
+	static void DrawSaveButton();
 	// 下の行：今の状態とシーンの名前
 	static void DrawStatus(SceneManager& sceneManager);
 };

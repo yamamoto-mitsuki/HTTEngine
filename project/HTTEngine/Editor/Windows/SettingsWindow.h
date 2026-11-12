@@ -34,6 +34,12 @@ public:
 	// GlobalVariables のグループではないページを足す（起動のときに1回。同じ見出しの、GlobalVariables のグループの後に出る）
 	static void AddPage(SettingsPage page);
 
+	// --- 見出しごとにまとめて（File → Save・閉じるときの確認から）---
+	// section の中で、保存していない変更があるページの名前（一覧と同じ順）
+	static std::vector<std::string> GetDirtyPageNames(SettingsSection section);
+	// section の中で、保存していない変更があるページを全部保存する
+	static void SaveSection(SettingsSection section);
+
 private:
 	// 見出しのボタンで押された物
 	enum class HeaderAction {

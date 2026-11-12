@@ -72,12 +72,23 @@ public:
 
 	void ClearPendingResize() { pendingResize_ = false; }
 
+	/// <summary>
+	/// ×（Alt+F4 も）で閉じる前に聞く。canClose が false を返したら閉じずに onBlocked を呼ぶ（エディタは「保存しますか？」を出す）
+	/// <para>答えが出て閉じてよくなったら、RequestClose でもう一度「閉じて」と送る（そのときは canClose が true を返す）</para>
+	/// </summary>
+	void SetCloseGuard(std::function<bool()> canClose, std::function<void()> onBlocked) {
+		onCanClose_ = std::move(canClose);
+		onTryClose_ = std::move(onBlocked);
+	}
+	// × を押したのと同じ「閉じて」を送る（次のメッセージ処理で、SetCloseGuard の canClose を通ってから閉じる）
+	void RequestClose() const;
+
 	// ウィンドウシステム
-	std::function<bool()> onCanClose_;
-	std::function<void()> onTryClose_;
 	bool isPositionLocked_ = false;
 
 private:
+	std::function<bool()> onCanClose_; // 閉じてよいか（無ければいつも閉じる）
+	std::function<void()> onTryClose_; // 閉じてよくなかったときに呼ぶ
 
 	HWND hwnd_ = nullptr;
 	WNDCLASS wc_ = {};

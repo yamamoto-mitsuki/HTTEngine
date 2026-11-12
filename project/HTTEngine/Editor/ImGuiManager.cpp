@@ -16,20 +16,14 @@
 #include <externals/imgui/imgui_impl_dx12.h>
 #include <externals/imgui/imgui_impl_win32.h>
 
-#include "HTTEngine/Systems/Animation/AnimationSystem.h"
-#include "HTTEngine/Systems/Combat/HitSystem.h"
-#include "HTTEngine/Systems/Effects/ParticleSystem.h"
-#include "HTTEngine/Systems/Physics/CollisionSystem.h"
 #include "HTTEngine/Diagnostics/LogManager.h"
 #include "HTTEngine/Diagnostics/HTTAssert.h"
 #include "HTTEngine/Editor/Profiler.h"
 #include "HTTEngine/Editor/Assets/AssetIcons.h"
 #include "HTTEngine/Editor/Assets/AssetThumbnails.h"
-#include "HTTEngine/Editor/Gizmos/LightGizmo.h"
-#include "HTTEngine/Editor/Gizmos/CameraGizmo.h"
 #include "HTTEngine/Editor/History/EditorHistory.h"
 #include "HTTEngine/Editor/Keymap/EditorKeymap.h"
-#include "HTTEngine/Editor/Viewport/EditorViewport.h"
+#include "HTTEngine/Editor/Viewport/ViewSettings.h"
 // Timeline
 #include "HTTEngine/Editor/Timeline/TimelineWindow.h"
 // Windows
@@ -120,39 +114,6 @@ void DrawEditMenu() {
 		ImGui::EndMenu();
 	}
 }
-
-// View メニュー
-void DrawViewMenu() {
-	if (ImGui::BeginMenu("View")) {
-		// ライトのギズモ（全部まとめてON / OFF。1つずつはInspectorのライトの区画で）
-		LightGizmoFlags& lightGizmo = LightGizmo::GetGlobalFlags();
-		ImGui::SeparatorText("Gizmos");
-		ImGui::MenuItem("Light Icons", nullptr, &lightGizmo.showIcon);
-		ImGui::MenuItem("Light Ranges", nullptr, &lightGizmo.showRange);
-		ImGui::MenuItem("Camera Icons", nullptr, &CameraGizmo::GetShowIcons());
-		ImGui::MenuItem("Camera Paths", nullptr, &CameraGizmo::GetShowPaths());
-		ImGui::MenuItem("Camera Follow Zones", nullptr, &CameraGizmo::GetShowFollowZones()); // Dead Zone・Soft Zone（Game ビューにも出る。1つずつは Inspector の Show Gizmo）
-		ImGui::MenuItem("Camera Orbits", nullptr, &CameraGizmo::GetShowOrbits());           // 回る輪・回る中心（Scene ビューだけ。1つずつは Inspector の Show Gizmo）
-		ImGui::MenuItem("Particle Shapes", nullptr, &ParticleSystem::GetShowGizmos());      // 粒の出る形（Scene ビューだけ。1つずつは Inspector の Show Gizmo）
-		ImGui::MenuItem("Colliders", nullptr, &CollisionSystem::GetShowGizmos());
-		ImGui::MenuItem("Hit Shapes", nullptr, &HitSystem::GetShowGizmos()); // 攻撃の形・ジャスト判定の範囲・Hurtbox
-		ImGui::MenuItem("Skeletons", nullptr, &AnimationSystem::GetShowGizmos());
-		// Scene ビューの絵（ブルームなど。レンズは Scene では掛けない）
-		EditorViewport::ViewFlags& viewFlags = EditorViewport::GetViewFlags();
-		ImGui::SeparatorText("Scene View");
-		ImGui::MenuItem("Post Effects", nullptr, &viewFlags.sceneEffects);
-		ImGui::MenuItem("Fog", nullptr, &viewFlags.sceneFog);
-		ImGui::MenuItem("Skybox", nullptr, &viewFlags.sceneSkybox);
-		ImGui::MenuItem("Depth of Field", nullptr, &viewFlags.sceneDepthOfField, viewFlags.sceneEffects); // Post Effects を切っていると押せない
-		ImGui::MenuItem("Grid###sceneGrid", nullptr, &viewFlags.sceneGrid);
-		ImGui::MenuItem("Pick UI", nullptr, &viewFlags.scenePickUI);
-		ImGui::SetItemTooltip("Image・Text をクリックで選ぶ・ドラッグで動かす（外すと、UI の後ろの 3D の物を選べる）");
-		// Game ビューの絵
-		ImGui::SeparatorText("Game View");
-		ImGui::MenuItem("Grid###gameGrid", nullptr, &viewFlags.gameGrid);
-		ImGui::EndMenu();
-	}
-}
 } // namespace
 
 //=============================================================================
@@ -200,8 +161,14 @@ void ImGuiManager::Initialize(Win32Window* window) {
 	InspectorWindow::Initialize();
 	// エディタの操作の割り当て（保存した人ごとの割り当てを読み、Settings に Keymap のページを足す）
 	EditorKeymap::Initialize();
+	// View メニューの切り替え（保存した見え方を読み、Settings に View のページを足す）
+	ViewSettings::Initialize();
 	// Project ウィンドウのアイコンの画像（HTTEngine/Resources/Editor/Icons/）を読む
 	AssetIcons::Initialize();
+
+	// ×（Alt+F4 も）で閉じるとき、保存していない物（シーン・エディタの設定）があれば「保存しますか？」を出す（答えるまで閉じない）
+	// window は WindowManager が持っていて、閉じるまで消えない（2つ目のラムダは、閉じてよくなったときに1回だけ呼ばれる）
+	window->SetCloseGuard([] { return SceneDialogs::CanQuit(); }, [window] { SceneDialogs::RequestQuit([window] { window->RequestClose(); }); });
 
 	LogManager::Log("Initialized");
 }
@@ -305,7 +272,7 @@ void ImGuiManager::DrawMenuBar() {
 	if (ImGui::BeginMenuBar()) {
 		DrawFileMenu();
 		DrawEditMenu();
-		DrawViewMenu();
+		ViewSettings::DrawMenu();
 		DrawSettingMenu();
 		ImGui::EndMenuBar();
 	}

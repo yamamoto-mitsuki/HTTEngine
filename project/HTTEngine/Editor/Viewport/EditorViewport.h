@@ -29,7 +29,7 @@ public:
 	void Render(const Camera* gameCamera, const std::wstring& windowTitle);
 
 #ifdef USE_IMGUI
-	// View メニューで切り替える、ビューごとの見え方（全ウィンドウ共通）
+	// View メニューで切り替える、ビューごとの見え方（全ウィンドウ共通。メニュー・保存は ViewSettings。ここに足したら ViewSettings の一覧にも足す）
 	struct ViewFlags {
 		bool sceneEffects = true;      // Scene ビューにもポストエフェクトを掛ける（レンズは Scene では掛けない）
 		bool sceneFog = true;          // Scene ビューにも霧（Fog Component）を掛ける。Game ビューにはいつも掛ける
@@ -46,7 +46,7 @@ public:
 	DebugCamera* GetDebugCamera() { return debugCamera_.get(); }
 	bool IsGameHovered() const { return gameView_.IsHovered(); }
 	bool IsSceneHovered() const { return sceneView_.IsHovered(); }
-	// View メニューの印（ImGui::MenuItem に、メンバーのアドレスを渡して切り替える）
+	// View メニューの印（ViewSettings が、メンバーのアドレスを覚えて切り替える・保存する）
 	static ViewFlags& GetViewFlags();
 #endif
 

@@ -462,6 +462,9 @@
     <ClCompile Include="HTTEngine\Editor\Viewport\ViewportWindow.cpp">
       <Filter>HTTEngine\Editor\Viewport</Filter>
     </ClCompile>
+    <ClCompile Include="HTTEngine\Editor\Viewport\ViewSettings.cpp">
+      <Filter>HTTEngine\Editor\Viewport</Filter>
+    </ClCompile>
     <ClCompile Include="HTTEngine\Editor\Widgets\CurveEditor.cpp">
       <Filter>HTTEngine\Editor\Widgets</Filter>
     </ClCompile>
@@ -1272,6 +1275,9 @@
       <Filter>HTTEngine\Editor\Viewport</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Editor\Viewport\ViewportWindow.h">
+      <Filter>HTTEngine\Editor\Viewport</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Editor\Viewport\ViewSettings.h">
       <Filter>HTTEngine\Editor\Viewport</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Editor\Widgets\CurveEditor.h">

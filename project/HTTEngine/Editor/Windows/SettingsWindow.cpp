@@ -52,6 +52,45 @@ bool SettingsWindow::HasPage(const std::string& name) {
 	return false;
 }
 
+
+//=============================================================================
+// 見出しごとにまとめて
+//=============================================================================
+// ===== 保存していない変更があるページの名前 =====
+std::vector<std::string> SettingsWindow::GetDirtyPageNames(SettingsSection section) {
+	std::vector<std::string> names;
+	// GlobalVariables のグループ → AddPage のページ（左の一覧と同じ順）
+	GlobalVariables* gv = GlobalVariables::GetInstance();
+	for (const std::string& name : gv->GetGroupNames(section)) {
+		if (gv->IsGroupDirty(name)) {
+			names.push_back(name);
+		}
+	}
+	for (const SettingsPage& page : pages_) {
+		if (page.section == section && page.isDirty()) {
+			names.push_back(page.name);
+		}
+	}
+	return names;
+}
+
+// ===== 保存していない変更があるページを全部保存 =====
+void SettingsWindow::SaveSection(SettingsSection section) {
+	// 変わっていないページは書かない（ファイルの日付を変えない）
+	GlobalVariables* gv = GlobalVariables::GetInstance();
+	for (const std::string& name : gv->GetGroupNames(section)) {
+		if (gv->IsGroupDirty(name)) {
+			gv->SaveGroup(name);
+		}
+	}
+	for (const SettingsPage& page : pages_) {
+		if (page.section == section && page.isDirty()) {
+			page.save();
+		}
+	}
+}
+
+
 //=============================================================================
 // 描画
 //=============================================================================

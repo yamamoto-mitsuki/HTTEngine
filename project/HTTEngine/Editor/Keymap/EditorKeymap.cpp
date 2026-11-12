@@ -90,7 +90,7 @@ std::vector<ActionDef> MakeActionDescs() {
 	    {EditorAction::NewScene, {.name = "File.NewScene", .label = "新しいシーン", .group = "シーンのファイル", .context = kContextAnywhere,
 	                              .tooltip = "新しいシーンを作る", .defaults = {InputBinding::Key(DIK_N, Mod::Ctrl)}}},
 	    {EditorAction::SaveScene, {.name = "File.SaveScene", .label = "保存", .group = "シーンのファイル", .context = kContextAnywhere,
-	                               .tooltip = "開いているシーンを保存する（停止中だけ）", .defaults = {InputBinding::Key(DIK_S, Mod::Ctrl)}}},
+	                               .tooltip = "開いているシーン（停止中だけ）と、エディタの設定（Settings → Editor の全ページ）を保存する", .defaults = {InputBinding::Key(DIK_S, Mod::Ctrl)}}},
 	    {EditorAction::SaveSceneAs, {.name = "File.SaveSceneAs", .label = "名前を付けて保存", .group = "シーンのファイル", .context = kContextAnywhere,
 	                                 .tooltip = "開いているシーンを、別の名前で保存する", .defaults = {InputBinding::Key(DIK_S, Mod::Ctrl | Mod::Shift)}}},
 	};

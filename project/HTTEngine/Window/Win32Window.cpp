@@ -81,6 +81,12 @@ bool Win32Window::ProcessMessage() {
 	return IsWindow(hwnd_) != 0;
 }
 
+// ===== 「閉じて」を送る =====
+void Win32Window::RequestClose() const {
+	// その場で DestroyWindow しない（描いている途中のフレームで、ウィンドウが消えないように。次の ProcessMessage で WM_CLOSE を通る）
+	PostMessage(hwnd_, WM_CLOSE, 0, 0);
+}
+
 //=============================================================================
 // フルスクリーン切り替え
 //=============================================================================

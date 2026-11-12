@@ -9,6 +9,7 @@
 #include "HTTEngine/Editor/Gizmos/SceneGizmo.h"
 #include "HTTEngine/Editor/Keymap/EditorKeymap.h"
 #include "HTTEngine/Editor/Widgets/ToolIcons.h"
+#include "HTTEngine/Editor/Windows/SceneDialogs.h"
 #include "HTTEngine/Scene/IScene.h"
 #include "HTTEngine/Scene/SceneManager.h"
 
@@ -50,7 +51,7 @@ void ControlWindow::Draw(SceneManager* sceneManager) {
 	// 1行目：左に道具、真ん中に再生、右に保存
 	DrawGizmoTools();
 	DrawPlayButtons(*sceneManager);
-	DrawSaveButton(*sceneManager);
+	DrawSaveButton();
 	// 2行目：状態とシーン
 	DrawStatus(*sceneManager);
 	ImGui::End();
@@ -151,9 +152,9 @@ void ControlWindow::DrawPlayButtons(SceneManager& sceneManager) {
 //=============================================================================
 // 右：保存
 //=============================================================================
-void ControlWindow::DrawSaveButton(SceneManager& sceneManager) {
-	const char* sceneFile = sceneManager.GetSceneFile();
-	const bool canSave = (sceneManager.GetPlayState() == PlayState::Editing) && (sceneFile != nullptr);
+void ControlWindow::DrawSaveButton() {
+	// 保存の中身（シーン＋エディタの設定）と、押せるかは SceneDialogs が決める（File → Save と同じ）
+	const bool canSave = SceneDialogs::CanSave();
 
 	// --- 右端に寄せる ---
 	const char* label = "Save";
@@ -165,15 +166,15 @@ void ControlWindow::DrawSaveButton(SceneManager& sceneManager) {
 	}
 	ImGui::BeginDisabled(!canSave);
 	if (ImGui::Button(label)) {
-		sceneManager.RequestSave();
+		SceneDialogs::RequestSave();
 	}
 	ImGui::EndDisabled();
-	ImGui::SetItemTooltip("%s。停止中だけ", EditorKeymap::WithShortcut("シーンを保存", EditorAction::SaveScene).c_str());
+	ImGui::SetItemTooltip("%s。シーンは停止中だけ", EditorKeymap::WithShortcut("シーンとエディタの設定（Scene ビューのカメラ・View・Keymap など）を保存", EditorAction::SaveScene).c_str());
 
 	// --- Ctrl+S（文字の入力中は、入力欄のほうを優先する。名前の変更中に Ctrl+S を押しても保存しない）---
 	const bool isTyping = ImGui::GetIO().WantTextInput || ImGui::IsAnyItemActive();
 	if (canSave && !isTyping && EditorKeymap::IsTriggered(EditorAction::SaveScene)) {
-		sceneManager.RequestSave();
+		SceneDialogs::RequestSave();
 	}
 }
 

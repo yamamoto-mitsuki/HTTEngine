@@ -221,6 +221,7 @@
     <ClCompile Include="HTTEngine\Editor\FrameStats.cpp" />
     <ClCompile Include="HTTEngine\Systems\EngineSystems.cpp" />
     <ClCompile Include="HTTEngine\Editor\Viewport\ViewportWindow.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Viewport\ViewSettings.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Diagnostics\D3D12ResourceLeakChecker.cpp" />
     <ClCompile Include="HTTEngine\Graphics\GPU\DirectXCommon.cpp" />
     <ClCompile Include="HTTEngine\Graphics\GPU\GpuResources.cpp" />
@@ -503,6 +504,7 @@
     <ClInclude Include="HTTEngine\Editor\FrameStats.h" />
     <ClInclude Include="HTTEngine\Systems\EngineSystems.h" />
     <ClInclude Include="HTTEngine\Editor\Viewport\ViewportWindow.h" />
+    <ClInclude Include="HTTEngine\Editor\Viewport\ViewSettings.h" />
     <ClInclude Include="HTTEngine\Graphics\Diagnostics\D3D12ResourceLeakChecker.h" />
     <ClInclude Include="HTTEngine\Graphics\GPU\DirectXCommon.h" />
     <ClInclude Include="HTTEngine\Graphics\GPU\GpuResources.h" />
