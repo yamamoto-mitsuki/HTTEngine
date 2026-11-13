@@ -1,4 +1,4 @@
-参照：[ModelManager.cpp](../../project/HTTEngine/Graphics/Model/ModelManager.cpp)・[AnimationPlayer.cpp](../../project/HTTEngine/Graphics/Animation/AnimationPlayer.cpp)・[23章 アニメーション](../Reference/23-Animation.md)・[glTF 2.0 の決まり（skins・nodes）](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#skins)
+参照：[ModelNodeImporter.cpp](../../project/HTTEngine/Graphics/Model/ModelNodeImporter.cpp)（このときは ModelManager.cpp の中。後で [GlbEmbeddedTexture.md](GlbEmbeddedTexture.md) で分けた）・[AnimationPlayer.cpp](../../project/HTTEngine/Graphics/Animation/AnimationPlayer.cpp)・[23章 アニメーション](../Reference/23-Animation.md)・[glTF 2.0 の決まり（skins・nodes）](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html#skins)
 
 # 同じ名前のノードがあるモデルに Animator を付けると、形がくずれる
 
@@ -40,4 +40,4 @@ assimp の骨（`aiBone`）とアニメーションのカーブ（`aiNodeAnim`�
 - Sandbox にそのモデル（TD2_2 の `OO_Frame_Remake_actions.gltf`）と Animator（Idle）を置いたシーンを一時的に作り、Scene ビューで胸・背中の羽根が付いた Idle の形で出るのを見た。骨の線も原点へ伸びない。ログに「同じ名前のノードが2つ以上あります「body」。骨とアニメーションは 7 番のノード（骨）に付けます」が1回出た。確かめた後、モデルとシーンは消した（チームのモデルなのでエンジンに入れない）。
 
 ## 残り
-- `.glb` の埋め込みテクスチャ（パスが `*0` の形）は読めず、`TextureManager::Load` の assert で止まる。直すなら `aiScene::GetEmbeddedTexture` から読む（別の作業）。
+- `.glb` の埋め込みテクスチャ（パスが `*0` の形）は読めず、`TextureManager::Load` の assert で止まる → [GlbEmbeddedTexture.md](GlbEmbeddedTexture.md) で直した。
