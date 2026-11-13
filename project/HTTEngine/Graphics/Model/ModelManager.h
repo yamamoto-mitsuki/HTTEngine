@@ -95,6 +95,9 @@ public:
 		std::vector<SubMesh> meshes;
 		std::vector<Node> nodes; // 階層構造。0番が根
 		std::vector<ImportedMaterial> materials; // 読み込んだマテリアル（メッシュが使う物だけ、ファイルの並びのまま。番号で引く）
+		// ノードの名前 → 番号（アニメーションのカーブを名前でつなぐのに使う。FindNodeIndex で引く）
+		// 同じ名前のノードが2つ以上あるときは、骨（isJoint）の方。どちらも骨・どちらも骨でないなら、先にある方
+		std::unordered_map<std::string, uint32_t> nodeIndexByName;
 	};
 
 	/// <summary>
@@ -128,6 +131,14 @@ public:
 	/// <param name="modelHandle">Loadで呼んだモデルハンドル</param>
 	/// <returns></returns>
 	static const ModelAsset* GetModelAsset(uint32_t modelHandle);
+
+	/// <summary>
+	/// ノードを名前で探す
+	/// <para>同じ名前のノードが2つ以上あるモデルでは、骨の方を返す（ModelAsset::nodeIndexByName）。
+	/// アニメーションのカーブはノードの名前しか持たないので、名前で動かす先はいつもこの1つにする</para>
+	/// </summary>
+	/// <returns>ノードの番号。無ければ kInvalidNode</returns>
+	static uint32_t FindNodeIndex(const ModelAsset& asset, const std::string& name);
 
 	/// <summary>
 	/// 読み込んだマテリアルを番号で取得
@@ -171,7 +182,8 @@ private:
 
 	/// <summary>
 	/// スキン（骨）を読む。LoadNodeの後に呼ぶ。
-	/// <para>・メッシュの骨（aiBone）の名前と同じノードに isJoint、その祖先にisSkeletonの印を付ける</para>
+	/// <para>・メッシュの骨（aiBone）の名前と同じノードに isJoint、その祖先にisSkeletonの印を付ける。
+	/// 同じ名前のノードが2つ以上あれば、スキンのあるメッシュを持つノードは骨にしない（PickJointNode）</para>
 	/// <para>・骨のノードに逆バインド行列を入れる</para>
 	/// <para>・スキンのあるメッシュに、頂点ごとの骨と重み（SubMesh::influences）を作る
 	/// </summary>

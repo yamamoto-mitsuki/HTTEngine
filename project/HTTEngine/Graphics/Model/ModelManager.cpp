@@ -276,6 +276,50 @@ void RemoveUnusedMaterials(ModelManager::ModelAsset& asset) {
 	}
 	asset.materials = std::move(usedMaterials);
 }
+
+// ===== 骨の名前のノードが2つ以上あるとき、骨にする1つを選ぶ =====
+// モデルを作るソフト（Blender など）では、オブジェクトの名前と骨の名前を別々に付けられるので、
+// 書き出すと「メッシュのオブジェクト」と「骨」が同じ名前のノードになることがある。assimp の骨（aiBone）は名前しか持たない
+// スキンのあるメッシュは骨で置かれる（ノードの行列を掛けない。MeshMatrix）ので、そのメッシュを持つノードは骨の役をしない。それを外して選ぶ
+uint32_t PickJointNode(const std::vector<uint32_t>& candidates, const ModelManager::ModelAsset& asset) {
+	// スキンのあるメッシュを持つノードか
+	const auto holdsSkinnedMesh = [&asset](uint32_t nodeIndex) {
+		return std::ranges::any_of(asset.nodes[nodeIndex].meshIndices, [&asset](uint32_t meshIndex) { return asset.meshes[meshIndex].isSkinned; });
+	};
+	// find_if_not：条件に合わない最初の物を探す（＝スキンのあるメッシュを持たない最初のノード）
+	const auto found = std::ranges::find_if_not(candidates, holdsSkinnedMesh);
+	return (found != candidates.end()) ? *found : candidates.front(); // どれも持つなら先の方
+}
+
+// ===== ノードの名前 → 番号の表を作る =====
+// LoadSkin の後に呼ぶ（同じ名前があるときに骨の印を見るので）
+void BuildNodeNameTable(ModelManager::ModelAsset& asset, const std::string& filename) {
+	asset.nodeIndexByName.clear();
+	asset.nodeIndexByName.reserve(asset.nodes.size());
+	std::vector<std::string> duplicatedNames; // 2つ以上あった名前（警告用。1つの名前は1回だけ入れる）
+	for (uint32_t nodeIndex = 0; nodeIndex < asset.nodes.size(); ++nodeIndex) {
+		const ModelManager::Node& node = asset.nodes[nodeIndex];
+		// try_emplace：まだ無い名前なら入れて inserted が true。もうあれば入れずに、入っている方を返す
+		const auto [entry, inserted] = asset.nodeIndexByName.try_emplace(node.name, nodeIndex);
+		if (inserted) {
+			continue;
+		}
+		if (std::ranges::find(duplicatedNames, node.name) == duplicatedNames.end()) {
+			duplicatedNames.push_back(node.name);
+		}
+		// 骨を優先する（アニメーションのカーブは、骨を動かす物なので）
+		if (node.isJoint && !asset.nodes[entry->second].isJoint) {
+			entry->second = nodeIndex;
+		}
+	}
+	// --- 同じ名前のノードがあることを知らせる（どれを動かすかを決めたので止めはしない）---
+	for (const std::string& name : duplicatedNames) {
+		const uint32_t chosen = asset.nodeIndexByName.at(name);
+		LogManager::Warning(std::format("{}: 同じ名前のノードが2つ以上あります「{}」。骨とアニメーションは {} 番のノード{}に付けます。"
+		                                "モデルを作ったソフトで、オブジェクトと骨に同じ名前を付けていないか確かめてください",
+		                                filename, name, chosen, asset.nodes[chosen].isJoint ? "（骨）" : ""));
+	}
+}
 } // namespace
 
 
@@ -324,6 +368,12 @@ const ModelManager::ModelAsset* ModelManager::GetModelAsset(uint32_t handle) {
 
 	LogManager::Warning("ModelAssetが見つかりませんでした");
 	return nullptr;
+}
+
+// ===== ノードを名前で探す =====
+uint32_t ModelManager::FindNodeIndex(const ModelAsset& asset, const std::string& name) {
+	const auto found = asset.nodeIndexByName.find(name);
+	return (found != asset.nodeIndexByName.end()) ? found->second : kInvalidNode;
 }
 
 // ===== 読み込んだマテリアル（番号で引く）=====
@@ -451,6 +501,8 @@ ModelManager::ModelAsset ModelManager::LoadObjFile(const std::filesystem::path& 
 	LoadNode(scene->mRootNode, kInvalidNode, MakeIdentity4x4(), modelAsset);
 	// スキン（骨の印・逆バインド行列・頂点ごとの骨と重み）
 	LoadSkin(scene, modelAsset);
+	// ノードの名前 → 番号の表（アニメーションのカーブを名前でつなぐ。骨の印を見るので LoadSkin の後）
+	BuildNodeNameTable(modelAsset, filename);
 	return modelAsset;
 }
 
@@ -486,11 +538,11 @@ uint32_t ModelManager::LoadNode(const aiNode* node, uint32_t parentIndex, const 
 // スキン（骨）を読む
 //======================================================================================================
 void ModelManager::LoadSkin(const aiScene* scene, ModelAsset& modelAsset) {
-	// --- ノード名 → 番号の表 ---
-	std::unordered_map<std::string, uint32_t> nameToIndex;
-	nameToIndex.reserve(modelAsset.nodes.size());
+	// --- ノード名 → 番号の表（同じ名前のノードが2つ以上あることがあるので、全部持つ。選ぶのは PickJointNode）---
+	std::unordered_map<std::string, std::vector<uint32_t>> nameToIndices;
+	nameToIndices.reserve(modelAsset.nodes.size());
 	for (uint32_t nodeIndex = 0; nodeIndex < modelAsset.nodes.size(); ++nodeIndex) {
-		nameToIndex.emplace(modelAsset.nodes[nodeIndex].name, nodeIndex); // 同じ名前が2つあれば、前の方を使う
+		nameToIndices[modelAsset.nodes[nodeIndex].name].push_back(nodeIndex);
 	}
 
 	// --- メッシュごとの骨（aiBone）---
@@ -505,11 +557,11 @@ void ModelManager::LoadSkin(const aiScene* scene, ModelAsset& modelAsset) {
 
 		for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex) {
 			const aiBone* bone = mesh->mBones[boneIndex];
-			auto found = nameToIndex.find(bone->mName.C_Str());
-			if (found == nameToIndex.end()) {
+			auto found = nameToIndices.find(bone->mName.C_Str());
+			if (found == nameToIndices.end()) {
 				continue; // 骨の名前のノードがない（壊れたファイル）。この骨は使わない
 			}
-			const uint32_t jointIndex = found->second; // この骨の番号 = ノードの番号 = 行列パレットの番号
+			const uint32_t jointIndex = PickJointNode(found->second, modelAsset); // この骨の番号 = ノードの番号 = 行列パレットの番号
 			Node& joint = modelAsset.nodes[jointIndex];
 
 			// ===== 骨の印 =====

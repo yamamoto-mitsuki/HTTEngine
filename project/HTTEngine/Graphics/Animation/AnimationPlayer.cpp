@@ -150,6 +150,10 @@ void AnimationPlayer::Bind(uint32_t modelHandle) {
 	for (size_t nodeIndex = 0; nodeIndex < asset->nodes.size(); ++nodeIndex) {
 		const ModelManager::Node& node = asset->nodes[nodeIndex];
 		NodeBinding& binding = bindings_[nodeIndex];
+		// 同じ名前のノードが2つ以上あるモデルでは、カーブはモデルが決めた1つ（骨の方）だけを動かす。ほかは動かないノード
+		if (ModelManager::FindNodeIndex(*asset, node.name) != static_cast<uint32_t>(nodeIndex)) {
+			continue;
+		}
 		// ノード名でカーブを探す（無ければ動かないノード）
 		auto found = animation_->nodeAnimations.find(node.name);
 		if (found == animation_->nodeAnimations.end()) {
