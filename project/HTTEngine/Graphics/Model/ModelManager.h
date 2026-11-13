@@ -50,11 +50,12 @@ public:
 		AlphaMode alphaMode = AlphaMode::Opaque;      // 透け方（glTF の alphaMode。今は記録だけ。マテリアルの枠を作るときに Blend・切り抜きへ渡す）
 		float alphaCutoff = 0.5f;                     // Mask のときの切り抜きの値（glTF の alphaCutoff。今は記録だけ）
 		int32_t illum = 1;                            // illum: 照明モデル番号
+		// テクスチャのパス（UTF-8）。外のファイルはモデルのフォルダにつないだパス。モデルに埋め込まれた画像（.glb など）は「モデルのパス/*番号」（ファイルとしては無い。TextureManager の表の名前）
 		std::string baseColorTexturePath;             // 物の色のテクスチャ（OBJ の map_Kd・glTF の baseColorTexture）
 		std::string ambientTexFilePath;               // map_Ka: アンビエントテクスチャ
 		std::string specularTexFilePath;              // map_Ks: スペキュラテクスチャ
 		std::string bumpTexFilePath;                  // map_bump/bump: バンプマップ
-		uint32_t baseColorTextureHandle = 0;          // baseColorTexturePath を TextureManager::Load() で読んだ番号（0 はテクスチャ無し）
+		uint32_t baseColorTextureHandle = 0;          // baseColorTexturePath を TextureManager で読んだ番号（0 はテクスチャ無し。埋め込みの画像が読めなかったときも 0）
 	};
 
 	// ===== メッシュデータ（1つのusemtlに対応）=====
@@ -111,7 +112,8 @@ public:
 	static void Release();
 
 	/// <summary>
-	/// OBJファイルを読み込む。同じパスを渡すとキャッシュから返す
+	/// モデルファイル（OBJ・glTF・glb・FBX）を読み込む。同じパスを渡すとキャッシュから返す
+	/// <para>ファイルを読んで CPU の形にするのは ModelImporter。ここは GPU のバッファとテクスチャを作って、番号を付ける</para>
 	/// </summary>
 	/// <param name="filePath">モデルファイルのパス（例: "resources/cube/cube.obj"）。UTF-8 の文字から作るときは ToPath を通す</param>
 	/// <returns>描画時に使うモデルハンドル</returns>
@@ -170,37 +172,6 @@ private:
 	ModelManager() = default;
 
 	/// <summary>
-	/// OBJファイルを読み込む
-	/// </summary>
-	static ModelAsset LoadObjFile(const std::filesystem::path& filePath);
-
-	/// <summary>
-	/// aiNodeの木を ModelAsset::nodes（配列）へ写す。子を再帰でたどる
-	/// </summary>
-	/// <returns>追加したノードのインデックス</returns>
-	static uint32_t LoadNode(const struct aiNode* node, uint32_t parentIndex, const Matrix4x4& parentWorld, ModelAsset& modelAsset);
-
-	/// <summary>
-	/// スキン（骨）を読む。LoadNodeの後に呼ぶ。
-	/// <para>・メッシュの骨（aiBone）の名前と同じノードに isJoint、その祖先にisSkeletonの印を付ける。
-	/// 同じ名前のノードが2つ以上あれば、スキンのあるメッシュを持つノードは骨にしない（PickJointNode）</para>
-	/// <para>・骨のノードに逆バインド行列を入れる</para>
-	/// <para>・スキンのあるメッシュに、頂点ごとの骨と重み（SubMesh::influences）を作る
-	/// </summary>
-	static void LoadSkin(const struct aiScene* scene, ModelAsset& modelAsset);
-
-	/// <summary>
-	/// 頂点に骨を1本足す。空き枠に入れ、4本とも埋まっていたら一番軽い骨と入れ替える
-	/// </summary>
-	static void AddInfluence(VertexInfluence& influence, int32_t jointIndex, float weight);
-
-	/// <summary>
-	/// 重みの合計を1にそろえる
-	/// </summary>
-	/// <param name="influence"></param>
-	static void NormalizeInfluence(VertexInfluence& influence);
-
-	/// <summary>
 	/// メッシュのCPU頂点をGPU常駐バッファへ転送する（ロード時1回のみ）
 	/// </summary>
 	/// <param name="bufferName">バッファの名前の頭（「ファイル名/マテリアル名」。PIX などで見分ける）</param>
@@ -212,4 +183,4 @@ private:
 	std::unordered_map<uint32_t, ModelAsset> models_;        // キー → ModelAsset
 	std::unordered_map<std::string, uint32_t> pathToHandle_; // ファイルパス → キー（重複防止）
 	uint32_t modelsKey_ = 1;
-};
+};

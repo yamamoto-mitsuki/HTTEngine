@@ -231,7 +231,10 @@
     <ClCompile Include="HTTEngine\Graphics\IBL\IBLBaker.cpp" />
     <ClCompile Include="HTTEngine\Graphics\IBL\IBLEnvironment.cpp" />
     <ClCompile Include="HTTEngine\Graphics\IBL\PrefilterPass.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Model\ModelImporter.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Model\ModelManager.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Model\ModelMaterialImporter.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Model\ModelNodeImporter.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Pipeline\PSOManager.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Pipeline\RenderStates.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Pipeline\RootSignatureManager.cpp" />
@@ -516,7 +519,10 @@
     <ClInclude Include="HTTEngine\Graphics\IBL\IBLEnvironment.h" />
     <ClInclude Include="HTTEngine\Graphics\IBL\IBLIncludes.h" />
     <ClInclude Include="HTTEngine\Graphics\IBL\PrefilterPass.h" />
+    <ClInclude Include="HTTEngine\Graphics\Model\ModelImporter.h" />
     <ClInclude Include="HTTEngine\Graphics\Model\ModelManager.h" />
+    <ClInclude Include="HTTEngine\Graphics\Model\ModelMaterialImporter.h" />
+    <ClInclude Include="HTTEngine\Graphics\Model\ModelNodeImporter.h" />
     <ClInclude Include="HTTEngine\Graphics\Pipeline\PSOManager.h" />
     <ClInclude Include="HTTEngine\Graphics\Pipeline\RenderStates.h" />
     <ClInclude Include="HTTEngine\Graphics\Pipeline\RootSignatureManager.h" />

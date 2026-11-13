@@ -1,0 +1,80 @@
+{
+	"version": 5,
+	"entities": [
+		{
+			"id": 1,
+			"name": "Main Camera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.0, -30.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Camera": {
+					"fovY": 25.0,
+					"nearZ": 0.1,
+					"farZ": 1000.0,
+					"priority": 0
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "SimpleSkin gltf",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-4.0, -3.0, 0.0],
+					"rotation": [0.0, 180.0, 0.0],
+					"scale": [2.0, 2.0, 2.0]
+				},
+				"Animator": {
+					"enabled": true,
+					"animation": "HTTEngine/Resources/Model/simpleSkin/simpleSkin.gltf",
+					"clip": "Anim_0",
+					"speed": 1.0,
+					"loop": true,
+					"playOnStart": true,
+					"previewTime": 1.0
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "HTTEngine/Resources/Model/simpleSkin/simpleSkin.gltf",
+					"texture": "",
+					"shadingType": "Unlit"
+				}
+			}
+		},
+		{
+			"id": 3,
+			"name": "SimpleSkin glb",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-1.0, -3.0, 0.0],
+					"rotation": [0.0, 180.0, 0.0],
+					"scale": [2.0, 2.0, 2.0]
+				},
+				"Animator": {
+					"enabled": true,
+					"animation": "resources/Model/EmbeddedTexture/SimpleSkin.glb",
+					"clip": "Anim_0",
+					"speed": 1.0,
+					"loop": true,
+					"playOnStart": true,
+					"previewTime": 1.0
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/EmbeddedTexture/SimpleSkin.glb",
+					"texture": "",
+					"shadingType": "Unlit"
+				}
+			}
+		}
+	]
+}

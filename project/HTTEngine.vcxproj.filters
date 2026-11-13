@@ -567,7 +567,16 @@
     <ClCompile Include="HTTEngine\Graphics\Material\MaterialManager.cpp">
       <Filter>HTTEngine\Graphics\Material</Filter>
     </ClCompile>
+    <ClCompile Include="HTTEngine\Graphics\Model\ModelImporter.cpp">
+      <Filter>HTTEngine\Graphics\Model</Filter>
+    </ClCompile>
     <ClCompile Include="HTTEngine\Graphics\Model\ModelManager.cpp">
+      <Filter>HTTEngine\Graphics\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="HTTEngine\Graphics\Model\ModelMaterialImporter.cpp">
+      <Filter>HTTEngine\Graphics\Model</Filter>
+    </ClCompile>
+    <ClCompile Include="HTTEngine\Graphics\Model\ModelNodeImporter.cpp">
       <Filter>HTTEngine\Graphics\Model</Filter>
     </ClCompile>
     <ClCompile Include="HTTEngine\Graphics\Pipeline\PSOManager.cpp">
@@ -1394,7 +1403,16 @@
     <ClInclude Include="HTTEngine\Graphics\Material\MaterialManager.h">
       <Filter>HTTEngine\Graphics\Material</Filter>
     </ClInclude>
+    <ClInclude Include="HTTEngine\Graphics\Model\ModelImporter.h">
+      <Filter>HTTEngine\Graphics\Model</Filter>
+    </ClInclude>
     <ClInclude Include="HTTEngine\Graphics\Model\ModelManager.h">
+      <Filter>HTTEngine\Graphics\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Graphics\Model\ModelMaterialImporter.h">
+      <Filter>HTTEngine\Graphics\Model</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Graphics\Model\ModelNodeImporter.h">
       <Filter>HTTEngine\Graphics\Model</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Graphics\Pipeline\PSOManager.h">

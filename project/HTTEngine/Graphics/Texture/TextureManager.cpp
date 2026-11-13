@@ -1,6 +1,8 @@
 #include "HTTEngine/Graphics/Texture/TextureManager.h"
 
 #include <format>
+#include <cstring>
+#include <optional>
 
 #include <externals/DirectXTex/d3dx12.h>
 
@@ -43,20 +45,78 @@ void TextureManager::Release() {
 //=============================================================================
 // 読み込み
 //=============================================================================
+// ===== ファイルから =====
 uint32_t TextureManager::Load(const std::filesystem::path& filePath) {
 	HTT_ASSERT_MSG(instance_, "Initializeを先に呼んでください");
 	// すでに読み込まれているか確認
 	const std::string key = ToPathKey(filePath);
-	auto it = instance_->textures_.find(key);
-	if (it != instance_->textures_.end()) {
-		return it->second.srvIndex;
+	if (const std::optional<uint32_t> loaded = FindLoaded(key)) {
+		return *loaded;
 	}
 	// ファイルを読む
-	DirectX::ScratchImage mipImages = LoadTextureFromFile(filePath);
+	return Register(key, LoadTextureFromFile(filePath));
+}
+
+// ===== 画像ファイルの中身（メモリ）から =====
+uint32_t TextureManager::LoadFromMemory(const std::string& key, std::span<const uint8_t> fileData) {
+	HTT_ASSERT_MSG(instance_, "Initializeを先に呼んでください");
+	// 名前はファイルのパスと同じ形にそろえる（Load・MovedPath と同じ比べ方になるように）
+	const std::string normalizedKey = ToPathKey(ToPath(key));
+	if (const std::optional<uint32_t> loaded = FindLoaded(normalizedKey)) {
+		return *loaded;
+	}
+	// --- 解く（WIC が読める形：png・jpg・bmp・gif・tiff など。ファイルからと同じく sRGB として読む）---
+	DirectX::ScratchImage image{};
+	const HRESULT hr = DirectX::LoadFromWICMemory(fileData.data(), fileData.size(), DirectX::WIC_FLAGS_FORCE_SRGB, nullptr, image);
+	if (FAILED(hr)) {
+		// モデルに埋め込まれた画像が読めない形（WIC に無い形）でも、モデルは描けるように止めない
+		LogManager::Error(std::format("画像を読めませんでした（png・jpg などの形か確かめてください）: {} (0x{:08X})", normalizedKey, static_cast<uint32_t>(hr)));
+		return 0;
+	}
+	return Register(normalizedKey, MakeMipMaps(std::move(image), normalizedKey));
+}
+
+// ===== 並んだ画素から =====
+uint32_t TextureManager::LoadFromPixels(const std::string& key, uint32_t width, uint32_t height, std::span<const uint8_t> bgraPixels) {
+	HTT_ASSERT_MSG(instance_, "Initializeを先に呼んでください");
+	const std::string normalizedKey = ToPathKey(ToPath(key));
+	if (const std::optional<uint32_t> loaded = FindLoaded(normalizedKey)) {
+		return *loaded;
+	}
+	// --- 数が合わない物は作らない ---
+	constexpr size_t kBytesPerPixel = 4; // B・G・R・A 各8ビット
+	if (width == 0 || height == 0 || bgraPixels.size() != static_cast<size_t>(width) * height * kBytesPerPixel) {
+		LogManager::Error(std::format("画素の数が大きさと合いません: {} ({}x{}・{} バイト)", normalizedKey, width, height, bgraPixels.size()));
+		return 0;
+	}
+	// --- 画素を写す（ファイルからと同じく sRGB として扱う）---
+	DirectX::ScratchImage image{};
+	HRESULT hr = image.Initialize2D(DXGI_FORMAT_B8G8R8A8_UNORM_SRGB, width, height, 1, 1);
+	HTT_ASSERT_MSG(SUCCEEDED(hr), "画像の場所を作れませんでした");
+	const DirectX::Image* destination = image.GetImage(0, 0, 0);
+	const size_t rowBytes = static_cast<size_t>(width) * kBytesPerPixel;
+	// 1行ずつ写す（ScratchImage の行は、後ろに詰め物が付くことがあるので rowPitch ずつ進める）
+	for (uint32_t y = 0; y < height; ++y) {
+		std::memcpy(destination->pixels + destination->rowPitch * y, bgraPixels.data() + rowBytes * y, rowBytes);
+	}
+	return Register(normalizedKey, MakeMipMaps(std::move(image), normalizedKey));
+}
+
+// ===== 読み込み済みなら番号を返す（無ければ空）=====
+std::optional<uint32_t> TextureManager::FindLoaded(const std::string& key) {
+	auto it = instance_->textures_.find(key);
+	if (it == instance_->textures_.end()) {
+		return std::nullopt;
+	}
+	return it->second.srvIndex;
+}
+
+// ===== GPU に送って SRV を作り、表に足す =====
+uint32_t TextureManager::Register(const std::string& key, const DirectX::ScratchImage& mipImages) {
 	const DirectX::TexMetadata& metadata = mipImages.GetMetadata();
 	// TextureResourceを作る
 	Microsoft::WRL::ComPtr<ID3D12Resource> resource = CreateTextureResource(metadata);
-	resource->SetName(filePath.c_str()); // 名前をつける
+	resource->SetName(ConvertString(key).c_str()); // 名前をつける（PIX などで見分ける）
 	// IntermediateResourceを作り、コマンドを積む
 	Microsoft::WRL::ComPtr<ID3D12Resource> intermediateResource = UploadTextureData(resource.Get(), mipImages);
 	// CommandQueueでコピーコマンドを実行する
@@ -98,19 +158,24 @@ DirectX::ScratchImage TextureManager::LoadTextureFromFile(const std::filesystem:
 		LogManager::Error(std::format("Failed to load texture from file: {}", ToUtf8(filePath)));
 		HTT_ASSERT_MSG(SUCCEEDED(hr), "テクスチャの読み込みに失敗しました");
 	}
+	return MakeMipMaps(std::move(image), ToUtf8(filePath));
+}
 
+//=============================================================================
+// ミップマップを作る
+//=============================================================================
+DirectX::ScratchImage TextureManager::MakeMipMaps(DirectX::ScratchImage image, const std::string& name) {
 	// 1x1 の画像はこれ以上小さくできない（GenerateMipMaps は E_INVALIDARG を返す）ので、ミップマップを作らずにそのまま使う
 	if (image.GetMetadata().width == 1 && image.GetMetadata().height == 1) {
 		return image;
 	}
 	// ミップマップの生成
 	DirectX::ScratchImage mipImages{};
-	hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
+	const HRESULT hr = DirectX::GenerateMipMaps(image.GetImages(), image.GetImageCount(), image.GetMetadata(), DirectX::TEX_FILTER_SRGB, 0, mipImages);
 	if (FAILED(hr)) {
-		LogManager::Error(std::format("Failed to load texture from file: {}", ToUtf8(filePath)));
+		LogManager::Error(std::format("Failed to generate mipmaps: {}", name));
 		HTT_ASSERT_MSG(false, "ミップマップの生成に失敗しました");
 	}
-
 	return mipImages;
 }
 
@@ -243,4 +308,4 @@ Vector2 TextureManager::GetTextureSize(uint32_t srvIndex) {
 	}
 	D3D12_RESOURCE_DESC desc = data->resource->GetDesc();
 	return {static_cast<float>(desc.Width), static_cast<float>(desc.Height)};
-}
+}

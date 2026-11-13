@@ -22,6 +22,9 @@ EntityManager::RequestAdd<ModelRendererComponent>(ball, renderer);
 
 あとは `ModelRenderSystem` が毎フレーム描く。**ゲーム側で `Renderer::DrawModel` を呼ぶ必要はない。** 保存するとモデルはパスで書かれ、次の起動で読み直される。
 
+- 読めるファイル：`.obj`・`.gltf`・`.glb`・`.fbx`。テクスチャは、外の画像ファイル（モデルのフォルダからの相対）でも、ファイルに埋め込まれた画像（`.glb`・FBX の埋め込み・`.gltf` の data URI）でもよい。埋め込みの画像は png・jpg など WIC が読める形だけ（読めない形はログに出て、テクスチャ無しで描く）。
+- 埋め込みの画像は、Inspector の Model Materials の一覧（マウスを乗せたとき）やログに「モデルのパス/*番号」（`resources/Model/Robot.glb/*0`）の名前で出る。ファイルとしては無いので、Model Renderer の Texture の欄からは選べない。
+
 | 項目 | 意味 |
 |---|---|
 | `modelHandle` | `ModelManager::Load` の戻り値。0は未選択 |
