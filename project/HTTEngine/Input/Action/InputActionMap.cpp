@@ -20,7 +20,91 @@ constexpr int kFileVersion = 1;         // 上書きのファイルの形の版�
 bool IsNegative(InputDirection direction) { return direction == InputDirection::NegativeX || direction == InputDirection::NegativeY; }
 // 向きが Y か（+Y・-Y）
 bool IsVertical(InputDirection direction) { return direction == InputDirection::PositiveY || direction == InputDirection::NegativeY; }
+
+// 種類ごとの行の並び
+constexpr InputBindingRow kButtonRows[] = {InputBindingRow::All};
+constexpr InputBindingRow kValueRows[] = {InputBindingRow::Positive, InputBindingRow::Negative, InputBindingRow::Axis};
+constexpr InputBindingRow kVector2Rows[] = {InputBindingRow::Up, InputBindingRow::Down, InputBindingRow::Left, InputBindingRow::Right, InputBindingRow::Horizontal, InputBindingRow::Vertical};
+// 軸の入力（マウスの動き・ホイール・パッドの軸）
+constexpr InputDeviceMask kAxisDevices = InputDeviceMask::MouseMove | InputDeviceMask::MouseWheel | InputDeviceMask::PadAxis;
 } // namespace
+
+
+//=============================================================================
+// 割り当ての行
+//=============================================================================
+// ===== 種類ごとの行の並び =====
+std::span<const InputBindingRow> InputBindingRows::Get(InputActionType type) {
+	switch (type) {
+	case InputActionType::Button:
+		return kButtonRows;
+	case InputActionType::Value:
+		return kValueRows;
+	case InputActionType::Vector2:
+		return kVector2Rows;
+	}
+	return kButtonRows;
+}
+
+// ===== 割り当てがどの行か =====
+InputBindingRow InputBindingRows::Of(InputActionType type, const InputBinding& binding) {
+	const bool isAxis = binding.control.IsAxis();
+	switch (type) {
+	case InputActionType::Button:
+		return InputBindingRow::All;
+	case InputActionType::Value:
+		if (isAxis) {
+			return InputBindingRow::Axis;
+		}
+		return IsNegative(binding.direction) ? InputBindingRow::Negative : InputBindingRow::Positive;
+	case InputActionType::Vector2:
+		// 軸は、どちらの向き（X か Y）に足すかで横・縦。-X・-Y は「反対に足す軸」で、同じ行に入る
+		if (isAxis) {
+			return IsVertical(binding.direction) ? InputBindingRow::Vertical : InputBindingRow::Horizontal;
+		}
+		switch (binding.direction) {
+		case InputDirection::PositiveY:
+			return InputBindingRow::Up;
+		case InputDirection::NegativeY:
+			return InputBindingRow::Down;
+		case InputDirection::NegativeX:
+			return InputBindingRow::Left;
+		case InputDirection::PositiveX:
+			return InputBindingRow::Right;
+		}
+		return InputBindingRow::Right;
+	}
+	return InputBindingRow::All;
+}
+
+// ===== 行に新しく足す割り当ての向き =====
+InputDirection InputBindingRows::DirectionOf(InputBindingRow row) {
+	switch (row) {
+	case InputBindingRow::Negative:
+	case InputBindingRow::Left:
+		return InputDirection::NegativeX;
+	case InputBindingRow::Up:
+	case InputBindingRow::Vertical:
+		return InputDirection::PositiveY;
+	case InputBindingRow::Down:
+		return InputDirection::NegativeY;
+	default:
+		return InputDirection::PositiveX; // All・Positive・Axis・Right・Horizontal
+	}
+}
+
+// ===== 行に入れてよい入力 =====
+InputDeviceMask InputBindingRows::DevicesOf(InputBindingRow row) {
+	if (row == InputBindingRow::All) {
+		return InputDeviceMask::All;
+	}
+	return IsAxisRow(row) ? kAxisDevices : InputDeviceMask::Buttons;
+}
+
+// ===== 軸の行か =====
+bool InputBindingRows::IsAxisRow(InputBindingRow row) {
+	return row == InputBindingRow::Axis || row == InputBindingRow::Horizontal || row == InputBindingRow::Vertical;
+}
 
 
 //=============================================================================
@@ -37,22 +121,20 @@ InputActionId InputActionMap::AddAction(InputActionDesc desc) {
 		LogManager::Warning("[InputActionMap] 同じ名前の Action がもうあります: " + desc.name);
 		return existing;
 	}
+	const uint32_t index = static_cast<uint32_t>(actions_.size());
+	indexByName_.emplace(desc.name, index);
 	Action action;
 	action.bindings = desc.defaults;
 	action.saved = desc.defaults;
 	action.desc = std::move(desc);
 	actions_.push_back(std::move(action));
-	return {static_cast<uint32_t>(actions_.size() - 1)};
+	return {index};
 }
 
 // ===== 名前から番号 =====
 InputActionId InputActionMap::Find(std::string_view name) const {
-	for (size_t i = 0; i < actions_.size(); ++i) {
-		if (actions_[i].desc.name == name) {
-			return {static_cast<uint32_t>(i)};
-		}
-	}
-	return {};
+	const auto it = indexByName_.find(name);
+	return (it != indexByName_.end()) ? InputActionId{it->second} : InputActionId{};
 }
 
 const InputActionDesc& InputActionMap::GetDesc(InputActionId id) const {
@@ -335,7 +417,8 @@ std::string InputActionMap::GetDisplayText(InputActionId id) const {
 		return {};
 	}
 	for (const InputBinding& binding : action->bindings) {
-		if (!binding.IsEmpty()) {
+		// 表で読まない入力（2P の表のキーなど）は出さない
+		if (!binding.IsEmpty() && Contains(allowedDevices_, binding.control.device)) {
 			return InputBindingText::ToDisplayString(binding);
 		}
 	}

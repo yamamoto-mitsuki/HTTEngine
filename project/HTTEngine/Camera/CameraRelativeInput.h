@@ -17,7 +17,7 @@ public:
 	/// 2D の入力 → ワールドの地面の向き（Y は 0。長さは入力の長さのまま。スティックを半分倒せば半分）
 	/// <para>毎フレーム1回呼ぶ（押しているか・カメラが変わったかを、呼ぶたびに前に呼んだときと比べる）</para>
 	/// </summary>
-	/// <param name="input">x：右が＋、y：奥（上）が＋。InputManager::GetMoveAxis の値</param>
+	/// <param name="input">x：右が＋、y：奥（上）が＋。GameInput::GetVector2("Move") の値</param>
 	Vector3 ToWorld(const Vector2& input);
 
 	/// <summary>

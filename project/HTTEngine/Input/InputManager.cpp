@@ -225,37 +225,6 @@ void InputManager::SetTriggerReleaseThreshold(float t) { GetInstance()->gamepad_
 float InputManager::GetTriggerPressThreshold() { return GetInstance()->gamepad_.GetTriggerPressThreshold(); }
 float InputManager::GetTriggerReleaseThreshold() { return GetInstance()->gamepad_.GetTriggerReleaseThreshold(); }
 
-// ---- まとめて読む ----
-Vector2 InputManager::GetMoveAxis(bool useController) {
-	// キーボード：押している向きを足す（反対の向きを同時に押すと、打ち消し合って0）
-	Vector2 move = {0.0f, 0.0f};
-	if (IsKeyPressed(DIK_D) || IsKeyPressed(DIK_RIGHT)) {
-		move.x += 1.0f;
-	}
-	if (IsKeyPressed(DIK_A) || IsKeyPressed(DIK_LEFT)) {
-		move.x -= 1.0f;
-	}
-	if (IsKeyPressed(DIK_W) || IsKeyPressed(DIK_UP)) {
-		move.y += 1.0f;
-	}
-	if (IsKeyPressed(DIK_S) || IsKeyPressed(DIK_DOWN)) {
-		move.y -= 1.0f;
-	}
-
-	// パッド：左スティック（1つ目のコントローラー。デッドゾーン処理済み）
-	if (useController) {
-		move.x += GetLeftStickX();
-		move.y += GetLeftStickY();
-	}
-
-	// 斜めでも速くならないように、長さを1までにする（キー2つだと長さが√2＝約1.41になる）
-	const float length = Length(move);
-	if (length > 1.0f) {
-		move /= length;
-	}
-	return move;
-}
-
 // ============================================================
 // 内部ヘルパー
 // ============================================================

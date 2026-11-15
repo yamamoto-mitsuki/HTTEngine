@@ -1,7 +1,6 @@
 #include "PlayerController.h"
 
 #include <HTTEngine/Components/Physics/CharacterControllerComponent.h>
-#include <HTTEngine/Input/InputManager.h>
 #include <HTTEngine/Math/MathUtility.h>
 
 SCRIPT(PlayerController, "Player"); // クラス名が保存の名前なので後から変えない
@@ -29,16 +28,16 @@ void PlayerController::Update() {
 		return; // Character Controller が付いていない
 	}
 
-	// --- 歩く：WASD・矢印キー・左スティック（-1〜1）を、カメラから見た地面の向きへ直す ---
+	// --- 歩く：Action の Move（WASD・矢印キー・左スティック。-1〜1）を、カメラから見た地面の向きへ直す ---
 	// velocity の X・Z は毎フレーム書く（離すと 0 になって止まる）
-	const Vector3 move = moveInput_.ToWorld(InputManager::GetMoveAxis());
+	// 割り当ては Parameters/Input/InputActions.json（Settings → Project → Input）
+	const Vector3 move = moveInput_.ToWorld(GameInput::GetVector2("Move"));
 	controller->velocity.x = move.x * moveSpeed_;
 	controller->velocity.z = move.z * moveSpeed_;
 
 	// --- 跳ぶ：地面にいて、押した瞬間だけ ---
 	// velocity の Y は跳ぶときだけ書く（あとは重力に任せる）
-	const bool isJumpTriggered = InputManager::IsKeyTriggered(DIK_SPACE) || InputManager::IsButtonTriggered(GamepadButton::A);
-	if (controller->IsGrounded() && isJumpTriggered) {
+	if (controller->IsGrounded() && GameInput::IsTriggered("Jump")) {
 		controller->velocity.y = jumpSpeed_;
 	}
 

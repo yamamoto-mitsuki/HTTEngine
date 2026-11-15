@@ -6,6 +6,7 @@
 #include "HTTEngine/Diagnostics/LogManager.h"
 #include "HTTEngine/String/ConvertString.h"
 #include "HTTEngine/Input/InputManager.h"
+#include "HTTEngine/Input/Action/GameInput.h"
 #include "HTTEngine/Editor/Viewport/EditorOverlay.h"
 #include "HTTEngine/Editor/Viewport/ViewportWindow.h"
 #include "HTTEngine/Scene/IScene.h"
@@ -23,6 +24,7 @@
 #include "HTTEngine/Scene/SceneManager.h"
 #ifdef USE_IMGUI
 #include "HTTEngine/Editor/Keymap/EditorKeymap.h"
+#include "HTTEngine/Editor/Keymap/GameInputPage.h"
 #include "HTTEngine/Editor/Windows/ControlWindow.h"
 #endif
 
@@ -112,6 +114,11 @@ void WindowManager::UpdateAll() {
 	for (WindowSet& w : windows_) {
 		bool isFocused = (focused == w.window->GetHWND());
 		InputManager::SetActiveWindow(isFocused ? w.window->GetHWND() : nullptr);
+		// ゲームの操作の割り当てを読む（ゲームの画面があるメインのウィンドウの番に、1フレームに1回）
+		// シーンの Update・Script・SYSTEM より前（どれから聞いても同じ値）。停止中も呼ぶ（Play を押した最初のフレームに、押していたキーを「押した瞬間」にしない）
+		if (&w == &windows_.front()) {
+			GameInput::Update();
+		}
 		// シーンマネージャの基底クラス
 		if (w.sceneManager) {
 			w.sceneManager->Update();
@@ -119,8 +126,10 @@ void WindowManager::UpdateAll() {
 
 		#ifdef USE_IMGUI
 		// エディタの操作の割り当てを読む（ImGui のウィンドウは1つだけなので、1フレームに1回。このウィンドウが手前かを見るので、SetActiveWindow の後）
+		// Settings → Project → Input の表の、割り当てを拾う係も動かす（入力を読めるのは、UpdateAll の中だけ）
 		if (w.window->GetWindowConfig().isImGui) {
 			EditorKeymap::Update();
+			GameInputPage::Update();
 		}
 		if (w.editor) {
 			w.editor->Update(); // デバッグカメラ更新

@@ -9,6 +9,21 @@ namespace {
 constexpr float kAxisThreshold = 0.5f;       // スティック・トリガーを、この量より倒したら拾う
 constexpr float kMouseMoveThreshold = 40.0f; // マウスを1フレームにこの数より動かしたら拾う（ボタンへ動かす途中で拾わないように大きめ）
 constexpr InputControl kCancelKey = {InputDevice::Key, DIK_ESCAPE}; // やめるキー
+
+// 反対の向き（+X ⇔ -X、+Y ⇔ -Y）
+InputDirection Reverse(InputDirection direction) {
+	switch (direction) {
+	case InputDirection::PositiveX:
+		return InputDirection::NegativeX;
+	case InputDirection::NegativeX:
+		return InputDirection::PositiveX;
+	case InputDirection::PositiveY:
+		return InputDirection::NegativeY;
+	case InputDirection::NegativeY:
+		return InputDirection::PositiveY;
+	}
+	return direction;
+}
 } // namespace
 
 
@@ -16,14 +31,14 @@ constexpr InputControl kCancelKey = {InputDevice::Key, DIK_ESCAPE}; // やめる
 // 始める・やめる
 //=============================================================================
 // ===== 始める =====
-void InputRebinder::Start(const InputActionMap& map, InputActionId id, int index) {
+void InputRebinder::Start(const InputActionMap& map, InputActionId id, int index, InputBindingRow row) {
 	map_ = &map;
 	action_ = id;
 	index_ = index;
-	accepts_ = map.GetAcceptedDevices(id);
-	// 向きは元の割り当てから引き継ぐ（Vector2 の「上」の割り当てを入れ替えたら、新しいキーも「上」）
-	const std::vector<InputBinding>& bindings = map.GetBindings(id);
-	direction_ = (index >= 0 && index < static_cast<int>(bindings.size())) ? bindings[index].direction : InputDirection::PositiveX;
+	row_ = row;
+	// 拾ってよい入力と向きは、行で決める（Vector2 の「上」の行なら、キー・ボタンだけで、向きは +Y）
+	accepts_ = map.GetAcceptedDevices(id) & InputBindingRows::DevicesOf(row);
+	direction_ = InputBindingRows::DirectionOf(row);
 	isFirstUpdate_ = true;
 	pendingModifierKey_.reset();
 	pendingModifiers_ = InputModifiers::None;
@@ -94,9 +109,15 @@ InputRebinder::Result InputRebinder::Update() {
 				continue;
 			}
 			InputBinding binding = {control, held, direction_};
-			// ボタンの Action に軸（ホイールなど）を割り当てるときは、動かした向きを使う（ホイールの下で「次へ」など）
-			if (isButtonAction && control.IsAxis()) {
-				binding.direction = (InputActionMap::ReadControl(control, map_->GetGate(), map_->GetGamepadIndex()) < 0.0f) ? InputDirection::NegativeX : InputDirection::PositiveX;
+			if (control.IsAxis()) {
+				const bool isMovedNegative = InputActionMap::ReadControl(control, map_->GetGate(), map_->GetGamepadIndex()) < 0.0f;
+				if (isButtonAction) {
+					// ボタンの Action に軸（ホイールなど）を割り当てるときは、動かした向きを使う（ホイールの下で「次へ」など）
+					binding.direction = isMovedNegative ? InputDirection::NegativeX : InputDirection::PositiveX;
+				} else if (isMovedNegative) {
+					// 軸の行で − の側へ動かした：反対に足す（動かした向きが、その行の向きになる）
+					binding.direction = Reverse(direction_);
+				}
 			}
 			Finish(binding);
 			return Result::Captured;

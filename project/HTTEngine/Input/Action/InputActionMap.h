@@ -1,8 +1,11 @@
 #pragma once
 #include <cstdint>
 #include <filesystem>
+#include <functional>
+#include <span>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 #include "HTTEngine/Input/InputManager.h"
@@ -60,7 +63,43 @@ struct InputActionDesc {
 	bool clampLength = false;                        // Vector2 の長さを 1 までにする（キーの斜め・スティックの移動。マウスの動きには付けない）
 	bool isFixed = false;                            // 割り当てを変えられない（表に出してぶつかりを知らせるだけ。ほかの所でもその入力を決め打ちで使っている物）
 	std::vector<InputBinding> defaults;              // 既定の割り当て（空なら、割り当てなし）
+
+	bool operator==(const InputActionDesc&) const = default;
 };
+
+/// <summary>
+/// 割り当ての行（画面で割り当てを並べるときの1行。Value・Vector2 は、向きごとのキー・ボタンと、軸に分けて見せる）
+/// <para>Vector2 なら 上・下・左・右（キー・ボタン）と 横・縦（スティック・マウスの動き）。どの行かは、割り当ての入力の種類と向きで決まる（InputBindingRows::Of）</para>
+/// <para>中の持ち方は変えない（割り当ては Action ごとの平らな一覧＋向き）。行は、見せるときと足すときに使うだけ</para>
+/// </summary>
+enum class InputBindingRow : uint8_t {
+	All,        // Button：全部（向きは見ない）
+	Positive,   // Value：押すと＋（キー・ボタン）
+	Negative,   // Value：押すと−（キー・ボタン）
+	Axis,       // Value：軸（ホイール・トリガー・スティック。そのまま足す）
+	Up,         // Vector2：押すと上（キー・ボタン）
+	Down,       // Vector2：押すと下
+	Left,       // Vector2：押すと左
+	Right,      // Vector2：押すと右
+	Horizontal, // Vector2：横の軸（スティック・マウスの動き。＋に倒すと右）
+	Vertical,   // Vector2：縦の軸（＋に倒すと上）
+};
+
+/// <summary>
+/// 割り当ての行の決まり（エディタの表と、ゲームのキーコンフィグの画面の両方で使う）
+/// </summary>
+namespace InputBindingRows {
+// 種類ごとの行の並び（Button は All だけ、Value は ＋・−・軸、Vector2 は 上・下・左・右・横・縦）
+std::span<const InputBindingRow> Get(InputActionType type);
+// 割り当てがどの行か（キー・ボタンは向き、軸は横か縦か）
+InputBindingRow Of(InputActionType type, const InputBinding& binding);
+// 行に新しく足す割り当ての向き（軸の行は、＋に倒したときの向き。−に倒して拾ったら、InputRebinder が反対にする）
+InputDirection DirectionOf(InputBindingRow row);
+// 行に入れてよい入力（向きの行はキー・ボタンだけ、軸の行は軸だけ、All は全部）
+InputDeviceMask DevicesOf(InputBindingRow row);
+// 軸の行か（Axis・Horizontal・Vertical）
+bool IsAxisRow(InputBindingRow row);
+} // namespace InputBindingRows
 
 /// <summary>
 /// 表の中の Action の番号（足した順。Find で名前から引く）
@@ -125,7 +164,7 @@ public:
 	bool IsReleased(InputActionId id) const;  // 離した瞬間
 	float GetValue(InputActionId id) const;   // Value の量（Button は 0 か 1、Vector2 は長さ）
 	Vector2 GetVector2(InputActionId id) const; // Vector2 の量（Button・Value は x だけ）
-	// 名前でも聞ける（毎回名前を探すので、毎フレームたくさん聞くなら Find で番号にしておく）
+	// 名前でも聞ける（名前の表で引くので、毎フレーム何十回聞いても軽い。知らない名前なら false・0）
 	bool IsPressed(std::string_view name) const { return IsPressed(Find(name)); }
 	bool IsTriggered(std::string_view name) const { return IsTriggered(Find(name)); }
 	bool IsReleased(std::string_view name) const { return IsReleased(Find(name)); }
@@ -146,7 +185,7 @@ public:
 	void ResetToDefault(InputActionId id);
 	void ResetAllToDefault();
 	bool IsDefault(InputActionId id) const;
-	// 画面に出す文字（1つ目の割り当て。割り当てが無ければ空）。メニューのショートカットの欄などに
+	// 画面に出す文字（この表で読む入力の、1つ目の割り当て。割り当てが無ければ空）。メニューのショートカットの欄などに
 	std::string GetDisplayText(InputActionId id) const;
 
 	//=========================================================================
@@ -197,7 +236,14 @@ private:
 	// 聞いてよい状態か（止めている・離すのを待っている間は false）
 	bool IsActive(const Action& action) const { return isEnabled_ && !action.waitRelease; }
 
+	// 名前の表のハッシュ（std::string_view のまま引けるように。is_transparent があると、find に string を作らずに渡せる）
+	struct NameHash {
+		using is_transparent = void;
+		size_t operator()(std::string_view name) const noexcept { return std::hash<std::string_view>{}(name); }
+	};
+
 	std::vector<Action> actions_;
+	std::unordered_map<std::string, uint32_t, NameHash, std::equal_to<>> indexByName_; // 名前 → actions_ の番号（名前で聞くのを、毎フレーム何十回でも軽くする）
 	InputGate gate_;
 	InputModifierMatch modifierMatch_;
 	InputDeviceMask allowedDevices_;

@@ -18,6 +18,7 @@
 #include "HTTEngine/Systems/EngineSystems.h"
 // Input
 #include "HTTEngine/Input/InputManager.h"
+#include "HTTEngine/Input/Action/GameInput.h"
 // Math
 #include "HTTEngine/Math/MathIncludes.h"
 // Collision
@@ -111,6 +112,7 @@ void Engine::Initialize(const WindowConfig& config, SceneFactory initialScene) {
 	CameraGizmo::Initialize();
 #endif
 	EngineSystems::Initialize(); // EntityManager と全 System（Component の登録もここ）
+	GameInput::Initialize();     // ゲームの操作の割り当て（ウィンドウ・シーンを作る前。エディタの Input ページもこれを読み直す）
 
 	ShaderPackageLoader::LoadAll(ShaderPackageLoader::FindDataDir()); // .hlsl生成
 	ShaderPackageLoader::LoadProject(kProjectShaderDir);             // ゲームの resources の下の .shader（エンジンの .hlsli を include できるように、エンジンの後）

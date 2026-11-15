@@ -23,6 +23,7 @@
 #include "HTTEngine/Editor/Assets/AssetThumbnails.h"
 #include "HTTEngine/Editor/History/EditorHistory.h"
 #include "HTTEngine/Editor/Keymap/EditorKeymap.h"
+#include "HTTEngine/Editor/Keymap/GameInputPage.h"
 #include "HTTEngine/Editor/Viewport/ViewSettings.h"
 // Timeline
 #include "HTTEngine/Editor/Timeline/TimelineWindow.h"
@@ -161,6 +162,8 @@ void ImGuiManager::Initialize(Win32Window* window) {
 	InspectorWindow::Initialize();
 	// エディタの操作の割り当て（保存した人ごとの割り当てを読み、Settings に Keymap のページを足す）
 	EditorKeymap::Initialize();
+	// ゲームの操作の割り当て（Parameters/Input/InputActions.json を読み、Settings → Project に Input のページを足す）
+	GameInputPage::Initialize();
 	// View メニューの切り替え（保存した見え方を読み、Settings に View のページを足す）
 	ViewSettings::Initialize();
 	// Project ウィンドウのアイコンの画像（HTTEngine/Resources/Editor/Icons/）を読む

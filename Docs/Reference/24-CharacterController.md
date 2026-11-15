@@ -25,10 +25,10 @@ void PlayerController::Update() {
 	if (controller == nullptr) {
 		return;
 	}
-	const Vector2 move = InputManager::GetMoveAxis();
+	const Vector2 move = GameInput::GetVector2("Move"); // 割り当ては Parameters/Input/InputActions.json（11章）
 	controller->velocity.x = move.x * moveSpeed_; // X・Z は毎フレーム書く
 	controller->velocity.z = move.y * moveSpeed_;
-	if (controller->IsGrounded() && InputManager::IsKeyTriggered(DIK_SPACE)) {
+	if (controller->IsGrounded() && GameInput::IsTriggered("Jump")) {
 		controller->velocity.y = jumpSpeed_;        // Y は跳ぶときだけ書く（あとは重力に任せる）
 	}
 }

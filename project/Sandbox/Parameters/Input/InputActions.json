@@ -1,0 +1,88 @@
+{
+    "version": 1,
+    "actions": [
+        {
+            "name": "Move",
+            "label": "移動",
+            "group": "動き",
+            "context": "Gameplay",
+            "tooltip": "キャラを歩かせる（W・スティックの上＝画面の奥）",
+            "type": "Vector2",
+            "clampLength": true,
+            "bindings": [
+                "Key.W:+Y",
+                "Key.Up:+Y",
+                "Key.S:-Y",
+                "Key.Down:-Y",
+                "Key.A:-X",
+                "Key.Left:-X",
+                "Key.D",
+                "Key.Right",
+                "Pad.LeftStickX",
+                "Pad.LeftStickY:+Y"
+            ]
+        },
+        {
+            "name": "Jump",
+            "label": "ジャンプ",
+            "group": "動き",
+            "context": "Gameplay",
+            "bindings": [
+                "Key.Space",
+                "Pad.A"
+            ]
+        },
+        {
+            "name": "Menu.Open",
+            "label": "キーコンフィグを開く・閉じる",
+            "group": "メニュー",
+            "context": "Menu",
+            "fixed": true,
+            "bindings": [
+                "Key.Tab",
+                "Pad.Start"
+            ]
+        },
+        {
+            "name": "Menu.Up",
+            "label": "上の項目へ",
+            "group": "メニュー",
+            "context": "Menu",
+            "accepts": [
+                "PadAxis"
+            ],
+            "fixed": true,
+            "bindings": [
+                "Key.Up",
+                "Pad.DpadUp",
+                "Pad.LeftStickY"
+            ]
+        },
+        {
+            "name": "Menu.Down",
+            "label": "下の項目へ",
+            "group": "メニュー",
+            "context": "Menu",
+            "accepts": [
+                "PadAxis"
+            ],
+            "fixed": true,
+            "bindings": [
+                "Key.Down",
+                "Pad.DpadDown",
+                "Pad.LeftStickY:-X"
+            ]
+        },
+        {
+            "name": "Menu.Submit",
+            "label": "決定",
+            "group": "メニュー",
+            "context": "Menu",
+            "fixed": true,
+            "bindings": [
+                "Key.Enter",
+                "Pad.A"
+            ]
+        }
+    ]
+}

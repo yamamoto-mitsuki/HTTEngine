@@ -480,6 +480,9 @@
     <ClCompile Include="HTTEngine\Editor\Keymap\EditorKeymap.cpp">
       <Filter>HTTEngine\Editor\Keymap</Filter>
     </ClCompile>
+    <ClCompile Include="HTTEngine\Editor\Keymap\GameInputPage.cpp">
+      <Filter>HTTEngine\Editor\Keymap</Filter>
+    </ClCompile>
     <ClCompile Include="HTTEngine\Editor\Widgets\ToolIcons.cpp">
       <Filter>HTTEngine\Editor\Widgets</Filter>
     </ClCompile>
@@ -667,6 +670,12 @@
       <Filter>HTTEngine\Input\Action</Filter>
     </ClCompile>
     <ClCompile Include="HTTEngine\Input\Action\InputRebinder.cpp">
+      <Filter>HTTEngine\Input\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="HTTEngine\Input\Action\InputActionFile.cpp">
+      <Filter>HTTEngine\Input\Action</Filter>
+    </ClCompile>
+    <ClCompile Include="HTTEngine\Input\Action\GameInput.cpp">
       <Filter>HTTEngine\Input\Action</Filter>
     </ClCompile>
     <ClCompile Include="HTTEngine\Math\Easing.cpp">
@@ -1136,6 +1145,9 @@
     <ClInclude Include="HTTEngine\Core\NameList.h">
       <Filter>HTTEngine\Core</Filter>
     </ClInclude>
+    <ClInclude Include="HTTEngine\Core\UserDataPath.h">
+      <Filter>HTTEngine\Core</Filter>
+    </ClInclude>
     <ClInclude Include="HTTEngine\Core\SlotMap.h">
       <Filter>HTTEngine\Core</Filter>
     </ClInclude>
@@ -1305,6 +1317,9 @@
       <Filter>HTTEngine\Editor\Widgets</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Editor\Keymap\EditorKeymap.h">
+      <Filter>HTTEngine\Editor\Keymap</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Editor\Keymap\GameInputPage.h">
       <Filter>HTTEngine\Editor\Keymap</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Editor\Widgets\ToolIcons.h">
@@ -1524,6 +1539,12 @@
       <Filter>HTTEngine\Input\Action</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Input\Action\InputRebinder.h">
+      <Filter>HTTEngine\Input\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Input\Action\InputActionFile.h">
+      <Filter>HTTEngine\Input\Action</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Input\Action\GameInput.h">
       <Filter>HTTEngine\Input\Action</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Math\Color.h">

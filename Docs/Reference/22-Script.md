@@ -2,7 +2,7 @@
 
 # 22. Script（1体ずつ違う動きを書く）
 
-**Script は Unity の MonoBehaviour と同じ形。** クラスを継承して、使う関数だけ override する。`#include "HTTEngine/ECS/Script.h"` の1つで、`GameComponent.h`（当たり・音・カメラ・`LoadScene`）も使える（入力は `InputManager.h` を足す）。
+**Script は Unity の MonoBehaviour と同じ形。** クラスを継承して、使う関数だけ override する。`#include "HTTEngine/ECS/Script.h"` の1つで、`GameComponent.h`（当たり・音・カメラ・`LoadScene`）も使える（入力の `GameInput`＝ Action の名前で読む物も入っている。キーを直接読むなら `InputManager.h` を足す）。
 
 | 使い分け | 書き方 |
 |---|---|
@@ -31,7 +31,6 @@ private:
 ```cpp
 // Source/Scripts/PlayerController.cpp
 #include "Source/Scripts/PlayerController.h"
-#include "HTTEngine/Input/InputManager.h"
 
 SCRIPT(PlayerController, "Player"); // Add Component → Gameplay → Player に出る（"Player" を省くと Gameplay の直下）
 
@@ -45,7 +44,7 @@ void PlayerController::Start() {
 }
 
 void PlayerController::Update() {
-	const Vector2 move = InputManager::GetMoveAxis();
+	const Vector2 move = GameInput::GetVector2("Move"); // Action の名前で読む（11章）
 	transform.translation.x += move.x * moveSpeed_ * Time::GetDeltaTime();
 }
 ```

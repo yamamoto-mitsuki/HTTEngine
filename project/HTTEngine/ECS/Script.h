@@ -8,13 +8,14 @@
 #include "HTTEngine/Combat/HitInfo.h"
 #include "HTTEngine/ECS/GameComponent.h"
 #include "HTTEngine/ECS/GameObject.h"
+#include "HTTEngine/Input/Action/GameInput.h"
 #include "HTTEngine/Systems/Gameplay/ScriptSystem.h"
 #include "HTTEngine/Time/EngineTime.h"
 #include "HTTEngine/Timeline/TimelineEvent.h"
 
 
 // ゲーム固有の振る舞いを、Unity の MonoBehaviour と同じ形で書くための基底クラス。ゲーム側はこのヘッダ1つだけをインクルードする
-// （GameComponent.h も入っているので、Collider の当たり・音・カメラ・LoadScene もこれだけで使える。入力は InputManager.h を足す）
+// （GameComponent.h も入っているので、Collider の当たり・音・カメラ・LoadScene もこれだけで使える。入力は GameInput（Action の名前で読む）も入っている。キーを直接読むなら InputManager.h を足す）
 //
 //   // PlayerController.h
 //   class PlayerController : public Script {

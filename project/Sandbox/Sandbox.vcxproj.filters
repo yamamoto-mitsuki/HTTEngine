@@ -10,16 +10,25 @@
     <Filter Include="Source\Scripts\Player">
       <UniqueIdentifier>{b1f6c3a2-9d47-4e58-a6c0-3e7f52d81c94}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Scripts\Input">
+      <UniqueIdentifier>{5c2e8f71-4a39-4d6b-b8e2-91d07a6c3f58}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Source\Scripts\Player\PlayerController.cpp">
       <Filter>Source\Scripts\Player</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Scripts\Input\KeyConfigTest.cpp">
+      <Filter>Source\Scripts\Input</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\Player\PlayerController.h">
       <Filter>Source\Scripts\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scripts\Input\KeyConfigTest.h">
+      <Filter>Source\Scripts\Input</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

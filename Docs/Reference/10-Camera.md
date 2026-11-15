@@ -92,7 +92,7 @@ if (CameraLookAtComponent* lookAt = EntityManager::Get<CameraLookAtComponent>(lo
 
 ## カメラから見た向きで動かす（`CameraRelativeInput`）
 
-移動の入力（`InputManager::GetMoveAxis()`）を、画面に写っているカメラから見た地面の向きへ直す。**W・スティックの上＝画面の奥、D・右＝画面の右**。カメラが回り込んでも（Camera Orbit・ロックオン）、いつも画面に合った向きに動く。動かすキャラの Script が1つずつ持つ。
+移動の入力（`GameInput::GetVector2("Move")`。[11章](11-Input.md)）を、画面に写っているカメラから見た地面の向きへ直す。**W・スティックの上＝画面の奥、D・右＝画面の右**。カメラが回り込んでも（Camera Orbit・ロックオン）、いつも画面に合った向きに動く。動かすキャラの Script が1つずつ持つ。
 
 ```cpp
 #include <HTTEngine/Camera/CameraRelativeInput.h>
@@ -103,7 +103,7 @@ class PlayerController : public Script {
 };
 
 void PlayerController::Update() {
-	const Vector3 move = moveInput_.ToWorld(InputManager::GetMoveAxis()); // Y は 0。長さは入力のまま（スティックを半分倒せば半分）
+	const Vector3 move = moveInput_.ToWorld(GameInput::GetVector2("Move")); // Y は 0。長さは入力のまま（スティックを半分倒せば半分）
 	controller->velocity.x = move.x * moveSpeed_;
 	controller->velocity.z = move.z * moveSpeed_;
 	if (move.x != 0.0f || move.z != 0.0f) {
@@ -124,7 +124,7 @@ void PlayerController::Update() {
 
 ```cpp
 // ✗ だめな例
-const Vector2 move = InputManager::GetMoveAxis();
+const Vector2 move = GameInput::GetVector2("Move");
 controller->velocity.x = move.x * moveSpeed_; // ✗ 入力をそのままワールドの X・Z にすると、カメラが回ったときに W が画面の奥にならない
 controller->velocity.z = move.y * moveSpeed_;
 ```

@@ -24,7 +24,9 @@ public:
 	};
 
 	// 拾い始める（map の id の、index 番目の割り当てを作る。index が割り当ての数と同じなら、新しく足す分）
-	void Start(const InputActionMap& map, InputActionId id, int index);
+	// row は割り当てを入れる行（InputBindingRows::Get の1つ）。拾ってよい入力と、作る割り当ての向きが行で決まる（Vector2 の「上」の行ならキー・ボタンだけで、向きは +Y）
+	// 軸の行（横・縦・Value の軸）で、軸を − の側へ動かして拾ったら、反対に足す割り当てにする（上下が逆のスティックなど。動かした向きが、その行の向きになる）
+	void Start(const InputActionMap& map, InputActionId id, int index, InputBindingRow row);
 	// やめる
 	void Cancel();
 	// 毎フレーム1回
@@ -33,7 +35,8 @@ public:
 	bool IsListening() const { return map_ != nullptr; }
 	InputActionId GetAction() const { return action_; }
 	int GetIndex() const { return index_; }
-	// 拾った割り当て（Captured を返した後だけ。向きは、元の割り当ての向きを引き継ぐ）
+	InputBindingRow GetRow() const { return row_; }
+	// 拾った割り当て（Captured を返した後だけ。向きは行で決まる）
 	const std::optional<InputBinding>& GetCaptured() const { return captured_; }
 
 private:
@@ -46,7 +49,8 @@ private:
 	InputActionId action_;
 	int index_ = -1;
 	InputDeviceMask accepts_ = InputDeviceMask::None; // 拾ってよい入力
-	InputDirection direction_ = InputDirection::PositiveX; // 作る割り当ての向き（元の割り当てから）
+	InputBindingRow row_ = InputBindingRow::All;       // 割り当てを入れる行
+	InputDirection direction_ = InputDirection::PositiveX; // 作る割り当ての向き（行から）
 	bool isFirstUpdate_ = true;                       // 始めてから、まだ Update していない（最初の Update は、押している物を覚えるだけ）
 	std::optional<InputControl> pendingModifierKey_; // 修飾キーだけを押している（離したら、それ1つを拾う）
 	InputModifiers pendingModifiers_ = InputModifiers::None; // 修飾キーを押したときに、一緒に押していたほかの修飾キー

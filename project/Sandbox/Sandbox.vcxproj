@@ -28,9 +28,11 @@
   <ItemGroup>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Source\Scripts\Player\PlayerController.cpp" />
+    <ClCompile Include="Source\Scripts\Input\KeyConfigTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\Player\PlayerController.h" />
+    <ClInclude Include="Source\Scripts\Input\KeyConfigTest.h" />
   </ItemGroup>
 
   <!-- ===== プロジェクトの情報 ===== -->

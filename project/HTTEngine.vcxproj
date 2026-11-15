@@ -202,6 +202,7 @@
     <ClCompile Include="HTTEngine\Editor\Widgets\ImeInput.cpp" />
     <ClCompile Include="HTTEngine\Editor\Widgets\InputActionTable.cpp" />
     <ClCompile Include="HTTEngine\Editor\Keymap\EditorKeymap.cpp" />
+    <ClCompile Include="HTTEngine\Editor\Keymap\GameInputPage.cpp" />
     <ClCompile Include="HTTEngine\Editor\Inspector\ModelRendererEditor.cpp" />
     <ClCompile Include="HTTEngine\Editor\Inspector\ComponentEditor.cpp" />
     <ClCompile Include="HTTEngine\Editor\History\EditorHistory.cpp" />
@@ -279,7 +280,9 @@
     <ClCompile Include="HTTEngine\Input\KeyboardInput.cpp" />
     <ClCompile Include="HTTEngine\Input\MouseInput.cpp" />
     <ClCompile Include="HTTEngine\Input\XInputGamepad.cpp" />
+    <ClCompile Include="HTTEngine\Input\Action\GameInput.cpp" />
     <ClCompile Include="HTTEngine\Input\Action\InputActionMap.cpp" />
+    <ClCompile Include="HTTEngine\Input\Action\InputActionFile.cpp" />
     <ClCompile Include="HTTEngine\Input\Action\InputBinding.cpp" />
     <ClCompile Include="HTTEngine\Input\Action\InputRebinder.cpp" />
     <ClCompile Include="HTTEngine\Math\Matrix3x3.cpp" />
@@ -376,6 +379,7 @@
     <ClInclude Include="HTTEngine\Core\EnumTipTable.h" />
     <ClInclude Include="HTTEngine\Core\FixedList.h" />
     <ClInclude Include="HTTEngine\Core\NameList.h" />
+    <ClInclude Include="HTTEngine\Core\UserDataPath.h" />
     <ClInclude Include="HTTEngine\Curve\Curve.h" />
     <ClInclude Include="HTTEngine\Curve\CurveManager.h" />
     <ClInclude Include="HTTEngine\ECS\GameObject.h" />
@@ -474,6 +478,7 @@
     <ClInclude Include="HTTEngine\Editor\Widgets\ImeInput.h" />
     <ClInclude Include="HTTEngine\Editor\Widgets\InputActionTable.h" />
     <ClInclude Include="HTTEngine\Editor\Keymap\EditorKeymap.h" />
+    <ClInclude Include="HTTEngine\Editor\Keymap\GameInputPage.h" />
     <ClInclude Include="HTTEngine\Editor\Inspector\ModelRendererEditor.h" />
     <ClInclude Include="HTTEngine\Editor\Inspector\ComponentEditor.h" />
     <ClInclude Include="HTTEngine\Editor\History\EditorHistory.h" />
@@ -578,7 +583,9 @@
     <ClInclude Include="HTTEngine\Input\KeyboardInput.h" />
     <ClInclude Include="HTTEngine\Input\MouseInput.h" />
     <ClInclude Include="HTTEngine\Input\XInputGamepad.h" />
+    <ClInclude Include="HTTEngine\Input\Action\GameInput.h" />
     <ClInclude Include="HTTEngine\Input\Action\InputActionMap.h" />
+    <ClInclude Include="HTTEngine\Input\Action\InputActionFile.h" />
     <ClInclude Include="HTTEngine\Input\Action\InputBinding.h" />
     <ClInclude Include="HTTEngine\Input\Action\InputRebinder.h" />
     <ClInclude Include="HTTEngine\Math\Matrix3x3.h" />
