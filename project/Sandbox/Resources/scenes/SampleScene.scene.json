@@ -1,5 +1,5 @@
 {
-	"version": 1,
+	"version": 5,
 	"entities": [
 		{
 			"id": 1,
@@ -16,7 +16,17 @@
 					"fovY": 60.0,
 					"nearZ": 0.1,
 					"farZ": 1000.0,
-					"priority": 0
+					"priority": 0,
+					"backgroundType": "Skybox",
+					"backgroundColor": [0.192, 0.302, 0.475],
+					"gradientSkyColor": [0.36, 0.58, 0.86],
+					"gradientHorizonColor": [0.86, 0.9, 0.95],
+					"gradientGroundColor": [0.42, 0.4, 0.38],
+					"gradientHorizonWidth": 0.15,
+					"blendStyle": "Cut",
+					"blendTime": 1.0,
+					"blendEase": "InOutCubic",
+					"timeMode": "Game"
 				}
 			}
 		},
@@ -32,7 +42,10 @@
 					"scale": [1.0, 1.0, 1.0]
 				},
 				"Directional Light": {
-					"color": [1.0, 1.0, 1.0]
+					"color": [1.0, 1.0, 1.0],
+					"intensity": 1.0,
+					"showIcon": true,
+					"showRange": true
 				}
 			}
 		},
@@ -50,7 +63,18 @@
 				"Primitive Renderer": {
 					"enabled": true,
 					"shape": "Box",
-					"color": [0.6, 0.6, 0.6, 1.0]
+					"color": [0.6, 0.6, 0.6, 1.0],
+					"intensity": 1.0,
+					"surface": "Opaque",
+					"texture": "",
+					"uvScale": [1.0, 1.0],
+					"shadingType": "HalfLambert",
+					"specular": [0.0, 0.0, 0.0],
+					"shininess": 32.0,
+					"metallic": 0.0,
+					"roughness": 0.5,
+					"emissive": [0.0, 0.0, 0.0],
+					"receivesDecals": true
 				}
 			}
 		},
@@ -68,7 +92,18 @@
 				"Primitive Renderer": {
 					"enabled": true,
 					"shape": "Box",
-					"color": [0.9, 0.5, 0.2, 1.0]
+					"color": [0.9, 0.5, 0.2, 1.0],
+					"intensity": 1.0,
+					"surface": "Opaque",
+					"texture": "",
+					"uvScale": [1.0, 1.0],
+					"shadingType": "HalfLambert",
+					"specular": [0.0, 0.0, 0.0],
+					"shininess": 32.0,
+					"metallic": 0.0,
+					"roughness": 0.5,
+					"emissive": [0.0, 0.0, 0.0],
+					"receivesDecals": true
 				}
 			}
 		}
