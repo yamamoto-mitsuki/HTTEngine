@@ -1,5 +1,6 @@
 #pragma once
 #include "HTTEngine/Math/Vector3.h"
+#include "HTTEngine/Graphics/Shadow/ShadowSettings.h"
 
 // Inspectorで編集するライトのデータ。Entityに付けるComponent（カテゴリ：Lighting）
 // GPUへ送る構造体（ShaderConstants.h）とは分けて、padding・ポインタ・GPUリソースを持たせない
@@ -19,6 +20,7 @@ struct LightGizmoFlags {
 struct DirectionalLightComponent {
 	Vector3 color = {1.0f, 1.0f, 1.0f}; // 色
 	float intensity = 1.0f;             // 強さ
+	DirectionalShadowParams shadow;     // 影（出すか・範囲・濃さ・ずらす量）
 	LightGizmoFlags gizmo;              // ギズモの表示設定（アイコンはまだ無いので、向きの線だけ）
 };
 

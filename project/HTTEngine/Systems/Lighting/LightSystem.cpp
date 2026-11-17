@@ -9,6 +9,7 @@
 #include "HTTEngine/Diagnostics/HTTAssert.h"
 #include "HTTEngine/ECS/EntityManager.h"
 #include "HTTEngine/Graphics/Renderer/Renderer.h"
+#include "HTTEngine/Graphics/Renderer/SceneRenderer.h"
 #include "HTTEngine/Components/Lighting/LightComponent.h"
 #include "HTTEngine/Editor/Gizmos/LightGizmo.h"
 #include "HTTEngine/Math/MathUtility.h"
@@ -79,6 +80,7 @@ void LightSystem::CollectForGPU() {
 	// --- 平行光源（GPUには1つだけ。有効な物のうち最初に見つかった物を使う）---
 	DirectionalLightData directional;
 	directional.intensity = 0.0f; // 1つも無ければ照らさない
+	DirectionalShadowSettings shadow; // 影も同じ平行光源から（1つも無ければ影なし）
 	uint32_t directionalCount = 0;
 	EntityManager::ForEach<DirectionalLightComponent>([&](Handle<Entity> entity, const DirectionalLightComponent& light) {
 		const TransformComponent* transform = FindActiveTransform(entity);
@@ -89,9 +91,13 @@ void LightSystem::CollectForGPU() {
 			directional.color = ToLightColor(light.color);
 			directional.intensity = light.intensity;
 			directional.direction = LightDirection(*transform);
+			shadow.enabled = light.shadow.castsShadows;
+			shadow.direction = directional.direction;
+			shadow.params = light.shadow;
 		}
 		++directionalCount;
 	});
+	SceneRenderer::SetDirectionalShadow(shadow);
 	if (directionalCount > 1 && !hasWarnedDirectionalLightLimit_) {
 		LogManager::Warning(std::format("平行光源が{}個あります。使われるのは1つだけです", directionalCount));
 		hasWarnedDirectionalLightLimit_ = true;

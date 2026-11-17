@@ -18,6 +18,7 @@ static constexpr uint32_t kCameraSlots = 8;
 static constexpr uint32_t kCameraSlotSize = 256;
 } // namespace
 
+
 //=============================================================================
 // 初期化 / 解放
 //=============================================================================
@@ -41,6 +42,8 @@ void SceneRenderer::InitializePost(uint32_t width, uint32_t height) {
 	instance_->postRT_ = std::make_unique<RenderTexture>(width, height, RenderTextureFormat::HDR, true, true);
 	instance_->postProcess_ = std::make_unique<PostProcess>();
 	instance_->postProcess_->Initialize(width, height);
+	// 影
+	instance_->shadow_ = std::make_unique<ShadowRenderer>(width, height);
 }
 
 // ===== 解放 =====
@@ -92,18 +95,18 @@ void SceneRenderer::SetViewportAndScissor(const ViewRect& rect) {
 	cmdList->RSSetScissorRects(1, &sc);
 }
 
+
 //=============================================================================
 // シーン描画の本体
 //=============================================================================
 // ===== 3D。HDR の postRT_ へ描き、被写界深度まで掛けた絵を返す =====
 // 3D の PSO は HDR の絵に描く形なので、ポストエフェクトを切ったビューもここを通る（その後、トーンマップだけ掛けて画面へ）
-// 半透明・線・パーティクルは、被写界深度でぼかした後に描く（深度を書かないので、深度でぼけ方を決められない。
-// 先に描くと、後ろにある物（空など）と同じだけぼける。Unreal の半透明の「Render After DOF」と同じ考え）
 RenderTexture* SceneRenderer::RenderWorldForPost(const Camera* camera, D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle) {
 	RenderTexture* work = instance_->postRT_.get();
 	const ViewRect workRect = {0.0f, 0.0f, static_cast<float>(work->GetWidth()), static_cast<float>(work->GetHeight())};
 	const DepthOfFieldSettings depthOfField = GetViewDepthOfField();
-
+	// --- 影の深度 ---
+	instance_->shadow_->RenderShadowMap(camera, instance_->directionalShadow_, windowTitle);
 	// --- 不透明な物と空 ---
 	work->PreDraw();
 	SetViewportAndScissor(workRect);
@@ -126,7 +129,11 @@ RenderTexture* SceneRenderer::RenderWorldForPost(const Camera* camera, D3D12_GPU
 // ===== 不透明な物・デカール・空 =====
 void SceneRenderer::RenderOpaque(const Camera* camera, D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle, RenderTexture& work) {
 	auto* cmdList = DirectXCommon::GetCommandList();
-	RenderQueue::FlushOpaqueMesh(windowTitle, camCB); // 不透明Model（関数内で計測済み）
+	// 先に手前の深度をそろえ、影の量の画面を作る
+	if (camCB != 0) {
+		RenderDepthPrepass(camCB, windowTitle, work);
+	}
+	RenderQueue::FlushOpaqueMesh(windowTitle, camCB, instance_->shadow_->PushOpaqueReceiver()); // 不透明Model（関数内で計測済み）
 	// --- デカール：不透明な物の深度を読んで、箱の中にある所に塗る（空・粒より先。どちらも深度を書かないので塗られない）---
 	// 深度は読むだけの窓口で結び直す（同じ深度を SRV で読みながら、ステンシルで受けない物を除く）
 	if (camCB != 0 && RenderQueue::HasDecal()) {
@@ -146,10 +153,26 @@ void SceneRenderer::RenderOpaque(const Camera* camera, D3D12_GPU_VIRTUAL_ADDRESS
 	}
 }
 
+// ===== 深度プリパスと影の量の画面 =====
+void SceneRenderer::RenderDepthPrepass(D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle, RenderTexture& work) { 
+	auto* cmdList = DirectXCommon::GetCommandList();
+	// --- 不透明な物の深度だけ ---
+	{
+		GPU_SCOPE(cmdList, "Depth Prepass");
+		work.BindDepthOnly();
+		RenderQueue::FlushDepthPrepass(windowTitle, camCB);
+	}
+	// --- 影の量の画面（今の深度をCSで読む）---
+	instance_->shadow_->BuildShadowMask(work, camCB);
+	// --- 色を塗る描画先に戻す ---
+	work.BindColorAndDepth();
+}
+
+
 // ===== 深度を書かない物（半透明・線・パーティクル）=====
 void SceneRenderer::RenderTransparent(D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle) {
 	auto* cmdList = DirectXCommon::GetCommandList();
-	RenderQueue::FlushTransparentMesh(windowTitle, camCB); // 半透明Model（関数内で計算済み）
+	RenderQueue::FlushTransparentMesh(windowTitle, camCB, instance_->shadow_->PushTransparentReceiver()); // 半透明Model（関数内で計算済み）
 	{
 		GPU_SCOPE(cmdList, "Line");
 		RenderQueue::FlushLine(windowTitle, camCB);

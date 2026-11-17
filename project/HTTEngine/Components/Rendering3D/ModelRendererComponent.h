@@ -20,6 +20,7 @@ struct ModelRendererComponent {
 	DepthMode depthMode = DepthMode::TestWrite;
 	BillboardMode billboard = BillboardMode::None; // カメラの方を向かせる（Full / AxisY）
 	bool receivesDecals = true;                    // false：デカールを受けない（箱の中にあっても塗られない。不透明なときだけ効く）
+	bool castsShadows = true;                      // false: 影を落とさない
 	bool enabled = true;
 };
 

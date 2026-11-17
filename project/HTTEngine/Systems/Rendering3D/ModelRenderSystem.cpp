@@ -51,6 +51,7 @@ void ModelRenderSystem::Draw(Handle<Entity> root, Camera* camera, IBLEnvironment
 		config.depthMode = render.depthMode;
 		config.billboard = render.billboard;
 		config.receivesDecals = render.receivesDecals;
+		config.castsShadows = render.castsShadows;
 		config.worldMatrix = &transform->worldMatrix;
 		config.nodeMatrices = AnimationSystem::GetNodeMatrices(entity);
 		config.entity = entity;

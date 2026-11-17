@@ -1,6 +1,5 @@
 #include "PSOManager.h"
 #include <format>
-#include <cassert>
 #include <externals/magic_enum/magic_enum.hpp>
 #include "HTTEngine/Diagnostics/HTTAssert.h"
 #include "HTTEngine/Diagnostics/LogManager.h"
@@ -9,11 +8,18 @@
 #include "HTTEngine/Graphics/Pipeline/ShaderPackageLoader.h"
 #include "HTTEngine/Graphics/Pipeline/RenderStates.h"
 #include "HTTEngine/Graphics/RenderTarget/RenderTexture.h"
+#include "HTTEngine/Graphics/Shadow/ShadowMap.h"
 
 using namespace Microsoft::WRL;
 std::unique_ptr<PSOManager> PSOManager::instance_ = nullptr;
 
 namespace {
+// 深度だけのパスのPS。Modelの切り抜き（ModelSurface.hlsli）だけして色は出さない
+const std::string kDepthOnlyPSName = "ModelDepthPS";
+
+// ===== そのPSOのPSの名前　=====
+const std::string& GetPixelShaderName(const ProgramEntry& program, MeshPass pass) { return (pass == MeshPass::Color) ? program.psName : kDepthOnlyPSName; }
+
 // ===== 描く形 → 描画先の形式 =====
 // 3D は float の絵（HDR。1 を超える明るさを残す）に描き、2D はトーンマップの後の画面（SDR）に重ねる（SceneRenderer の描く順）
 RenderTextureFormat GetTargetFormat(DrawCategory category) {
@@ -57,12 +63,15 @@ void PSOManager::Release() {
 // SortKey
 //=============================================================================
 uint64_t PSOManager::GetSortKey(const PSOKey& key) {
-	// PSOKey の全部を入れる（入れていない物だけが違う2つが同じキーになると、PSO を切り替えずに描いてしまう）
-	return (static_cast<uint64_t>(key.shaderProgramID) << 32) // Shader
-	     | (static_cast<uint64_t>(key.stencilMode)     << 24) // StencilMode（デカールを受けない印）
+	// PSOKeyの全部を入れる
+	static constexpr uint32_t kShaderProgramBits = 28; // Shaderの番号に使うビット（32~59）
+	HTT_ASSERT_MSG(key.shaderProgramID < (1u << kShaderProgramBits), "Shaderの数がSortKeyに入る数の上限を超えました。");
+	return (static_cast<uint64_t>(key.pass)            << 60) // MeshPass
+		 | (static_cast<uint64_t>(key.shaderProgramID) << 32) // Shader
+	     | (static_cast<uint64_t>(key.stencilMode)     << 24) // StencilMode
 	     | (static_cast<uint64_t>(key.blendMode)       << 16) // BlendMode
 	     | (static_cast<uint64_t>(key.rasterizerType)  << 8)  // Rasterizer
-	     |  static_cast<uint64_t>(key.depthMode);              // DepthMode
+	     |  static_cast<uint64_t>(key.depthMode);             // DepthMode
 }
 
 
@@ -71,18 +80,22 @@ uint64_t PSOManager::GetSortKey(const PSOKey& key) {
 //=============================================================================
 const RootSignatureInfo& PSOManager::GetRootSignatureInfo(uint32_t id) {
 	auto& cache = instance_->rootSignatureCache_;
-	// キャッシュを確認
+	// --- キャッシュを確認 ---
 	if (id >= cache.size()) {
 		cache.resize(ShaderPackageLoader::GetProgramCount());
 	}
 	
 	RootSignatureInfo& slot = cache[id]; // RootSignature情報を取得
-	// 取得できなかったら、新しく作って登録
+	// --- 取得できなかったら、新しく作って登録 ---
 	if (!slot.rootSignature) {
 		const ProgramEntry& p = ShaderPackageLoader::GetProgramAt(id);
 		const ShaderReflection& vs = ShaderPackageLoader::GetShaderReflection(p.vsName);
 		const ShaderReflection& ps = ShaderPackageLoader::GetShaderReflection(p.psName);
 		auto merged = RootSignatureManager::MergeStages(vs.resources, ps.resources);
+		// Modelは、深度だけのパスのPSOも同じRootSignatureで作る
+		if (p.category == DrawCategory::Model) {
+			RootSignatureManager::AddPixelStage(merged, ShaderPackageLoader::GetShaderReflection(kDepthOnlyPSName).resources);
+		}
 		slot = RootSignatureManager::MakeRootSignatureInfo(merged);
 		slot.rootSignature->SetName(ConvertString("RootSig_" + p.name).c_str());
 	}
@@ -112,8 +125,8 @@ TopologyID PSOManager::GetTopologyID(DrawCategory category) {
 }
 
 // ===== PSOKey =====
-PSOKey PSOManager::GetPSOKey(DrawCategory category, ShadingType shading, BlendMode blend, RasterizerType raster, DepthMode depth, StencilMode stencil) {
-	return PSOKey{GetShaderProgramID(category, shading), blend, raster, depth, stencil};
+PSOKey PSOManager::GetPSOKey(DrawCategory category, ShadingType shading, BlendMode blend, RasterizerType raster, DepthMode depth, StencilMode stencil, MeshPass pass) {
+	return PSOKey{GetShaderProgramID(category, shading), blend, raster, depth, stencil, pass};
 }
 
 //=============================================================================
@@ -167,31 +180,36 @@ const ComputePipeline& PSOManager::GetComputePipeline(const std::string& csName)
 //=============================================================================
 // ===== PSOKey → PipelineStateDesc =====
 D3D12_GRAPHICS_PIPELINE_STATE_DESC PSOManager::MakePSO(const PSOKey& key, std::vector<D3D12_INPUT_ELEMENT_DESC>& outElems) {
-	// Shaderファイル
+	// --- Shaderファイル ---
 	const ProgramEntry& p = ShaderPackageLoader::GetProgramAt(key.shaderProgramID);
+	const bool isDepthOnly = (key.pass != MeshPass::Color); // 深度だけのパス
+	HTT_ASSERT_MSG(!isDepthOnly || p.category == DrawCategory::Model, "深度だけのパスで描けるのはModelだけです。");
 	const ShaderReflection& vs = ShaderPackageLoader::GetShaderReflection(p.vsName);
-	const ShaderReflection& ps = ShaderPackageLoader::GetShaderReflection(p.psName);
-	// RootSignature
+	const ShaderReflection& ps = ShaderPackageLoader::GetShaderReflection(GetPixelShaderName(p, key.pass));
+	// --- RootSignature ---
 	const RootSignatureInfo& rs = GetRootSignatureInfo(key.shaderProgramID);
-	// 入力レイアウト
+	// --- 入力レイアウト ---
 	outElems = VertexFormat::MakeInputLayout(vs.inputs);
 	D3D12_INPUT_LAYOUT_DESC inputLayout{outElems.data(), static_cast<UINT>(outElems.size())};
-	// トポロジ
+	// --- トポロジ ---
 	D3D12_PRIMITIVE_TOPOLOGY_TYPE topology = GetTopologyType(GetTopologyID(p.category));
 
-	// PipelineStateDesc
+	// --- PipelineStateDesc ---
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC desc{};
 	desc.pRootSignature = rs.rootSignature.Get();
 	desc.InputLayout = inputLayout;
 	desc.VS = {vs.blob->GetBufferPointer(), vs.blob->GetBufferSize()};
 	desc.PS = {ps.blob->GetBufferPointer(), ps.blob->GetBufferSize()};
+
 	desc.BlendState = RenderStates::MakeBlendDesc(key.blendMode);
-	desc.RasterizerState = RenderStates::MakeRasterizerDesc(key.rasterizerType);
+	desc.RasterizerState = (key.pass == MeshPass::ShadowCaster) ? RenderStates::MakeShadowCasterRasterizerDesc(key.rasterizerType) : RenderStates::MakeRasterizerDesc(key.rasterizerType);
 	desc.DepthStencilState = RenderStates::MakeDepthStencilDesc(key.depthMode, key.stencilMode);
 	desc.PrimitiveTopologyType = topology;
-	desc.NumRenderTargets = 1;
-	desc.RTVFormats[0] = RenderTexture::ToDXGIFormat(GetTargetFormat(p.category)); // 3D は HDR、2D は SDR
-	desc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	// 描画先
+	desc.NumRenderTargets = isDepthOnly ? 0 : 1;
+	desc.RTVFormats[0] = isDepthOnly ? DXGI_FORMAT_UNKNOWN : RenderTexture::ToDXGIFormat(GetTargetFormat(p.category));
+	// 深度
+	desc.DSVFormat = (key.pass == MeshPass::ShadowCaster) ? ShadowMap::kDepthFormat : DXGI_FORMAT_D24_UNORM_S8_UINT;
 	desc.SampleDesc.Count = 1;
 	desc.SampleMask = D3D12_DEFAULT_SAMPLE_MASK;
 	return desc;

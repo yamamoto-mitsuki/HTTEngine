@@ -80,6 +80,8 @@ void ModelRendererEditor::DrawComponent(ModelRendererComponent& render) const {
 	EditorWidgets::EnumCombo("Billboard", render.billboard);
 	ImGui::Checkbox("Receive Decals", &render.receivesDecals);
 	ImGui::SetItemTooltip("外すと、デカールの箱の中にあっても、このモデルには塗られない（不透明なときだけ効く）");
+	ImGui::Checkbox("Cast Shadows", &render.castsShadows);
+	ImGui::SetItemTooltip("外すと、このモデルは平行光源の影を落とさない（影を受けるのはそのまま。DepthがTestWriteのときだけ落とす）");
 
 	// --- 色（sRGB の 0〜1。物ごとの色で、マテリアルの色に掛ける）---
 	ImGui::ColorEdit4("Color", &render.color.x);

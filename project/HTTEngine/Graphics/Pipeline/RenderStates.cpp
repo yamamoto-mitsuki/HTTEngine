@@ -103,6 +103,20 @@ D3D12_RASTERIZER_DESC RenderStates::MakeRasterizerDesc(RasterizerType type) {
 
 
 //=============================================================================
+// 影の深度を描くときの RasterizerType → D3D12_RASTERIZER_DESC
+//=============================================================================
+D3D12_RASTERIZER_DESC RenderStates::MakeShadowCasterRasterizerDesc(RasterizerType type) {
+	// 面の向きは設定のまま。両面の物は、両面とも影を落とす
+	D3D12_RASTERIZER_DESC desc = MakeRasterizerDesc(type);
+	// GPUが、面の向き×SlopScaledDepthBias だけ奥へずらす（光に対して傾いた面ほど大きく）
+	desc.DepthBias = 0;
+	desc.SlopeScaledDepthBias = 1.5f;
+	desc.DepthBiasClamp = 0.0f;
+	return desc;
+}
+
+
+//=============================================================================
 // DepthMode・StencilMode → D3D12_DEPTH_STENCIL_DESC
 //=============================================================================
 D3D12_DEPTH_STENCIL_DESC RenderStates::MakeDepthStencilDesc(DepthMode mode, StencilMode stencil) {

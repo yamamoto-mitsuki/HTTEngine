@@ -131,7 +131,12 @@ void Renderer::PushMesh(const TConfig& config, std::vector<Vertex3dData>&& verti
 	if constexpr (requires { config.receivesDecals; }) {
 		req.receivesDecals = config.receivesDecals;
 	}
-	static_cast<DrawTarget&>(req) = config; // 描き分け（ウィンドウ・層・目で隠したか）をまとめて写す（DrawTarget の所だけ代入する）
+	// --- 影を落とすか ---
+	if constexpr (requires { config.castsShadows; }) {
+		req.castsShadows = config.castsShadows;
+	}
+	// 描き分け（ウィンドウ・層・目で隠したか）をまとめて写す（DrawTarget の所だけ代入する）
+	static_cast<DrawTarget&>(req) = config;
 	// --- 環境光（IBL）：PBR に要る。Config が env を持っていれば、そのアドレス ---
 	if constexpr (requires { config.env; }) {
 		req.iblParamsAddress = (config.env != nullptr) ? config.env->GetParametersAddress() : 0;
@@ -267,6 +272,7 @@ void Renderer::DrawModel(const ModelConfig& config) {
 			req.rasterizerType = config.rasterizerType;
 			req.depthMode = config.depthMode;
 			req.receivesDecals = config.receivesDecals;
+			req.castsShadows = config.castsShadows;
 			static_cast<DrawTarget&>(req) = config; // 描き分け（ウィンドウ・層・目で隠したか）をまとめて写す（DrawTarget の所だけ代入する）
 			req.debugName = &ModelManager::GetModelName(config.modelHandle);
 			req.debugSubName = &asset->materials[mesh.materialIndex].name;

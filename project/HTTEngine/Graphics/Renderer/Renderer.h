@@ -67,6 +67,7 @@ public:
 		IBLEnvironment* env = nullptr;                             // 環境光源
 		BillboardMode billboard = BillboardMode::None;             // カメラの方を向かせる（Full / AxisY。cameraが必要）
 		bool receivesDecals = true;                                // false：デカールを受けない（不透明なときだけ効く）
+		bool castsShadows = true;                                  // false: 影を落とさない
 	};
 
 	// --- 3D三角形の描画設定 ---
@@ -106,6 +107,7 @@ public:
 		IBLEnvironment* env = nullptr;                             // 環境光（PBR に要る。無ければ PBR の代わりに Half Lambert で描く）
 		Camera* camera = nullptr;                                  // カメラ設定
 		bool receivesDecals = true;                                // false：デカールを受けない（不透明なときだけ効く）
+		bool castsShadows = true;                                  // false: 影を落とさない
 		bool isBillboard = false;                                  // trueで常にカメラの方を向く（cameraが必要）
 	};
 
@@ -183,6 +185,7 @@ public:
 		IBLEnvironment* env = nullptr;                             // 環境光（PBR に要る。無ければ PBR の代わりに Half Lambert で描く）
 		Camera* camera = nullptr;                                  // カメラ設定
 		bool receivesDecals = true;                                // false：デカールを受けない（不透明なときだけ効く）
+		bool castsShadows = true;                                  // false: 影を落とさない
 		bool isBillboard = false;                                  // 使わない（頂点はワールド座標で渡す）。PushMesh が読むので置いてある
 	};
 
@@ -216,6 +219,7 @@ public:
 		IBLEnvironment* env = nullptr;                             // 環境光（PBR に要る。無ければ PBR の代わりに Half Lambert で描く）
 		Camera* camera = nullptr;                                  // カメラ設定
 		bool receivesDecals = true;                                // false：デカールを受けない（不透明なときだけ効く）
+		bool castsShadows = true;                                  // false: 影を落とさない
 		bool isBillboard = false;                                  // trueで常にカメラの方を向く（cameraが必要）
 	};
 

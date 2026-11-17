@@ -67,14 +67,15 @@ void DescribeModelRenderer(ComponentUI& ui, ModelRendererComponent& value) {
 	ui.Field("rasterizerType", value.rasterizerType);
 	ui.Field("depthMode", value.depthMode);
 	ui.Field("billboard", value.billboard);
-	ui.Field("receivesDecals", value.receivesDecals); // デカールを受けるか（前のファイルには無い＝受ける）
+	ui.Field("receivesDecals", value.receivesDecals);
+	ui.Field("castsShadows", value.castsShadows);
 	// --- 色（sRGB。保存の形は前と同じ [r, g, b, a]）---
 	ui.ColorField("color", value.color);
-	ui.Field("intensity", value.intensity); // 明るさの倍率（前のファイルには無い＝1 のまま）
+	ui.Field("intensity", value.intensity);
 	// --- マテリアル ---
 	ui.Field("overrideMaterial", value.overrideMaterial);
 	ui.ColorField("ambient", value.material.ambient);
-	ui.ColorField("baseColor", value.material.baseColor); // 物の色（RGBA。前の "diffuse" は読まない）
+	ui.ColorField("baseColor", value.material.baseColor);
 	ui.ColorField("specular", value.material.specular);
 	ui.ColorField("emissive", value.material.emissive);
 	ui.Field("shininess", value.material.shininess);
@@ -97,8 +98,14 @@ void DescribeGizmo(ComponentUI& ui, LightGizmoFlags& gizmo) {
 }
 
 void DescribeDirectionalLight(ComponentUI& ui, DirectionalLightComponent& value) {
-	ui.ColorField("color", value.color); // 見た目の色（sRGB）。リニアへの変換は LightSystem が集めるときに行う
+	ui.ColorField("color", value.color);
 	ui.Field("intensity", value.intensity);
+	// --- 影 ---
+	ui.Field("castsShadows", value.shadow.castsShadows);
+	ui.Field("shadowMapSize", value.shadow.mapSize);
+	ui.Field("shadowDistance", value.shadow.distance);
+	ui.Field("shadowStrength", value.shadow.strength);
+	ui.Field("shadowBias", value.shadow.bias);
 	DescribeGizmo(ui, value.gizmo);
 }
 

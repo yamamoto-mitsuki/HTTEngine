@@ -14,6 +14,7 @@ vs:       Object3dVS
 #include "ModelSurface.hlsli"
 #include "Buffers/Camera.hlsli"
 #include "Buffers/Light.hlsli"
+#include "Shadow/ShadowReceiver.hlsli"
 #include "Fog/Fog.hlsli"
 
 
@@ -35,8 +36,9 @@ PixelShaderOutput main(VertexShaderOutput input)
         // --- Lambert ---
         float3 L = normalize(-gDirectionalLight.direction);
         float NdotL = saturate(dot(N, L));
+        float shadow = GetDirectionalShadow(input.position); // 光が届く割合
         // 拡散反射
-        diffuseLighting += gDirectionalLight.color.rgb * NdotL * gDirectionalLight.intensity;
+        diffuseLighting += gDirectionalLight.color.rgb * NdotL * gDirectionalLight.intensity * shadow;
         
         // --- Phong ---
         float3 toEye = normalize(gCamera.worldPosition - input.worldPosition);
@@ -44,7 +46,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         float RdotE = dot(reflectLight, toEye);
         float specularPow = pow(saturate(RdotE), gMaterial.shininess); // 反射強度
         // 鏡面反射
-        specularLighting += gDirectionalLight.color.rgb * gDirectionalLight.intensity * specularPow;
+        specularLighting += gDirectionalLight.color.rgb * gDirectionalLight.intensity * specularPow * shadow;
     }
     // ===== PointLight =====
     {

@@ -36,21 +36,28 @@ std::vector<MergedBind> RootSignatureManager::MergeStages(const std::vector<Shad
 	for (const auto& v : vs) {
 		out.push_back({v, D3D12_SHADER_VISIBILITY_VERTEX});
 	}
-	// PS側は、同じリソース(type/register/space が一致)があれば ALL に昇格、
-	// 無ければ PS専用として追加
+	// PS側を足す
+	AddPixelStage(out, ps);
+	return out;
+}
+
+// ===== PS1本分を足す =====
+void RootSignatureManager::AddPixelStage(std::vector<MergedBind>& binds, const std::vector<ShaderResourceBinding>& ps) {
+	// 同じリソース（type/register/space が一致）があれば、VSだけの物はALLに昇格（PSだけの物はそのまま）
+	// 無ければPS専用として追加
 	for (const auto& p : ps) {
-		auto it = std::find_if(out.begin(), out.end(), [&](const MergedBind& m) { 
+		auto it = std::find_if(binds.begin(), binds.end(), [&](const MergedBind& m) {
 			return m.bind.name == p.name &&                     // 変数名が一致しているか
-				   m.bind.type == p.type &&                     // CBufferなど型が一致しているか
-				   m.bind.registerNumber == p.registerNumber && // レジスタ番号が一致しているか
-				   m.bind.space == p.space; });                 // space番号が一致しているか
-		if (it != out.end()) {
+			       m.bind.type == p.type &&                     // CBufferなど型が一致しているか
+			       m.bind.registerNumber == p.registerNumber && // レジスタ番号が一致しているか
+			       m.bind.space == p.space;                     // space番号が一致しているか
+		});
+		if (it == binds.end()) {
+			binds.push_back({p, D3D12_SHADER_VISIBILITY_PIXEL}); // PS専用
+		} else if (it->visibility == D3D12_SHADER_VISIBILITY_VERTEX) {
 			it->visibility = D3D12_SHADER_VISIBILITY_ALL; // VSにもPSにもある
-		} else {
-			out.push_back({p, D3D12_SHADER_VISIBILITY_PIXEL}); // PS専用
 		}
 	}
-	return out;
 }
 
 
@@ -75,6 +82,7 @@ std::optional<RootBind> RootSignatureManager::NameToRole(std::string_view name) 
 	    {"gTexturesCube",         RootBind::BindlessTextureCube },
 	    {"gDecal",                RootBind::Decal               },
 	    {"gDrawData",             RootBind::DrawData            },
+	    {"gShadow",               RootBind::Shadow              },
 	};
 
 	if (auto it = table.find(name); it != table.end()) {

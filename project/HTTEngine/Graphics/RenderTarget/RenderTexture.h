@@ -44,6 +44,28 @@ public:
 	void BindWithDepthOf(RenderTexture& depthSource);
 
 	/// <summary>
+	/// 深度だけを描画先にする（色を結ばない。クリアしない）
+	/// <para>深度プリパスで使う。PSOがRTVなしなので、色を結んだままだとDebugLayerに止められる。PreDrawの後に呼ぶ</para>
+	/// </summary>
+	void BindDepthOnly();
+
+	/// <summary>
+	/// 色と深度を描画先に結び直す（クリアしない。PreDrawで結んだ形に戻す）
+	/// </summary>
+	void BindColorAndDepth();
+
+	/// <summary>
+	/// 深度をCSから読める状態にする（色は描画先のまま。isDepthReadableで作ったときだけ）
+	/// <para>読み終わったら、EndDepthComputeRead</para>
+	/// </summary>
+	void BeginDepthComputeRead();
+
+	/// <summary>
+	/// BeginDepthComputeReadの前の状態（深度を書く状態）に戻す
+	/// </summary>
+	void EndDepthComputeRead();
+
+	/// <summary>
 	/// 色と深度（isDepthReadable のとき）を、CS からも PS からも読める状態にする
 	/// <para>PostDraw の後に呼ぶ。読み終わったら EndShaderRead（次の PreDraw より前）</para>
 	/// </summary>

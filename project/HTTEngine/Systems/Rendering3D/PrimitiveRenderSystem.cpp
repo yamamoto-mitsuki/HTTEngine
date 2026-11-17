@@ -129,4 +129,6 @@ void PrimitiveRenderSystem::DescribeMaterial(ComponentUI& ui, PrimitiveMaterial&
 	ui.ColorField(label("Emissive", "emissive").c_str(), material.params.emissive); // 自己発光（Unlit 以外。ライトが無くても光る）
 	// ===== デカール =====
 	ui.Field(label("Receive Decals", "receivesDecals").c_str(), material.receivesDecals, Tip("外すと、デカールの箱の中にあっても、この形には塗られない（Opaque のときだけ効く）"));
+	// ===== 影 =====
+	ui.Field(label("Cast Shadows", "castsShadows").c_str(), material.castsShadows, Tip("外すと、この形は平行光源の影を落とさない（影を受けるのはそのまま。Opaque のときだけ落とす）"));
 }

@@ -11,6 +11,7 @@
 
 // 前方宣言
 class RenderWindow;
+struct PSOKey;
 
 
 /// <summary>
@@ -46,10 +47,14 @@ public:
 	static void Request(ParticleRequest&& req);
 	static void Request(DecalRequest&& req);
 
-	// ---  発行（2Dはスプライト・文字・図形・折れ線を、drawKey の順に混ぜて描く。マスクの子は、マスクの始まりと終わりの間）---
+	// ---  発行 ---
 	static void Flush2d(const std::wstring& windowTitle);
-	static void FlushTransparentMesh(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB);
-	static void FlushOpaqueMesh(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB);
+	static void FlushTransparentMesh(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB, D3D12_GPU_VIRTUAL_ADDRESS shadowCB);
+	static void FlushOpaqueMesh(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB, D3D12_GPU_VIRTUAL_ADDRESS shadowCB);
+	// 深度プリパス: 不透明な物（深度を書く物）の深度だけを描く。色を塗る前に呼ぶ（描画先は深度だけを結んでおく）
+	static void FlushDepthPrepass(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB);
+	// 影の深度: 影を落とす不透明な物の深度だけを、ライトから見て描く（描画先はShadowMap）
+	static void FlushShadowCaster(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS lightCameraCB);
 	// isBeforeDepthOfField：true なら被写界深度の前に描く粒（Use Depth Of Field）だけ、false なら後に描く粒だけ
 	static void FlushParticle(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB, bool isBeforeDepthOfField);
 	static void FlushLine(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB);
@@ -71,7 +76,15 @@ public:
 private:
 	~RenderQueue() = default;
 	// MeshのRootSignature, PSO切り替え
-	static void FlushMeshList(const std::vector<MeshRequest>& meshes, const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB, const char* name);
+	static void FlushMeshList(const std::vector<MeshRequest>& meshes, const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB, 
+		D3D12_GPU_VIRTUAL_ADDRESS shadowCB, MeshPass pass, const char* name);
+	// そのパスで描く物か（深度だけのパスは、深度を書く物だけ。影の深度は、さらに影を落とす物だけ）
+	static bool IsDrawnInPass(const MeshRequest& req, MeshPass pass);
+	// そのパスのPSOKey（深度だけのパスは、ブレンド・ステンシルを使わない形に揃える）
+	static PSOKey MakeMeshPSOKey(const MeshRequest& req, MeshPass pass);
+	// 不透明な物を、状態の切り替えが少ない順（sortKey）に並べる
+	static void SortOpaqueMeshes();
+
 	// 今描いているビュー（windowTitle のウィンドウ・SetLayerVisible などで決めた見せ方）で描く物か。Flush の全部が使う
 	static bool IsDrawnInView(const DrawTarget& target, const std::wstring& windowTitle);
 
@@ -81,6 +94,7 @@ private:
 
 	std::vector<MeshRequest> transparentMeshRequests_;
 	std::vector<MeshRequest> opaqueMeshRequests_;
+	bool isOpaqueSorted_ = false; // opaqueMeshRequests_ を並べ終えたか
 	std::vector<Request2d> requests2d_;
 	std::vector<ParticleRequest> particleRequests_;
 	std::vector<LineRequest> lineRequests_;

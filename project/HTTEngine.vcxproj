@@ -163,6 +163,8 @@
     <ClCompile Include="HTTEngine\Graphics\PostEffect\DepthOfFieldPass.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Renderer\GameScreen.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Renderer\SkinCache.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Shadow\ShadowMap.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Shadow\ShadowRenderer.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Text\FontManager.cpp" />
     <ClCompile Include="HTTEngine\Math\Geometry\HitShape.cpp" />
     <ClCompile Include="HTTEngine\Math\Geometry\PathCurve.cpp" />
@@ -431,6 +433,9 @@
     <ClInclude Include="HTTEngine\Graphics\PostEffect\PostOverride.h" />
     <ClInclude Include="HTTEngine\Graphics\Renderer\GameScreen.h" />
     <ClInclude Include="HTTEngine\Graphics\Renderer\SkinCache.h" />
+    <ClInclude Include="HTTEngine\Graphics\Shadow\ShadowMap.h" />
+    <ClInclude Include="HTTEngine\Graphics\Shadow\ShadowSettings.h" />
+    <ClInclude Include="HTTEngine\Graphics\Shadow\ShadowRenderer.h" />
     <ClInclude Include="HTTEngine\Graphics\Text\FontManager.h" />
     <ClInclude Include="HTTEngine\Math\Color.h" />
     <ClInclude Include="HTTEngine\Math\Geometry\Capsule.h" />
@@ -666,6 +671,7 @@
     <None Include="HTTEngine\Shader\Data\Model\BlinnPhong.PS.shader" />
     <None Include="HTTEngine\Shader\Data\Model\HalfLambert.PS.shader" />
     <None Include="HTTEngine\Shader\Data\Model\Lambert.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Model\ModelDepth.PS.shader" />
     <None Include="HTTEngine\Shader\Data\Model\ModelSurface.hlsli.shader" />
     <None Include="HTTEngine\Shader\Data\Model\Object3d.hlsli.shader" />
     <None Include="HTTEngine\Shader\Data\Model\Object3d.VS.shader" />
@@ -693,6 +699,8 @@
     <None Include="HTTEngine\Shader\Data\Post\ToneMap.hlsli.shader" />
     <None Include="HTTEngine\Shader\Data\Resources\Texture.hlsli.shader" />
     <None Include="HTTEngine\Shader\Data\Resources\TextureCube.hlsli.shader" />
+    <None Include="HTTEngine\Shader\Data\Shadow\ShadowMask.CS.shader" />
+    <None Include="HTTEngine\Shader\Data\Shadow\ShadowReceiver.hlsli.shader" />
     <None Include="HTTEngine\Shader\Data\Skybox\Skybox.PS.shader" />
     <None Include="HTTEngine\Shader\Data\Skybox\Skybox.VS.shader" />
     <None Include="HTTEngine\Shader\Data\Sprite\Sprite2d.hlsli.shader" />

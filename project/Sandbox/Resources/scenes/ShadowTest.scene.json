@@ -1,0 +1,211 @@
+{
+	"version": 5,
+	"entities": [
+		{
+			"id": 1,
+			"name": "Main Camera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 5.0, -11.0],
+					"rotation": [22.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Camera": {
+					"fovY": 60.0,
+					"nearZ": 0.1,
+					"farZ": 1000.0,
+					"priority": 0
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Directional Light",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 6.0, 0.0],
+					"rotation": [45.0, -35.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Directional Light": {
+					"color": [1.0, 1.0, 1.0],
+					"intensity": 1.0,
+					"castsShadows": true,
+					"shadowMapSize": "Size2048",
+					"shadowDistance": 30.0,
+					"shadowStrength": 0.8,
+					"shadowBias": 0.05
+				}
+			}
+		},
+		{
+			"id": 3,
+			"name": "Ground",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, -0.05, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [24.0, 0.1, 24.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.7, 0.7, 0.7, 1.0],
+					"shadingType": "HalfLambert"
+				}
+			}
+		},
+		{
+			"id": 4,
+			"name": "Cube (BlinnPhong)",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.75, 0.0],
+					"rotation": [0.0, 30.0, 0.0],
+					"scale": [1.5, 1.5, 1.5]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.9, 0.5, 0.2, 1.0],
+					"shadingType": "BlinnPhong",
+					"specular": [0.5, 0.5, 0.5]
+				}
+			}
+		},
+		{
+			"id": 5,
+			"name": "Floating Box (Lambert)",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [3.5, 2.5, 1.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.3, 0.6, 0.9, 1.0],
+					"shadingType": "Lambert"
+				}
+			}
+		},
+		{
+			"id": 6,
+			"name": "Sphere (Phong)",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-3.5, 1.0, 0.5],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [2.0, 2.0, 2.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Sphere",
+					"color": [0.4, 0.85, 0.4, 1.0],
+					"shadingType": "Phong",
+					"specular": [0.5, 0.5, 0.5]
+				}
+			}
+		},
+		{
+			"id": 7,
+			"name": "Pillar",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [1.5, 2.5, 5.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [0.6, 5.0, 0.6]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.85, 0.85, 0.8, 1.0],
+					"shadingType": "HalfLambert"
+				}
+			}
+		},
+		{
+			"id": 8,
+			"name": "Transparent Box (no shadow)",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-3.0, 0.75, -4.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.5, 1.5, 1.5]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [1.0, 0.3, 0.3, 0.5],
+					"surface": "Transparent",
+					"shadingType": "HalfLambert"
+				}
+			}
+		},
+		{
+			"id": 9,
+			"name": "Cast Shadows Off Box",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [3.0, 0.75, -4.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.5, 1.5, 1.5]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.9, 0.9, 0.3, 1.0],
+					"shadingType": "HalfLambert",
+					"castsShadows": false
+				}
+			}
+		},
+		{
+			"id": 10,
+			"name": "Walker (skinned)",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-1.5, 0.0, 3.0],
+					"rotation": [0.0, 200.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Animator": {
+					"enabled": true,
+					"animation": "HTTEngine/Resources/Model/human/walk.gltf",
+					"clip": "Armature|mixamo.com|Layer0",
+					"speed": 1.0,
+					"loop": true,
+					"playOnStart": true,
+					"previewTime": 0.3
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "HTTEngine/Resources/Model/human/walk.gltf",
+					"texture": "",
+					"shadingType": "HalfLambert"
+				}
+			}
+		}
+	]
+}
