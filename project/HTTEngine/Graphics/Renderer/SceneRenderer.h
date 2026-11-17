@@ -1,14 +1,16 @@
 #pragma once
-#include "HTTEngine/Graphics/Pipeline/ShaderConstants.h"
-#include "HTTEngine/Graphics/PostEffect/PostProcess.h"
-#include "HTTEngine/Graphics/Renderer/SceneBackground.h"
-#include "HTTEngine/Scene/Skybox.h"
 #include <cstdint>
 #include <d3d12.h>
 #include <memory>
 #include <optional>
 #include <string>
 #include <wrl.h>
+#include "HTTEngine/Graphics/Pipeline/ShaderConstants.h"
+#include "HTTEngine/Graphics/PostEffect/PostProcess.h"
+#include "HTTEngine/Graphics/Renderer/SceneBackground.h"
+#include "HTTEngine/Graphics/Shadow/ShadowRenderer.h"
+#include "HTTEngine/Graphics/Shadow/ShadowSettings.h"
+#include "HTTEngine/Scene/Skybox.h"
 
 // 前方宣言
 class Skybox;
@@ -28,6 +30,7 @@ struct SceneViewOptions {
 	bool cameraVolume = true; // カメラごとのポストエフェクト（Camera Volume）を掛ける（Scene ビューだけ false。別のカメラから見るので、ピントが合わない）
 	std::optional<SceneBackground> background; // このビューの背景（無ければメインカメラの背景。Scene ビューは View メニューの Skybox で決める）
 };
+
 
 /// <summary>
 /// 1カメラ分のシーンを RenderTextureに描くクラス
@@ -72,6 +75,10 @@ public:
 	// 霧の値（FogSystem が、シーンの Fog Component から毎フレーム書く。Fog Component が無ければ「霧なし」を書く）
 	static void SetFog(const FogData& fog) { instance_->fog_ = fog; }
 
+	// --- 影（ShadowRendererが、ビューごとに影の深度・影の量の画面を作る）---
+	// 平行光源の影
+	static void SetDirectionalShadow(const DirectionalShadowSettings& settings) { instance_->directionalShadow_ = settings; }
+
 	// --- 被写界深度（ポストエフェクトで、ピントの前後を深度でぼかす）---
 	// 被写界深度の値（DepthOfFieldSystem が、シーンの Depth Of Field Component から毎フレーム書く。無ければ「ぼかさない」を書く）
 	static void SetDepthOfField(const DepthOfFieldSettings& settings) { instance_->depthOfField_ = settings; }
@@ -98,6 +105,8 @@ private:
 	static RenderTexture* RenderWorldForPost(const Camera* camera, D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle);
 	static void RenderOpaque(const Camera* camera, D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle, RenderTexture& work);
 	static void RenderTransparent(D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle);
+	// 深度プリパスと影の量の画面（不透明な物の色を塗る前。描画先は深度だけにして、終わったら色と深度に戻す）
+	static void RenderDepthPrepass(D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle, RenderTexture& work);
 	// ギズモの線（合成の後・UI の前。3D の絵の深度を読んで前後を比べる）
 	static void RenderGizmoLines(D3D12_GPU_VIRTUAL_ADDRESS camCB, const std::wstring& windowTitle, const ViewRect& rect);
 	static void RenderUI(const std::wstring& windowTitle, const ViewRect& rect);
@@ -109,11 +118,13 @@ private:
 	std::unique_ptr<Skybox> skybox_;
 	std::unique_ptr<RenderTexture> postRT_;    // 3D を描く置き場（HDR・深度を読める）
 	std::unique_ptr<PostProcess> postProcess_; // ポストエフェクトと、HDR の絵 → 画面（トーンマップ）
+	std::unique_ptr<ShadowRenderer> shadow_;   // 平行光源の影
 	Microsoft::WRL::ComPtr<ID3D12Resource> cameraCB_;
 	uint8_t* cameraCBMapped_ = nullptr;
 	uint32_t cameraSlot_ = 0;
 
-	FogData fog_;                       // 霧の値（初期値は霧なし）
+	FogData fog_;                                 // 霧の値（初期値は霧なし）
+	DirectionalShadowSettings directionalShadow_; // 平行光源の影
 	DepthOfFieldSettings depthOfField_; // 被写界深度の値（初期値はぼかさない）
 	PostOverrides cameraPostOverrides_; // カメラごとのポストエフェクトの上書き（初期値は上書きなし）
 	SceneBackground cameraBackground_;  // メインカメラの背景（初期値は天球）

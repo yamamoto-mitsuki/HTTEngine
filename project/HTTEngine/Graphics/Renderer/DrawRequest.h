@@ -19,7 +19,8 @@ struct MeshRequest : DrawTarget {
 	BlendMode blendMode = BlendMode::Normal;                   // ブレンド設定
 	RasterizerType rasterizerType = RasterizerType::SolidBack; // ラスタライザ設定
 	DepthMode depthMode = DepthMode::TestWrite;                // 深度設定
-	bool receivesDecals = true;                                // false：デカールを受けない（不透明な物だけ。ステンシルに印を付ける）
+	bool receivesDecals = true;                                // false：デカールを受けない
+	bool castsShadows = true;                                   // false: 影を落とさない
 	StencilMode stencilMode = StencilMode::None;               // ステンシル（RenderQueue::Request が receivesDecals から決める）
 	float cameraDistanceSq = 0.0f;                             // カメラとの距離
 	uint64_t sortKey;                                          // ソートキー

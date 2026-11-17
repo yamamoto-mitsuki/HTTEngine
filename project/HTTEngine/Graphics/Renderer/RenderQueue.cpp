@@ -1,5 +1,6 @@
 #include "HTTEngine/Graphics/Renderer/RenderQueue.h"
 
+#include <optional>
 #include <algorithm>
 
 #include "HTTEngine/Diagnostics/HTTAssert.h"
@@ -34,6 +35,7 @@ void RenderQueue::Release() {
 void RenderQueue::Clear() { 
 	instance_->transparentMeshRequests_.clear();
 	instance_->opaqueMeshRequests_.clear();
+	instance_->isOpaqueSorted_ = false;
 	instance_->particleRequests_.clear();
 	instance_->requests2d_.clear();
 	instance_->lineRequests_.clear();
@@ -78,6 +80,7 @@ void RenderQueue::Request(MeshRequest&& req) {
 		instance_->transparentMeshRequests_.push_back(std::move(req)); // 半透明
 	} else {
 		instance_->opaqueMeshRequests_.push_back(std::move(req)); // 不透明(TestWrite)
+		instance_->isOpaqueSorted_ = false;                       // 足したので、並べ直す
 	}
 }
 
@@ -119,14 +122,15 @@ void RenderQueue::Request(DecalRequest&& req) {
 // Mesh
 //=============================================================================
 // ===== RootSignature, PSOソート =====
-void RenderQueue::FlushMeshList(const std::vector<MeshRequest>& meshes, const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB, const char* name) {
+void RenderQueue::FlushMeshList(const std::vector<MeshRequest>& meshes, const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB, 
+	D3D12_GPU_VIRTUAL_ADDRESS shadowCB, MeshPass pass, const char* name) {
 	auto* cmdList = DirectXCommon::GetCommandList();
 	// SRVセット
 	const D3D12_GPU_DESCRIPTOR_HANDLE heapStart = DirectXCommon::BindSRVHeap(cmdList);
 	// ステンシルの参照値（デカールを受けない物が書く印。印を書かない PSO はステンシルを使わないので、全部に同じ値でよい）
 	cmdList->OMSetStencilRef(kStencilNoDecalBit);
 	// キー初期化
-	uint64_t currentKey = UINT64_MAX;
+	std::optional<PSOKey> currentKey; // 今セットしているPSO
 	uint32_t scopeIndex = UINT32_MAX;
 	uint32_t currentShaderProg = static_cast<uint32_t>(UINT32_MAX);
 
@@ -134,6 +138,10 @@ void RenderQueue::FlushMeshList(const std::vector<MeshRequest>& meshes, const st
 	for (const MeshRequest& req : meshes) {
 		// このビューで描かない物は飛ばす（別のウィンドウ・切ってある層・目で隠した物）
 		if (!IsDrawnInView(req, windowTitle)) {
+			continue;
+		}
+		// このパスで描かないものは飛ばす
+		if (!IsDrawnInPass(req, pass)) {
 			continue;
 		}
 		// --- シェーダー(RootSignature)が変わったとき ---
@@ -161,21 +169,25 @@ void RenderQueue::FlushMeshList(const std::vector<MeshRequest>& meshes, const st
 			if (texCubeSlot != rs.slotOf.end()) {
 				cmdList->SetGraphicsRootDescriptorTable(texCubeSlot->second, heapStart);
 			}
+			// CBuffer: Shadow
+			auto shadowSlot = rs.slotOf.find(RootBind::Shadow);
+			if (shadowCB && shadowSlot != rs.slotOf.end()) {
+				cmdList->SetGraphicsRootConstantBufferView(shadowSlot->second, shadowCB);
+			}
 			currentShaderProg = shaderProg;
 		}
 		// --- PSOが変わったとき ---
-		if (req.sortKey != currentKey) {
+		const PSOKey psoKey = MakeMeshPSOKey(req, pass);
+		if (currentKey != psoKey) {
 			// GPUProfiler
 			if (scopeIndex != UINT32_MAX) {
 				GPUProfiler::End(cmdList, scopeIndex);
 			}
 			// PSO
-			PSOKey psoKey = PSOManager::GetPSOKey(req.category, req.shadingType, req.blendMode, req.rasterizerType, req.depthMode, req.stencilMode);
 			cmdList->SetPipelineState(PSOManager::GetPSO(psoKey).Get());
 			scopeIndex = GPUProfiler::Begin(cmdList, (std::string(name) + "/" + PSOManager::GetStateName(psoKey)).c_str());
-			currentKey = req.sortKey;
+			currentKey = psoKey;
 		}
-
 		RenderContext::DrawMesh(req);
 	}
 	if (scopeIndex != UINT32_MAX) {
@@ -183,19 +195,65 @@ void RenderQueue::FlushMeshList(const std::vector<MeshRequest>& meshes, const st
 	}
 }
 
-// ===== 不透明 =====
-void RenderQueue::FlushOpaqueMesh(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB) {
-	auto& meshes = instance_->opaqueMeshRequests_;
-	// 状態切替を減らす＝状態キーでソート
-	std::sort(meshes.begin(), meshes.end(), [](const MeshRequest& a, const MeshRequest& b) { return a.sortKey < b.sortKey; });
-	FlushMeshList(meshes, windowTitle, cameraCB, "Opaque");
+// ===== そのパスで描く物か =====
+bool RenderQueue::IsDrawnInPass(const MeshRequest& req, MeshPass pass) { 
+	switch (pass) { 
+	case MeshPass::Color:
+		return true;
+	case MeshPass::DepthPrepass:
+	    // 深度を書く物だけ（深度を見ないDisableの物、いつも手前に描くので、深度に入れない）
+		return req.depthMode == DepthMode::TestWrite;
+	case MeshPass::ShadowCaster:
+	    // 深度を書く物のうち、影の落とす物だけ。エディタのグリッド・ギズモ（Default以外の層）
+		return req.depthMode == DepthMode::TestWrite && req.castsShadows && req.layer == DrawLayer::Default;
+	}
+	return false;
 }
 
-void RenderQueue::FlushTransparentMesh(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB) {
+// ===== そのパスのPSOKey =====
+PSOKey RenderQueue::MakeMeshPSOKey(const MeshRequest& req, MeshPass pass) {
+	if (pass == MeshPass::Color) {
+		return PSOManager::GetPSOKey(req.category, req.shadingType, req.blendMode, req.rasterizerType, req.depthMode, req.stencilMode);
+	}
+	// 深度だけのパスは色を出さないので、ブレンドは何でもよい。ステンシルは、色を塗るパスで書く
+	return PSOManager::GetPSOKey(req.category, req.shadingType, BlendMode::Normal, req.rasterizerType, DepthMode::TestWrite, StencilMode::None, pass);
+}
+
+// ===== 不透明な物を並べる =====
+void RenderQueue::SortOpaqueMeshes() {
+	if (instance_->isOpaqueSorted_) {
+		return;
+	}
+	auto& meshes = instance_->opaqueMeshRequests_;
+	// 状態切り替えを減らす = 状態キーでソート
+	std::sort(meshes.begin(), meshes.end(), [](const MeshRequest& a, const MeshRequest& b) { return a.sortKey < b.sortKey; });
+	instance_->isOpaqueSorted_ = true;
+}
+
+// ===== 不透明 =====
+void RenderQueue::FlushOpaqueMesh(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB, D3D12_GPU_VIRTUAL_ADDRESS shadowCB) {
+	SortOpaqueMeshes();
+	FlushMeshList(instance_->opaqueMeshRequests_, windowTitle, cameraCB, shadowCB, MeshPass::Color, "Opaque");
+}
+
+// ===== 深度プリパス =====
+void RenderQueue::FlushDepthPrepass(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB) {
+	SortOpaqueMeshes();
+	FlushMeshList(instance_->opaqueMeshRequests_, windowTitle, cameraCB, 0, MeshPass::DepthPrepass, "Depth Prepass");
+}
+
+// ===== 影の深度 =====
+void RenderQueue::FlushShadowCaster(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS lightCameraCB) {
+	SortOpaqueMeshes();
+	FlushMeshList(instance_->opaqueMeshRequests_, windowTitle, lightCameraCB, 0, MeshPass::ShadowCaster, "Shadow Caster");
+}
+
+// ===== 半透明 =====
+void RenderQueue::FlushTransparentMesh(const std::wstring& windowTitle, D3D12_GPU_VIRTUAL_ADDRESS cameraCB, D3D12_GPU_VIRTUAL_ADDRESS shadowCB) {
 	auto& meshes = instance_->transparentMeshRequests_;
 	// 正しくブレンド＝奥→手前（距離²の降順）
 	std::sort(meshes.begin(), meshes.end(), [](const MeshRequest& a, const MeshRequest& b) { return a.cameraDistanceSq > b.cameraDistanceSq; });
-	FlushMeshList(meshes, windowTitle, cameraCB, "Transparent");
+	FlushMeshList(meshes, windowTitle, cameraCB, shadowCB, MeshPass::Color, "Transparent");
 }
 
 

@@ -31,6 +31,7 @@ enum class RootBind {
 	BindlessTextureCube,  // バインドレスキューブテクスチャ
 	Decal,                // デカールの箱（ワールド → 箱の中の行列・深度の番号）。全部のデカールで共通（PS）
 	DrawData,             // 描き手が描く物ごとに送る値（形・進み具合など。中身は描き手ごとの構造体。PS）
+	Shadow,               // 影の受け方（影の量の画面の番号。ModelのPS）
 };
 
 // マージ後の1リソース（reflection情報 + どのステージから見えるか）
@@ -79,6 +80,12 @@ public:
 	/// vs, psなどペアのシェーダーを結びつける
 	/// </summary>
 	static std::vector<MergedBind> MergeStages(const std::vector<ShaderResourceBinding>& vs, const std::vector<ShaderResourceBinding>& ps);
+
+	/// <summary>
+	/// PS1本分のリソースを足す（同じRootSignatureで、別のPSのPSOも作るとき）
+	/// <para>もうある物は足さない（VSだけが使っていた物は、別のPSからも見えるようにする）</para>
+	/// </summary>
+	static void AddPixelStage(std::vector<MergedBind>& binds, const std::vector<ShaderResourceBinding>& ps);
 
 	/// <summary>
 	/// 自動でRootSignature作成

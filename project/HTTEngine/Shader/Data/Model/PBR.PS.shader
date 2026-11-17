@@ -14,6 +14,7 @@ vs:       Object3dVS
 #include "ModelSurface.hlsli"
 #include "Buffers/Camera.hlsli"
 #include "Buffers/Light.hlsli"
+#include "Shadow/ShadowReceiver.hlsli"
 #include "Fog/Fog.hlsli"
 #include "Resources/TextureCube.hlsli"
 
@@ -153,7 +154,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     // --- 平行光源 ---
     {
         float32_t3 L = normalize(-gDirectionalLight.direction); // 表面→ライトへ向かう方向
-        float32_t3 radiance = gDirectionalLight.color.rgb * gDirectionalLight.intensity;
+        float32_t3 radiance = gDirectionalLight.color.rgb * gDirectionalLight.intensity * GetDirectionalShadow(input.position);
         Lo += CookTorranceLighting(N, V, L, albedo, F0, radiance);
     }
     // --- ポイントライト ---

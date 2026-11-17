@@ -10,6 +10,7 @@
 
 using namespace Microsoft::WRL;
 
+
 //=============================================================================
 // enum format → DXGI_FORMAT変換
 //=============================================================================
@@ -25,6 +26,7 @@ DXGI_FORMAT RenderTexture::ToDXGIFormat(RenderTextureFormat format) {
 	HTT_ASSERT_MSG(false, "未対応のRenderTextureFormatです");
 	return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
 }
+
 
 //=============================================================================
 // コンストラクタ・デストラクタ
@@ -58,6 +60,7 @@ RenderTexture::~RenderTexture() {
 	}
 }
 
+
 //=============================================================================
 // 描画開始
 //=============================================================================
@@ -82,6 +85,7 @@ void RenderTexture::PreDraw() {
 	cmdList->ClearRenderTargetView(rtvHandle_, RenderWindow::kClearColor.data(), 0, nullptr);
 }
 
+
 //=============================================================================
 // 描画終了
 //=============================================================================
@@ -94,6 +98,7 @@ void RenderTexture::PostDraw() {
 	    D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE); // ImGuiが読める状態
 }
 
+
 //=============================================================================
 // ほかの RenderTexture の深度で描く
 //=============================================================================
@@ -103,6 +108,34 @@ void RenderTexture::BindWithDepthOf(RenderTexture& depthSource) {
 	HTT_ASSERT_MSG(depthSource.width_ == width_ && depthSource.height_ == height_, "depthSource と大きさが違います");
 	DirectXCommon::GetCommandList()->OMSetRenderTargets(1, &rtvHandle_, false, &depthSource.dsvHandle_);
 }
+
+
+//=============================================================================
+// 深度だけ・色と深度を結び直す
+//=============================================================================
+// ===== 深度だけ =====
+void RenderTexture::BindDepthOnly() { 
+	HTT_ASSERT_MSG(useDepth_, "深度だけを結ぶには、深度あり（useDepth）で作ってください");
+	DirectXCommon::GetCommandList()->OMSetRenderTargets(0, nullptr, false, &dsvHandle_);
+}
+
+// ===== 色と深度 =====
+void RenderTexture::BindColorAndDepth() { DirectXCommon::GetCommandList()->OMSetRenderTargets(1, &rtvHandle_, false, useDepth_ ? &dsvHandle_ : nullptr); }
+
+
+//=============================================================================
+// 描いている途中に、深度を CS で読む
+//=============================================================================
+// ===== 読める状態にする =====
+void RenderTexture::BeginDepthComputeRead() { 
+	HTT_ASSERT_MSG(isDepthReadable_, "深度を読むには、isDepthReadableで作ってください");
+	// 書く状態 → CSが読む状態
+	DirectXCommon::TransitionBarrier(depthResource_.Get(), D3D12_RESOURCE_STATE_DEPTH_WRITE, D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+}
+
+// ===== 書く状態に戻す =====
+void RenderTexture::EndDepthComputeRead() { DirectXCommon::TransitionBarrier(depthResource_.Get(), D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE); }
+
 
 //=============================================================================
 // CS・PS から読む
@@ -126,6 +159,7 @@ void RenderTexture::EndShaderRead() {
 	}
 }
 
+
 //=============================================================================
 // 深度を読みながら描く
 //=============================================================================
@@ -142,6 +176,7 @@ void RenderTexture::EndDepthRead() {
 	DirectXCommon::TransitionBarrier(depthResource_.Get(), D3D12_RESOURCE_STATE_DEPTH_READ | D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_DEPTH_WRITE);
 	DirectXCommon::GetCommandList()->OMSetRenderTargets(1, &rtvHandle_, false, &dsvHandle_);
 }
+
 
 //=============================================================================
 // RTVとSRV共通のリソースを生成してRTV/SRVを登録する
@@ -175,6 +210,7 @@ void RenderTexture::CreateResource() {
 	srvDesc.Texture2D.MipLevels = 1;
 	DirectXCommon::GetDevice()->CreateShaderResourceView(resource_.Get(), &srvDesc, srvHandleCPU_);
 }
+
 
 //=============================================================================
 // 深度バッファを生成する

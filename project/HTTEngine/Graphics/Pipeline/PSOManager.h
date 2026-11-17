@@ -26,6 +26,7 @@ struct PSOKey {
 	RasterizerType rasterizerType;
 	DepthMode depthMode;
 	StencilMode stencilMode = StencilMode::None;
+	MeshPass pass = MeshPass::Color;
 	bool operator==(const PSOKey&) const = default;
 };
 struct PSOHash {
@@ -35,6 +36,7 @@ struct PSOHash {
 		h = h * 31 + static_cast<size_t>(k.rasterizerType);
 		h = h * 31 + static_cast<size_t>(k.depthMode);
 		h = h * 31 + static_cast<size_t>(k.stencilMode);
+		h = h * 31 + static_cast<size_t>(k.pass);
 		return h;
 	}
 };
@@ -89,8 +91,9 @@ public:
 	/// <param name="rasterizerType">ラスタライザ設定</param>
 	/// <param name="depthMode">深度設定</param>
 	/// <param name="stencilMode">ステンシル設定（UI のマスク）</param>
+	/// <param name="pass">どのパスで描くか</param>
 	static PSOKey GetPSOKey(DrawCategory drawCategory, ShadingType shadingType, BlendMode blendMode = BlendMode::Normal, RasterizerType rasterizerType = RasterizerType::SolidBack,
-	    DepthMode depthMode = DepthMode::TestWrite, StencilMode stencilMode = StencilMode::None);
+	    DepthMode depthMode = DepthMode::TestWrite, StencilMode stencilMode = StencilMode::None, MeshPass pass = MeshPass::Color);
 
 	/// <summary>
 	/// PipelineStateの状態名を取得

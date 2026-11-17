@@ -181,7 +181,7 @@ struct Material3dData {
 // HLSL の定数バッファは 16 バイトずつに詰めるので、並びを変えたら .hlsli も同じに直す（大きさがずれたら、ここで止まる）
 static_assert(sizeof(Material3dData) == 160, "Material3dData の大きさが ModelSurface.hlsli の ModelMaterial と違います");
 
-// Line3D用マテリアル(b0, PS)
+// ===== Line3D用マテリアル(b0, PS) =====
 struct MaterialLineData {
 	Vector3 cameraWorldPos;  // カメラのワールド座標
 	float fadeStartDistance; // フェード開始距離
@@ -191,7 +191,7 @@ struct MaterialLineData {
 	float pad0 = 0.0f;
 };
 
-// IBLの索引
+// ===== IBLの索引 =====
 struct IBLParamsData {
 	uint32_t irradianceIndex;
 	uint32_t prefilterIndex;
@@ -200,6 +200,14 @@ struct IBLParamsData {
 	uint32_t enabled = 1;
 	float pad[3];
 };
+
+// ===== 影の受け方（ModelのPSが、平行光源の光にどれだけ影が掛かるかを読む）=====
+struct ShadowReceiverData {
+	uint32_t maskIndex = 0; // 影の画面の量（gTexturesの番号。1で光が届く、0で影）
+	uint32_t hasMask = 0;   // 1: 影の量の画面を読む 0: 影なし
+	float padA[2] = {};
+};
+static_assert(sizeof(ShadowReceiverData) == 16, "HLSLのShadowReciverと大きさが違います");
 
 
 //=============================================================================

@@ -14,6 +14,7 @@ vs:       Object3dVS
 #include "ModelSurface.hlsli"
 #include "Buffers/Camera.hlsli"
 #include "Buffers/Light.hlsli"
+#include "Shadow/ShadowReceiver.hlsli"
 #include "Fog/Fog.hlsli"
 
 // 円周率
@@ -33,8 +34,8 @@ PixelShaderOutput main(VertexShaderOutput input) {
     {
         float3 lightDir = normalize(-gDirectionalLight.direction);
         float cos = pow(dot(N, lightDir) * 0.5f + 0.5f, 2.0f);
-        
-        diffuseLighting += gDirectionalLight.color.rgb * gDirectionalLight.intensity * cos;
+        float shadow = GetDirectionalShadow(input.position);
+        diffuseLighting += gDirectionalLight.color.rgb * gDirectionalLight.intensity * cos * shadow;
     }
     
     // ===== PointLights =====

@@ -14,6 +14,7 @@ vs:       Object3dVS
 #include "ModelSurface.hlsli"
 #include "Buffers/Camera.hlsli"
 #include "Buffers/Light.hlsli"
+#include "Shadow/ShadowReceiver.hlsli"
 #include "Fog/Fog.hlsli"
 
 static const float PI = 3.141596535f;
@@ -31,7 +32,8 @@ PixelShaderOutput main(VertexShaderOutput input)
     {
         float3 lightDir = normalize(-gDirectionalLight.direction);
         float NdotL = saturate(dot(N,lightDir));
-        diffuseLighting += gDirectionalLight.color.rgb * gDirectionalLight.intensity * NdotL;
+        float shadow = GetDirectionalShadow(input.position);
+        diffuseLighting += gDirectionalLight.color.rgb * gDirectionalLight.intensity * NdotL * shadow;
     }
     // ポイントライト
      {

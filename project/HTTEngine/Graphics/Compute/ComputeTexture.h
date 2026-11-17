@@ -4,6 +4,7 @@
 #include <d3d12.h>
 #include <wrl.h>
 
+
 /// <summary>
 /// CS が書いて、CS・PS が読むテクスチャ（書く窓口 UAV と、読む窓口 SRV を両方持つ）
 /// <para>使い方：BeginWrite（読む状態 → 書く状態）→ CS で書く → EndWrite（書く状態 → 読む状態）→ 別の CS・PS が gTextures[GetSRVSlot()] で読む</para>
@@ -19,7 +20,7 @@ public:
 	// SRV・UAV のスロットを返す
 	~ComputeTexture();
 
-	// コピー禁止（スロットを2回返してしまう）
+	// コピー禁止
 	ComputeTexture(const ComputeTexture&) = delete;
 	ComputeTexture& operator=(const ComputeTexture&) = delete;
 
