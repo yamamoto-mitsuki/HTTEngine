@@ -16,4 +16,5 @@
 | スプライトのコマ送りアニメ（コマを自動で送る再生の仕組み） | コマを並べた画像の1コマを出すのはある（Sprite Renderer・Image の Columns・Rows・Frame）。コマを送るのは、Script で `frame` を書き換えるか、Timeline の値のトラックで `frame` を動かす（[21章](21-CurveTimeline.md)） |
 | Component の可変長の文字列（`std::string`） | 入れられない。固定長の `FixedString` を使う（理由は [ARCHITECTURE.md](../ARCHITECTURE.md) の基本設計原則 2） |
 | Component の可変長の一覧（`std::vector`） | 入れられない。上限の数を決めた `FixedList<T, N>` を使う（Inspector・保存は `ui.ListField`。Script のメンバなら `std::vector` でよい） |
+| ポイントライト・スポットライトの影、半透明な物の影、やわらかい影 | 平行光源の、縁のくっきりした影だけ（[9章](09-Light.md)）。やわらかい影・遠くまでの影は段階を分けて足す |
 | ビルドの高速化（PCH） | 使っていない。先に「複数プロセッサによるコンパイル（/MP）」がオンになっていることを確かめる |

@@ -38,6 +38,7 @@ EntityManager::RequestAdd<ModelRendererComponent>(ball, renderer);
 | `depthMode` | `TestWrite`（不透明） / 半透明は書き込みを切る |
 | `billboard` | `None` / `Full` / `AxisY`（カメラの方を向く） |
 | `receivesDecals` | false ならデカールを受けない（不透明なときだけ効く） |
+| `castsShadows` | false なら平行光源の影を落とさない（不透明なときだけ落とす。影を受けるのはそのまま。[9章](09-Light.md#影平行光源)） |
 | `enabled` | falseで描かない |
 | `material`・`overrideMaterial` | Base Color・Ambient〜Roughness・Alpha Cutoff。**`overrideMaterial` が true のときだけ、読み込んだマテリアル（mtl / glTF）の値の代わりに、全部のメッシュに同じ値を使う**（テクスチャは読み込んだ物のまま）。Inspector の Material で値を触ると自動で入る。Material の「Model Materials」に読み込んだマテリアルの一覧が出て、**Copy** でその値を写せる。Alpha Cutoff だけは Override に関係なくいつも効く |
 
