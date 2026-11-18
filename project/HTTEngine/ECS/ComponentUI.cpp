@@ -647,7 +647,7 @@ public:
 	}
 
 	// アニメーションのクリップの名前。ClipSourceScope で決めたファイルの中の名前から選ぶ
-	// ファイルが決まっていない（Sample Animation が未選択など）なら、名前を打つ欄にする
+	// ファイルが決まっていない（攻撃表を使う敵がシーンに居ないなど）なら、名前を打つ欄にする
 	void ClipField(const char* label, std::string& clip, FieldStyle style) override {
 		const uint32_t source = GetClipSource();
 		const uint32_t count = AnimationManager::GetAnimationCount(source); // 未選択なら 0

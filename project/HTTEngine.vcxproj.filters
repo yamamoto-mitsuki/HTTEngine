@@ -941,6 +941,9 @@
     </ClCompile>
     <ClCompile Include="HTTEngine\Graphics\Shadow\ShadowMap.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Shadow\ShadowRenderer.cpp" />
+    <ClCompile Include="HTTEngine\AI\BuiltInAttackParts.cpp">
+      <Filter>HTTEngine\AI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\spdlog\async.h">
@@ -1873,6 +1876,9 @@
     <ClInclude Include="HTTEngine\Graphics\Shadow\ShadowSettings.h" />
     <ClInclude Include="HTTEngine\Graphics\Shadow\ShadowMap.h" />
     <ClInclude Include="HTTEngine\Graphics\Shadow\ShadowRenderer.h" />
+    <ClInclude Include="HTTEngine\AI\BuiltInAttackParts.h">
+      <Filter>HTTEngine\AI</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="HTTEngine.props" />

@@ -347,7 +347,7 @@ public:
 			clip = text;
 		}
 	}
-	// 今、クリップの候補を出しているアニメーションのファイル（AnimationManager の番号。0 なら決めていない）
+	/// <para>Animatorは自分のファイル、攻撃表はその表を使う敵のAnimatorのファイルを渡す。Scriptの値などを描く側が決める</para>
 	uint32_t GetClipSource() const { return clipSource_; }
 
 	// ===== Settings の名前の一覧から選ぶ（レイヤー・攻撃の種類。NameList）=====

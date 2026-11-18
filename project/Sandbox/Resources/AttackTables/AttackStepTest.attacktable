@@ -1,0 +1,101 @@
+{
+	"settings": {
+		"maxRepeat": 0
+	},
+	"phases": [
+		{
+			"name": "Phase 1",
+			"minIdleSeconds": 1.5,
+			"idleParts": [
+				{
+					"name": "FaceTarget",
+					"fields": {
+						"Turn Smooth Time": 0.15
+					}
+				}
+			]
+		}
+	],
+	"attacks": [
+		{
+			"name": "Attack 1",
+			"weight": 1.0,
+			"minDistance": 0.0,
+			"maxDistance": 0.0,
+			"cooldown": 0.0,
+			"phase0": true,
+			"parts": [
+				{
+					"name": "DashToTarget",
+					"step": "Dash",
+					"fields": {
+						"Speed": 10.0,
+						"Stop Distance": 1.5
+					}
+				},
+				{
+					"name": "GrabTarget",
+					"step": "Glab",
+					"fields": {
+						"Range": 2.0,
+						"Hold Height": 3.0
+					}
+				}
+			],
+			"steps": [
+				{
+					"name": "Windup",
+					"stage": "Windup",
+					"seconds": 0.5,
+					"next": {
+						"jump": "Next",
+						"step": ""
+					},
+					"fail": {
+						"jump": "End",
+						"step": ""
+					}
+				},
+				{
+					"name": "Dash",
+					"stage": "Active",
+					"seconds": 1.52,
+					"next": {
+						"jump": "Next",
+						"step": ""
+					},
+					"fail": {
+						"jump": "End",
+						"step": ""
+					}
+				},
+				{
+					"name": "Glab",
+					"stage": "Active",
+					"seconds": 1.0,
+					"next": {
+						"jump": "Next",
+						"step": ""
+					},
+					"fail": {
+						"jump": "End",
+						"step": ""
+					}
+				},
+				{
+					"name": "Recovery",
+					"stage": "Recovery",
+					"seconds": 0.5,
+					"next": {
+						"jump": "Next",
+						"step": ""
+					},
+					"fail": {
+						"jump": "End",
+						"step": ""
+					}
+				}
+			]
+		}
+	]
+}

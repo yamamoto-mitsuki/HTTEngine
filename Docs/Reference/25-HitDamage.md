@@ -84,55 +84,70 @@ Hitbox と同じ Entity に付けると、**Warning の間、床・壁に攻撃�
 
 ## 攻撃表の AI（Attack Table）
 
-ボスのような「攻撃を選んで、予備動作 → 攻撃 → 硬直をくり返す」敵を、表のファイルで作る。**Add Component → Gameplay → Attack Table**（`AttackTableComponent`）に、表のファイル（`.attacktable`。Project の Create → Attack Table）と Target（狙う相手）を選ぶ。
+ボスのような「攻撃を選んで、ステップ（溜め → 走る → 掴む など）を順に進める」敵を、表のファイルで作る。**Add Component → Gameplay → Attack Table**（`AttackTableComponent`）に、表のファイル（`.attacktable`。Project の Create → Attack Table）と Target（狙う相手）を選ぶ。
 
 - 表の中身は、Project でファイルを選ぶと Inspector で直せる。同じ表を選んだ敵は全部同じ表を見る。
-  - **フェーズ**：HP の割合（Health Threshold）で切り替わる段階。移る長さ（Transition Seconds）・攻撃を選ぶまでの最短の秒（Min Idle Seconds）・待ちの部品（Idle Part）。
-  - **攻撃1行**：名前・攻撃部品（Part）・抽選の重み・使う距離（Min / Max Distance）・クールタイム・予備動作 / 攻撃 / 硬直の秒・使えるフェーズ。
-  - Max Repeat（同じ攻撃を続けてよい回数）・Sample Animation（部品の Clip の欄に候補の名前を出すためだけのアニメのファイル）。
-- 状態は `Selecting`（選んでいる）→ `Attacking`（`Windup` → `Active` → `Recovery`）→ `Selecting`。ほかに `Staggered`（怯み）・`PhaseTransition`・`Defeated`。同じ Entity に Health があれば、HP の割合はそこから読む。
-- **Attack Table ウィンドウ**に、選んだ敵の今の状態・攻撃ごとの使えるか・選ばれる確率が出る。
+  - **フェーズ**：HP の割合（Health Threshold）で切り替わる段階。移る長さ（Transition Seconds）・攻撃を選ぶまでの最短の秒（Min Idle Seconds）・待ちの部品（Idle Parts。攻撃を選ぶまでの間動く）。
+  - **攻撃1行**：名前・抽選の重み・使う距離（Min / Max Distance）・クールタイム・使えるフェーズ・**Steps**・**Parts**。
+  - **Steps**：上から順に進める。1つずつ名前・Stage（Windup / Active / Recovery / None の目印）・Seconds（長さの上限）・Next（終わったときの行き先）・On Fail（部品が失敗したときの行き先）。行き先は「1つ下」「攻撃を終える」「名前で選んだステップ」。
+  - **Parts**：攻撃部品の並び。1つずつ **Runs In** で動くステップを選ぶ（Whole Attack なら攻撃の始めから終わりまで）。同じステップの部品は上から順に呼ぶ。
+  - Max Repeat（同じ攻撃を続けてよい回数）。部品の Clip の欄の候補は、この表を使う敵（Animator を持つ物）を開いているシーンに置くと、その Animator のファイルから出る（居なければ名前を打つ）。
+- エンジンの部品：`HitboxWindow`（そのステップの間だけ子の Hitbox を予告・当たりにする）・`PlayAnimation`（ステップに入ったらアニメを流す。ステップの長さに合わせられる）。
+- 状態は `Selecting`（選んでいる）→ `Attacking`（ステップを進める）→ `Selecting`。ほかに `Staggered`（怯み）・`PhaseTransition`・`Defeated`。同じ Entity に Health があれば、HP の割合はそこから読む。
+- **Attack Table ウィンドウ**に、選んだ敵の今の状態・ステップ・攻撃ごとの使えるか・選ばれる確率が出る。
 - 時間は `Time::GetDeltaTime()` で進むので、ポーズ・ヒットストップの間は止まる。
 
 ```cpp
 AttackTableSystem::Stagger(boss, 1.5f);           // 怯ませる（今の攻撃を止める）
 AttackTableSystem::RequestAttack(boss, "Sweep");  // 次にこの攻撃を出させる
 AttackTableSystem::SetEnabled(boss, false);       // AI を止める
-const AttackTableStatus status = AttackTableSystem::GetStatus(boss); // 今の状態・攻撃の名前・残りの秒
+const AttackTableStatus status = AttackTableSystem::GetStatus(boss); // 今の状態・攻撃とステップの名前・残りの秒
 ```
 
 ### 攻撃の中身を書く（攻撃部品 `AttackPart`）
 
+部品は「1つのステップの1つの事」を書く。ステップの間だけ動かすなら、表で Runs In にそのステップを選ぶ。
+
 ```cpp
 #include "HTTEngine/AI/AttackPart.h"
 
-class SpinAttack : public AttackPart {
+class DashToTarget : public AttackPart {
 public:
-	void OnBegin(const AttackPartContext& context) override { hitbox_ = context.self.FindChild("Blade"); }
-	void OnStage(const AttackPartContext& context) override {
-		SyncHitbox(hitbox_, context); // 予備動作 → Warning、攻撃 → Active、硬直 → Off（段階の残りの秒で）
-		if (context.stage == AttackStage::Windup) {
-			AnimationSystem::Play(context.self.handle, "SpinWindup", false);
+	void OnBegin(const AttackPartContext& context) override { … } // Runs In のステップに入った
+	void OnUpdate(const AttackPartContext& context) override {     // 毎フレーム
+		if (!context.target) {
+			FailStep();   // On Fail の行き先へ
+			return;
+		}
+		if (/* 着いた */) {
+			FinishStep(); // Seconds を待たずに Next の行き先へ
 		}
 	}
-	void OnUpdate(const AttackPartContext& context) override { … } // 毎フレーム（context.GetStageProgress() で 0〜1）
-	void OnEnd(const AttackPartContext&, AttackPartEnd) override { HitSystem::Deactivate(hitbox_.handle); } // 途中で止められても必ず呼ばれる
-	void Fields(ComponentUI& ui) override { ui.Field("Speed", speed_); } // 攻撃1行ごとの値（表に保存される）
+	void OnEnd(const AttackPartContext&, AttackPartEnd) override { … } // ステップが終わった（途中で止められても必ず呼ばれる）
+	void Fields(ComponentUI& ui) override { ui.Field("Speed", speed_); } // 置いた所ごとの値（表に保存される）
 private:
-	GameObject hitbox_;
 	float speed_ = 10.0f;
 };
-ATTACK_PART(SpinAttack, "その場で回って周りを切る"); // 攻撃表の Part の一覧に出る（説明は省略できる）
+ATTACK_PART(DashToTarget, "相手へ走る。着いたらステップを終える"); // 攻撃表の Part の一覧に出る（説明は省略できる）
 ```
 
-- 実体は敵1体の攻撃1行（待ちの部品はフェーズ1つ）ごとに1つできるので、メンバに途中の値を持ってよい。
-- 同じ部品を、攻撃の Part にも、フェーズの Idle Part にも選べる（どちらかは `context.state` で分かる。待ちのときは OnStage が呼ばれない）。
+- `context` の時間：`stepTime`（今のステップに入ってからの秒。ステップが変わると 0）・`stepDuration`（今のステップの Seconds。上限なので、FinishStep で早く終わることがある）・`attackTime`（攻撃が始まってからの秒）。`GetStepProgress()` で 0〜1。
+- `FinishStep()`・`FailStep()` が効くのは、そのフレームの部品を全部呼んだ後。同じフレームに両方あれば失敗が勝つ。OnBegin で呼べば、次の OnUpdate の後に効く。
+- Runs In が Whole Attack の部品には、ステップに入るたびに `OnStep` が来る（`context.step`・`context.stage` で分ける）。ステップをまたぐ物（向き・片付け）に使う。
+- `SyncHitbox(hitbox, context)` を OnStep で呼ぶと、Hitbox の窓を Stage に合わせる（Windup → Warning、Active → Active、それ以外 → Off）。
+- 実体は置いた所1つにつき1つ（敵1体ごと）できるので、メンバに途中の値を持ってよい。前に使ったときの値が残るので、OnBegin で初めに戻す。
+- 部品の中から `AttackTableSystem::Stagger` を呼んでもよい。怯むのは、部品の呼び出しが全部終わってから。
 - 表はシーンの外のファイルなので、`Fields` に Entity への参照（`EntityRef`・`GameObject`）は書けない（Prefab は `AssetField` で書ける）。Entity は `context.self`・`context.target` から探す。
 - 呼ばれるのは時間が進んでいるときだけ（ポーズ・ヒットストップ・AI 停止の間は呼ばれない）。
 
 ```cpp
 // ✗ だめな例
-void OnStage(const AttackPartContext& context) override {
-	HitSystem::Activate(hitbox_.handle); // ✗ 閉じるのを忘れると、硬直・怯みの間もずっと当たる → SyncHitbox と OnEnd で閉じる
+void OnBegin(const AttackPartContext& context) override {
+	HitSystem::Activate(hitbox_.handle); // ✗ 閉じるのを忘れると、次のステップ・怯みの間もずっと当たる → OnEnd で閉じる（HitboxWindow を置けばコードが要らない）
 }
+```
+
+```
+// ✗ だめな置き方：「ステップに入ったときに調べる」部品（掴めるか など）を Whole Attack に置く
+//   → 攻撃の頭で調べて FailStep し、最初のステップで攻撃が終わる。調べたいステップを Runs In に選ぶ
 ```

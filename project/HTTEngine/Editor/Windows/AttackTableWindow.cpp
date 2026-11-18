@@ -60,7 +60,7 @@ Handle<Entity> AttackTableWindow::FindEntity() {
 	return first;
 }
 
-// ===== 上の段 =====
+// ===== 上のステップ =====
 void AttackTableWindow::DrawStatus(Handle<Entity> entity) {
 	const Entity* info = EntityManager::Get(entity);
 	const AttackTableComponent* component = EntityManager::Get<AttackTableComponent>(entity);
@@ -73,13 +73,8 @@ void AttackTableWindow::DrawStatus(Handle<Entity> entity) {
 		return;
 	}
 	const std::string state(magic_enum::enum_name(status.state));
-	const std::string stage(magic_enum::enum_name(status.stage));
 	ImGui::Text("Phase: %d %s", status.phase + 1, status.phaseName.c_str());
 	ImGui::Text("State: %s", state.c_str());
-	if (status.stage != AttackStage::None) {
-		ImGui::SameLine();
-		ImGui::Text("/ Stage: %s", stage.c_str());
-	}
 	if (!status.isEnabled) {
 		ImGui::SameLine();
 		ImGui::TextColored(ImColor(kNgColor), "（AI 停止中）");
@@ -87,10 +82,20 @@ void AttackTableWindow::DrawStatus(Handle<Entity> entity) {
 	ImGui::Text("Attack: %s", status.attackName.empty() ? "-" : status.attackName.c_str());
 	ImGui::SameLine();
 	ImGui::TextDisabled("（最後に選んだ：%s）", status.lastAttackName.empty() ? "-" : status.lastAttackName.c_str());
+	// --- 今のステップ（攻撃の間だけ。番号は 1 から）---
+	if (status.step >= 0) {
+		const std::string stage(magic_enum::enum_name(status.stage));
+		ImGui::Text("Step: %d. %s", status.step + 1, status.stepName.c_str());
+		ImGui::SameLine();
+		ImGui::TextDisabled("（%s）", stage.c_str());
+	}
 	// --- 待ちの部品（Selecting の間だけ動く。残りの秒は下の棒が Min Idle Seconds の残り）---
 	const AttackTable* table = AttackTableManager::Get(component->table);
-	const std::string& idlePart = table->phases[status.phase].idlePart.name;
-	ImGui::Text("Idle Part: %s", idlePart.empty() ? "-" : idlePart.c_str());
+	std::string idleParts;
+	for (const AttackPartSlot& slot : table->phases[status.phase].idleParts) {
+		idleParts += idleParts.empty() ? slot.name : ", " + slot.name;
+	}
+	ImGui::Text("Idle Parts: %s", idleParts.empty() ? "-" : idleParts.c_str());
 	if (status.state == AttackTableState::Selecting) {
 		ImGui::SameLine();
 		ImGui::TextDisabled(status.GetRemaining() > 0.0f ? "（Min Idle Seconds の待ち）" : "（使える攻撃を待っている）");
@@ -113,7 +118,7 @@ void AttackTableWindow::DrawStatus(Handle<Entity> entity) {
 	}
 }
 
-// ===== 下の段 =====
+// ===== 下のステップ =====
 void AttackTableWindow::DrawAttacks(Handle<Entity> entity) {
 	const AttackTableComponent* component = EntityManager::Get<AttackTableComponent>(entity);
 	const AttackTable* table = AttackTableManager::Get(component->table);

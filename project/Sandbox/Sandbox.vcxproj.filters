@@ -13,6 +13,9 @@
     <Filter Include="Source\Scripts\Input">
       <UniqueIdentifier>{5c2e8f71-4a39-4d6b-b8e2-91d07a6c3f58}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\AttackParts">
+      <UniqueIdentifier>{13ac551e-17de-4aac-9719-ac68979e1da1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -21,6 +24,18 @@
     </ClCompile>
     <ClCompile Include="Source\Scripts\Input\KeyConfigTest.cpp">
       <Filter>Source\Scripts\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\AttackParts\DashToTarget.cpp">
+      <Filter>Source\AttackParts</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\AttackParts\FaceTarget.cpp">
+      <Filter>Source\AttackParts</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\AttackParts\GrabTarget.cpp">
+      <Filter>Source\AttackParts</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\AttackParts\MoveVertical.cpp">
+      <Filter>Source\AttackParts</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

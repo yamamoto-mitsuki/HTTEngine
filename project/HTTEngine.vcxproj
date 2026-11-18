@@ -111,6 +111,7 @@
     <!-- HTTEngine -->
     <ClCompile Include="HTTEngine\AI\AttackPart.cpp" />
     <ClCompile Include="HTTEngine\AI\AttackTableManager.cpp" />
+    <ClCompile Include="HTTEngine\AI\BuiltInAttackParts.cpp" />
     <ClCompile Include="HTTEngine\Combat\DamageTypes.cpp" />
     <ClCompile Include="HTTEngine\Core\AssetMoveRegistry.cpp" />
     <ClCompile Include="HTTEngine\Core\NameList.cpp" />
@@ -333,6 +334,7 @@
   <ItemGroup>
     <ClInclude Include="HTTEngine\AI\AttackPart.h" />
     <ClInclude Include="HTTEngine\AI\AttackTableManager.h" />
+    <ClInclude Include="HTTEngine\AI\BuiltInAttackParts.h" />
     <ClInclude Include="HTTEngine\Combat\DamageTypes.h" />
     <ClInclude Include="HTTEngine\Combat\HitInfo.h" />
     <ClInclude Include="HTTEngine\Components\Animation\TimelineComponent.h" />
