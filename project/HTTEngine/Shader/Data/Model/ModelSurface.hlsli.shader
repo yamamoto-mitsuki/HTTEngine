@@ -5,6 +5,7 @@ stage: Include
 #HLSL
 // モデルの面の色（光を当てる前の、物そのものの色）を作る所。Model の PS はどれもここを通す
 // 物の色 = tint（物ごとの色）× baseColor（マテリアルの色）× テクスチャ（glTF の baseColorFactor × baseColorTexture と同じ形）
+// 自己発光 = emissive × emissiveIntensity × 自己発光のテクスチャ（glTF の emissiveFactor × emissive_strength × emissiveTexture と同じ形）
 // 光の当て方（Lambert・PBR・トゥーンなど）は、それぞれの PS が書く
 #include "Resources/Texture.hlsli"
 
@@ -23,7 +24,8 @@ struct ModelMaterial
     uint textureIndex;       // 物の色のテクスチャ（gTextures の番号。無いときは白）
     float metallic;          // 金属っぽさ（PBR）
     float roughness;         // 表面の粗さ（PBR）
-    float2 pad;
+    uint emissiveTextureIndex; // 自己発光のテクスチャ（gTextures の番号。無いときは白）
+    float emissiveIntensity;   // 自己発光の強さ（emissive に掛ける。1 より大きいと HDR の明るさ）
 };
 ConstantBuffer<ModelMaterial> gMaterial : register(b20);
 
@@ -32,6 +34,7 @@ struct ModelSurface
 {
     float32_t3 baseColor; // tint × マテリアルの色 × テクスチャ（リニア）。光を当てる前の色
     float alpha;          // tint の A × マテリアルの A × テクスチャの A
+    float32_t3 emissive;  // 自己発光（emissive × 強さ × 自己発光のテクスチャ。リニア）。光の計算の後に足す（ライトが無くても光る）
 };
 
 // --- テクスチャを読み、色を掛けて、切り抜く（切り抜いたピクセルは、ここで捨てる）---
@@ -49,6 +52,9 @@ ModelSurface GetModelSurface(float2 texcoord)
     ModelSurface surface;
     surface.baseColor = gMaterial.tint.rgb * gMaterial.baseColor.rgb * texColor.rgb;
     surface.alpha = gMaterial.tint.a * materialAlpha;
+    // 自己発光のテクスチャは物の色と同じ UV で読む（glTF の emissiveTexture も、ふつうは同じ UV）。tint は掛けない（今までと同じ）
+    float32_t3 emissiveTex = gTextures[gMaterial.emissiveTextureIndex].Sample(gSampler, uv).rgb;
+    surface.emissive = gMaterial.emissive * gMaterial.emissiveIntensity * emissiveTex;
     return surface;
 }
 #HLSL_END

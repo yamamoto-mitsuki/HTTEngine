@@ -16,6 +16,7 @@ struct MaterialParams {
 	Vector4 baseColor = {1.0f, 1.0f, 1.0f, 1.0f}; // 物の色。ModelRendererのOverrideのときだけ、読み込んだ色の代わりに使う（Primitive は Color の方を使う）
 	Vector3 specular = {0.0f, 0.0f, 0.0f};        // Ks: 鏡面反射色
 	Vector3 emissive = {0.0f, 0.0f, 0.0f};        // Ke: 自己発光色
+	float emissiveIntensity = 1.0f;               // 自己発光の強さ（emissive に掛ける。1 より大きいと HDR の明るさになり、ブルームで光る）
 	float shininess = 32.0f;                      // Ns: 鏡面反射指数
 	float metallic = 0.0f;                        // 0=非金属 1=金属
 	float roughness = 0.5f;                       // 0=鏡面 1=完全拡散

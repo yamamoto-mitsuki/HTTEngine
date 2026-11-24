@@ -1,0 +1,94 @@
+{
+	"version": 5,
+	"entities": [
+		{
+			"id": 1,
+			"name": "Main Camera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 1.5, -9.0],
+					"rotation": [8.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Camera": {
+					"fovY": 50.0,
+					"nearZ": 0.1,
+					"farZ": 1000.0,
+					"priority": 0,
+					"backgroundType": "SolidColor",
+					"backgroundColor": [0.02, 0.02, 0.03]
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Directional Light",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 3.0, 0.0],
+					"rotation": [50.0, -30.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Directional Light": {
+					"color": [1.0, 1.0, 1.0],
+					"intensity": 0.2,
+					"showIcon": true,
+					"showRange": true
+				}
+			}
+		},
+		{
+			"id": 3,
+			"name": "Emissive glb",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 1.0, 0.0],
+					"rotation": [0.0, 20.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/Emissive/EmissiveTest.glb",
+					"texture": "",
+					"shadingType": "BlinnPhong"
+				}
+			}
+		},
+		{
+			"id": 4,
+			"name": "Primitive Emissive 5",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [0.8, 0.8, 0.8]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Sphere",
+					"color": [0.1, 0.1, 0.1, 1.0],
+					"intensity": 1.0,
+					"surface": "Opaque",
+					"texture": "",
+					"uvScale": [1.0, 1.0],
+					"shadingType": "HalfLambert",
+					"specular": [0.0, 0.0, 0.0],
+					"shininess": 32.0,
+					"metallic": 0.0,
+					"roughness": 0.5,
+					"emissive": [1.0, 1.0, 1.0],
+					"emissiveIntensity": 5.0,
+					"receivesDecals": true
+				}
+			}
+		}
+	]
+}

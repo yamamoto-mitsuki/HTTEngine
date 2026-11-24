@@ -55,6 +55,8 @@ EntityManager::RequestAdd<ModelRendererComponent>(ball, renderer);
 
 色は「マテリアルの Base Color（mtl の Kd・glTF の baseColorFactor）× `color` × テクスチャ」。
 
+自己発光は「Emissive（mtl の Ke・glTF の emissiveFactor）× Emissive Intensity（glTF の KHR_materials_emissive_strength）× 自己発光のテクスチャ（mtl の map_Ke・glTF の emissiveTexture）」。光の計算の後に足すので、ライトが無くても光る。Emissive Intensity を 1 より大きくすると HDR の明るさになり、ブルームで光る（Blender の Emission Strength がそのまま入る）。`color`・`intensity` は掛からない。自己発光のテクスチャは物の色と同じ UV で読む。
+
 ## モデル無しで形を出す（Primitive Renderer）
 
 **Add Component → Rendering3D → Primitive Renderer**（`PrimitiveRendererComponent`）。モデルのファイルを使わずに、球・箱を描く（Unity の 3D Object → Sphere / Cube の見た目の所）。
@@ -67,7 +69,7 @@ EntityManager::RequestAdd<ModelRendererComponent>(ball, renderer);
 | Material → Surface | `Opaque`（不透明）／`Transparent`（Color の A の分だけ透ける。氷・水）／`Additive`（色を足して光る）。Transparent・Additive は奥行きを書かずに、不透明な物の後でカメラから遠い順に描く |
 | Material → Texture・UV Scale | 貼る画像と、1枚の大きさ（1面を1として。0.5 なら1面に2回くり返す） |
 | Material → Shading | `Unlit`（色そのまま）／`HalfLambert`（既定）／`BlinnPhong`（ハイライト）／`PBR`（金属感・粗さ）など。値の使い方は上の表と同じ |
-| Material → Specular〜Emissive | 光沢・金属感・自己発光（`MaterialParams`） |
+| Material → Specular〜Emissive Intensity | 光沢・金属感・自己発光とその強さ（`MaterialParams`） |
 
 - 大きさは Transform の Scale。Collider の初期値（球の半径 0.5・箱の 1×1×1）と同じ大きさなので、Scale だけ変えれば見た目と当たりがそろう。
 - 見た目（`PrimitiveMaterial`）は Elastic Surface の板・支柱と同じ物。PBR は、シーンが環境光を持っていれば（`IScene::GetEnvironment`。DefaultScene は持っている）そのまま、無ければ Half Lambert で描かれる。

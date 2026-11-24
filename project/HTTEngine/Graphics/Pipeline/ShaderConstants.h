@@ -185,8 +185,8 @@ struct Material3dData {
 	uint32_t textureIndex = 0;                    // 使用するテクスチャのインデックス（0はテクスチャなし）
 	float metallic = 0.0f;                        // 0=非金属 1=金属
 	float roughness = 0.5f;                       // 表面の粗さ（0=鏡面, 1=完全拡散）
-	float padA = 0.0f;
-	float padB = 0.0f;
+	uint32_t emissiveTextureIndex = 0;            // 自己発光のテクスチャ（gTextures の番号。無いときは白の番号を入れる）
+	float emissiveIntensity = 1.0f;               // 自己発光の強さ（emissive × これ × 自己発光のテクスチャ）
 };
 // HLSL の定数バッファは 16 バイトずつに詰めるので、並びを変えたら .hlsli も同じに直す（大きさがずれたら、ここで止まる）
 static_assert(sizeof(Material3dData) == 160, "Material3dData の大きさが ModelSurface.hlsli の ModelMaterial と違います");

@@ -23,6 +23,7 @@ void CopyImportedMaterial(const ModelManager::ImportedMaterial& imported, Materi
 	params.baseColor = LinearToSrgb(imported.baseColor); // A（不透明度）はそのまま
 	params.specular = LinearToSrgb(imported.specular);
 	params.emissive = LinearToSrgb(imported.emissive);
+	params.emissiveIntensity = imported.emissiveIntensity; // 強さは色ではないので、そのまま
 	params.shininess = imported.shininess;
 	params.metallic = imported.metallic;
 	params.roughness = imported.roughness;
@@ -43,11 +44,14 @@ void DrawImportedMaterials(ModelRendererComponent& render) {
 		const Vector4 swatch = LinearToSrgb(imported.baseColor);
 		ImGui::ColorButton("##baseColor", ImVec4(swatch.x, swatch.y, swatch.z, swatch.w), ImGuiColorEditFlags_NoPicker | ImGuiColorEditFlags_AlphaPreviewHalf);
 		ImGui::SameLine();
-		// --- 番号・名前・テクスチャの有無 ---
-		const std::string label = std::format("{}  {}{}", index, imported.name, imported.baseColorTexturePath.empty() ? "" : "  (Texture)");
+		// --- 番号・名前・テクスチャの有無（マウスを乗せると、テクスチャのパスが出る）---
+		const bool hasBaseColorTexture = !imported.baseColorTexturePath.empty();
+		const bool hasEmissiveTexture = !imported.emissiveTexturePath.empty();
+		const std::string label = std::format("{}  {}{}{}", index, imported.name, hasBaseColorTexture ? "  (Texture)" : "", hasEmissiveTexture ? "  (Emissive)" : "");
 		ImGui::TextUnformatted(label.c_str());
-		if (!imported.baseColorTexturePath.empty()) {
-			ImGui::SetItemTooltip("%s", imported.baseColorTexturePath.c_str());
+		if (hasBaseColorTexture || hasEmissiveTexture) {
+			const std::string paths = std::format("{}{}{}", imported.baseColorTexturePath, (hasBaseColorTexture && hasEmissiveTexture) ? "\n" : "", imported.emissiveTexturePath);
+			ImGui::SetItemTooltip("%s", paths.c_str());
 		}
 		ImGui::SameLine();
 		// --- 上書きの値に写して、Override を入れる ---
@@ -109,7 +113,9 @@ void ModelRendererEditor::DrawComponent(ModelRendererComponent& render) const {
 		isEdited |= ImGui::ColorEdit3("Specular", &render.material.specular.x);
 		ImGui::SetItemTooltip("ハイライトの色（Phong・BlinnPhong。黒ならハイライト無し）");
 		isEdited |= ImGui::ColorEdit3("Emissive", &render.material.emissive.x);
-		ImGui::SetItemTooltip("自己発光の色（Unlit 以外。ライトが無くても光る）");
+		ImGui::SetItemTooltip("自己発光の色（Unlit 以外。ライトが無くても光る）。モデルに自己発光のテクスチャがあれば、それに掛ける");
+		isEdited |= ImGui::DragFloat("Emissive Intensity", &render.material.emissiveIntensity, 0.01f, 0.0f, 100.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::SetItemTooltip("自己発光の強さ（Emissive の色に掛ける）。1 より大きくすると HDR の明るさになり、ブルーム（Threshold 1）で光る");
 		isEdited |= ImGui::DragFloat("Shininess", &render.material.shininess, 0.5f, 0.0f, 256.0f);
 		ImGui::SetItemTooltip("ハイライトの鋭さ（Phong・BlinnPhong。大きいほど小さく鋭い）");
 		isEdited |= ImGui::DragFloat("Metallic", &render.material.metallic, 0.005f, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);

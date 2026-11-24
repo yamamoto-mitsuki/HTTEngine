@@ -156,6 +156,9 @@ ImportedMaterial ParseMaterial(const aiMaterial* material, const TexturePathReso
 	if (material->Get(AI_MATKEY_COLOR_EMISSIVE, color) == AI_SUCCESS) {
 		mtl.emissive = {color.r, color.g, color.b};
 	}
+	// 自己発光の強さ（glTF の KHR_materials_emissive_strength。無いファイルでは 1 のまま）
+	// glTF の emissiveFactor は 0〜1 までなので、Blender で Emission Strength を 1 より大きくすると、強さはこちらに入る
+	material->Get(AI_MATKEY_EMISSIVE_INTENSITY, mtl.emissiveIntensity);
 
 	// --- 物の色の A（OBJ の d・glTF の baseColorFactor の A）---
 	// glTF は COLOR_DIFFUSE の4つ目にも OPACITY にも同じ A が入るので、OPACITY の方だけを読む（両方掛けると2回掛かる）
@@ -192,6 +195,10 @@ ImportedMaterial ParseMaterial(const aiMaterial* material, const TexturePathReso
 	// OBJのmap_bump/bumpはassimpではHEIGHT、glTFはNORMALSに分類される
 	if (material->GetTexture(aiTextureType_HEIGHT, 0, &texPath) == AI_SUCCESS || material->GetTexture(aiTextureType_NORMALS, 0, &texPath) == AI_SUCCESS) {
 		mtl.bumpTexFilePath = texturePaths.Resolve(texPath);
+	}
+	// 自己発光（OBJ の map_Ke・glTF の emissiveTexture。どちらも EMISSIVE に入る）
+	if (material->GetTexture(aiTextureType_EMISSIVE, 0, &texPath) == AI_SUCCESS) {
+		mtl.emissiveTexturePath = texturePaths.Resolve(texPath);
 	}
 	return mtl;
 }

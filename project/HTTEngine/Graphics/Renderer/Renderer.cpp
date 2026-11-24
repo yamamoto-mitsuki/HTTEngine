@@ -47,6 +47,7 @@ Renderer::MaterialValues Renderer::ToMaterialValues(const MaterialParams& params
 	values.ambient = SrgbToLinear(params.ambient);     // Ka: Ambient   環境光（影になっている部分の明るさ）
 	values.specular = SrgbToLinear(params.specular);   // Ks: Specular  鏡面反射（ハイライトの強さ）
 	values.emissive = SrgbToLinear(params.emissive);   // Ke: Emissive  自己発光（光源がなくても発光する色）
+	values.emissiveIntensity = params.emissiveIntensity; // 自己発光の強さ（色ではないので、直さない）
 	values.shininess = params.shininess;               // Ns: Shininess 光沢（値が大きいほどハイライトが小さく鋭くなる）
 	values.metallic = params.metallic;
 	values.roughness = params.roughness;
@@ -65,6 +66,7 @@ Renderer::MaterialValues Renderer::ResolveModelMaterial(const ModelConfig& confi
 		values.ambient = imported->ambient;
 		values.specular = imported->specular;
 		values.emissive = imported->emissive;
+		values.emissiveIntensity = imported->emissiveIntensity;
 		values.shininess = imported->shininess;
 		values.metallic = imported->metallic;
 		values.roughness = imported->roughness;
@@ -72,8 +74,9 @@ Renderer::MaterialValues Renderer::ResolveModelMaterial(const ModelConfig& confi
 	// --- テクスチャ（Inspector の上書きにテクスチャは無いので、Override でも読み込んだ物を使う）---
 	if (imported != nullptr) {
 		values.baseColorTexture = imported->baseColorTextureHandle;
+		values.emissiveTexture = imported->emissiveTextureHandle;
 	}
-	// Model Renderer の Texture を選んでいれば、全部の枠のテクスチャを差し替える（マテリアルの色はそのまま掛かる）
+	// Model Renderer の Texture を選んでいれば、全部の枠の物の色のテクスチャを差し替える（マテリアルの色はそのまま掛かる。自己発光のテクスチャはそのまま）
 	if (config.textureHandle != 0) {
 		values.baseColorTexture = config.textureHandle;
 	}
@@ -94,6 +97,8 @@ Material3dData Renderer::MakeMaterial3dData(const MaterialValues& values, const 
 	material.textureIndex = ResolveTextureIndex(values.baseColorTexture);
 	material.metallic = values.metallic;
 	material.roughness = values.roughness;
+	material.emissiveTextureIndex = ResolveTextureIndex(values.emissiveTexture); // 無いときは白（emissive × 強さがそのまま出る）
+	material.emissiveIntensity = values.emissiveIntensity;
 	return material;
 }
 

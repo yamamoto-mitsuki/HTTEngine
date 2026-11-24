@@ -63,7 +63,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     }
 
     float32_t4 finalColor;
-    finalColor.rgb = surface.baseColor * diffuseLighting + gMaterial.emissive;
+    finalColor.rgb = surface.baseColor * diffuseLighting + surface.emissive;
     finalColor.a = surface.alpha;
 
     PixelShaderOutput output;

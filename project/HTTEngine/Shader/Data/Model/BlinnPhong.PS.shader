@@ -107,7 +107,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     diffuseLighting *= surface.baseColor; // 拡散反射は物の色（tint × マテリアルの色 × テクスチャ）
     specularLighting *= gMaterial.specular; // ハイライトはマテリアルの Specular の色（黒ならハイライト無し）
 
-    output.color.rgb = diffuseLighting + specularLighting + gMaterial.emissive; // 拡散反射 + 鏡面反射 + 自己発光
+    output.color.rgb = diffuseLighting + specularLighting + surface.emissive; // 拡散反射 + 鏡面反射 + 自己発光
     output.color.rgb = ApplyFog(output.color.rgb, input.worldPosition); // 霧（色が決まった後に混ぜる）
     output.color.a = surface.alpha;
     if (output.color.a == 0.0)

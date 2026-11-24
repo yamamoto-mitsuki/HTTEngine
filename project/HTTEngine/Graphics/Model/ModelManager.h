@@ -43,7 +43,8 @@ public:
 		Vector4 baseColor = {1.0f, 1.0f, 1.0f, 1.0f}; // 物の色（RGB：OBJ の Kd・glTF の baseColorFactor、A：OBJ の d・glTF の baseColorFactor の A）。テクスチャに掛ける
 		Vector3 ambient = {0.0f, 0.0f, 0.0f};         // Ka: 環境光色
 		Vector3 specular = {1.0f, 1.0f, 1.0f};        // Ks: 鏡面反射色
-		Vector3 emissive = {0.0f, 0.0f, 0.0f};        // Ke: 自己発光色
+		Vector3 emissive = {0.0f, 0.0f, 0.0f};        // Ke: 自己発光色（OBJ の Ke・glTF の emissiveFactor。0〜1）
+		float emissiveIntensity = 1.0f;               // 自己発光の強さ（glTF の KHR_materials_emissive_strength。emissive に掛ける。1 より大きいと HDR の明るさ）
 		float shininess = 32.0f;                      // Ns: 鏡面反射指数
 		float metallic = 0.0f;                        // 0=非金属 1=金属
 		float roughness = 0.5f;                       // 表面の粗さ（0=鏡面, 1=完全拡散）
@@ -55,7 +56,9 @@ public:
 		std::string ambientTexFilePath;               // map_Ka: アンビエントテクスチャ
 		std::string specularTexFilePath;              // map_Ks: スペキュラテクスチャ
 		std::string bumpTexFilePath;                  // map_bump/bump: バンプマップ
+		std::string emissiveTexturePath;              // 自己発光のテクスチャ（OBJ の map_Ke・glTF の emissiveTexture）。emissive × emissiveIntensity に掛ける
 		uint32_t baseColorTextureHandle = 0;          // baseColorTexturePath を TextureManager で読んだ番号（0 はテクスチャ無し。埋め込みの画像が読めなかったときも 0）
+		uint32_t emissiveTextureHandle = 0;           // emissiveTexturePath を TextureManager で読んだ番号（0 はテクスチャ無し＝白）
 	};
 
 	// ===== メッシュデータ（1つのusemtlに対応）=====

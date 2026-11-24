@@ -35,6 +35,7 @@ void ModelManager::OnAssetMoved(const MovedPath& moved) {
 			moved.Apply(material.ambientTexFilePath);
 			moved.Apply(material.specularTexFilePath);
 			moved.Apply(material.bumpTexFilePath);
+			moved.Apply(material.emissiveTexturePath);
 		}
 	}
 }
@@ -127,16 +128,19 @@ uint32_t ModelManager::Load(const std::filesystem::path& filePath) {
 		embeddedHandles[image.key] = image.fileData.empty() ? TextureManager::LoadFromPixels(image.key, image.width, image.height, image.bgraPixels)
 		                                                    : TextureManager::LoadFromMemory(image.key, image.fileData);
 	}
-	// マテリアルのテクスチャ（埋め込みの画像はその番号、外のファイルは TextureManager で読む。パスは UTF-8 の文字で持っているので ToPath を通す）
+	// マテリアルのテクスチャのパス → 番号（空なら 0＝テクスチャ無し。埋め込みの画像はその番号、外のファイルは TextureManager で読む。パスは UTF-8 の文字で持っているので ToPath を通す）
+	const auto loadTexture = [&embeddedHandles](const std::string& path) -> uint32_t {
+		if (path.empty()) {
+			return 0;
+		}
+		if (const auto embedded = embeddedHandles.find(path); embedded != embeddedHandles.end()) {
+			return embedded->second;
+		}
+		return TextureManager::Load(ToPath(path));
+	};
 	for (ImportedMaterial& mat : modelAsset.materials) {
-		if (mat.baseColorTexturePath.empty()) {
-			continue;
-		}
-		if (const auto embedded = embeddedHandles.find(mat.baseColorTexturePath); embedded != embeddedHandles.end()) {
-			mat.baseColorTextureHandle = embedded->second;
-		} else {
-			mat.baseColorTextureHandle = TextureManager::Load(ToPath(mat.baseColorTexturePath));
-		}
+		mat.baseColorTextureHandle = loadTexture(mat.baseColorTexturePath);
+		mat.emissiveTextureHandle = loadTexture(mat.emissiveTexturePath);
 	}
 
 	// --- GPU常駐バッファを構築（転送を予約。バッファの名前は「ファイル名/マテリアル名」）---

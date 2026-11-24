@@ -513,10 +513,12 @@ private:
 		Vector3 ambient = {0.0f, 0.0f, 0.0f};         // Ka: 環境光色
 		Vector3 specular = {0.0f, 0.0f, 0.0f};        // Ks: 鏡面反射色
 		Vector3 emissive = {0.0f, 0.0f, 0.0f};        // Ke: 自己発光色
+		float emissiveIntensity = 1.0f;               // 自己発光の強さ（emissive に掛ける）
 		float shininess = 1.0f;                       // Ns: 鏡面反射指数
 		float metallic = 0.0f;                        // 0=非金属 1=金属
 		float roughness = 0.5f;                       // 表面の粗さ
 		uint32_t baseColorTexture = 0;                // 物の色のテクスチャ（TextureManager の番号。0 は白）
+		uint32_t emissiveTexture = 0;                 // 自己発光のテクスチャ（TextureManager の番号。0 は白）
 	};
 
 	// Inspector の値（MaterialParams。色は sRGB）→ MaterialValues（色はリニア）。テクスチャは持たないので 0

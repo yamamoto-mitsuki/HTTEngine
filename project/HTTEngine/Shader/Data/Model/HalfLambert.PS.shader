@@ -72,7 +72,7 @@ PixelShaderOutput main(VertexShaderOutput input) {
     }
      
     // Output
-    output.color.rgb = surface.baseColor * diffuseLighting + gMaterial.emissive;
+    output.color.rgb = surface.baseColor * diffuseLighting + surface.emissive;
     output.color.rgb = ApplyFog(output.color.rgb, input.worldPosition); // 霧（色が決まった後に混ぜる）
     output.color.a = surface.alpha;
     if (output.color.a == 0.0)

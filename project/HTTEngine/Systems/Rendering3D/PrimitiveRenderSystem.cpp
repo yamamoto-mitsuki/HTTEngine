@@ -127,6 +127,7 @@ void PrimitiveRenderSystem::DescribeMaterial(ComponentUI& ui, PrimitiveMaterial&
 	ui.Field(label("Metallic", "metallic").c_str(), material.params.metallic, Range(0.0f, 1.0f).Tip("金属っぽさ（PBR。0=プラスチック・ゴム 1=金属）"));
 	ui.Field(label("Roughness", "roughness").c_str(), material.params.roughness, Range(0.0f, 1.0f).Tip("表面の粗さ（PBR。0=鏡のよう 1=ざらざら）"));
 	ui.ColorField(label("Emissive", "emissive").c_str(), material.params.emissive); // 自己発光（Unlit 以外。ライトが無くても光る）
+	ui.Field(label("Emissive Intensity", "emissiveIntensity").c_str(), material.params.emissiveIntensity, AtLeast(0.0f).Tip("自己発光の強さ（Emissive の色に掛ける）。1 より大きくすると HDR の明るさになり、ブルーム（Threshold 1）で光る"));
 	// ===== デカール =====
 	ui.Field(label("Receive Decals", "receivesDecals").c_str(), material.receivesDecals, Tip("外すと、デカールの箱の中にあっても、この形には塗られない（Opaque のときだけ効く）"));
 	// ===== 影 =====

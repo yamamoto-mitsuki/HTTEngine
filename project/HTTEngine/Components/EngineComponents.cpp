@@ -78,6 +78,7 @@ void DescribeModelRenderer(ComponentUI& ui, ModelRendererComponent& value) {
 	ui.ColorField("baseColor", value.material.baseColor);
 	ui.ColorField("specular", value.material.specular);
 	ui.ColorField("emissive", value.material.emissive);
+	ui.Field("emissiveIntensity", value.material.emissiveIntensity); // 前のシーンには無いキーなので、読むときは既定の 1 のまま
 	ui.Field("shininess", value.material.shininess);
 	ui.Field("metallic", value.material.metallic);
 	ui.Field("roughness", value.material.roughness);
