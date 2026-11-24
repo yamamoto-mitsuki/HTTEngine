@@ -23,6 +23,7 @@
 #include "HTTEngine/Editor/Inspector/ComponentEditor.h"
 #include "HTTEngine/Graphics/Animation/AnimationManager.h"
 #include "HTTEngine/Graphics/Animation/AnimationPlayer.h"
+#include "HTTEngine/Graphics/Animation/AnimationPose.h"
 #include "HTTEngine/Graphics/Model/ModelManager.h"
 #include "HTTEngine/Graphics/Renderer/Renderer.h" 
 
@@ -43,8 +44,20 @@ struct AnimatorState {
 	Handle<Entity> entity;        // 持ち主
 	uint32_t animationHandle = 0; // 再生しているアニメーションの番号
 	AnimationClipName clip;       // 再生しているアニメーションの名前（Component の Clip が変わったかを見る）
-	AnimationPlayer player;       // 今の時刻・ノードの行列
+	AnimationPlayer player;       // 今流しているアニメの時刻
 	bool isJustStarted = false;   // 流し始めたばかり（次の Update は時刻を進めず、0 秒の形を見せる）
+
+	// --- 混ぜる（前のアニメの形から、今のアニメの形へ）---
+	AnimationPlayer blendFromPlayer; // 消えていく前のアニメ（isBlendFromPlaying の間、流し続ける）
+	AnimationPose blendFromPose;     // 消えていく方の形
+	bool isBlendFromPlaying = false; // blendFromPlayer を流すか（false なら blendFromPose の形で止めたまま。混ぜている途中に、また切り替えたとき）
+	float blendTime = 0.0f;          // 混ぜきるまでの秒（0 なら混ぜていない）
+	float blendElapsed = 0.0f;       // 混ぜ始めてからの秒
+
+	// --- 描く形 ---
+	AnimationPose targetPose;            // 今流しているアニメの形（混ぜている間だけ使う）
+	AnimationPose pose;                  // 描く形（混ぜた後。次に切り替えたとき、ここから混ぜる）
+	std::vector<Matrix4x4> nodeMatrices; // pose を行列にした物（ModelAsset::nodes と同じ並び。ModelRenderSystem に渡す）
 };
 
 /// <summary>
@@ -102,9 +115,69 @@ std::optional<uint32_t> FindClip(uint32_t animationHandle, std::string_view clip
 	return index;
 }
 
+// ===== 混ぜるのをやめる（次のフレームから、今のアニメの形だけ）=====
+void EndBlend(AnimatorState& animator) {
+	animator.blendTime = 0.0f;
+	animator.blendElapsed = 0.0f;
+	animator.isBlendFromPlaying = false;
+	animator.blendFromPlayer = AnimationPlayer{}; // 前のアニメを見ない
+}
+
+// ===== 今見えている形から、次のアニメへ混ぜ始める =====
+// ResetPlayer が player を差し替える前に呼ぶ（今の player を、消えていく方として写すので）
+void StartBlend(AnimatorState& animator, float blendTime) {
+	// --- 混ぜない・まだ1回も形を作っていない（足したばかり）→ すぐ切り替える ---
+	if (blendTime <= 0.0f || animator.pose.nodes.empty()) {
+		EndBlend(animator);
+		return;
+	}
+
+	const bool isBlending = (animator.blendTime > 0.0f);
+	if (animator.isJustStarted && isBlending) {
+		// --- このフレームの中で2回目の切り替え（攻撃の部品の Play → Restart など）---
+		// 消えていく方は1回目に決めた物のまま（今の player は、1回目で差し替えた新しいアニメ）。秒だけ決め直す
+	} else if (isBlending || animator.isJustStarted) {
+		// --- 混ぜている途中に、また切り替えた・このフレームの中ですぐ切り替えた後 ---
+		// 今見えている形（前のフレームに描いた形）で止めて、そこから混ぜる
+		// 前のアニメを流し続けると、3つ・4つを混ぜることになる
+		animator.blendFromPose = animator.pose;
+		animator.isBlendFromPlaying = false;
+	} else {
+		// --- ふつうの切り替え ---
+		// 今流しているアニメを、消えていく方として流し続ける（歩き → 走り で、前のアニメが止まって見えない）
+		animator.blendFromPlayer = animator.player;
+		animator.isBlendFromPlaying = true;
+	}
+	animator.blendTime = blendTime;
+	animator.blendElapsed = 0.0f;
+}
+
+// ===== 描く形を作り、ノードの行列にする =====
+// 混ぜている間は、前のアニメの形から今のアニメの形へ、経過秒 ÷ Blend Time の割合で寄せる
+void UpdatePose(AnimatorState& animator, uint32_t modelHandle) {
+	if (animator.blendTime <= 0.0f) {
+		// --- 混ぜていない：今のアニメの形そのまま ---
+		animator.player.SamplePose(modelHandle, animator.pose);
+	} else {
+		// --- 混ぜている ---
+		animator.player.SamplePose(modelHandle, animator.targetPose);
+		if (animator.isBlendFromPlaying) {
+			animator.blendFromPlayer.SamplePose(modelHandle, animator.blendFromPose);
+		}
+		const float weight = animator.blendElapsed / animator.blendTime;
+		BlendPose(animator.blendFromPose, animator.targetPose, weight, animator.pose);
+		if (weight >= 1.0f) {
+			EndBlend(animator); // 混ぜきった
+		}
+	}
+	BuildNodeMatrices(modelHandle, animator.pose, animator.nodeMatrices);
+}
+
 // ===== Componentで選んでいるアニメーションを最初の時刻から持ち直す =====
 // AnimationSystem::Restart（ゲームから呼ぶ方）と名前がぶつかるので、こちらは ResetPlayer
-void ResetPlayer(AnimatorState& animator, const AnimatorComponent& component, bool play) {
+// blendTime が 0 より大きければ、今見えている形から混ぜる
+void ResetPlayer(AnimatorState& animator, const AnimatorComponent& component, bool play, float blendTime) {
+	StartBlend(animator, blendTime); // player を差し替える前に（今の player を、消えていく方として写すので）
 	animator.animationHandle = component.animationHandle;
 	animator.clip = component.clip;
 	animator.isJustStarted = false;
@@ -155,6 +228,7 @@ void DescribeAnimator(ComponentUI& ui, AnimatorComponent& value) {
 	ui.Field("Speed###speed", value.speed, Drag(0.01f).Tip("1で等速、2で倍速、負で逆再生"));
 	ui.Field("Loop###loop", value.loop, Tip("ループするか"));
 	ui.Field("Play On Start###playOnStart", value.playOnStart, Tip("Play を押したとき（シーンが始まったとき）に再生する。オフならゲームから AnimationSystem::Play・Restart"));
+	ui.Field("Blend Time###blendTime", value.blendTime, AtLeast(0.0f).Drag(0.01f).Tip("別のアニメに切り替えるとき、前のアニメの形から混ぜていく秒。0 ならすぐ切り替える。停止中は混ぜない。ゲームから Play・Restart に秒を渡したときは、そちらを使う"));
 
 	// --- 停止中のプレビュー ---
 	ui.Separator("Preview");
@@ -212,11 +286,12 @@ void AnimationSystem::Update(bool isGameRunning, float deltaTime) {
 		if (animator == nullptr) {
 			animators.push_back({entity});
 			animator = &animators.back();
-			ResetPlayer(*animator, component, isGameRunning && component.playOnStart);
+			ResetPlayer(*animator, component, isGameRunning && component.playOnStart, 0.0f); // 最初の1回は混ぜる元が無い
 		} else if (component.animationHandle != animator->animationHandle || component.clip != animator->clip) {
 			// Inspector・ゲームからアニメーションから選び直した → 新しい方を最初から
 			// 再生中のゲームなら、再生していた・Play On Start のときは再生する（未選択から選んでときも動き出すように）
-			ResetPlayer(*animator, component, isGameRunning && (animator->player.IsPlaying() || component.playOnStart));
+			// 停止中は混ぜない（選んだアニメの Preview Time のポーズをすぐ見せる）
+			ResetPlayer(*animator, component, isGameRunning && (animator->player.IsPlaying() || component.playOnStart), isGameRunning ? component.blendTime : 0.0f);
 		}
 
 		// --- 時刻 ---
@@ -224,21 +299,29 @@ void AnimationSystem::Update(bool isGameRunning, float deltaTime) {
 		player.SetSpeed(component.speed);
 		player.SetLoop(component.loop);
 		if (isGameRunning) {
+			// 消えていく方は、流し始めたフレームも進める（止めると、1フレームだけ止まって見える）
+			if (animator->isBlendFromPlaying) {
+				animator->blendFromPlayer.Update(deltaTime);
+			}
 			// 流し始めたフレーム（Play・Restart・Play On Start・Clip の選び直し）は進めない。0 秒の形を見せて、次のフレームから進める
+			// 混ぜる秒も同じに数える（「流し始めてから Blend Time 秒で混ぜきる」）
 			if (animator->isJustStarted) {
 				animator->isJustStarted = false;
 			} else {
 				player.Update(deltaTime); // 一時停止中は deltaTime が0なので進まない
+				if (animator->blendTime > 0.0f) {
+					animator->blendElapsed += deltaTime;
+				}
 			}
 		} else {
 			player.SetTime(component.previewTime); // 停止中はInspectorの時刻のポーズ
 		}
 
-		// --- ノードの行列（同じEntityのModelRendererのモデル）---
+		// --- 描く形とノードの行列（同じEntityのModelRendererのモデル）---
 		// Model Renderer が無い・モデルが未選択なら作らない
 		const ModelRendererComponent* render = EntityManager::Get<ModelRendererComponent>(entity);
 		if (render != nullptr && render->modelHandle != 0) {
-			player.ApplyToModel(render->modelHandle);
+			UpdatePose(*animator, render->modelHandle);
 		}
 	});
 }
@@ -254,10 +337,10 @@ const std::vector<Matrix4x4>* AnimationSystem::GetNodeMatrices(Handle<Entity> en
 	}
 	// アニメーションを持っているか
 	const AnimatorState* animator = FindAnimator(entity);
-	if (animator == nullptr || animator->player.GetNodeMatrices().empty()) {
+	if (animator == nullptr || animator->nodeMatrices.empty()) {
 		return nullptr;
 	}
-	return &animator->player.GetNodeMatrices();
+	return &animator->nodeMatrices;
 }
 
 
@@ -265,7 +348,7 @@ const std::vector<Matrix4x4>* AnimationSystem::GetNodeMatrices(Handle<Entity> en
 // ゲームから
 //=============================================================================
 // ===== 名前で流す =====
-bool AnimationSystem::Play(Handle<Entity> entity, std::string_view clip, bool loop, float speed) {
+bool AnimationSystem::Play(Handle<Entity> entity, std::string_view clip, bool loop, float speed, std::optional<float> blendTime) {
 	HTT_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
 	AnimatorComponent* component = EntityManager::Get<AnimatorComponent>(entity);
 	if (component == nullptr) {
@@ -287,11 +370,11 @@ bool AnimationSystem::Play(Handle<Entity> entity, std::string_view clip, bool lo
 		return true;
 	}
 	// --- 名前が違う・止まっている：最初から（ファイルに無い名前なら、Restart が警告して false）---
-	return Restart(entity);
+	return Restart(entity, blendTime);
 }
 
 // ===== 最初から流し直す =====
-bool AnimationSystem::Restart(Handle<Entity> entity) {
+bool AnimationSystem::Restart(Handle<Entity> entity, std::optional<float> blendTime) {
 	HTT_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
 	// Restart を呼ぶのはゲーム（Script・SYSTEM。ゲームが動いている間だけ回る）なので、ここで切り替えておく
 	// ゲームが動き出した最初のフレームは、Script が AnimationSystem::Update より先に回るので、切り替えないと後の Update がこの Restart を捨てる
@@ -302,8 +385,9 @@ bool AnimationSystem::Restart(Handle<Entity> entity) {
 		return false;
 	}
 	// 一覧に入れるので、この後のUpdateがPlay On Startでもう一度からにすることはない
+	// 秒を渡されなければ Animator の Blend Time（value_or は「中身が無ければこの値」）
 	AnimatorState& animator = FindOrAddAnimator(entity);
-	ResetPlayer(animator, *component, true);
+	ResetPlayer(animator, *component, true, blendTime.value_or(component->blendTime));
 	return animator.player.IsPlaying();
 }
 
@@ -331,6 +415,7 @@ void AnimationSystem::Stop(Handle<Entity> entity) {
 	HTT_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
 	if (AnimatorState* animator = FindAnimator(entity)) {
 		animator->player.Stop();
+		EndBlend(*animator); // 止めた形（最初の時刻）をすぐ見せる
 	}
 }
 
@@ -339,6 +424,13 @@ bool AnimationSystem::IsPlaying(Handle<Entity> entity) {
 	HTT_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
 	const AnimatorState* animator = FindAnimator(entity);
 	return animator != nullptr && animator->player.IsPlaying();
+}
+
+// ===== 前のアニメの形から混ぜている途中か =====
+bool AnimationSystem::IsBlending(Handle<Entity> entity) {
+	HTT_ASSERT_MSG(state != nullptr, "AnimationSystem::Initialize()を先に呼んでください");
+	const AnimatorState* animator = FindAnimator(entity);
+	return animator != nullptr && animator->blendTime > 0.0f;
 }
 
 // ===== 持っているAnimationPlayerを渡す =====

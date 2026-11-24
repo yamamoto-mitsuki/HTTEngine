@@ -54,7 +54,7 @@ public:
 		Transform transform;                                       // 拡縮、回転、移動
 		Transform uvTransform;                                     // UVの拡縮、回転、移動
 		const Matrix4x4* worldMatrix = nullptr;                    // 指定するとtransformの代わりに使う（階層・ロール用）
-		const std::vector<Matrix4x4>* nodeMatrices = nullptr;      // ノードの行列（AnimationPlayer::GetNodeMatrices）。nullptr・数が合わないときはモデルに入っている行列
+		const std::vector<Matrix4x4>* nodeMatrices = nullptr;      // ノードの行列（AnimationSystem::GetNodeMatrices）。nullptr・数が合わないときはモデルに入っている行列
 		Handle<Entity> entity;                                     // 持ち主のEntity、スキンのあるメッシュを CS で曲げるとき、出力バッファを見分けるのに使う（無効なら曲げない）
 		Vector4 color = {1.0f, 1.0f, 1.0f, 1.0f};                               // 物ごとの色（sRGB。読み込んだマテリアルの色に掛ける）
 		ShadingType shadingType = ShadingType::Unlit;              // シェーディング設定

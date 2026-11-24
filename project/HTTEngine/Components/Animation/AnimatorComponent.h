@@ -19,6 +19,7 @@ struct AnimatorComponent {
 	float speed = 1.0f;           // 1で等速、2で倍速、負で逆再生
 	bool loop = true;             // ループするか
 	bool playOnStart = true;      // Playを押したとき（シーンが始まったとき）に再生する
+	float blendTime = 0.0f;       // 別のアニメに切り替えるとき、前のアニメの形から混ぜていく秒（0 ならすぐ切り替える）。ゲームから Play・Restart に秒を渡したときは、そちらを使う
 	float previewTime = 0.0f;     // 停止中（Editing）に見せる時刻（秒）。Inspectorでつまんでポーズを確かめる
 	bool enabled = true;          // false なら動かさない（Model Renderer はモデルに入っている形で描く）
 };

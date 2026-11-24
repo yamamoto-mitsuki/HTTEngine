@@ -176,7 +176,7 @@ void ModelManager::MakeMatrixPalette(const ModelAsset& asset, const std::vector<
 			well.skeletonSpaceInverseTransposeMatrix = MakeIdentity4x4();
 			continue;
 		}
-		// 今の骨の行列（AnimationPlayer が作ったものか、モデルに入っている形）
+		// 今の骨の行列（AnimationSystem が作ったものか、モデルに入っている形）
 		const Matrix4x4& jointMatrix = nodeMatrices ? (*nodeMatrices)[nodeIndex] : node.worldMatrix;
 		// バインドポーズの頂点を一度骨から見た位置に戻して（逆バインド行列）、今の骨の行列で置きなおす
 		well.skeletonSpaceMatrix = node.inverseBindPoseMatrix * jointMatrix;

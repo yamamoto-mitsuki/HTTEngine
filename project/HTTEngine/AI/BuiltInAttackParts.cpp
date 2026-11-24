@@ -2,6 +2,7 @@
 
 #include <format>
 #include <string>
+#include <optional>
 
 #include "HTTEngine/AI/AttackPart.h"
 #include "HTTEngine/Components/Animation/AnimatorComponent.h"
@@ -81,10 +82,13 @@ public:
 		const Handle<Entity> self = context.self.handle;
 		const std::string_view clip = clip_.View();
 		const float speed = fitToStep_ ? AnimationSystem::CalcSpeedToFit(self, clip, context.stepDuration) : speed_;
-		AnimationSystem::Play(self, clip, loop_, speed);
+		// 上書きしないなら空（Animator の Blend Time を使う）
+		const std::optional<float> blendTime = overrideBlendTime_ ? std::optional<float>(blendTime_) : std::nullopt;
+		AnimationSystem::Play(self, clip, loop_, speed, blendTime);
 		// ループしないアニメは、前のステップ・前の攻撃と同じ名前でも頭から流す（Play は同じ名前が流れていると、速さしか変えない）
+		// 同じフレームに Play と2回切り替えても、混ぜる元は前のステップのアニメのまま（AnimationSystem が見分ける）
 		if (!loop_) {
-			AnimationSystem::Restart(self);
+			AnimationSystem::Restart(self, blendTime);
 		}
 	}
 
@@ -95,15 +99,21 @@ public:
 		ui.BeginDisabled(fitToStep_);
 		ui.Field("Speed", speed_, AtLeast(0.0f).Tip("流す速さ（1で等速）"));
 		ui.EndDisabled();
+		ui.Field("Override Blend Time", overrideBlendTime_, Tip("オンなら下の Blend Time で、前のアニメの形から混ぜる。オフなら Animator の Blend Time"));
+		ui.BeginDisabled(!overrideBlendTime_);
+		ui.Field("Blend Time", blendTime_, AtLeast(0.0f).Drag(0.01f).Tip("前のアニメの形から混ぜていく秒（0 ならすぐ切り替える）。ステップの秒の中に入る"));
+		ui.EndDisabled();
 	}
 
 
 private:
 	// ===== 攻撃表で変える値 =====
-	AnimationClipName clip_; // 流すアニメーションの名前
-	bool loop_ = false;      // ループするか
-	bool fitToStep_ = true;  // ステップの長さに合わせるか
-	float speed_ = 1.0f;     // 合わせないときの速さ
+	AnimationClipName clip_;         // 流すアニメーションの名前
+	bool loop_ = false;              // ループするか
+	bool fitToStep_ = true;          // ステップの長さに合わせるか
+	float speed_ = 1.0f;             // 合わせないときの速さ
+	bool overrideBlendTime_ = false; // 混ぜる秒を、Animator の Blend Time ではなく blendTime_ にするか
+	float blendTime_ = 0.1f;         // 上書きするときの、混ぜる秒
 };
 } // namespace
 

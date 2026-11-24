@@ -1,0 +1,101 @@
+{
+	"version": 5,
+	"entities": [
+		{
+			"id": 1,
+			"name": "Main Camera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 1.5, -7.0],
+					"rotation": [5.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Camera": {
+					"fovY": 50.0,
+					"nearZ": 0.1,
+					"farZ": 1000.0,
+					"priority": 0
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Directional Light",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 3.0, 0.0],
+					"rotation": [50.0, -30.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Directional Light": {
+					"color": [1.0, 1.0, 1.0],
+					"intensity": 1.0,
+					"showIcon": true,
+					"showRange": true
+				}
+			}
+		},
+		{
+			"id": 3,
+			"name": "A Blend Time 0",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-1.5, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Animator": {
+					"enabled": true,
+					"animation": "resources/Model/AnimationBlend/AnimationBlendTest.glb",
+					"clip": "BendLeft",
+					"speed": 1.0,
+					"loop": true,
+					"playOnStart": true,
+					"blendTime": 0.0,
+					"previewTime": 0.5
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/AnimationBlend/AnimationBlendTest.glb",
+					"texture": "",
+					"shadingType": "HalfLambert"
+				}
+			}
+		},
+		{
+			"id": 4,
+			"name": "B Blend Time 0.5",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [1.5, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Animator": {
+					"enabled": true,
+					"animation": "resources/Model/AnimationBlend/AnimationBlendTest.glb",
+					"clip": "BendLeft",
+					"speed": 1.0,
+					"loop": true,
+					"playOnStart": true,
+					"blendTime": 0.5,
+					"previewTime": 0.5
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/AnimationBlend/AnimationBlendTest.glb",
+					"texture": "",
+					"shadingType": "HalfLambert"
+				}
+			}
+		}
+	]
+}

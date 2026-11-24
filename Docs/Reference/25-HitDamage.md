@@ -92,7 +92,7 @@ Hitbox と同じ Entity に付けると、**Warning の間、床・壁に攻撃�
   - **Steps**：上から順に進める。1つずつ名前・Stage（Windup / Active / Recovery / None の目印）・Seconds（長さの上限）・Next（終わったときの行き先）・On Fail（部品が失敗したときの行き先）。行き先は「1つ下」「攻撃を終える」「名前で選んだステップ」。
   - **Parts**：攻撃部品の並び。1つずつ **Runs In** で動くステップを選ぶ（Whole Attack なら攻撃の始めから終わりまで）。同じステップの部品は上から順に呼ぶ。
   - Max Repeat（同じ攻撃を続けてよい回数）。部品の Clip の欄の候補は、この表を使う敵（Animator を持つ物）を開いているシーンに置くと、その Animator のファイルから出る（居なければ名前を打つ）。
-- エンジンの部品：`HitboxWindow`（そのステップの間だけ子の Hitbox を予告・当たりにする）・`PlayAnimation`（ステップに入ったらアニメを流す。ステップの長さに合わせられる）。
+- エンジンの部品：`HitboxWindow`（そのステップの間だけ子の Hitbox を予告・当たりにする）・`PlayAnimation`（ステップに入ったらアニメを流す。ステップの長さに合わせられる。Override Blend Time をオンにすると、前のステップのアニメから混ぜる秒をステップごとに決められる。オフなら Animator の Blend Time）。
 - 状態は `Selecting`（選んでいる）→ `Attacking`（ステップを進める）→ `Selecting`。ほかに `Staggered`（怯み）・`PhaseTransition`・`Defeated`。同じ Entity に Health があれば、HP の割合はそこから読む。
 - **Attack Table ウィンドウ**に、選んだ敵の今の状態・ステップ・攻撃ごとの使えるか・選ばれる確率が出る。
 - 時間は `Time::GetDeltaTime()` で進むので、ポーズ・ヒットストップの間は止まる。

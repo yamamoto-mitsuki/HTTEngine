@@ -126,7 +126,7 @@ public:
 	/// スキンの行列パレット（スキン用のVSが頂点を曲げるのに使う、骨ごとの行列）を作る
 	/// <para>palette[ノードの番号] = 逆バインド行列 × 今の骨の行列。骨で無いノードは単位行列</para>
 	/// </summary>
-	/// <param name="nodeMatrices">今のノードの行列（AnimationPlayer::GetNodeMatrices）。nullptr ならモデルに入ってる形</param>
+	/// <param name="nodeMatrices">今のノードの行列（AnimationSystem::GetNodeMatrices）。nullptr ならモデルに入ってる形</param>
 	/// <param name="palette">書き込む先</param>
 	static void MakeMatrixPalette(const ModelAsset& asset, const std::vector<Matrix4x4>* nodeMatrices, std::vector<WellForGPU>& palette);
 
@@ -158,7 +158,7 @@ public:
 	/// <para>スキンのあるメッシュは、gltfの決まりでノードの行列を掛けない（頂点がもうモデル全体の空間にある）。
 	/// 掛けると、Mixamoのモデルは Armatureの0.001倍・90度の回転が2回かかって、小さく寝た形になる</para>
 	/// </summary>
-	/// <param name="nodeMatrix">そのメッシュを持つノードの行列（Node::worldMatrix か、AnimationPlayer が作った物）</param>
+	/// <param name="nodeMatrix">そのメッシュを持つノードの行列（Node::worldMatrix か、AnimationSystem が作った物）</param>
 	static Matrix4x4 MeshMatrix(const SubMesh& mesh, const Matrix4x4& nodeMatrix) { return mesh.isSkinned ? MakeIdentity4x4() : nodeMatrix; }
 
 	// ハンドルから表示名を取得（見つからなければ空）

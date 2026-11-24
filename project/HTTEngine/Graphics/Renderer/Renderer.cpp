@@ -231,7 +231,7 @@ void Renderer::DrawModel(const ModelConfig& config) {
 	// 行列
 	Matrix4x4 worldMatrix = config.worldMatrix ? *config.worldMatrix : MakeAffineMatrix(config.transform.scale, config.transform.rotation, config.transform.translation);
 
-	// ノードの行列: AnimationPlayerが作った物があればそれ、無ければモデルに入っている動かない行列
+	// ノードの行列: AnimationSystem が作った物があればそれ、無ければモデルに入っている動かない行列
 	const bool useNodeMatrices = config.nodeMatrices && config.nodeMatrices->size() == asset->nodes.size();
 	// スキンのあるメッシュを CS で曲げるか：アニメーションのノードの行列があり、持ち主の Entity が分かるときだけ
 	// Animator が無い・止めているときは、元の頂点がそのままバインドポーズ（モデルに入っている形）なので、曲げずに描ける

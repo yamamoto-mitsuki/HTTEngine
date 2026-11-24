@@ -156,6 +156,7 @@
     <ClCompile Include="HTTEngine\Editor\Windows\UIScreenEditor.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Animation\AnimationManager.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Animation\AnimationPlayer.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Animation\AnimationPose.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Compute\ComputePipeline.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Compute\ComputeTexture.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Diagnostics\GraphicsDebug.cpp" />
@@ -425,6 +426,7 @@
     <ClInclude Include="HTTEngine\Graphics\Animation\Animation.h" />
     <ClInclude Include="HTTEngine\Graphics\Animation\AnimationManager.h" />
     <ClInclude Include="HTTEngine\Graphics\Animation\AnimationPlayer.h" />
+    <ClInclude Include="HTTEngine\Graphics\Animation\AnimationPose.h" />
     <ClInclude Include="HTTEngine\Graphics\Compute\ComputePipeline.h" />
     <ClInclude Include="HTTEngine\Graphics\Compute\ComputeTexture.h" />
     <ClInclude Include="HTTEngine\Graphics\Diagnostics\GraphicsDebug.h" />

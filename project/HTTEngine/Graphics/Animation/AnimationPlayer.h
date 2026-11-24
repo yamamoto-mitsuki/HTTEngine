@@ -2,14 +2,15 @@
 #include <vector>
 #include <cstdint>
 
-#include "Matrix4x4.h"
 #include "Animation.h"
+#include "HTTEngine/Graphics/Animation/AnimationPose.h"
 
 
 /// <summary>
-/// アニマ―ションを1つ再生する（今の時刻を進めて、モデルのノードの行列を作り直す）
+/// アニメーションを1つ再生する（今の時刻を進めて、その時刻のポーズを作る）
 /// <para>1体ごとに1つ持つ。同じモデルを2体動かすなら、AnimationPlayerも2つ</para>
-/// <para>使い方: Play → 毎フレームUpdate → ApplyToModel → Renderer::ModelConfig::nodeMatrices に GetNodeMatrices を渡す</para>
+/// <para>使い方: Play → 毎フレーム Update → SamplePose → BuildNodeMatrices（AnimationPose.h）で行列にする</para>
+/// <para>2つを混ぜるときは、2つの AnimationPlayer で SamplePose して、BlendPose で混ぜてから行列にする</para>
 /// </summary>
 class AnimationPlayer {
 public:
@@ -19,7 +20,7 @@ public:
 	/// </summary>
 	/// <param name="index">ファイルの中の何番目か（ふつうの0）</param>
 	void Play(uint32_t animationHandle, uint32_t index = 0, bool loop = true);
-	
+
 	/// <summary>
 	/// 止めて最初の時刻に戻す（アニメーションは覚えたまま。Play し直さなくても SetTime でポーズを見られる）
 	/// </summary>
@@ -29,7 +30,7 @@ public:
 	/// 一時停止・再開
 	/// </summary>
 	void SetPaused(bool paused) { isPaused_ = paused; }
-		
+
 
 	// ===== 毎フレーム =====
 	/// <summary>
@@ -38,18 +39,19 @@ public:
 	void Update(float deltaTime);
 
 	/// <summary>
-	/// 今の時刻のポーズで、モデルのノードの行列（根からのワールド行列）を作り直す
+	/// 今の時刻のポーズ（ノードごとの 大きさ・回転・位置）を作る
+	/// <para>アニメが動かさないノードは、モデルに入っている最初の形（isAnimated が false）</para>
+	/// <para>モデルが無ければ outPose を空にする。Play していなければ、全部のノードが最初の形</para>
 	/// </summary>
-	void ApplyToModel(uint32_t modelHandle);
+	/// <param name="outPose">入れる所（メモリを使い回すため、呼ぶ側が持つ）</param>
+	void SamplePose(uint32_t modelHandle, AnimationPose& outPose);
 
 
 	// ===== 取得・設定 =====
-	// ApplyToModelで作った行列。ModelAsset::nodesと同じ並び
-	const std::vector<Matrix4x4>& GetNodeMatrices() const { return nodeMatrices_; }
 	// 再生中のアニメーション（Playしていなければ nullptr）
 	const Animation* GetAnimation() const { return animation_; }
 
-	
+
 	// ===== ゲッター・セッター =====
 	bool IsPlaying() const { return isPlaying_; }
 	bool IsPaused() const { return isPaused_; }
@@ -66,14 +68,15 @@ private:
 	// モデルとアニメーションの組み合わせが変わったときだけ作り直す
 	struct NodeBinding {
 		const NodeAnimation* animation = nullptr; // このノードを動かすカーブ（無ければ nullptr=動かないノード）
-		// カーブにキーがないとき（回転だけのアニメ）
+		// モデルに入っている最初の形（全部のノードで覚える）
+		// キーが無いカーブ（回転だけのアニメ）と、別のアニメと混ぜるとき（相手だけが動かすノード）に使う
 		Vector3 scale = {1.0f, 1.0f, 1.0f};
 		Quaternion rotate;
 		Vector3 translate = {0.0f, 0.0f, 0.0f};
 	};
 
 	// モデルのノードとアニメーションのカーブをノード名でつなぐ
-	void Bind(uint32_t modelhandle);
+	void Bind(uint32_t modelHandle);
 
 	// ===== 再生している物 =====
 	// AnimationManager が持っている物を見ているだけ
@@ -86,9 +89,8 @@ private:
 	bool isPlaying_ = false; // 再生中か
 	bool isPaused_ = false;  // 一時停止中か
 
-	// ===== ノードの行列 =====
+	// ===== ノードとカーブのつながり =====
 	uint32_t boundModelHandle_ = 0;             // Bind したときのモデル（0はまだ）
 	const Animation* boundAnimation_ = nullptr; // Bind したときのアニメーション
 	std::vector<NodeBinding> bindings_;         // ModelAsset::nodes と同じ並び
-	std::vector<Matrix4x4> nodeMatrices_;       // ModelAsset::nodes と同じ並び（根からのワールド行列）
 };

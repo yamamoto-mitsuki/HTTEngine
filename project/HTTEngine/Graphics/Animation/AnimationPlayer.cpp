@@ -94,11 +94,11 @@ void AnimationPlayer::Update(float deltaTime) {
 	}
 }
 
-// ===== ノードの行列を作り直す =====
-void AnimationPlayer::ApplyToModel(uint32_t modelHandle) { 
+// ===== 今の時刻のポーズを作る =====
+void AnimationPlayer::SamplePose(uint32_t modelHandle, AnimationPose& outPose) {
 	const ModelManager::ModelAsset* asset = ModelManager::GetModelAsset(modelHandle);
 	if (asset == nullptr) {
-		nodeMatrices_.clear(); // 空なら DrawModelはモデルに入っている行列を使う
+		outPose.nodes.clear(); // 空なら BuildNodeMatrices も空にする → DrawModel はモデルに入っている行列を使う
 		return;
 	}
 	// モデルかアニメーションが変わったときだけ、ノード名でつなぎ直す
@@ -106,26 +106,25 @@ void AnimationPlayer::ApplyToModel(uint32_t modelHandle) {
 		Bind(modelHandle);
 	}
 
-	const std::vector<ModelManager::Node>& nodes = asset->nodes;
-	nodeMatrices_.resize(nodes.size());
-	// 親の行列を使うので、番号（nodeIndex）で回す
-	// LoadNodeは「親を足してから子を回す」ので、親は必ず自分より前にいる 
-	for (size_t nodeIndex = 0; nodeIndex < nodes.size(); ++nodeIndex) {
-		const ModelManager::Node& node = nodes[nodeIndex];
+	outPose.nodes.resize(bindings_.size());
+	// bindings_ と outPose を同じ番号で見るので、添字で回す
+	for (size_t nodeIndex = 0; nodeIndex < bindings_.size(); ++nodeIndex) {
 		const NodeBinding& binding = bindings_[nodeIndex];
+		NodePose& nodePose = outPose.nodes[nodeIndex];
+		nodePose.isAnimated = (binding.animation != nullptr);
 
-		// --- 親から見た行列 ---
-		Matrix4x4 localMatrix = node.localMatrix; // 動かないノードは、モデルに入ったまま
-		if (binding.animation != nullptr) {
-			const NodeAnimation& nodeAnimation = *binding.animation;
-			// キーがないカーブは、モデルに入っていた最初の形を使う
-			const Vector3 scale = nodeAnimation.scale.keyframes.empty() ? binding.scale : CalculateValue(nodeAnimation.scale, time_);
-			const Quaternion rotate = nodeAnimation.rotate.keyframes.empty() ? binding.rotate : CalculateValue(nodeAnimation.rotate, time_);
-			const Vector3 translate = nodeAnimation.translate.keyframes.empty() ? binding.translate : CalculateValue(nodeAnimation.translate, time_);
-			localMatrix = MakeAffineMatrix(scale, rotate, translate);
+		// --- 動かないノード：最初の形（行列は BuildNodeMatrices がモデルに入っている物を使う）---
+		if (!nodePose.isAnimated) {
+			nodePose.scale = binding.scale;
+			nodePose.rotate = binding.rotate;
+			nodePose.translate = binding.translate;
+			continue;
 		}
-		// --- 根からの行列（行ベクトルなので「自分 × 親」の順。LoadNodeと同じ）---
-		nodeMatrices_[nodeIndex] = (node.parent == ModelManager::kInvalidNode) ? localMatrix : localMatrix * nodeMatrices_[node.parent];
+		// --- 動くノード：今の時刻の値（キーが無いカーブは、モデルに入っていた最初の形）---
+		const NodeAnimation& nodeAnimation = *binding.animation;
+		nodePose.scale = nodeAnimation.scale.keyframes.empty() ? binding.scale : CalculateValue(nodeAnimation.scale, time_);
+		nodePose.rotate = nodeAnimation.rotate.keyframes.empty() ? binding.rotate : CalculateValue(nodeAnimation.rotate, time_);
+		nodePose.translate = nodeAnimation.translate.keyframes.empty() ? binding.translate : CalculateValue(nodeAnimation.translate, time_);
 	}
 }
 
@@ -143,13 +142,22 @@ void AnimationPlayer::Bind(uint32_t modelHandle) {
 		return;
 	}
 	bindings_.resize(asset->nodes.size());
-	if (animation_ == nullptr) {
-		return; // 全部「動かないノード」のまま
-	}
 
 	for (size_t nodeIndex = 0; nodeIndex < asset->nodes.size(); ++nodeIndex) {
 		const ModelManager::Node& node = asset->nodes[nodeIndex];
 		NodeBinding& binding = bindings_[nodeIndex];
+
+		// --- 最初の形を S・R・T に分けて覚えておく ---
+		// 動かないノードも覚える（別のアニメと混ぜるとき、相手だけが動かすノードは、この形から混ぜる）
+		const Transform initial = DecomposeAffineMatrix(node.localMatrix);
+		binding.scale = initial.scale;
+		binding.rotate = ExtractRotation(node.localMatrix, initial.scale);
+		binding.translate = initial.translation;
+
+		// --- このノードを動かすカーブ（無ければ動かないノード）---
+		if (animation_ == nullptr) {
+			continue; // Play していない：全部「動かないノード」
+		}
 		// 同じ名前のノードが2つ以上あるモデルでは、カーブはモデルが決めた1つ（骨の方）だけを動かす。ほかは動かないノード
 		if (ModelManager::FindNodeIndex(*asset, node.name) != static_cast<uint32_t>(nodeIndex)) {
 			continue;
@@ -160,10 +168,5 @@ void AnimationPlayer::Bind(uint32_t modelHandle) {
 			continue;
 		}
 		binding.animation = &found->second;
-		// キーが無いカーブのために、最初の形を S・R・Tに分けて覚えておく
-		const Transform initial = DecomposeAffineMatrix(node.localMatrix);
-		binding.scale = initial.scale;
-		binding.rotate = ExtractRotation(node.localMatrix, initial.scale);
-		binding.translate = initial.translation;
 	}
 }

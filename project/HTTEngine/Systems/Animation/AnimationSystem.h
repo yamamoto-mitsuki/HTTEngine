@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <optional>
 #include <string_view>
 
 #include "HTTEngine/Components/Animation/AnimatorComponent.h"
@@ -48,25 +49,29 @@ public:
 
 	/// <summary>
 	/// アニメーションを名前で流す（毎フレーム呼んでよい）。Animator の Clip・Loop・Speed をこの値に書き換える
-	/// <para>名前が違う・止まっている（ループしないアニメが最後まで行った・Stop した）→ そのアニメを最初から</para>
+	/// <para>名前が違う・止まっている（ループしないアニメが最後まで行った・Stop した）→ そのアニメを最初から（前のアニメの形から blendTime 秒で混ぜる）</para>
 	/// <para>同じ名前が流れている → 速さと loop だけ変える（最初には戻らない。途中で最初からにしたいときは Restart）</para>
 	/// </summary>
 	/// <param name="clip">アニメーションの名前（Animator の Clip と同じ名前）</param>
 	/// <param name="loop">ループするか</param>
 	/// <param name="speed">1 で等速（CalcSpeedToFit で「N 秒で流しきる」速さを作れる）</param>
+	/// <param name="blendTime">前のアニメの形から混ぜていく秒（省くと Animator の Blend Time。0 ならすぐ切り替える）。Animator には書かない</param>
 	/// <returns>流れているか（Animator が無い・その名前のアニメが無い・Entity が無効なら false）</returns>
-	static bool Play(Handle<Entity> entity, std::string_view clip, bool loop, float speed = 1.0f);
-	// 今のアニメーション（Animator の Clip）を最初から流し直す。Animator が無い・アニメーションが未選択・ファイルに無いなら false
-	static bool Restart(Handle<Entity> entity);
+	static bool Play(Handle<Entity> entity, std::string_view clip, bool loop, float speed = 1.0f, std::optional<float> blendTime = std::nullopt);
+	// 今のアニメーション（Animator の Clip）を最初から流し直す。今見えている形から blendTime 秒で混ぜる（省くと Animator の Blend Time）
+	// Animator が無い・アニメーションが未選択・ファイルに無いなら false
+	static bool Restart(Handle<Entity> entity, std::optional<float> blendTime = std::nullopt);
 	// そのアニメーションの長さ（秒）。Animator・アニメが無ければ 0
 	static float GetClipDuration(Handle<Entity> entity, std::string_view clip);
 	// そのアニメーションを、ちょうど seconds 秒で流しきる速さ（長さ ÷ seconds）。Animator・アニメが無い・seconds が 0 以下なら 1
 	static float CalcSpeedToFit(Handle<Entity> entity, std::string_view clip, float seconds);
-	// 止めて最初の時刻に戻す
+	// 止めて最初の時刻に戻す（混ぜている途中なら、混ぜるのもやめる）
 	static void Stop(Handle<Entity> entity);
 	// 再生中か（ループしないアニメが最後まで行ったら false）
 	static bool IsPlaying(Handle<Entity> entity);
-	// 細かい操作（SetTime・SetPauseなど）をしたい用。無ければ nullptr
+	// 前のアニメの形から混ぜている途中か
+	static bool IsBlending(Handle<Entity> entity);
+	// 細かい操作（SetTime・SetPauseなど）をしたい用。今流している方（混ぜている途中の、消えていく方は渡さない）。無ければ nullptr
 	// 返したポインタはそのフレームの中だけ使う（Animatorを足す・消すと、一覧の場所が変わる）
 	static AnimationPlayer* GetPlayer(Handle<Entity> entity);
 

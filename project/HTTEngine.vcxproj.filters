@@ -525,6 +525,9 @@
     <ClCompile Include="HTTEngine\Graphics\Animation\AnimationPlayer.cpp">
       <Filter>HTTEngine\Graphics\Animation</Filter>
     </ClCompile>
+    <ClCompile Include="HTTEngine\Graphics\Animation\AnimationPose.cpp">
+      <Filter>HTTEngine\Graphics\Animation</Filter>
+    </ClCompile>
     <ClCompile Include="HTTEngine\Graphics\Compute\ComputePipeline.cpp">
       <Filter>HTTEngine\Graphics\Compute</Filter>
     </ClCompile>
@@ -1373,6 +1376,9 @@
       <Filter>HTTEngine\Graphics\Animation</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Graphics\Animation\AnimationPlayer.h">
+      <Filter>HTTEngine\Graphics\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Graphics\Animation\AnimationPose.h">
       <Filter>HTTEngine\Graphics\Animation</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Graphics\Compute\ComputePipeline.h">

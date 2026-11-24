@@ -28,7 +28,7 @@
 | AN2 | ノードアニメーション（キーの読み込み・補間）＋エンジンにつなぐ（Animator Component・AnimationSystem） | 読み込み・補間＝自分（学校）／つなぐ所＝md | **AN2-1 読み込み（AnimationManager）＝写経待ち（6章）**。補間・再生はこれから |
 | AN3 | Skeleton（骨の階層）＋骨の線を Scene ビューに | Skeleton＝自分（学校）／線＝md でも可 | 設計済み |
 | AN4 | Skinning（頂点を骨で曲げる） | 自分（学校）／パイプラインと渡し方＝md でも可 | 設計済み |
-| AN5 | 切り替えを滑らかに（クロスフェード） | 相談 | 後 |
+| AN5 | 切り替えを滑らかに（クロスフェード） | md | **2026-11-24 写経待ち（[AnimationBlend.md](AnimationBlend.md)。ポーズを混ぜる土台 AnimationPose も）**。値で混ぜる（Blend Tree）・体の一部だけ（レイヤー）は同じ md の6章に設計だけ |
 | AN6 | イベント（足音・攻撃判定）・状態の切り替え（ステートマシン） | 相談 | 後 |
 | AN7 | エディタで作るアニメ（Component の値にキーを打つ） | md | 後 |
 
