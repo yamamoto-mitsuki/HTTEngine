@@ -74,6 +74,9 @@ public:
 	// --- 霧（カメラの定数バッファに入れて、3D のシェーダーが色に混ぜる）---
 	// 霧の値（FogSystem が、シーンの Fog Component から毎フレーム書く。Fog Component が無ければ「霧なし」を書く）
 	static void SetFog(const FogData& fog) { instance_->fog_ = fog; }
+	// --- 環境光（カメラの定数バッファに入れて、PBR のシェーダーが IBL に掛ける）---
+	// 環境光の強さ（EnvironmentLightSystem が、シーンの Environment Light Component から毎フレーム書く。無ければ全部 1 を書く）
+	static void SetEnvironmentLight(const EnvironmentLightData& environment) { instance_->environment_ = environment; }
 
 	// --- 影（ShadowRendererが、ビューごとに影の深度・影の量の画面を作る）---
 	// 平行光源の影
@@ -124,6 +127,7 @@ private:
 	uint32_t cameraSlot_ = 0;
 
 	FogData fog_;                                 // 霧の値（初期値は霧なし）
+	EnvironmentLightData environment_;            // 環境光の強さ（初期値は全部 1 ＝ 今までの見た目）
 	DirectionalShadowSettings directionalShadow_; // 平行光源の影
 	DepthOfFieldSettings depthOfField_; // 被写界深度の値（初期値はぼかさない）
 	PostOverrides cameraPostOverrides_; // カメラごとのポストエフェクトの上書き（初期値は上書きなし）

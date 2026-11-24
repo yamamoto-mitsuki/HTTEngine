@@ -263,6 +263,7 @@
     <ClCompile Include="HTTEngine\Systems\Physics\ElasticSurfaceSystem.cpp" />
     <ClCompile Include="HTTEngine\Systems\Rendering3D\FogSystem.cpp" />
     <ClCompile Include="HTTEngine\Systems\Lighting\LightSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Lighting\EnvironmentLightSystem.cpp" />
     <ClCompile Include="HTTEngine\Math\Easing.cpp" />
     <ClCompile Include="HTTEngine\Math\Geometry\AABB.cpp" />
     <ClCompile Include="HTTEngine\Math\Geometry\OBB.cpp" />
@@ -560,11 +561,13 @@
     <ClInclude Include="HTTEngine\Graphics\Texture\TextureManager.h" />
     <ClInclude Include="HTTEngine\Input\InputIncludes.h" />
     <ClInclude Include="HTTEngine\Components\Lighting\LightComponent.h" />
+    <ClInclude Include="HTTEngine\Components\Lighting\EnvironmentLightComponent.h" />
     <ClInclude Include="HTTEngine\Systems\Rendering3D\DecalRenderSystem.h" />
     <ClInclude Include="HTTEngine\Systems\Rendering3D\DepthOfFieldSystem.h" />
     <ClInclude Include="HTTEngine\Systems\Physics\ElasticSurfaceSystem.h" />
     <ClInclude Include="HTTEngine\Systems\Rendering3D\FogSystem.h" />
     <ClInclude Include="HTTEngine\Systems\Lighting\LightSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Lighting\EnvironmentLightSystem.h" />
     <ClInclude Include="HTTEngine\Math\Easing.h" />
     <ClInclude Include="HTTEngine\Math\Geometry\AABB.h" />
     <ClInclude Include="HTTEngine\Math\Geometry\OBB.h" />

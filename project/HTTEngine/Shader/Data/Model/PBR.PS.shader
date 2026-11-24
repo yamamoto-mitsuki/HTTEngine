@@ -128,7 +128,8 @@ float32_t3 CalcIBL(float32_t3 N, float32_t3 V, float32_t3 albedo, float32_t3 F0,
     float2 brdf = gTextures[gIBL.brdfLutIndex].Sample(gSampler, float2(NdotV, roughness)).rg;
     float32_t3 specular = prefiltered * (F * brdf.x + brdf.y);
 
-    return kD * diffuse + specular;
+    // シーンの環境光の強さ（Environment Light Component。無ければ 1）
+    return kD * diffuse * gCamera.environmentIntensity + specular * gCamera.environmentReflectionIntensity;
 }
 
 
@@ -184,8 +185,7 @@ PixelShaderOutput main(VertexShaderOutput input)
         }
     }
     
-    // 環境光は今は定数で代用
-    // 環境光（IBL。無効時は定数フォールバック）
+    // 環境光（IBL。無効時はマテリアルの Ambient。どちらもシーンの環境光の強さを掛ける）
     float32_t3 ambient;
     if (gIBL.enabled != 0)
     {
@@ -193,7 +193,7 @@ PixelShaderOutput main(VertexShaderOutput input)
     }
     else
     {
-        ambient = gMaterial.ambient * albedo;
+        ambient = gMaterial.ambient * albedo * gCamera.environmentIntensity;
     }
     
     PixelShaderOutput output;

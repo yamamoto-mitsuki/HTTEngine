@@ -831,6 +831,9 @@
     <ClCompile Include="HTTEngine\Systems\Lighting\LightSystem.cpp">
       <Filter>HTTEngine\Systems\Lighting</Filter>
     </ClCompile>
+    <ClCompile Include="HTTEngine\Systems\Lighting\EnvironmentLightSystem.cpp">
+      <Filter>HTTEngine\Systems\Lighting</Filter>
+    </ClCompile>
     <ClCompile Include="HTTEngine\Systems\Physics\CollisionSystem.cpp">
       <Filter>HTTEngine\Systems\Physics</Filter>
     </ClCompile>
@@ -1061,6 +1064,9 @@
       <Filter>HTTEngine\Components\Gameplay</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Components\Lighting\LightComponent.h">
+      <Filter>HTTEngine\Components\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Components\Lighting\EnvironmentLightComponent.h">
       <Filter>HTTEngine\Components\Lighting</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Components\Physics\ColliderComponent.h">
@@ -1748,6 +1754,9 @@
       <Filter>HTTEngine\Systems\Gameplay</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Systems\Lighting\LightSystem.h">
+      <Filter>HTTEngine\Systems\Lighting</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Systems\Lighting\EnvironmentLightSystem.h">
       <Filter>HTTEngine\Systems\Lighting</Filter>
     </ClInclude>
     <ClInclude Include="HTTEngine\Systems\Physics\CollisionSystem.h">

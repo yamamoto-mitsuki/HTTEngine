@@ -36,6 +36,7 @@
 #include "HTTEngine/Systems/Gameplay/TriggerActivatorSystem.h"
 // Lights
 #include "HTTEngine/Systems/Lighting/LightSystem.h"
+#include "HTTEngine/Systems/Lighting/EnvironmentLightSystem.h"
 // Physics
 #include "HTTEngine/Systems/Physics/CharacterControllerSystem.h"
 #include "HTTEngine/Systems/Physics/CollisionSystem.h"
@@ -86,6 +87,7 @@ void EngineSystems::Initialize() {
 
 	// --- Component を EntityManager に登録する（保存・Inspector も。どれも EntityManager の後）---
 	LightSystem::Initialize();            // ライト
+	EnvironmentLightSystem::Initialize(); // 環境光
 	CollisionSystem::Initialize();        // Collider
 	PhysicsSystem::Initialize();          // RigidBody
 	CharacterControllerSystem::Initialize(); // Character Controller
@@ -147,6 +149,7 @@ void EngineSystems::ReleaseScripts() {
 void EngineSystems::Release() {
 	// --- どれもシーン（ウィンドウ）の破棄より後にする ---
 	LightSystem::Release();
+	EnvironmentLightSystem::Release();
 	CollisionSystem::Release();
 	PhysicsSystem::Release();
 	CharacterControllerSystem::Release();
@@ -238,6 +241,7 @@ void EngineSystems::Update(bool isGameRunning, const std::shared_ptr<Camera>& ga
 	ParticleManager::Update();              // パーティクル更新
 	ParticleSystem::Update(isGameRunning, Time::GetDeltaTime()); // パーティクル（Particle System Component）。停止中は Inspector の Preview の1つだけ動く
 	LightSystem::Update();                  // ライト更新
+	EnvironmentLightSystem::Update();       // 環境光更新
 	FogSystem::Update();                    // 霧更新
 	DepthOfFieldSystem::Update();           // 被写界深度の値（ピントを合わせる Target の位置を使うので、カメラの Update の後）
 	ScriptSystem::FlushDestroy();           // Destroy(Script) の予約の反映（OnDestroy を呼ぶ。Entity の破棄より先）

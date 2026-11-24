@@ -49,6 +49,15 @@ struct FogData {
 };
 static_assert(sizeof(FogData) == 48, "HLSLのCameraの霧の所と大きさが違います");
 
+// ===== 環境光の強さ =====
+struct EnvironmentLightData {
+	float intensity = 1.0f;           // 拡散に掛ける
+	float reflectionIntensity = 1.0f; // 鏡面に掛ける
+	float padA = 0.0f;
+	float padB = 0.0f;
+};
+static_assert(sizeof(EnvironmentLightData) == 16, "HLSLのCameraの環境光の所と大きさが違います");
+
 // ===== カメラ =====
 struct CameraData {
 	Matrix4x4 viewProj;
@@ -60,8 +69,9 @@ struct CameraData {
 	float padC = 0.0f;
 	FogData fog;                // 霧（3D のシェーダーの最後で、色に混ぜる。Fog.hlsli の ApplyFog）
 	Matrix4x4 inverseViewProj;  // viewProj の逆行列（画面の位置と深度から、ワールドの位置へ戻す。デカールが使う）
+	EnvironmentLightData environment; // 環境光の強さ（PBR の IBL に掛ける）
 };
-static_assert(sizeof(CameraData) == 224, "HLSLのCameraと大きさが違います");
+static_assert(sizeof(CameraData) == 240, "HLSLのCameraと大きさが違います");
 
 // ===== パーティクル（粒1つ分。StructuredBuffer<Particle> gParticles として Particle.VS が読む）=====
 // VS は world から中心（4行目）と大きさ（1行目の長さ＝横・2行目の長さ＝縦）だけを読み、カメラの右・上で板を組む（world の向きは使わない）

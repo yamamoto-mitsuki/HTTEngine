@@ -267,5 +267,7 @@ D3D12_GPU_VIRTUAL_ADDRESS SceneRenderer::UploadCameraCB(const Camera* camera) {
 	dst->up = {v.m[0][1], v.m[1][1], v.m[2][1]};
 	// 霧：切ってあるビュー（エディタの Scene ビュー）には「霧なし」（濃さの上限が 0）を送る
 	dst->fog = instance_->viewOptions_.fog ? instance_->fog_ : FogData{};
+	// 環境光：どのビューにも同じ値（Scene ビューでも、ゲームと同じ明るさで見る）
+	dst->environment = instance_->environment_;
 	return instance_->cameraCB_->GetGPUVirtualAddress() + slot * kCameraSlotSize;
 }

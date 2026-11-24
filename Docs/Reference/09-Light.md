@@ -57,3 +57,27 @@ sunLight->shadow.strength = 0.7f;
 // ✗ だめな例
 sunLight->intensity = 0.0f; // ✗ 影だけ消したいのに、光も消える（shadow.castsShadows を外す）
 ```
+
+## 環境光（空の光）
+
+**Add Component → Lighting → Environment Light**（`EnvironmentLightComponent`）。シーンに1つ（どの Entity でもよい。2つ以上あれば先に見つかった物）。
+空の画像（IBL）から来る光と、空の絵の明るさを決める。**無ければ全部 1**（空の画像の明るさのまま）。
+
+| 項目 | 意味 |
+|---|---|
+| `intensity` | 空から来る、ぼんやりした光の強さ（PBR の物の全部の面に当たる）。下げると、平行光源の当たる面と影の差が出る |
+| `reflectionIntensity` | 空の映り込みの強さ（金属・つるつるした物） |
+| `skyIntensity` | 空の絵の明るさ（Camera の Background が Skybox のとき）。物を照らす光は変わらない |
+
+```cpp
+EnvironmentLightComponent* environment = EntityManager::Get<EnvironmentLightComponent>(sun);
+environment->intensity = 0.4f; // 空の光を弱めて、太陽の光を目立たせる
+```
+
+- 効くのは PBR の物だけ（ほかの Shader は環境光を持たない）。
+- 空を回しても（`Skybox::SetRotationY`）、空の光の向きはまだ回らない。
+
+```cpp
+// ✗ だめな例
+sunLight->intensity = 0.3f; // ✗ 全体がまぶしいのに太陽を弱める（空の光が勝って、もっとのっぺりする。environment->intensity を下げる）
+```

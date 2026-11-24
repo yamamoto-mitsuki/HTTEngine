@@ -42,7 +42,7 @@ EntityManager::RequestAdd<ModelRendererComponent>(ball, renderer);
 | `enabled` | falseで描かない |
 | `material`・`overrideMaterial` | Base Color・Ambient〜Roughness・Alpha Cutoff。**`overrideMaterial` が true のときだけ、読み込んだマテリアル（mtl / glTF）の値の代わりに、全部のメッシュに同じ値を使う**（テクスチャは読み込んだ物のまま）。Inspector の Material で値を触ると自動で入る。Material の「Model Materials」に読み込んだマテリアルの一覧が出て、**Copy** でその値を写せる。Alpha Cutoff だけは Override に関係なくいつも効く |
 
-> **PBR のモデルは、シーンが環境光（IBL）を持っていないと描かれない。** `DefaultScene` は持っている。自分で書いたシーンは `IBLEnvironment` を `MakeFromHDR` して、`GetEnvironment()` で返す（2章）。
+> **PBR のモデルは、シーンが環境光（IBL）を持っていないと描かれない。** `DefaultScene` は持っている。自分で書いたシーンは `IBLEnvironment` を `MakeFromHDR` して、`GetEnvironment()` で返す（2章）。空の光の強さは Environment Light Component で決める（9章「環境光（空の光）」）。
 
 マテリアルのどの値をどのシェーダーが使うか：
 

@@ -23,6 +23,11 @@ struct Camera
     float heightFogMaxOpacity; // 高さの霧の一番濃い所（0 なら高さの霧なし）
     // --- 画面から戻す（C++ の inverseViewProj）---
     float4x4 inverseViewProj;  // viewProj の逆行列（画面の位置と深度から、ワールドの位置へ戻す。デカールが使う）
+    // --- 環境光（C++ の EnvironmentLightData と同じ並び。使うのは PBR.PS）---
+    float environmentIntensity;           // 拡散（空から来る、ぼんやりした光）に掛ける
+    float environmentReflectionIntensity; // 鏡面（空の映り込み）に掛ける
+    float environmentPadA;
+    float environmentPadB;
 };
 ConstantBuffer<Camera> gCamera : register(b0);
 #HLSL_END
