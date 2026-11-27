@@ -7,6 +7,7 @@
 
 #include "HTTEngine/Components/Core/TransformComponent.h"
 #include "HTTEngine/Diagnostics/HTTAssert.h"
+#include "HTTEngine/Diagnostics/LogManager.h"
 #include "HTTEngine/ECS/ComponentSerializer.h"
 #include "HTTEngine/ECS/ComponentUI.h"
 #include "HTTEngine/ECS/EntityManager.h"
@@ -17,6 +18,7 @@
 #include "HTTEngine/Math/Color.h"
 #include "HTTEngine/Math/RandomEngine.h"
 #include "HTTEngine/Systems/Effects/ParticleSpawn.h"
+#include "HTTEngine/Systems/Effects/SkinnedMeshSampler.h"
 #include "HTTEngine/Time/EngineTime.h"
 #ifdef USE_IMGUI
 #include "HTTEngine/Editor/Windows/HierarchyWindow.h"
@@ -57,6 +59,7 @@ struct EmitterState {
 	bool isBurstPending = false;         // 次に出すとき、Burst をまとめて出す（Play したとき・くり返しの頭）
 	float time = 0.0f;                   // 今の1回（Duration）の中の秒
 	float rateCarry = 0.0f;              // Rate Over Time の端数（整数にならなかった分を、次のフレームへ持ち越す）
+	bool isMeshWarned = false;           // Skinned Mesh で出せないと警告したか（毎フレーム出さないように。出せるようになったら戻す）
 };
 
 /// <summary>
@@ -129,23 +132,70 @@ float RandomRange(const Vector2& range) {
 //=============================================================================
 // 出す・動かす
 //=============================================================================
+// ===== Skinned Mesh の材料を用意する（用意できなければ、Entity ごとに1回だけ警告）=====
+bool PrepareSkinnedMesh(EmitterState& emitter, const ParticleSystemComponent& component, SkinnedMeshSampler::Context& context) {
+	if (SkinnedMeshSampler::MakeContext(emitter.entity, component.meshSource, context)) {
+		emitter.isMeshWarned = false; // 出せるようになった。また出せなくなったら知らせる
+		return true;
+	}
+	if (!emitter.isMeshWarned) {
+		emitter.isMeshWarned = true;
+		const Entity* entity = EntityManager::Get(emitter.entity);
+		const std::string name = (entity != nullptr) ? entity->name : std::string("?");
+		LogManager::Warning("Particle System（" + name + "）：Shape が Skinned Mesh ですが、自分か親に、骨で曲がるモデルの Model Renderer がありません"
+		                    "（Mesh Source が Bone なら、親も骨の骨が要ります）");
+	}
+	return false;
+}
+
 // ===== 粒を count 個出す（Max Particles を超える分は出さない）=====
 void EmitParticles(EmitterState& emitter, const ParticleSystemComponent& component, const Matrix4x4& worldMatrix, int count) {
 	const int limit = std::clamp(component.maxParticles, 1, ParticleSystem::kMaxParticles);
 	const int room = limit - static_cast<int>(emitter.particles.size());
 	const int spawnCount = (std::min)(count, room);
+	if (spawnCount <= 0) {
+		return; // 出す数が無い（Rate Over Time の端数がまだ 1 に届かないフレームも。Skinned Mesh の用意をしないで済む）
+	}
+
+	// --- Skinned Mesh：モデルの今のポーズを、この呼び出しで1回だけ用意する（粒ごとには作らない）---
+	const bool isSkinnedMesh = (component.shape == ParticleShape::SkinnedMesh);
+	SkinnedMeshSampler::Context skin;
+	if (isSkinnedMesh && !PrepareSkinnedMesh(emitter, component, skin)) {
+		return;
+	}
+	const bool isLocal = (component.space == ParticleSpace::Local);
+	// Skinned Mesh の点はワールドで来るので、Local のときは Entity から見た座標へ戻す（逆行列は Local のときだけ・1回だけ）
+	const Matrix4x4 worldToLocal = (isSkinnedMesh && isLocal) ? Inverse(worldMatrix) : MakeIdentity4x4();
+
 	for (int i = 0; i < spawnCount; ++i) {
-		ParticleSpawn::SpawnPoint point = ParticleSpawn::Sample(component);
-		// World：出た瞬間のワールド座標にする（この後 Entity が動いても付いていかない）
-		if (component.space == ParticleSpace::World) {
-			point.position = TransformPoint(point.position, worldMatrix);
-			point.direction = Normalize(TransformNormal(point.direction, worldMatrix)); // 回転だけ効かせる（Scale で速さは変えない）
+		// --- 出る場所・飛ぶ向き・集まる先（Converge）---
+		Vector3 position;
+		Vector3 direction;
+		Vector3 center;
+		if (isSkinnedMesh) {
+			const SkinnedMeshSampler::SamplePoint sample = SkinnedMeshSampler::Sample(skin);
+			const Vector3 surface = isLocal ? TransformPoint(sample.position, worldToLocal) : sample.position;
+			direction = isLocal ? Normalize(TransformNormal(sample.normal, worldToLocal)) : sample.normal;
+			position = surface + direction * component.surfaceOffset; // 表面から外へ離す
+			center = surface;                                          // Converge なら、離れた所から表面へ集まる
+		} else {
+			ParticleSpawn::SpawnPoint point = ParticleSpawn::Sample(component);
+			// World：出た瞬間のワールド座標にする（この後 Entity が動いても付いていかない）
+			if (!isLocal) {
+				point.position = TransformPoint(point.position, worldMatrix);
+				point.direction = Normalize(TransformNormal(point.direction, worldMatrix)); // 回転だけ効かせる（Scale で速さは変えない）
+			}
+			position = point.position;
+			direction = point.direction;
+			center = isLocal ? Vector3{0.0f, 0.0f, 0.0f} : TransformPoint({0.0f, 0.0f, 0.0f}, worldMatrix);
 		}
+
+		// --- 粒の初めの値 ---
 		LiveParticle particle;
-		particle.position = point.position;
-		particle.startPosition = point.position;
-		particle.center = (component.space == ParticleSpace::World) ? TransformPoint({0.0f, 0.0f, 0.0f}, worldMatrix) : Vector3{0.0f, 0.0f, 0.0f};
-		particle.velocity = point.direction * RandomRange(component.speed);
+		particle.position = position;
+		particle.startPosition = position;
+		particle.center = center;
+		particle.velocity = direction * RandomRange(component.speed);
 		particle.startColor = Lerp(component.colorA, component.colorB, RandomEngine::GetFloat(0.0f, 1.0f));
 		particle.startSize = RandomRange(component.size);
 		particle.lifetime = (std::max)(RandomRange(component.lifetime), kMinLifetime);
@@ -303,6 +353,8 @@ void DescribeParticleSystem(ComponentUI& ui, ParticleSystemComponent& value) {
 	ui.Field("Cone Angle###coneAngle", value.coneAngle, Range(0.0f, 90.0f).Tip("Cone の開き（度）。縁から出た粒ほど外へ傾く"));
 	ui.Field("Box Size###boxSize", value.boxSize, AtLeast(0.0f).Tip("Box の大きさ（m）"));
 	ui.Field("From Surface###fromSurface", value.fromSurface, Tip("形の表面（縁）から出す。Circle なら輪から飛び散る"));
+	ui.Field("Mesh Source###meshSource", value.meshSource, Tip("Skinned Mesh のとき：モデルの表面から・骨の線から（モデルは、自分か親の Model Renderer）"));
+	ui.Field("Surface Offset###surfaceOffset", value.surfaceOffset, AtLeast(0.0f).Tip("Skinned Mesh のとき：表面（骨の線）から外へ離して出す距離（m）。Converge と合わせると、離れた所から体へ集まる"));
 	ui.Field("Show Gizmo###showGizmo", value.showGizmo, Tip("Scene ビューに、粒の出る形を線で出す（エディタだけ。桃色）。Cone は縁から出た粒の開く向きも。View メニューの Particle Shapes で全部まとめて消せる"));
 
 	ui.Separator("Start (Min, Max)");
@@ -358,7 +410,10 @@ void ParticleSystem::Initialize() {
 	state->gizmoLines.isGizmo = true; // ポストエフェクトの後に、選んだ色のまま描く
 }
 
-void ParticleSystem::Release() { state.reset(); }
+void ParticleSystem::Release() {
+	SkinnedMeshSampler::Clear(); // モデルごとの表（モデルのアドレスを持っているが、読まずに捨てるだけなので ModelManager との順番は問わない）
+	state.reset();
+}
 
 //=============================================================================
 // 毎フレーム

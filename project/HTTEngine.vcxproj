@@ -192,6 +192,7 @@
     <ClCompile Include="HTTEngine\Systems\Combat\DamageSystem.cpp" />
     <ClCompile Include="HTTEngine\Systems\Combat\HitboxTelegraphSystem.cpp" />
     <ClCompile Include="HTTEngine\Systems\Combat\HitSystem.cpp" />
+    <ClCompile Include="HTTEngine\Systems\Effects\SkinnedMeshSampler.cpp" />
     <ClCompile Include="HTTEngine\Systems\Gameplay\AttackTableSystem.cpp" />
     <ClCompile Include="HTTEngine\Systems\Gameplay\TimelineTriggerSystem.cpp" />
     <ClCompile Include="HTTEngine\Systems\Rendering3D\ArrowStripSystem.cpp" />
@@ -472,6 +473,7 @@
     <ClInclude Include="HTTEngine\Systems\Combat\DamageSystem.h" />
     <ClInclude Include="HTTEngine\Systems\Combat\HitboxTelegraphSystem.h" />
     <ClInclude Include="HTTEngine\Systems\Combat\HitSystem.h" />
+    <ClInclude Include="HTTEngine\Systems\Effects\SkinnedMeshSampler.h" />
     <ClInclude Include="HTTEngine\Systems\Gameplay\AttackTableSystem.h" />
     <ClInclude Include="HTTEngine\Systems\Gameplay\TimelineTriggerSystem.h" />
     <ClInclude Include="HTTEngine\Systems\Rendering3D\ArrowStripSystem.h" />

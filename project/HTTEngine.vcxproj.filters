@@ -950,6 +950,9 @@
     <ClCompile Include="HTTEngine\AI\BuiltInAttackParts.cpp">
       <Filter>HTTEngine\AI</Filter>
     </ClCompile>
+    <ClCompile Include="HTTEngine\Systems\Effects\SkinnedMeshSampler.cpp">
+      <Filter>HTTEngine\Systems\Effects</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="externals\spdlog\async.h">
@@ -1893,6 +1896,9 @@
     <ClInclude Include="HTTEngine\Graphics\Shadow\ShadowRenderer.h" />
     <ClInclude Include="HTTEngine\AI\BuiltInAttackParts.h">
       <Filter>HTTEngine\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTEngine\Systems\Effects\SkinnedMeshSampler.h">
+      <Filter>HTTEngine\Systems\Effects</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

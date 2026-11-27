@@ -27,6 +27,8 @@ public:
 	/// 半径1の球の内部のランダムな点を返す
 	static Vector3 GetInsideUnitSphere();
 
+	// 長さ1のランダムな向き
+	static Vector3 GetDirection();
 
 private:
 	static std::mt19937 engine_;

@@ -1,0 +1,258 @@
+{
+	"version": 5,
+	"entities": [
+		{
+			"id": 1,
+			"name": "Main Camera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 1.5, -9.0],
+					"rotation": [5.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Camera": {
+					"fovY": 50.0,
+					"nearZ": 0.1,
+					"farZ": 1000.0,
+					"priority": 0
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Directional Light",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 3.0, 0.0],
+					"rotation": [50.0, -30.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Directional Light": {
+					"color": [1.0, 1.0, 1.0],
+					"intensity": 1.0,
+					"showIcon": true,
+					"showRange": true
+				}
+			}
+		},
+		{
+			"id": 3,
+			"name": "A Surface",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-3.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Animator": {
+					"enabled": true,
+					"animation": "resources/Model/AnimationBlend/AnimationBlendTest.glb",
+					"clip": "BendLeft",
+					"speed": 1.0,
+					"loop": true,
+					"playOnStart": true,
+					"blendTime": 0.0,
+					"previewTime": 0.5
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/AnimationBlend/AnimationBlendTest.glb",
+					"texture": "",
+					"shadingType": "HalfLambert"
+				}
+			}
+		},
+		{
+			"id": 4,
+			"name": "Surface Particle",
+			"parent": 3,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Particle System": {
+					"enabled": true,
+					"playOnStart": true,
+					"looping": true,
+					"duration": 1.0,
+					"rateOverTime": 300.0,
+					"burstCount": 0,
+					"maxParticles": 1024,
+					"shape": "SkinnedMesh",
+					"meshSource": "Surface",
+					"surfaceOffset": 0.0,
+					"lifetime": [0.4, 0.6],
+					"speed": [0.05, 0.15],
+					"size": [0.05, 0.08],
+					"colorA": [0.3, 0.8, 1.0, 1.0],
+					"colorB": [0.6, 1.0, 1.0, 1.0],
+					"intensity": 2.0,
+					"endSizeRate": 0.0,
+					"endColor": [1.0, 1.0, 1.0, 0.0],
+					"blend": "Add",
+					"space": "World"
+				}
+			}
+		},
+		{
+			"id": 5,
+			"name": "B Bone",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Animator": {
+					"enabled": true,
+					"animation": "resources/Model/AnimationBlend/AnimationBlendTest.glb",
+					"clip": "BendLeft",
+					"speed": 1.0,
+					"loop": true,
+					"playOnStart": true,
+					"blendTime": 0.0,
+					"previewTime": 0.5
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/AnimationBlend/AnimationBlendTest.glb",
+					"texture": "",
+					"shadingType": "HalfLambert"
+				}
+			}
+		},
+		{
+			"id": 6,
+			"name": "Bone Particle",
+			"parent": 5,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Particle System": {
+					"enabled": true,
+					"playOnStart": true,
+					"looping": true,
+					"duration": 1.0,
+					"rateOverTime": 200.0,
+					"burstCount": 0,
+					"maxParticles": 1024,
+					"shape": "SkinnedMesh",
+					"meshSource": "Bone",
+					"surfaceOffset": 0.3,
+					"lifetime": [0.4, 0.6],
+					"speed": [0.3, 0.5],
+					"size": [0.05, 0.08],
+					"colorA": [1.0, 0.6, 0.2, 1.0],
+					"colorB": [1.0, 0.9, 0.3, 1.0],
+					"intensity": 2.0,
+					"endSizeRate": 0.0,
+					"endColor": [1.0, 1.0, 1.0, 0.0],
+					"blend": "Add",
+					"space": "World"
+				}
+			}
+		},
+		{
+			"id": 7,
+			"name": "C Converge",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [3.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Animator": {
+					"enabled": true,
+					"animation": "resources/Model/AnimationBlend/AnimationBlendTest.glb",
+					"clip": "BendLeft",
+					"speed": 1.0,
+					"loop": true,
+					"playOnStart": true,
+					"blendTime": 0.0,
+					"previewTime": 0.5
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/AnimationBlend/AnimationBlendTest.glb",
+					"texture": "",
+					"shadingType": "HalfLambert"
+				}
+			}
+		},
+		{
+			"id": 8,
+			"name": "Converge Particle",
+			"parent": 7,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Particle System": {
+					"enabled": true,
+					"playOnStart": true,
+					"looping": true,
+					"duration": 1.0,
+					"rateOverTime": 150.0,
+					"burstCount": 0,
+					"maxParticles": 1024,
+					"shape": "SkinnedMesh",
+					"meshSource": "Surface",
+					"surfaceOffset": 0.6,
+					"lifetime": [0.5, 0.7],
+					"size": [0.05, 0.08],
+					"colorA": [0.8, 0.4, 1.0, 1.0],
+					"colorB": [1.0, 0.6, 1.0, 1.0],
+					"intensity": 2.0,
+					"endSizeRate": 1.0,
+					"endColor": [1.0, 1.0, 1.0, 1.0],
+					"converge": true,
+					"convergeEase": "InQuad",
+					"blend": "Add",
+					"space": "World"
+				}
+			}
+		},
+		{
+			"id": 9,
+			"name": "D No Model (warning)",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Particle System": {
+					"enabled": true,
+					"playOnStart": true,
+					"looping": true,
+					"duration": 1.0,
+					"rateOverTime": 50.0,
+					"shape": "SkinnedMesh",
+					"meshSource": "Surface"
+				}
+			}
+		}
+	]
+}

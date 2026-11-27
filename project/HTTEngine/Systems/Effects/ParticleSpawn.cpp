@@ -15,17 +15,6 @@ constexpr float kPointMarkSize = 0.1f;         // Point の印（3つの軸の�
 constexpr float kConeGizmoLength = 1.0f;       // Cone の線で、開く向きを見せる長さ（m。粒が飛ぶ距離ではない）
 constexpr int kConeSideLines = 4;              // Cone の、底の輪から開く向きへ引く線の数
 
-// 長さ1のランダムな向き（球の中の点を長さ1に伸ばす。真ん中に近すぎて向きが決まらない点は選び直す）
-Vector3 RandomDirection() {
-	while (true) {
-		const Vector3 point = RandomEngine::GetInsideUnitSphere();
-		const float lengthSq = LengthSq(point);
-		if (lengthSq > kMinDirectionLengthSq) {
-			return point * (1.0f / std::sqrt(lengthSq));
-		}
-	}
-}
-
 // Box の半分の大きさ（負の値は正にする）
 Vector3 HalfBoxSize(const ParticleSystemComponent& component) {
 	return {std::abs(component.boxSize.x) * 0.5f, std::abs(component.boxSize.y) * 0.5f, std::abs(component.boxSize.z) * 0.5f};
@@ -48,11 +37,11 @@ ParticleSpawn::SpawnPoint ParticleSpawn::Sample(const ParticleSystemComponent& c
 	case ParticleShape::Point:
 		return {
 		    {0.0f, 0.0f, 0.0f},
-            RandomDirection()
+            RandomEngine::GetDirection()
         };
 
 	case ParticleShape::Sphere: {
-		const Vector3 direction = RandomDirection();
+		const Vector3 direction = RandomEngine::GetDirection();
 		const float distance = component.fromSurface ? 1.0f : std::cbrt(RandomEngine::GetFloat(0.0f, 1.0f));
 		return {direction * (component.radius * distance), direction};
 	}
@@ -95,13 +84,16 @@ ParticleSpawn::SpawnPoint ParticleSpawn::Sample(const ParticleSystemComponent& c
 			}
 		}
 		// 向きは箱の真ん中から外へ（ちょうど真ん中に出た粒は、どの向きでも）
-		const Vector3 direction = (LengthSq(position) > kMinDirectionLengthSq) ? Normalize(position) : RandomDirection();
+		const Vector3 direction = (LengthSq(position) > kMinDirectionLengthSq) ? Normalize(position) : RandomEngine::GetDirection();
 		return {position, direction};
 	}
+	case ParticleShape::SkinnedMesh:
+		// モデルが要るので、ParticleSystem が SkinnedMeshSampler で選ぶ（ここには来ない）。来たら Point と同じにする
+		break;
 	}
 	return {
 	    {0.0f, 0.0f, 0.0f},
-        RandomDirection()
+        RandomEngine::GetDirection()
     };
 }
 
@@ -155,6 +147,9 @@ void ParticleSpawn::PushShapeGizmo(std::vector<Renderer::LineSegment>& out, cons
 		}
 		break;
 	}
+	case ParticleShape::SkinnedMesh:
+		// 形はモデルそのものなので、線は描かない（骨は View → Skeletons で見える）
+		break;
 	}
 	for (size_t i = first; i < out.size(); ++i) {
 		out[i].start = TransformPoint(out[i].start, worldMatrix);

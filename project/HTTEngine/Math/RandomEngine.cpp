@@ -44,3 +44,16 @@ Vector3 RandomEngine::GetInsideUnitSphere() {
 		}
 	}
 }
+
+//=============================================================================
+// 長さ1のランダムな向き
+//=============================================================================
+Vector3 RandomEngine::GetDirection() {
+	while (true) {
+		const Vector3 point = RandomEngine::GetInsideUnitSphere();
+		const float lengthSq = LengthSq(point);
+		if (lengthSq > 1e-4f) {
+			return point * (1.0f / std::sqrt(lengthSq));
+		}
+	}
+}

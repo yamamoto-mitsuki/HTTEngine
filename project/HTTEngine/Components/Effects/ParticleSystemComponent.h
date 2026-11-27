@@ -21,6 +21,7 @@ enum class ParticleShape {
 	Circle, // XY の面の円の中（From Surface なら輪）から、外へ（横から見るゲームで、輪から飛び散る）
 	Cone,   // XZ の面の円から、上（+Y）を中心に Cone Angle まで開いて
 	Box,    // 箱の中（From Surface なら表面）から、外へ
+	SkinnedMesh, // 自分か親の Model Renderer の、骨で曲がるモデルの今のポーズから（Mesh Source で表面・骨の線）
 };
 
 // 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
@@ -32,6 +33,24 @@ constexpr auto EnumTips(ParticleShape) {
 	    {Circle, "XY の面の円の中（From Surface なら輪）から、外へ（横から見るゲームで、輪から飛び散る）"},
 	    {Cone, "XZ の面の円から、上（+Y）を中心に Cone Angle まで開いて"},
 	    {Box, "箱の中（From Surface なら表面）から、外へ"},
+	    {SkinnedMesh, "自分か親の Model Renderer の、骨で曲がるモデルの今のポーズから。モデルの子に置く"},
+	});
+}
+
+/// <summary>
+/// Shape が Skinned Mesh のとき、モデルのどこから出すか（Unreal の Skeletal Mesh Location の Sampling Mode）
+/// </summary>
+enum class ParticleMeshSource {
+	Surface, // 骨で曲がるメッシュの表面から、面の外向きへ
+	Bone,    // 骨と親の骨を結ぶ線の上から、線から離れる向きへ
+};
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(ParticleMeshSource) {
+	using enum ParticleMeshSource;
+	return MakeEnumTips<ParticleMeshSource>({
+	    {Surface, "骨で曲がるメッシュの表面から、面の外向きへ（大きい面ほど多く出る）"},
+	    {Bone,    "骨と親の骨を結ぶ線の上から、線から離れる向きへ（手足の線に沿う）"  },
 	});
 }
 
@@ -111,6 +130,8 @@ struct ParticleSystemComponent {
 	float coneAngle = 25.0f;              // Cone の開き（度。真上から何度まで）
 	Vector3 boxSize = {1.0f, 1.0f, 1.0f}; // Box の大きさ（m）
 	bool fromSurface = false;             // 形の表面（縁）から出す（円の輪から飛び散る）
+	ParticleMeshSource meshSource = ParticleMeshSource::Surface; // Skinned Mesh のとき：表面から・骨の線から
+	float surfaceOffset = 0.0f;           // Skinned Mesh のとき：表面（骨の線）から外へ離して出す距離（m）。Converge なら、ここから表面へ集まる
 	bool showGizmo = true;                // Scene ビューに、形を線で出す（エディタだけ。View メニューの Particle Shapes で全部まとめて消せる）
 
 	// ===== 粒の初めの値（Min〜Max の乱数）=====
