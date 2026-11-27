@@ -1,0 +1,177 @@
+{
+	"version": 5,
+	"entities": [
+		{
+			"id": 1,
+			"name": "Main Camera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 6.0, -15.0],
+					"rotation": [20.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Camera": {
+					"fovY": 50.0,
+					"nearZ": 0.1,
+					"farZ": 1000.0,
+					"priority": 0,
+					"backgroundType": "SolidColor",
+					"backgroundColor": [0.02, 0.02, 0.03]
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Directional Light",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 5.0, 0.0],
+					"rotation": [50.0, -30.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Directional Light": {
+					"color": [1.0, 1.0, 1.0],
+					"intensity": 0.6,
+					"showIcon": true,
+					"showRange": true
+				}
+			}
+		},
+		{
+			"id": 3,
+			"name": "Floor",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, -0.1, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [40.0, 0.2, 40.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.22, 0.22, 0.25, 1.0],
+					"intensity": 1.0,
+					"surface": "Opaque",
+					"texture": "",
+					"uvScale": [1.0, 1.0],
+					"shadingType": "HalfLambert",
+					"specular": [0.0, 0.0, 0.0],
+					"shininess": 32.0,
+					"metallic": 0.0,
+					"roughness": 0.5,
+					"emissive": [0.0, 0.0, 0.0],
+					"emissiveIntensity": 1.0,
+					"receivesDecals": true,
+					"castsShadows": true
+				}
+			}
+		},
+		{
+			"id": 4,
+			"name": "Pillar (Cylinder)",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.2, 2.0, 1.2]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Cylinder",
+					"color": [0.55, 0.5, 0.6, 1.0],
+					"intensity": 1.0,
+					"surface": "Opaque",
+					"texture": "",
+					"uvScale": [1.0, 1.0],
+					"shadingType": "BlinnPhong",
+					"specular": [0.4, 0.4, 0.4],
+					"shininess": 32.0,
+					"metallic": 0.0,
+					"roughness": 0.5,
+					"emissive": [0.0, 0.0, 0.0],
+					"emissiveIntensity": 1.0,
+					"receivesDecals": true,
+					"castsShadows": true
+				}
+			}
+		},
+		{
+			"id": 5,
+			"name": "Open Tube (Opaque)",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-8.0, 1.0, 5.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [3.0, 2.0, 3.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Tube",
+					"color": [0.4, 0.7, 0.5, 1.0],
+					"intensity": 1.0,
+					"surface": "Opaque",
+					"texture": "",
+					"uvScale": [1.0, 1.0],
+					"shadingType": "HalfLambert",
+					"specular": [0.0, 0.0, 0.0],
+					"shininess": 32.0,
+					"metallic": 0.0,
+					"roughness": 0.5,
+					"emissive": [0.0, 0.0, 0.0],
+					"emissiveIntensity": 1.0,
+					"receivesDecals": true,
+					"castsShadows": true
+				}
+			}
+		},
+		{
+			"id": 6,
+			"name": "Shockwave",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.6, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [10.0, 1.2, 10.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Tube",
+					"color": [1.0, 0.6, 0.25, 1.0],
+					"intensity": 3.0,
+					"surface": "Additive",
+					"texture": "resources/Textures/ShockwaveJagged.png",
+					"uvScale": [0.5, 1.0],
+					"shadingType": "Unlit",
+					"specular": [0.0, 0.0, 0.0],
+					"shininess": 32.0,
+					"metallic": 0.0,
+					"roughness": 0.5,
+					"emissive": [0.0, 0.0, 0.0],
+					"emissiveIntensity": 1.0,
+					"receivesDecals": false,
+					"castsShadows": false
+				},
+				"ShockwaveLoopTest": {
+					"Enabled": true,
+					"Life Time": 1.2,
+					"Max Radius": 7.0,
+					"Interval": 0.4,
+					"Spin Speed": 40.0,
+					"Fade Start": 0.5
+				}
+			}
+		}
+	]
+}

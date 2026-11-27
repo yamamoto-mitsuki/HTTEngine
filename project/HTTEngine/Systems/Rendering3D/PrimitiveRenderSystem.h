@@ -10,8 +10,8 @@ class ComponentUI;
 class IBLEnvironment;
 
 /// <summary>
-/// PrimitiveRendererComponent を持つ Entity を、その形（球・箱）で描く
-/// <para>形は Renderer の DrawSphere・DrawOBB を使う（頂点はエンジンがコードで作る。モデルのファイルは要らない）</para>
+/// PrimitiveRendererComponent を持つ Entity を、その形（球・箱・円柱・筒）で描く
+/// <para>形は Renderer の DrawSphere・DrawOBB・DrawCylinder を使う（頂点はエンジンがコードで作る。モデルのファイルは要らない）</para>
 /// <para>見た目（PrimitiveMaterial）の見せ方と、描く Config への入れ方も持つ（Elastic Surface も同じ物を使う）</para>
 /// </summary>
 class PrimitiveRenderSystem {
@@ -35,7 +35,7 @@ public:
 	static void DescribeMaterial(ComponentUI& ui, PrimitiveMaterial& material, std::string_view keyPrefix);
 
 	/// <summary>
-	/// 描く Config（MeshConfig・SphereConfig・OBBConfig）に、見た目の値を入れる
+	/// 描く Config（MeshConfig・SphereConfig・OBBConfig・CylinderConfig）に、見た目の値を入れる
 	/// <para>光沢などは material の中を指す（写さない）ので、material は Renderer の Draw〇〇 を呼び終わるまで消さない</para>
 	/// </summary>
 	template<class TConfig> static void ApplyMaterial(TConfig& config, const PrimitiveMaterial& material, IBLEnvironment* environment) {

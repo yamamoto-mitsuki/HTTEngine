@@ -60,11 +60,11 @@ EntityManager::RequestAdd<ModelRendererComponent>(ball, renderer);
 
 ## モデル無しで形を出す（Primitive Renderer）
 
-**Add Component → Rendering3D → Primitive Renderer**（`PrimitiveRendererComponent`）。モデルのファイルを使わずに、球・箱を描く（Unity の 3D Object → Sphere / Cube の見た目の所）。
+**Add Component → Rendering3D → Primitive Renderer**（`PrimitiveRendererComponent`）。モデルのファイルを使わずに、球・箱・円柱・筒を描く（Unity の 3D Object → Sphere / Cube / Cylinder の見た目の所）。
 
 | 項目 | 中身 |
 |---|---|
-| Shape | `Sphere`（Scale 1 で直径1）／`Box`（Scale 1 で1辺1。Entity と一緒に回る） |
+| Shape | `Sphere`（Scale 1 で直径1）／`Box`（Scale 1 で1辺1。Entity と一緒に回る）／`Cylinder`（円柱。Scale 1 で直径1・高さ1。真ん中が原点）／`Tube`（筒。円柱の上下のふたを外し、内側の壁も描く） |
 | Material → Color | 色（RGBA。0〜1）。テクスチャと掛け合わせる |
 | Material → Intensity | 明るさの倍率（色はそのまま。1 より大きいと HDR の明るさになり、ブルームで光る） |
 | Material → Surface | `Opaque`（不透明）／`Transparent`（Color の A の分だけ透ける。氷・水）／`Additive`（色を足して光る）。Transparent・Additive は奥行きを書かずに、不透明な物の後でカメラから遠い順に描く |
@@ -73,6 +73,7 @@ EntityManager::RequestAdd<ModelRendererComponent>(ball, renderer);
 | Material → Specular〜Emissive Intensity | 光沢・金属感・自己発光とその強さ（`MaterialParams`） |
 
 - 大きさは Transform の Scale。Collider の初期値（球の半径 0.5・箱の 1×1×1）と同じ大きさなので、Scale だけ変えれば見た目と当たりがそろう。
+- 円柱・筒の側面のテクスチャは、U が周り（1 周で 0〜1）、V が高さ（上が 0・下が 1）。筒を `Additive`・`Unlit` にして、上が黒・下が明るい縦のグラデーション（ギザギザでもよい）を貼ると、下が明るく上へ消えていく光の壁になる（加算では黒が透明と同じに見える）。広がる輪（衝撃波）にするときは Scale の X・Z を大きくする。床に立てるときは、真ん中が原点なので Position の Y を高さの半分だけ上げる。例は Sandbox の `ShockwaveTest` シーン。
 - 見た目（`PrimitiveMaterial`）は Elastic Surface の板・支柱と同じ物。PBR は、シーンが環境光を持っていれば（`IScene::GetEnvironment`。DefaultScene は持っている）そのまま、無ければ Half Lambert で描かれる。
 - コードで作るなら `PrimitiveRendererComponent renderer; renderer.shape = PrimitiveShape::Sphere; renderer.material.color = {1, 0, 0, 1}; gameObject.AddComponent(renderer);`（`GameComponent.h` に入っている）。何個も作るなら Prefab の方が楽（[3. Entity](03-Entity.md#prefab同じ-entity-を何個でも作る)）。
 

@@ -15,18 +15,31 @@
 #include "HTTEngine/Graphics/Renderer/Renderer.h"
 
 namespace {
-constexpr float kUnitHalfSize = 0.5f; // Scale が 1 のときの、球の半径・箱の1辺の半分（直径・1辺が1になるように）
+constexpr float kUnitHalfSize = 0.5f; // Scale が 1 のときの、球の半径・箱の1辺の半分・円柱の半径と高さの半分（直径・1辺・高さが1になるように）
 constexpr float kMinUVScale = 0.01f;  // テクスチャ1枚の大きさの下限（0 にすると UV が無限大になるので）
 
-// ===== 球：ワールド行列を 大きさ・回転・位置 に分けて、半径1の球を半分の大きさで描く =====
-void DrawSphere(const TransformComponent& transform, const PrimitiveRendererComponent& component, Camera* camera, IBLEnvironment* environment, bool isSceneHidden) {
-	Renderer::SphereConfig config;
+// ===== 球・円柱で共通：ワールド行列を 大きさ・回転・位置 に分けて、半径1の形を半分の大きさにし、見た目を入れる =====
+template<class TConfig> void FillUnitShapeConfig(TConfig& config, const TransformComponent& transform, const PrimitiveRendererComponent& component, Camera* camera, IBLEnvironment* environment, bool isSceneHidden) {
 	config.transform = DecomposeAffineMatrix(transform.worldMatrix);
 	config.transform.scale = config.transform.scale * kUnitHalfSize;
 	PrimitiveRenderSystem::ApplyMaterial(config, component.material, environment);
 	config.camera = camera;
 	config.isSceneHidden = isSceneHidden;
+}
+
+// ===== 球 =====
+void DrawSphere(const TransformComponent& transform, const PrimitiveRendererComponent& component, Camera* camera, IBLEnvironment* environment, bool isSceneHidden) {
+	Renderer::SphereConfig config;
+	FillUnitShapeConfig(config, transform, component, camera, environment, isSceneHidden);
 	Renderer::DrawSphere(config);
+}
+
+// ===== 円柱・筒（hasCaps が false なら筒）=====
+void DrawCylinder(const TransformComponent& transform, const PrimitiveRendererComponent& component, bool hasCaps, Camera* camera, IBLEnvironment* environment, bool isSceneHidden) {
+	Renderer::CylinderConfig config;
+	config.hasCaps = hasCaps;
+	FillUnitShapeConfig(config, transform, component, camera, environment, isSceneHidden);
+	Renderer::DrawCylinder(config);
 }
 
 // ===== 箱：ワールド行列の1〜3行目が、それぞれ X・Y・Z 軸の向き × 大きさ。向きを軸に、長さの半分を大きさ（中心から面まで）にする =====
@@ -83,7 +96,7 @@ void PrimitiveRenderSystem::Initialize() {
 	// Primitive Renderer の置き場所・保存・Inspector を登録する（見せ方は DescribePrimitiveRenderer 1つ）
 	EntityManager::RegisterComponent<PrimitiveRendererComponent>();
 	ComponentSerializer::Register<PrimitiveRendererComponent>("Primitive Renderer", &DescribePrimitiveRenderer);
-	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<PrimitiveRendererComponent>>("Primitive Renderer", "Rendering3D", &DescribePrimitiveRenderer, "モデルのファイルを使わずに、球・箱を描く（仮の見た目・簡単な足場）。大きさは Transform の Scale"));
+	ComponentEditorRegistry::Register(std::make_unique<DescribedComponentEditor<PrimitiveRendererComponent>>("Primitive Renderer", "Rendering3D", &DescribePrimitiveRenderer, "モデルのファイルを使わずに、球・箱・円柱・筒を描く（仮の見た目・簡単な足場・広がる輪など）。大きさは Transform の Scale"));
 }
 
 //=============================================================================
@@ -99,10 +112,19 @@ void PrimitiveRenderSystem::Draw(Camera* camera, IBLEnvironment* environment) {
 			return;
 		}
 		const bool isSceneHidden = SceneVisibility::IsHidden(entity); // Hierarchy の目で隠した物は、Scene ビューだけ描かない
-		if (component.shape == PrimitiveShape::Sphere) {
+		switch (component.shape) {
+		case PrimitiveShape::Sphere:
 			DrawSphere(*transform, component, camera, environment, isSceneHidden);
-		} else {
+			break;
+		case PrimitiveShape::Box:
 			DrawBox(*transform, component, camera, environment, isSceneHidden);
+			break;
+		case PrimitiveShape::Cylinder:
+			DrawCylinder(*transform, component, true, camera, environment, isSceneHidden);
+			break;
+		case PrimitiveShape::Tube:
+			DrawCylinder(*transform, component, false, camera, environment, isSceneHidden);
+			break;
 		}
 	});
 }

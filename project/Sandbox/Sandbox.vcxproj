@@ -33,10 +33,12 @@
     <ClCompile Include="Source\AttackParts\MoveVertical.cpp" />
     <ClCompile Include="Source\Scripts\Player\PlayerController.cpp" />
     <ClCompile Include="Source\Scripts\Input\KeyConfigTest.cpp" />
+    <ClCompile Include="Source\Scripts\Effects\ShockwaveLoopTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Scripts\Player\PlayerController.h" />
     <ClInclude Include="Source\Scripts\Input\KeyConfigTest.h" />
+    <ClInclude Include="Source\Scripts\Effects\ShockwaveLoopTest.h" />
   </ItemGroup>
 
   <!-- ===== プロジェクトの情報 ===== -->

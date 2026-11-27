@@ -7,10 +7,10 @@
 #include "HTTEngine/Math/Vector2.h"
 #include "HTTEngine/Math/Vector4.h"
 
-// モデルのファイルを使わずに、決まった形（球・箱）を描く。Entityに付けるComponent（カテゴリ：Rendering3D）
-/// モデルのファイルを使わない形の見た目（Primitive Renderer の球・箱、Elastic Surface の板・支柱、Polygon Renderer の足場で共通）
-// 大きさは Transform の Scale（Scale が 1 なら、球は直径1・箱は1辺1。Collider の初期値と同じ大きさ）
-// 描くのは PrimitiveRenderSystem。Unity の「3D Object → Sphere / Cube」の見た目の所と同じ
+// モデルのファイルを使わずに、決まった形（球・箱・円柱・筒）を描く。Entityに付けるComponent（カテゴリ：Rendering3D）
+/// モデルのファイルを使わない形の見た目（Primitive Renderer の球・箱・円柱・筒、Elastic Surface の板・支柱、Polygon Renderer の足場で共通）
+// 大きさは Transform の Scale（Scale が 1 なら、球は直径1・箱は1辺1・円柱は直径1で高さ1。Collider の初期値と同じ大きさ）
+// 描くのは PrimitiveRenderSystem。Unity の「3D Object → Sphere / Cube / Cylinder」の見た目の所と同じ
 
 /// <summary>
 /// 透け方（描く順番と、奥行きを書くか）
@@ -54,8 +54,10 @@ static_assert(std::is_trivially_copyable_v<PrimitiveMaterial>);
 /// 形
 /// </summary>
 enum class PrimitiveShape {
-	Sphere, // 球
-	Box,    // 箱
+	Sphere,   // 球
+	Box,      // 箱
+	Cylinder, // 円柱（上下のふたあり）
+	Tube,     // 筒（円柱の上下のふたを外した物。中が見えるので、内側の壁もある）
 };
 
 // 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
@@ -64,6 +66,8 @@ constexpr auto EnumTips(PrimitiveShape) {
 	return MakeEnumTips<PrimitiveShape>({
 	    {Sphere, "球（Scale 1 で直径 1）"},
 	    {Box, "箱（Scale 1 で 1 辺 1）"},
+	    {Cylinder, "円柱（Scale 1 で直径 1・高さ 1。真ん中が原点）"},
+	    {Tube, "筒。円柱の上下のふたを外し、内側の壁も描く（広がる輪・光の柱など。Surface を Additive にすると黒が透ける）。Scale 1 で直径 1・高さ 1"},
 	});
 }
 

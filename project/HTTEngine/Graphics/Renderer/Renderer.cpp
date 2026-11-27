@@ -432,7 +432,25 @@ void Renderer::DrawSphere(const SphereConfig& config) {
 	if (it == instance_->sphereGeometryCache_.end()) {
 		it = instance_->sphereGeometryCache_.emplace(config.subdivision, GenerateSphereGeometry(config.subdivision)).first;
 	}
-	const SphereGeometry& geo = it->second;
+	const MeshGeometry& geo = it->second;
+	Matrix4x4 worldMatrix = MakeAffineMatrix(config.transform.scale, config.transform.rotation, config.transform.translation);
+	// キャッシュはコピーして渡す（Requestが所有するため）
+	PushMesh(config, std::vector<Vertex3dData>(geo.vertices), std::vector<uint32_t>(geo.indices), worldMatrix);
+}
+
+// ===== Cylinder =====
+void Renderer::DrawCylinder(const CylinderConfig& config) {
+	// 早期リターン（3 より少ないと円にならない）
+	if (config.subdivision < 3) {
+		return;
+	}
+	// ジオメトリキャッシュ（分割数とふたの有無ごとに1回生成）
+	const std::pair<int, bool> key = {config.subdivision, config.hasCaps};
+	auto it = instance_->cylinderGeometryCache_.find(key);
+	if (it == instance_->cylinderGeometryCache_.end()) {
+		it = instance_->cylinderGeometryCache_.emplace(key, GenerateCylinderGeometry(config.subdivision, config.hasCaps)).first;
+	}
+	const MeshGeometry& geo = it->second;
 	Matrix4x4 worldMatrix = MakeAffineMatrix(config.transform.scale, config.transform.rotation, config.transform.translation);
 	// キャッシュはコピーして渡す（Requestが所有するため）
 	PushMesh(config, std::vector<Vertex3dData>(geo.vertices), std::vector<uint32_t>(geo.indices), worldMatrix);
@@ -684,12 +702,12 @@ Vector3 Renderer::CalcQuadNormal(const Vector3& lb, const Vector3& rb, const Vec
 // 球のジオメトリを生成（頂点・インデックス）
 // 生成したジオメトリはsphereGeometryCache_にキャッシュされる
 //=============================================================================
-Renderer::SphereGeometry Renderer::GenerateSphereGeometry(int subdivision) {
+Renderer::MeshGeometry Renderer::GenerateSphereGeometry(int subdivision) {
 	const float kLonEvery = MathUtility::kTwoPi / static_cast<float>(subdivision);
 	const float kLatEvery = MathUtility::kPi / static_cast<float>(subdivision);
 	const int kVertPerRow = subdivision + 1;
 
-	SphereGeometry geo;
+	MeshGeometry geo;
 	geo.vertices.reserve(kVertPerRow * kVertPerRow);
 	geo.indices.reserve(subdivision * subdivision * 6);
 
@@ -720,6 +738,76 @@ Renderer::SphereGeometry Renderer::GenerateSphereGeometry(int subdivision) {
 		}
 	}
 
+	return geo;
+}
+
+
+//=============================================================================
+// 円柱のジオメトリを生成（頂点・インデックス）
+// 半径 1・高さ 2（Y が -1〜1）。生成したジオメトリは cylinderGeometryCache_ にキャッシュされる
+// 巻き順は球と同じ（外から見て時計回りが表。裏面カリング D3D12_CULL_MODE_BACK と整合）
+//=============================================================================
+Renderer::MeshGeometry Renderer::GenerateCylinderGeometry(int subdivision, bool hasCaps) {
+	const float kAngleEvery = MathUtility::kTwoPi / static_cast<float>(subdivision);
+	MeshGeometry geo;
+
+	// --- 側面の壁を 1 枚足す（outward が true なら外向き、false なら内向き）---
+	// 角度ごとに「下・上」の 2 頂点を積む。i が subdivision の所は i が 0 の所と同じ位置で、U だけ 1（絵の継ぎ目で U が 1 → 0 と戻らないように）
+	const auto addWall = [&geo, subdivision, kAngleEvery](bool outward) {
+		const uint32_t base = static_cast<uint32_t>(geo.vertices.size());
+		const float normalSign = outward ? 1.0f : -1.0f;
+		for (int i = 0; i <= subdivision; ++i) {
+			const float angle = kAngleEvery * static_cast<float>(i);
+			const float x = std::cos(angle);
+			const float z = std::sin(angle);
+			const float u = static_cast<float>(i) / static_cast<float>(subdivision);
+			const Vector3 normal = {x * normalSign, 0.0f, z * normalSign}; // 中心から外へ（内向きの壁は中心へ）
+			geo.vertices.push_back({{x, -1.0f, z, 1.0f}, {u, 1.0f}, normal}); // 下（V = 1。画像の下）
+			geo.vertices.push_back({{x, 1.0f, z, 1.0f}, {u, 0.0f}, normal});  // 上（V = 0。画像の上）
+		}
+		for (int i = 0; i < subdivision; ++i) {
+			const uint32_t lb = base + static_cast<uint32_t>(i) * 2; // 左下（今の角度の下）
+			const uint32_t lt = lb + 1;                              // 左上（今の角度の上）
+			const uint32_t rb = lb + 2;                              // 右下（次の角度の下）
+			const uint32_t rt = lb + 3;                              // 右上（次の角度の上）
+			if (outward) {
+				geo.indices.insert(geo.indices.end(), {lb, lt, rb, lt, rt, rb}); // 外から見て時計回り（球と同じ並び）
+			} else {
+				geo.indices.insert(geo.indices.end(), {lb, rb, lt, lt, rb, rt}); // 逆回り＝中から見て時計回り
+			}
+		}
+	};
+
+	// --- ふたを 1 枚足す（y が 1 なら上、-1 なら下）---
+	// 真ん中の点と、周りの点を結んだ三角形（ピザの形）。ふたには絵の継ぎ目が無いので、周りの点は subdivision 個
+	const auto addCap = [&geo, subdivision, kAngleEvery](float y) {
+		const uint32_t center = static_cast<uint32_t>(geo.vertices.size());
+		const Vector3 normal = {0.0f, y, 0.0f}; // まっすぐ上（下のふたはまっすぐ下）
+		geo.vertices.push_back({{0.0f, y, 0.0f, 1.0f}, {0.5f, 0.5f}, normal});
+		for (int i = 0; i < subdivision; ++i) {
+			const float angle = kAngleEvery * static_cast<float>(i);
+			const float x = std::cos(angle);
+			const float z = std::sin(angle);
+			geo.vertices.push_back({{x, y, z, 1.0f}, {x * 0.5f + 0.5f, z * 0.5f + 0.5f}, normal}); // 絵の真ん中の円を貼る
+		}
+		for (int i = 0; i < subdivision; ++i) {
+			const uint32_t current = center + 1 + static_cast<uint32_t>(i);
+			const uint32_t next = center + 1 + static_cast<uint32_t>((i + 1) % subdivision); // 最後は最初の点へ戻る
+			if (y > 0.0f) {
+				geo.indices.insert(geo.indices.end(), {center, next, current}); // 上のふた：真上から見ると角度は反時計回りに増えるので、逆に並べて時計回り
+			} else {
+				geo.indices.insert(geo.indices.end(), {center, current, next}); // 下のふた：真下から見ると角度は時計回りに増える
+			}
+		}
+	};
+
+	addWall(true);
+	if (hasCaps) {
+		addCap(1.0f);
+		addCap(-1.0f);
+	} else {
+		addWall(false); // ふたが無いと中が見えるので、内向きの壁を足す（両面描きにすると、内側の法線が外向きのままで陰が逆になる）
+	}
 	return geo;
 }
 

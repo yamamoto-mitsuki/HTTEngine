@@ -16,6 +16,9 @@
     <Filter Include="Source\AttackParts">
       <UniqueIdentifier>{13ac551e-17de-4aac-9719-ac68979e1da1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source\Scripts\Effects">
+      <UniqueIdentifier>{8e3b6a52-1f4d-4c97-b2a8-6d05e9c1f374}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -24,6 +27,9 @@
     </ClCompile>
     <ClCompile Include="Source\Scripts\Input\KeyConfigTest.cpp">
       <Filter>Source\Scripts\Input</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Scripts\Effects\ShockwaveLoopTest.cpp">
+      <Filter>Source\Scripts\Effects</Filter>
     </ClCompile>
     <ClCompile Include="Source\AttackParts\DashToTarget.cpp">
       <Filter>Source\AttackParts</Filter>
@@ -44,6 +50,9 @@
     </ClInclude>
     <ClInclude Include="Source\Scripts\Input\KeyConfigTest.h">
       <Filter>Source\Scripts\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Scripts\Effects\ShockwaveLoopTest.h">
+      <Filter>Source\Scripts\Effects</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

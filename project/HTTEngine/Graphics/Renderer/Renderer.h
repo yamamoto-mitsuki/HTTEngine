@@ -3,10 +3,12 @@
 #include <cstddef>
 #include <span>
 #include <list>
+#include <map>
 #include <memory>
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <utility>
 #include <unordered_map>
 
 #include "HTTEngine/Core/Handle.h"
@@ -110,6 +112,28 @@ public:
 		bool receivesDecals = true;                                // false：デカールを受けない（不透明なときだけ効く）
 		bool castsShadows = true;                                  // false: 影を落とさない
 		bool isBillboard = false;                                  // trueで常にカメラの方を向く（cameraが必要）
+	};
+
+	// --- 3D円柱の描画設定 ---
+	// 形は半径 1・高さ 2（Y が -1〜1。真ん中が原点）。大きさは transform.scale で変える（DrawSphere と同じ）
+	struct CylinderConfig : DrawTarget {
+		Transform transform;                                       // 拡縮、回転、移動
+		Vector4 color = {1.0f, 1.0f, 1.0f, 1.0f};                  // 色
+		float alphaCutoff = 0.0f;                                  // これ以下のアルファのピクセルを捨てる
+		Transform uvTransform;                                     // UVの拡縮、回転、移動（側面は U が周り・V が高さ。上が 0）
+		uint32_t textureHandle = 0;                                // テクスチャハンドル
+		int subdivision = 32;                                      // 周りの分割数（円を何等分するか。3 より少ないと描かない）
+		bool hasCaps = true;                                       // true：上下のふたを作る（円柱）／false：ふたを作らず、内向きの壁を作る（筒。中から見える）
+		ShadingType shadingType = ShadingType::Unlit;              // シェーディング設定
+		BlendMode blendMode = BlendMode::Normal;                   // ブレンド設定
+		RasterizerType rasterizerType = RasterizerType::SolidBack; // ラスタライザ設定（筒の内側は内向きの壁を作るので、両面にしなくてよい）
+		DepthMode depthMode = DepthMode::TestWrite;                // 深度設定
+		const MaterialParams* material = nullptr;                  // 光沢・金属感・自己発光など（nullptr なら既定の値。切り抜きは alphaCutoff の方を使う）
+		IBLEnvironment* env = nullptr;                             // 環境光（PBR に要る。無ければ PBR の代わりに Half Lambert で描く）
+		Camera* camera = nullptr;                                  // カメラ設定
+		bool receivesDecals = true;                                // false：デカールを受けない（不透明なときだけ効く）
+		bool castsShadows = true;                                  // false: 影を落とさない
+		bool isBillboard = false;                                  // 使わない（円柱をカメラに向けても意味が無い）。PushMesh が読むので置いてある
 	};
 
 	// --- 3D矩形の描画設定 ---
@@ -457,6 +481,11 @@ public:
 	static void DrawSphere(const SphereConfig& config);
 
 	/// <summary>
+	/// 3D円柱（hasCaps が false なら筒）の描画リクエストを追加する
+	/// </summary>
+	static void DrawCylinder(const CylinderConfig& config);
+
+	/// <summary>
 	/// AABBの描画リクエストを追加する
 	/// </summary>
 	static void DrawAABB(const AABBConfig& config);
@@ -491,12 +520,14 @@ private:
 	friend struct std::default_delete<Renderer>;
 	static std::unique_ptr<Renderer> instance_;
 
-	// 球のジオメトリキャッシュ
-	struct SphereGeometry {
+	// コードで作る形の頂点・番号（球・円柱のキャッシュで共通）
+	struct MeshGeometry {
 		std::vector<Vertex3dData> vertices;
 		std::vector<uint32_t> indices;
 	};
-	std::unordered_map<int, SphereGeometry> sphereGeometryCache_;
+	std::unordered_map<int, MeshGeometry> sphereGeometryCache_; // 球（分割数ごと）
+	// 円柱・筒（分割数とふたの有無ごと）。std::pair には std::hash が無いので unordered_map ではなく map（鍵の大小で並べて探す。数個しか入らないので速さは変わらない）
+	std::map<std::pair<int, bool>, MeshGeometry> cylinderGeometryCache_;
 
 	// メッシュの共通作成部分（カメラの方を向かせるかは config.isBillboard で決める）
 	template<class TConfig> static void PushMesh(const TConfig& config, std::vector<Vertex3dData>&& vertices, std::vector<uint32_t>&& indices, const Matrix4x4& worldMatrix);
@@ -556,5 +587,13 @@ private:
 	/// 球のジオメトリを生成する（頂点・インデックス）
 	/// subdivision: 経線・緯線の分割数
 	/// </summary>
-	static SphereGeometry GenerateSphereGeometry(int subdivision);
+	static MeshGeometry GenerateSphereGeometry(int subdivision);
+
+	/// <summary>
+	/// 円柱のジオメトリを生成する（半径 1・高さ 2。Y が -1〜1）
+	/// <para>hasCaps が false なら、ふたの代わりに内向きの壁を作る（筒）。法線を内向き・巻き順を逆にした壁なので、裏面カリングのまま中から見え、光も正しく当たる</para>
+	/// </summary>
+	/// <param name="subdivision">周りの分割数（3 以上）</param>
+	/// <param name="hasCaps">上下のふたを作るか</param>
+	static MeshGeometry GenerateCylinderGeometry(int subdivision, bool hasCaps);
 };
