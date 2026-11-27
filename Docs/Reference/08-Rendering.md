@@ -41,6 +41,7 @@ EntityManager::RequestAdd<ModelRendererComponent>(ball, renderer);
 | `castsShadows` | false なら平行光源の影を落とさない（不透明なときだけ落とす。影を受けるのはそのまま。[9章](09-Light.md#影平行光源)） |
 | `enabled` | falseで描かない |
 | `material`・`overrideMaterial` | Base Color・Ambient〜Roughness・Alpha Cutoff。**`overrideMaterial` が true のときだけ、読み込んだマテリアル（mtl / glTF）の値の代わりに、全部のメッシュに同じ値を使う**（テクスチャは読み込んだ物のまま）。Inspector の Material で値を触ると自動で入る。Material の「Model Materials」に読み込んだマテリアルの一覧が出て、**Copy** でその値を写せる。Alpha Cutoff だけは Override に関係なくいつも効く |
+| `dissolve`（Amount・Edge Width・Edge Color・Edge Intensity・Scale・Noise Texture） | 一部だけ消す。UV の上で Noise Texture（灰色。**`Textures/Noise` のフォルダ**＝ゲームの `resources/Textures/Noise/` とエンジンの `HTTEngine/Resources/Textures/Noise/` から選ぶ。空なら既定の雲の模様）を読み、Amount から決まるしきい値より暗い所を捨て（不透明のまま。深度・影も消える）、境目を Edge Color × Edge Intensity で光らせる（Unlit でも）。Amount 0 で全部見える・1 で全部消える。画像は暗い所から消え、明るさの分布で Amount の効き方が決まる（既定の画像は平坦化してあり、ほぼ一定の速さ）。Scale は画像を UV の 0〜1 に並べる回数（整数）。**UV が要る**（無いと一度に全部消える）。UV の継ぎ目で模様が途切れることがある（筒を開いた u の端は、継ぎ目なしの画像と整数の Scale でつながる）。Script は `renderer->dissolve.amount = rate;`、Timeline の値のトラックは property `dissolve` |
 
 > **PBR のモデルは、シーンが環境光（IBL）を持っていないと描かれない。** `DefaultScene` は持っている。自分で書いたシーンは `IBLEnvironment` を `MakeFromHDR` して、`GetEnvironment()` で返す（2章）。空の光の強さは Environment Light Component で決める（9章「環境光（空の光）」）。
 

@@ -7,6 +7,7 @@
 #include "HTTEngine/Components/Core/TransformComponent.h"
 #include "HTTEngine/Components/Rendering3D/ModelRendererComponent.h"
 #include "HTTEngine/ECS/EntityManager.h"
+#include "HTTEngine/Graphics/Model/DissolveNoise.h"
 #include "HTTEngine/Graphics/Pipeline/ShaderConstants.h"
 #include "HTTEngine/Graphics/Pipeline/VertexFormat.h"
 #include "HTTEngine/Math/RandomEngine.h"
@@ -38,6 +39,8 @@ using SkinnedMeshSampler::SamplePoint;
 
 constexpr uint32_t kMaxModelSearchDepth = 64; // モデルを探して親をたどる回数の上限（万一輪になっても止まるように。EntityManager と同じ数）
 constexpr float kMinLengthSq = 1e-8f;         // これより短い向きは、向きが決まらないとみなす
+constexpr int kMaxEdgeTries = 32;             // 境目から選ぶときに、選び直す回数の上限（帯が狭いと当たらないので、それ以上は粘らない）
+constexpr float kMinEdgeBand = 0.02f;         // 境目の帯の幅の下限（Edge Width 0＝光らないときも、少しの幅から出す）
 
 std::unordered_map<uint32_t, MeshTable> tables; // モデルの番号（ModelRendererComponent::modelHandle）→ 表
 std::vector<WellForGPU> palette;                // 行列パレット（MakeContext で作り、Sample で読む。配列のメモリを使い回す。出すのはメインのスレッドだけなので1つ）
@@ -187,12 +190,17 @@ SamplePoint SampleSurface(const SkinnedMeshSampler::Context& context) {
 	const float weightB = s * (1.0f - r);
 	const float weightC = s * r;
 	const Vector3 position = a.position * weightA + b.position * weightB + c.position * weightC;
+	// UV も同じ重みで混ぜる（UV は曲げても変わらないので、元の頂点の物をそのまま）
+	const Vector2& uvA = mesh.vertices[mesh.indices[triangle.firstIndex]].texcoord;
+	const Vector2& uvB = mesh.vertices[mesh.indices[triangle.firstIndex + 1]].texcoord;
+	const Vector2& uvC = mesh.vertices[mesh.indices[triangle.firstIndex + 2]].texcoord;
+	const Vector2 uv = {uvA.x * weightA + uvB.x * weightB + uvC.x * weightC, uvA.y * weightA + uvB.y * weightB + uvC.y * weightC};
 	// 法線も同じ重みで混ぜる。ほとんど 0 になったら（逆を向いた頂点が混ざった）、面の向き（2辺の外積）
 	const Vector3 faceNormal = Cross(b.position - a.position, c.position - a.position);
 	const Vector3 normal = NormalizeOr(a.normal * weightA + b.normal * weightB + c.normal * weightC, faceNormal);
 
 	// --- モデルの空間 → ワールド ---
-	return {TransformPoint(position, context.modelWorld), NormalizeOr(TransformNormal(normal, context.modelWorld), faceNormal)};
+	return {TransformPoint(position, context.modelWorld), NormalizeOr(TransformNormal(normal, context.modelWorld), faceNormal), uv};
 }
 
 // ===== 骨の線から（Bone）=====
@@ -255,6 +263,7 @@ bool SkinnedMeshSampler::MakeContext(Handle<Entity> emitter, ParticleMeshSource 
 	context.nodeMatrices = nodeMatrices;
 	context.modelWorld = transform->worldMatrix;
 	context.source = source;
+	context.dissolve = render->dissolve; // 境目から出すとき、絵と同じ値で境目を計算する
 	// 行列パレットは表面だけが使う（骨の数だけ逆行列。粒ごとではなく、ここで1回）
 	if (isSurface) {
 		ModelManager::MakeMatrixPalette(*asset, nodeMatrices, palette);
@@ -265,6 +274,33 @@ bool SkinnedMeshSampler::MakeContext(Handle<Entity> emitter, ParticleMeshSource 
 // ===== 1点選ぶ =====
 SkinnedMeshSampler::SamplePoint SkinnedMeshSampler::Sample(const Context& context) {
 	return (context.source == ParticleMeshSource::Surface) ? SampleSurface(context) : SampleBone(context);
+}
+
+// ===== ディゾルブの境目から1点選ぶ =====
+// 「表面から選ぶ → UV で画像の値を読む → 帯（しきい値〜しきい値＋幅）に入っていれば使う」をくり返す（棄却法）
+// 帯に入る点の割合が p なら、平均 1/p 回で当たる。平坦化した画像なら p は帯の幅とだいたい同じ
+bool SkinnedMeshSampler::SampleDissolveEdge(const Context& context, SamplePoint& out) {
+	const DissolveParams& dissolve = context.dissolve;
+	// 境目が無い（全部見える・全部消えた）・骨の線（UV が無い）なら選ばない
+	if (context.source != ParticleMeshSource::Surface || dissolve.amount <= 0.0f || dissolve.amount >= 1.0f) {
+		return false;
+	}
+	// 絵と同じしきい値（DissolveNoise.hlsli の DissolveCut）。帯は光っている所と同じ幅
+	const float edgeWidth = (std::max)(dissolve.edgeWidth, 0.0f);
+	const float cut = DissolveNoise::Cut(dissolve.amount, edgeWidth);
+	const float band = (std::max)(edgeWidth, kMinEdgeBand);
+	for (int i = 0; i < kMaxEdgeTries; ++i) {
+		const SamplePoint point = SampleSurface(context);
+		float noise = 0.0f;
+		if (!DissolveNoise::Evaluate(dissolve.noiseTextureHandle, point.uv, dissolve.scale, noise)) {
+			return false; // 画像を CPU で読めない（警告は1回だけ出してある）
+		}
+		if (cut <= noise && noise < cut + band) {
+			out = point;
+			return true;
+		}
+	}
+	return false;
 }
 
 // ===== 表を捨てる =====

@@ -14,6 +14,7 @@
 #include "HTTEngine/ECS/GameComponent.h"
 #include "HTTEngine/Editor/Inspector/ComponentEditor.h"
 #include "HTTEngine/Editor/Viewport/SceneVisibility.h"
+#include "HTTEngine/Graphics/Model/DissolveNoise.h"
 #include "HTTEngine/Graphics/Renderer/Renderer.h"
 #include "HTTEngine/Math/Color.h"
 #include "HTTEngine/Math/RandomEngine.h"
@@ -186,7 +187,15 @@ void EmitParticles(EmitterState& emitter, const ParticleSystemComponent& compone
 		Vector3 direction;
 		Vector3 center;
 		if (isSkinnedMesh) {
-			const SkinnedMeshSampler::SamplePoint sample = SkinnedMeshSampler::Sample(skin);
+			SkinnedMeshSampler::SamplePoint sample;
+			if (component.fromDissolveEdge) {
+				// 境目から選べなければ、この粒は出さない（境目が狭い・無い。continue は for の次の粒へ）
+				if (!SkinnedMeshSampler::SampleDissolveEdge(skin, sample)) {
+					continue;
+				}
+			} else {
+				sample = SkinnedMeshSampler::Sample(skin);
+			}
 			const Vector3 surface = isLocal ? TransformPoint(sample.position, worldToLocal) : sample.position;
 			direction = isLocal ? Normalize(TransformNormal(sample.normal, worldToLocal)) : sample.normal;
 			position = surface + direction * component.surfaceOffset; // 表面から外へ離す
@@ -380,6 +389,8 @@ void DescribeParticleSystem(ComponentUI& ui, ParticleSystemComponent& value) {
 	ui.Field("From Surface###fromSurface", value.fromSurface, Tip("形の表面（縁）から出す。Circle なら輪から飛び散る"));
 	ui.Field("Mesh Source###meshSource", value.meshSource, Tip("Skinned Mesh のとき：モデルの表面から・骨の線から（モデルは、自分か親の Model Renderer）"));
 	ui.Field("Surface Offset###surfaceOffset", value.surfaceOffset, AtLeast(0.0f).Tip("Skinned Mesh のとき：表面（骨の線）から外へ離して出す距離（m）。To Center なら離れた所から体へ集まる。Out And Back なら、ここから出てここへ戻る"));
+	ui.Field("From Dissolve Edge###fromDissolveEdge", value.fromDissolveEdge,
+	         Tip("Skinned Mesh・Surface のとき：モデル（Model Renderer）のディゾルブの境目（光っている帯）からだけ出す。境目が無い（Amount 0・1）・狭いときは出ない。モデルに UV が要る"));
 	ui.Field("Show Gizmo###showGizmo", value.showGizmo, Tip("Scene ビューに、粒の出る形を線で出す（エディタだけ。桃色）。Cone は縁から出た粒の開く向きも。View メニューの Particle Shapes で全部まとめて消せる"));
 
 	ui.Separator("Start (Min, Max)");
@@ -441,6 +452,7 @@ void ParticleSystem::Initialize() {
 
 void ParticleSystem::Release() {
 	SkinnedMeshSampler::Clear(); // モデルごとの表（モデルのアドレスを持っているが、読まずに捨てるだけなので ModelManager との順番は問わない）
+	DissolveNoise::Clear();      // ディゾルブの画像の画素（境目から出すときに読んだ物）
 	state.reset();
 }
 

@@ -576,6 +576,9 @@
     <ClCompile Include="HTTEngine\Graphics\Model\ModelImporter.cpp">
       <Filter>HTTEngine\Graphics\Model</Filter>
     </ClCompile>
+    <ClCompile Include="HTTEngine\Graphics\Model\DissolveNoise.cpp">
+      <Filter>HTTEngine\Graphics\Model</Filter>
+    </ClCompile>
     <ClCompile Include="HTTEngine\Graphics\Model\ModelManager.cpp">
       <Filter>HTTEngine\Graphics\Model</Filter>
     </ClCompile>
@@ -1441,6 +1444,9 @@
     <ClInclude Include="HTTEngine\Graphics\Model\ModelImporter.h">
       <Filter>HTTEngine\Graphics\Model</Filter>
     </ClInclude>
+    <ClInclude Include="HTTEngine\Graphics\Model\DissolveNoise.h">
+      <Filter>HTTEngine\Graphics\Model</Filter>
+    </ClInclude>
     <ClInclude Include="HTTEngine\Graphics\Model\ModelManager.h">
       <Filter>HTTEngine\Graphics\Model</Filter>
     </ClInclude>
@@ -1970,6 +1976,9 @@
       <Filter>HTTEngine\Shader\Data\Model</Filter>
     </None>
     <None Include="HTTEngine\Shader\Data\Model\Lambert.PS.shader">
+      <Filter>HTTEngine\Shader\Data\Model</Filter>
+    </None>
+    <None Include="HTTEngine\Shader\Data\Model\DissolveNoise.hlsli.shader">
       <Filter>HTTEngine\Shader\Data\Model</Filter>
     </None>
     <None Include="HTTEngine\Shader\Data\Model\ModelSurface.hlsli.shader">

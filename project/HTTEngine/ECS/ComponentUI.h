@@ -102,6 +102,7 @@ enum class AssetType {
 	Timeline,       // TimelineManager::Load の番号（.timeline）
 	Shader,         // 描画プログラムの番号 + 1（ShaderPackageLoader::FindProgramHandle。#PROGRAM のある .shader）
 	Material,       // MaterialManager::Load の番号（.material）
+	NoiseTexture,   // TextureManager::Load の番号（Texture と同じ）。一覧に出すのは Textures/Noise のフォルダの画像だけ（ディゾルブの模様）
 };
 
 // アセットの番号からパスを引く（未選択・知らない番号なら空）。保存とInspectorの表示で使う

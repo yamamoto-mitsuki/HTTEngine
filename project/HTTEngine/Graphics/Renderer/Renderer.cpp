@@ -102,6 +102,21 @@ Material3dData Renderer::MakeMaterial3dData(const MaterialValues& values, const 
 	return material;
 }
 
+// ===== ディゾルブを定数バッファに詰める =====
+// 境目の色は、Model Renderer の Color・Intensity と同じく「sRGB の色 × 明るさの倍率（リニアで掛ける）」→ リニア
+void Renderer::ApplyDissolve(Material3dData& material, const DissolveParams& dissolve) {
+	if (dissolve.amount <= 0.0f) {
+		return; // 消えない（既定の 0 のまま。画像も読まない）
+	}
+	const Vector4 edge = SrgbToLinear(ApplyIntensity({dissolve.edgeColor.x, dissolve.edgeColor.y, dissolve.edgeColor.z, 1.0f}, dissolve.edgeIntensity));
+	material.dissolveEdgeColor = {edge.x, edge.y, edge.z};
+	material.dissolveAmount = (std::min)(dissolve.amount, 1.0f);
+	material.dissolveEdgeWidth = (std::max)(dissolve.edgeWidth, 0.0f);
+	material.dissolveScale = static_cast<uint32_t>((std::max)(dissolve.scale, 1)); // 0 以下だと UV の端で模様がつながらない
+	// 画像が選ばれていなければ既定の画像（Load は、もう読んだパスなら表から番号を返すだけ。ファイルは開かない）
+	material.dissolveTextureIndex = (dissolve.noiseTextureHandle != 0) ? dissolve.noiseTextureHandle : TextureManager::Load(ToPath(kDefaultDissolveNoisePath));
+}
+
 // ===== メッシュの共通作成部分 =====
 template<class TConfig> 
 void Renderer::PushMesh(const TConfig& config, std::vector<Vertex3dData>&& vertices, std::vector<uint32_t>&& indices, const Matrix4x4& worldMatrix) {
@@ -265,6 +280,7 @@ void Renderer::DrawModel(const ModelConfig& config) {
 			// 切り抜きは読み込んだマテリアルに無い設定なので、いつも Inspector の値（MaterialParams）から取る
 			const MaterialValues materialValues = ResolveModelMaterial(config, mesh.materialIndex);
 			req.materialData = MakeMaterial3dData(materialValues, SrgbToLinear(config.color), config.uvTransform, config.material.alphaCutoff);
+			ApplyDissolve(req.materialData, config.dissolve); // 一部だけ消す（物ごとの値なので、メッシュに関係なく同じ）
 			// メッシュのワールド行列（ノードの行列を挟む。スキンのあるメッシュは挟まない）
 			const Matrix4x4 meshWorldMatrix = ModelManager::MeshMatrix(mesh, nodeMatrix) * worldMatrix;
 			req.objectTransformData = MakeObjectTransform(meshWorldMatrix, config.billboard);

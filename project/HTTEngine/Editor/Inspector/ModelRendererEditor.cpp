@@ -132,6 +132,24 @@ void ModelRendererEditor::DrawComponent(ModelRendererComponent& render) const {
 		ImGui::TreePop();
 	}
 
+	// --- ディゾルブ（ノイズの画像で一部だけ消す）---
+	if (ImGui::TreeNode("Dissolve")) {
+		DissolveParams& dissolve = render.dissolve;
+		ImGui::DragFloat("Amount", &dissolve.amount, 0.005f, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::SetItemTooltip("消えた割合（0：全部見える 1：全部消える）。画像の暗い所から消える。UV の無いメッシュは一度に全部消える");
+		ImGui::DragFloat("Edge Width", &dissolve.edgeWidth, 0.002f, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::SetItemTooltip("光る境目の幅（画像の値の幅）。0 で光らない");
+		ImGui::ColorEdit3("Edge Color", &dissolve.edgeColor.x);
+		ImGui::SetItemTooltip("境目の色（Unlit でも光る）");
+		ImGui::DragFloat("Edge Intensity", &dissolve.edgeIntensity, 0.01f, 0.0f, 100.0f, "%.2f", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::SetItemTooltip("境目の明るさ（Edge Color に掛ける）。1 より大きくすると HDR の明るさになり、ブルーム（Threshold 1）で光る");
+		ImGui::DragInt("Scale", &dissolve.scale, 0.05f, 1, 64, "%d", ImGuiSliderFlags_AlwaysClamp);
+		ImGui::SetItemTooltip("画像を UV の 0〜1 に何回並べるか。整数なので、筒を開いた UV の端（u 0 と 1）で模様がつながる（継ぎ目なしの画像のとき）");
+		ui.AssetField("Noise Texture", dissolve.noiseTextureHandle, AssetType::NoiseTexture,
+		              Tip("模様の画像（灰色。暗い所から消える）。Textures/Noise のフォルダ（ゲームの resources とエンジンの Resources）から選ぶ。(none) なら既定の雲の模様"));
+		ImGui::TreePop();
+	}
+
 	// --- テクスチャのUVをずらす・回す（Vector3の先頭アドレスを渡してx,yだけ触る）---
 	if (ImGui::TreeNode("UV Transform")) {
 		ImGui::DragFloat2("Offset", &render.uvTransform.translation.x, 0.01f);

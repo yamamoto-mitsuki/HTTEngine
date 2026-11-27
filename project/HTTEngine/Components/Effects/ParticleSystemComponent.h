@@ -152,6 +152,7 @@ struct ParticleSystemComponent {
 	bool fromSurface = false;             // 形の表面（縁）から出す（円の輪から飛び散る）
 	ParticleMeshSource meshSource = ParticleMeshSource::Surface; // Skinned Mesh のとき：表面から・骨の線から
 	float surfaceOffset = 0.0f;           // Skinned Mesh のとき：表面（骨の線）から外へ離して出す距離（m）。To Center なら、ここから表面へ集まる。Out And Back なら、ここから出てここへ戻る
+	bool fromDissolveEdge = false;        // Skinned Mesh・Surface のとき：モデルのディゾルブの境目（光っている帯）からだけ出す。境目が無い・狭いと出ない
 	bool showGizmo = true;                // Scene ビューに、形を線で出す（エディタだけ。View メニューの Particle Shapes で全部まとめて消せる）
 
 	// ===== 粒の初めの値（Min〜Max の乱数）=====

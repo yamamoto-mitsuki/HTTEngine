@@ -63,6 +63,7 @@ public:
 		DepthMode depthMode = DepthMode::TestWrite;                // 深度設定
 		MaterialParams material;                                   // マテリアル調整パラメータ
 		bool overrideMaterial = false;                             // true：material を、読み込んだマテリアルの値の代わりに使う（全部のメッシュに同じ値。テクスチャは読み込んだ物のまま）
+		DissolveParams dissolve;                                   // 一部だけ消す（Amount 0 なら何もしない）
 		Camera* camera = nullptr;                                  // カメラ設定
 		IBLEnvironment* env = nullptr;                             // 環境光源
 		BillboardMode billboard = BillboardMode::None;             // カメラの方を向かせる（Full / AxisY。cameraが必要）
@@ -531,6 +532,8 @@ private:
 
 	// MaterialValues と物ごとの色（tint。リニア）を、GPU の定数バッファの形に詰める
 	static Material3dData MakeMaterial3dData(const MaterialValues& values, const Vector4& tint, const Transform& uvTransform, float alphaCutoff);
+	// ディゾルブを定数バッファに詰める（色をリニア × 強さに。画像が 0 なら既定の画像）
+	static void ApplyDissolve(Material3dData& material, const DissolveParams& dissolve);
 
 	// 重心を操作
 	static Vector2 RotateAround2d(const Vector2& point, const Vector2& center, float radian);

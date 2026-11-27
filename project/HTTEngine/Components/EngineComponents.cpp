@@ -83,6 +83,13 @@ void DescribeModelRenderer(ComponentUI& ui, ModelRendererComponent& value) {
 	ui.Field("metallic", value.material.metallic);
 	ui.Field("roughness", value.material.roughness);
 	ui.Field("alphaCutoff", value.material.alphaCutoff);
+	// --- ディゾルブ（前のシーンには無いキーなので、読むときは既定のまま＝消えない）---
+	ui.Field("dissolve", value.dissolve.amount); // Timeline の値のトラックからは、この名前で動かす
+	ui.Field("dissolveEdgeWidth", value.dissolve.edgeWidth);
+	ui.ColorField("dissolveEdgeColor", value.dissolve.edgeColor);
+	ui.Field("dissolveEdgeIntensity", value.dissolve.edgeIntensity);
+	ui.Field("dissolveScale", value.dissolve.scale);
+	ui.AssetField("dissolveNoise", value.dissolve.noiseTextureHandle, AssetType::NoiseTexture); // 未選択＝既定の画像
 	// --- UV ---
 	ui.Field("uvTranslation", value.uvTransform.translation);
 	ui.Field("uvRotation", value.uvTransform.rotation);

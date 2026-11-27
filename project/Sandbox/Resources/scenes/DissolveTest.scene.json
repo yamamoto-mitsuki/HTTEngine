@@ -1,0 +1,233 @@
+{
+	"version": 5,
+	"entities": [
+		{
+			"id": 1,
+			"name": "Main Camera",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.5, -30.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Camera": {
+					"fovY": 25.0,
+					"nearZ": 0.1,
+					"farZ": 1000.0,
+					"priority": 0
+				}
+			}
+		},
+		{
+			"id": 2,
+			"name": "Directional Light",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 3.0, 0.0],
+					"rotation": [50.0, -30.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Directional Light": {
+					"color": [1.0, 1.0, 1.0],
+					"intensity": 1.0,
+					"showIcon": true,
+					"showRange": true
+				}
+			}
+		},
+		{
+			"id": 3,
+			"name": "A Skin Dissolve",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-6.0, -3.0, 0.0],
+					"rotation": [0.0, 180.0, 0.0],
+					"scale": [2.0, 2.0, 2.0]
+				},
+				"Animator": {
+					"enabled": true,
+					"animation": "resources/Model/EmbeddedTexture/SimpleSkin.glb",
+					"clip": "Anim_0",
+					"speed": 1.0,
+					"loop": true,
+					"playOnStart": true,
+					"previewTime": 1.0
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/EmbeddedTexture/SimpleSkin.glb",
+					"texture": "",
+					"shadingType": "HalfLambert",
+					"dissolve": 0.45,
+					"dissolveEdgeWidth": 0.08,
+					"dissolveEdgeColor": [1.0, 0.6, 0.2],
+					"dissolveEdgeIntensity": 4.0,
+					"dissolveScale": 2
+				}
+			}
+		},
+		{
+			"id": 4,
+			"name": "Edge Particle",
+			"parent": 3,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Particle System": {
+					"enabled": true,
+					"playOnStart": true,
+					"looping": true,
+					"duration": 1.0,
+					"rateOverTime": 200.0,
+					"burstCount": 0,
+					"maxParticles": 1024,
+					"shape": "SkinnedMesh",
+					"meshSource": "Surface",
+					"surfaceOffset": 0.0,
+					"fromDissolveEdge": true,
+					"lifetime": [0.6, 1.0],
+					"size": [0.06, 0.1],
+					"colorA": [1.0, 0.7, 0.3, 1.0],
+					"colorB": [1.0, 0.9, 0.5, 1.0],
+					"intensity": 2.0,
+					"endSizeRate": 1.0,
+					"endColor": [1.0, 1.0, 1.0, 1.0],
+					"convergeMode": "OutAndBack",
+					"convergeEase": "OutSine",
+					"outDistance": [0.1, 0.3],
+					"blend": "Add",
+					"space": "Local"
+				}
+			}
+		},
+		{
+			"id": 5,
+			"name": "B Skin Unlit",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-2.0, -3.0, 0.0],
+					"rotation": [0.0, 180.0, 0.0],
+					"scale": [2.0, 2.0, 2.0]
+				},
+				"Animator": {
+					"enabled": true,
+					"animation": "resources/Model/EmbeddedTexture/SimpleSkin.glb",
+					"clip": "Anim_0",
+					"speed": 1.0,
+					"loop": true,
+					"playOnStart": true,
+					"previewTime": 1.0
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/EmbeddedTexture/SimpleSkin.glb",
+					"texture": "",
+					"shadingType": "Unlit",
+					"dissolve": 0.6,
+					"dissolveEdgeWidth": 0.1,
+					"dissolveEdgeColor": [0.3, 0.8, 1.0],
+					"dissolveEdgeIntensity": 4.0,
+					"dissolveScale": 1
+				}
+			}
+		},
+		{
+			"id": 6,
+			"name": "C No UV",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [2.0, -3.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.5, 1.5, 1.5]
+				},
+				"Animator": {
+					"enabled": true,
+					"animation": "resources/Model/AnimationBlend/AnimationBlendTest.glb",
+					"clip": "BendLeft",
+					"speed": 1.0,
+					"loop": true,
+					"playOnStart": true,
+					"blendTime": 0.0,
+					"previewTime": 0.5
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/AnimationBlend/AnimationBlendTest.glb",
+					"texture": "",
+					"shadingType": "HalfLambert",
+					"dissolve": 0.3
+				}
+			}
+		},
+		{
+			"id": 7,
+			"name": "D Shadow",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [6.0, -3.0, 0.0],
+					"rotation": [0.0, 180.0, 0.0],
+					"scale": [2.0, 2.0, 2.0]
+				},
+				"Animator": {
+					"enabled": true,
+					"animation": "resources/Model/EmbeddedTexture/SimpleSkin.glb",
+					"clip": "Anim_0",
+					"speed": 1.0,
+					"loop": true,
+					"playOnStart": true,
+					"previewTime": 1.0
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/EmbeddedTexture/SimpleSkin.glb",
+					"texture": "",
+					"shadingType": "HalfLambert",
+					"dissolve": 0.45,
+					"dissolveEdgeWidth": 0.05,
+					"dissolveScale": 3
+				}
+			}
+		},
+		{
+			"id": 8,
+			"name": "Floor",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [4.0, -3.3, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [8.0, 0.2, 6.0]
+				},
+				"Primitive Renderer": {
+					"enabled": true,
+					"shape": "Box",
+					"color": [0.6, 0.6, 0.6, 1.0],
+					"intensity": 1.0,
+					"surface": "Opaque",
+					"texture": "",
+					"uvScale": [1.0, 1.0],
+					"shadingType": "HalfLambert",
+					"receivesDecals": true,
+					"castsShadows": true
+				}
+			}
+		}
+	]
+}

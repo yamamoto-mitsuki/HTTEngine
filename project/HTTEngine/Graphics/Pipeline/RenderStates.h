@@ -23,6 +23,20 @@ struct MaterialParams {
 	float alphaCutoff = 0.0f;                     // これ以下のアルファのピクセルを捨てる
 };
 
+// ===== ディゾルブ（モデルを、ノイズの画像で一部だけ消す。物ごとの値。色はInspectorで選ぶsRGB。Rendererがリニアに直す）=====
+// UV の上で画像を読み、その値が「しきい値」より小さいピクセルを捨て、残った所の境目を光らせる。CPU 側の読み方は DissolveNoise.h（GPU と同じ読み方）
+struct DissolveParams {
+	float amount = 0.0f;                    // 消えた割合（0：全部見える 1：全部消える）
+	float edgeWidth = 0.05f;                // 光る境目の幅（画像の値の幅。0 で光らない）
+	Vector3 edgeColor = {1.0f, 0.6f, 0.2f}; // 境目の色（sRGB）
+	float edgeIntensity = 4.0f;             // 境目の明るさ（色に掛ける。1 より大きいと HDR の明るさになり、ブルームで光る）
+	int scale = 1;                          // 画像を UV の 0〜1 に何回並べるか（整数にして、UV の端で模様がつながるようにする）
+	uint32_t noiseTextureHandle = 0;        // 模様の画像（灰色。暗い所から消える。TextureManager の番号）。0 なら kDefaultDissolveNoisePath
+};
+
+// ディゾルブの既定の画像（エンジンの Resources。明るさを平坦化してあるので、Amount がほぼ一定の速さで効く）
+inline constexpr const char* kDefaultDissolveNoisePath = "HTTEngine/Resources/Textures/Noise/DissolveNoise.png";
+
 // ===== 描画したい形 =====
 enum class DrawCategory {
 	Sprite,

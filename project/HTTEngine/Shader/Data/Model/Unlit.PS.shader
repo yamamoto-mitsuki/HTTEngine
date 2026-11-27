@@ -20,8 +20,8 @@ PixelShaderOutput main(VertexShaderOutput input) {
     // 面の色（tint × マテリアルの色 × テクスチャ。切り抜きもここ）
     ModelSurface surface = GetModelSurface(input.texcoord);
 
-    // Color（光を当てないので、面の色そのまま）
-    float32_t3 finalColor = ApplyFog(surface.baseColor, input.worldPosition); // 霧（光を使わない物にも掛ける。背景の板も、ここを通る）
+    // Color（光を当てないので、面の色そのまま。自己発光も足さないが、ディゾルブの境目の光だけは足す）
+    float32_t3 finalColor = ApplyFog(surface.baseColor + surface.dissolveGlow, input.worldPosition); // 霧（光を使わない物にも掛ける。背景の板も、ここを通る）
 
     PixelShaderOutput output;
     output.color = float32_t4(finalColor, surface.alpha);

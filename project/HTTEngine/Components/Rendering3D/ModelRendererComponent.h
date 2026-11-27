@@ -14,6 +14,7 @@ struct ModelRendererComponent {
 	Transform uvTransform;
 	MaterialParams material;
 	bool overrideMaterial = false; // true：material を、読み込んだマテリアルの値の代わりに使う（全部のメッシュに同じ値）
+	DissolveParams dissolve;       // 一部だけ消す（Amount 0 なら何もしない）
 	ShadingType shadingType = ShadingType::Unlit;
 	BlendMode blendMode = BlendMode::Normal;
 	RasterizerType rasterizerType = RasterizerType::SolidBack;

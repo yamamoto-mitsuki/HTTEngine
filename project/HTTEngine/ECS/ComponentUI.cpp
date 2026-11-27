@@ -38,6 +38,7 @@ const std::string& GetAssetPath(AssetType type, uint32_t handle) {
 	case AssetType::Model:
 		return ModelManager::GetModelPath(handle);
 	case AssetType::Texture:
+	case AssetType::NoiseTexture: // 画像としては Texture と同じ（探すフォルダだけが違う）
 		return TextureManager::GetTexturePath(handle);
 	case AssetType::Sound:
 		return SoundManager::GetSoundPath(handle);
@@ -79,6 +80,7 @@ uint32_t LoadAsset(AssetType type, const std::string& path) {
 	case AssetType::Model:
 		return ModelManager::Load(filePath);
 	case AssetType::Texture:
+	case AssetType::NoiseTexture: // 画像としては Texture と同じ（探すフォルダだけが違う）
 		return TextureManager::Load(filePath);
 	case AssetType::Sound:
 		return SoundManager::Load(filePath);
@@ -133,6 +135,7 @@ std::span<const std::string_view> ExtensionsOf(AssetType type) {
 	case AssetType::Model:
 		return kModelExtensions;
 	case AssetType::Texture:
+	case AssetType::NoiseTexture: // 画像としては Texture と同じ（探すフォルダだけが違う）
 		return kTextureExtensions;
 	case AssetType::Sound:
 		return kSoundExtensions;
@@ -218,23 +221,29 @@ void DrawTooltip(const FieldStyle& style) { EditorWidgets::ItemTooltip(style.too
 
 // ===== アセットの一覧（フォルダを掘るのは、最初に開いたときと Refresh のときだけ）=====
 constexpr std::array<const char*, 2> kAssetSearchRoots = {"resources", "HTTEngine/Resources"}; // 探すフォルダ（ゲーム側とエンジン側）。無いフォルダは飛ばす
+constexpr std::array<const char*, 2> kNoiseTextureRoots = {"resources/Textures/Noise", "HTTEngine/Resources/Textures/Noise"}; // NoiseTexture だけはここ（ディゾルブの模様の置き場。ゲーム側とエンジン側）
 constexpr size_t kAssetTypeCount = magic_enum::enum_count<AssetType>();          // AssetType の数（種類を足しても、ここは直さなくてよい）
 
 // 探す場所を1行で（"探す場所: resources/ HTTEngine/Resources/（下のフォルダも全部）"）
-// kAssetSearchRoots から作るので、場所を変えれば表示も変わる
-const std::string& SearchRootsText() {
-	static const std::string text = [] {
+// kAssetSearchRoots（NoiseTexture は kNoiseTextureRoots）から作るので、場所を変えれば表示も変わる
+const std::string& SearchRootsText(AssetType type = AssetType::Model) {
+	const auto makeText = [](std::span<const char* const> roots) {
 		std::string result = "探す場所:";
-		for (const char* root : kAssetSearchRoots) {
+		for (const char* root : roots) {
 			result += std::format(" {}/", root);
 		}
 		return result + "（下のフォルダも全部）";
-	}();
-	return text;
+	};
+	static const std::string text = makeText(kAssetSearchRoots);
+	static const std::string noiseText = makeText(kNoiseTextureRoots);
+	return (type == AssetType::NoiseTexture) ? noiseText : text;
 }
 
-// その種類のファイルを探すフォルダ（フォントは Windows のフォントのフォルダ、Shader はエンジンの .shader の置き場も足す）
+// その種類のファイルを探すフォルダ（フォントは Windows のフォントのフォルダ、Shader はエンジンの .shader の置き場も足す。NoiseTexture は Noise のフォルダだけ）
 std::vector<std::filesystem::path> SearchRootsOf(AssetType type) {
+	if (type == AssetType::NoiseTexture) {
+		return {std::begin(kNoiseTextureRoots), std::end(kNoiseTextureRoots)};
+	}
 	std::vector<std::filesystem::path> roots(std::begin(kAssetSearchRoots), std::end(kAssetSearchRoots));
 	if (type == AssetType::Font) {
 		const std::vector<std::filesystem::path> systemFolders = FontManager::GetSystemFontFolders();
@@ -585,7 +594,7 @@ public:
 		const std::string& path = GetAssetPath(type, handle);
 		const char* preview = (handle == 0) ? "(none)" : (path.empty() ? "(unknown)" : path.c_str());
 		if (ImGui::BeginCombo(label, preview)) {
-			ImGui::TextDisabled("%s", SearchRootsText().c_str()); // どこを探しているか（置き場所を覚えていなくても分かるように）
+			ImGui::TextDisabled("%s", SearchRootsText(type).c_str()); // どこを探しているか（置き場所を覚えていなくても分かるように）
 			const bool refresh = ImGui::Selectable("[Refresh]");  // フォルダにファイルを増やしたとき用
 			if (ImGui::Selectable("(none)", handle == 0)) {
 				handle = 0;

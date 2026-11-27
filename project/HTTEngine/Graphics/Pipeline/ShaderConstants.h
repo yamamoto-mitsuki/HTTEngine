@@ -187,9 +187,16 @@ struct Material3dData {
 	float roughness = 0.5f;                       // 表面の粗さ（0=鏡面, 1=完全拡散）
 	uint32_t emissiveTextureIndex = 0;            // 自己発光のテクスチャ（gTextures の番号。無いときは白の番号を入れる）
 	float emissiveIntensity = 1.0f;               // 自己発光の強さ（emissive × これ × 自己発光のテクスチャ）
+	// --- ディゾルブ（DissolveParams を詰めた物。Model Renderer だけが入れる。形（Primitive）は既定の 0 のまま＝消えない）---
+	Vector3 dissolveEdgeColor = {0.0f, 0.0f, 0.0f}; // 境目の光（リニア。Edge Color × Edge Intensity）
+	float dissolveAmount = 0.0f;                    // 消えた割合（0 なら PS は画像を読まない）
+	float dissolveEdgeWidth = 0.0f;                 // 光る境目の幅
+	uint32_t dissolveScale = 1;                     // 画像を並べる回数（1 以上）
+	uint32_t dissolveTextureIndex = 0;              // 模様の画像（gTextures の番号）
+	float dissolvePad = 0.0f;                       // 16 バイトにそろえる余り
 };
 // HLSL の定数バッファは 16 バイトずつに詰めるので、並びを変えたら .hlsli も同じに直す（大きさがずれたら、ここで止まる）
-static_assert(sizeof(Material3dData) == 160, "Material3dData の大きさが ModelSurface.hlsli の ModelMaterial と違います");
+static_assert(sizeof(Material3dData) == 192,"Material3dData の大きさが ModelSurface.hlsli の ModelMaterial と違います");
 
 // ===== Line3D用マテリアル(b0, PS) =====
 struct MaterialLineData {

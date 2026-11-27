@@ -238,6 +238,7 @@
     <ClCompile Include="HTTEngine\Graphics\IBL\IBLEnvironment.cpp" />
     <ClCompile Include="HTTEngine\Graphics\IBL\PrefilterPass.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Model\ModelImporter.cpp" />
+    <ClCompile Include="HTTEngine\Graphics\Model\DissolveNoise.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Model\ModelManager.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Model\ModelMaterialImporter.cpp" />
     <ClCompile Include="HTTEngine\Graphics\Model\ModelNodeImporter.cpp" />
@@ -537,6 +538,7 @@
     <ClInclude Include="HTTEngine\Graphics\IBL\IBLIncludes.h" />
     <ClInclude Include="HTTEngine\Graphics\IBL\PrefilterPass.h" />
     <ClInclude Include="HTTEngine\Graphics\Model\ModelImporter.h" />
+    <ClInclude Include="HTTEngine\Graphics\Model\DissolveNoise.h" />
     <ClInclude Include="HTTEngine\Graphics\Model\ModelManager.h" />
     <ClInclude Include="HTTEngine\Graphics\Model\ModelMaterialImporter.h" />
     <ClInclude Include="HTTEngine\Graphics\Model\ModelNodeImporter.h" />
@@ -681,6 +683,7 @@
     <None Include="HTTEngine\Shader\Data\Model\HalfLambert.PS.shader" />
     <None Include="HTTEngine\Shader\Data\Model\Lambert.PS.shader" />
     <None Include="HTTEngine\Shader\Data\Model\ModelDepth.PS.shader" />
+    <None Include="HTTEngine\Shader\Data\Model\DissolveNoise.hlsli.shader" />
     <None Include="HTTEngine\Shader\Data\Model\ModelSurface.hlsli.shader" />
     <None Include="HTTEngine\Shader\Data\Model\Object3d.hlsli.shader" />
     <None Include="HTTEngine\Shader\Data\Model\Object3d.VS.shader" />

@@ -6,7 +6,9 @@
 #include "HTTEngine/Core/Handle.h"
 #include "HTTEngine/ECS/Entity.h"
 #include "HTTEngine/Graphics/Model/ModelManager.h"
+#include "HTTEngine/Graphics/Pipeline/RenderStates.h"
 #include "HTTEngine/Math/Matrix4x4.h"
+#include "HTTEngine/Math/Vector2.h"
 #include "HTTEngine/Math/Vector3.h"
 
 /// <summary>
@@ -22,6 +24,7 @@ struct MeshTable;
 struct SamplePoint {
 	Vector3 position; // 出る場所（表面の点・骨の線の上の点）
 	Vector3 normal;   // 外への向き
+	Vector2 uv = {0.0f, 0.0f}; // 表面の点の UV（3頂点の UV を、点を選んだ重心座標で混ぜた物。Bone は (0, 0)）
 };
 
 // ===== 1回のEmitの間だけ使う材料 =====
@@ -31,6 +34,7 @@ struct Context {
 	const std::vector<Matrix4x4>* nodeMatrices = nullptr;    // 今のポーズ（AnimationSystem::GetNodeMatrices。nullptr ならモデルに入っている形）
 	Matrix4x4 modelWorld = MakeIdentity4x4();                // モデルを持つEntityのワールド行列（モデルの空間 → ワールド）
 	ParticleMeshSource source = ParticleMeshSource::Surface; // 表面から・骨の線から
+	DissolveParams dissolve;                                 // モデルの今のディゾルブ（境目から出すとき）
 };
 
 /// <summary>
@@ -45,6 +49,12 @@ bool MakeContext(Handle<Entity> emitter, ParticleMeshSource source, Context& con
 
 // 1点選ぶ（MakeContext が true を返した context だけ渡す）
 SamplePoint Sample(const Context& context);
+
+/// <summary>
+/// モデルのディゾルブの境目（光っている帯）から1点選ぶ。表面から選んで、帯に入るまで選び直す（最大 kMaxEdgeTries 回）
+/// <para>見つからなければ false（境目が狭い・Amount が 0 か 1 で境目が無い・Mesh Source が Bone・画像を CPU で読めない）。そのときは粒を出さない</para>
+/// </summary>
+bool SampleDissolveEdge(const Context& context, SamplePoint& out);
 
 // 持っている表を全部捨てる（ParticleSystem::Release から）
 void Clear();
