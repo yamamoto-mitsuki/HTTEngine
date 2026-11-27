@@ -36,8 +36,9 @@ constexpr Vector4 kGizmoColor = {1.0f, 0.6f, 0.9f, 1.0f}; // 粒の出る形の�
 struct LiveParticle {
 	Vector3 position;       // 位置（World ならワールド座標、Local なら Entity から見た座標）
 	Vector3 velocity;       // 速さ（m/s。position と同じ座標で）
-	Vector3 startPosition;  // 出た所（Converge のとき、ここから center へ動かす）
-	Vector3 center;         // 集まる先（Converge。World なら出た瞬間の Entity の位置、Local なら Entity から見た原点）
+	Vector3 startPosition;  // 出た所（To Center・Out And Back は、ここを元に位置を決める）
+	Vector3 center;         // 集まる先（To Center。World なら出た瞬間の Entity の位置、Local なら Entity から見た原点。Skinned Mesh なら表面の点）
+	Vector3 outVector;      // 一番外のときの、出た所からのずれ（Out And Back。出る向き × Out Distance。position と同じ座標で）
 	Vector4 startColor;     // 初めの色（sRGB）
 	float startSize = 0.0f; // 初めの大きさ（m）
 	float age = 0.0f;       // 出てからの秒
@@ -130,6 +131,18 @@ float RandomRange(const Vector2& range) {
 }
 
 //=============================================================================
+// 年の割合で動かす（To Center・Out And Back）
+//=============================================================================
+// ===== Out And Back の山の高さ（年の割合 t が 0 → 0.5 → 1 で、0 → 1 → 0）=====
+// 1 - |2t - 1| は、t 0.5 で 1・両端で 0 の三角の山。それを Ease で曲げる
+// Ease は 0〜1 の片道の曲げ方なので、帰りは同じ曲げ方を逆から読むことになり、山は左右対称になる
+// OutSine なら sin(πt)、OutQuad なら 4t(1 - t)（投げたボールの高さ）と同じ式になる
+float OutAndBackHeight(float t, Ease::Type ease) {
+	const float rise = 1.0f - std::abs(2.0f * t - 1.0f);
+	return Ease::Apply(rise, ease);
+}
+
+//=============================================================================
 // 出す・動かす
 //=============================================================================
 // ===== Skinned Mesh の材料を用意する（用意できなければ、Entity ごとに1回だけ警告）=====
@@ -168,7 +181,7 @@ void EmitParticles(EmitterState& emitter, const ParticleSystemComponent& compone
 	const Matrix4x4 worldToLocal = (isSkinnedMesh && isLocal) ? Inverse(worldMatrix) : MakeIdentity4x4();
 
 	for (int i = 0; i < spawnCount; ++i) {
-		// --- 出る場所・飛ぶ向き・集まる先（Converge）---
+		// --- 出る場所・飛ぶ向き・集まる先（To Center）---
 		Vector3 position;
 		Vector3 direction;
 		Vector3 center;
@@ -177,7 +190,7 @@ void EmitParticles(EmitterState& emitter, const ParticleSystemComponent& compone
 			const Vector3 surface = isLocal ? TransformPoint(sample.position, worldToLocal) : sample.position;
 			direction = isLocal ? Normalize(TransformNormal(sample.normal, worldToLocal)) : sample.normal;
 			position = surface + direction * component.surfaceOffset; // 表面から外へ離す
-			center = surface;                                          // Converge なら、離れた所から表面へ集まる
+			center = surface;                                          // To Center なら、離れた所から表面へ集まる
 		} else {
 			ParticleSpawn::SpawnPoint point = ParticleSpawn::Sample(component);
 			// World：出た瞬間のワールド座標にする（この後 Entity が動いても付いていかない）
@@ -196,6 +209,7 @@ void EmitParticles(EmitterState& emitter, const ParticleSystemComponent& compone
 		particle.startPosition = position;
 		particle.center = center;
 		particle.velocity = direction * RandomRange(component.speed);
+		particle.outVector = direction * RandomRange(component.outDistance); // Out And Back の一番外（距離は粒ごとに1回だけ決める。毎フレーム引くと震える）
 		particle.startColor = Lerp(component.colorA, component.colorB, RandomEngine::GetFloat(0.0f, 1.0f));
 		particle.startSize = RandomRange(component.size);
 		particle.lifetime = (std::max)(RandomRange(component.lifetime), kMinLifetime);
@@ -214,12 +228,23 @@ void UpdateEmitter(EmitterState& emitter, const ParticleSystemComponent& compone
 	const float dragScale = (std::max)(0.0f, 1.0f - component.drag * deltaTime);
 	for (LiveParticle& particle : emitter.particles) {
 		particle.age += deltaTime;
-		particle.rotation += particle.angularVelocity * deltaTime; // 回す（Converge でも回る。Drag では遅くならない）
-		// --- Converge：速さは使わず、年の割合で「出た所 → 中心」の間に置く（寿命の終わりにちょうど中心。突き抜けない）---
-		if (component.converge) {
-			const float t = std::clamp(particle.age / particle.lifetime, 0.0f, 1.0f);
+		particle.rotation += particle.angularVelocity * deltaTime; // 回す（To Center・Out And Back でも回る。Drag では遅くならない）
+		// --- To Center・Out And Back：速さは使わず、年の割合 t だけで位置を決める（寿命の終わりに必ず着く。フレームの長さにもよらない）---
+		// case の continue は、switch ではなく外の for の次の粒へ進む（下の「速さで動かす」を飛ばす）
+		const float t = std::clamp(particle.age / particle.lifetime, 0.0f, 1.0f);
+		switch (component.convergeMode) {
+		// 出た所 → 中心
+		case ParticleConvergeMode::ToCenter:
 			particle.position = Lerp(particle.startPosition, particle.center, Ease::Apply(t, component.convergeEase));
 			continue;
+		// 出た所 → 外 → 出た所
+		case ParticleConvergeMode::OutAndBack:
+			particle.position = particle.startPosition + particle.outVector * OutAndBackHeight(t, component.convergeEase);
+			continue;
+		// 速さで飛ぶ（switch を抜けて、下で動かす）
+		case ParticleConvergeMode::None:
+		default:
+			break;
 		}
 		particle.velocity += component.gravity * deltaTime;
 		particle.velocity *= dragScale;
@@ -354,12 +379,12 @@ void DescribeParticleSystem(ComponentUI& ui, ParticleSystemComponent& value) {
 	ui.Field("Box Size###boxSize", value.boxSize, AtLeast(0.0f).Tip("Box の大きさ（m）"));
 	ui.Field("From Surface###fromSurface", value.fromSurface, Tip("形の表面（縁）から出す。Circle なら輪から飛び散る"));
 	ui.Field("Mesh Source###meshSource", value.meshSource, Tip("Skinned Mesh のとき：モデルの表面から・骨の線から（モデルは、自分か親の Model Renderer）"));
-	ui.Field("Surface Offset###surfaceOffset", value.surfaceOffset, AtLeast(0.0f).Tip("Skinned Mesh のとき：表面（骨の線）から外へ離して出す距離（m）。Converge と合わせると、離れた所から体へ集まる"));
+	ui.Field("Surface Offset###surfaceOffset", value.surfaceOffset, AtLeast(0.0f).Tip("Skinned Mesh のとき：表面（骨の線）から外へ離して出す距離（m）。To Center なら離れた所から体へ集まる。Out And Back なら、ここから出てここへ戻る"));
 	ui.Field("Show Gizmo###showGizmo", value.showGizmo, Tip("Scene ビューに、粒の出る形を線で出す（エディタだけ。桃色）。Cone は縁から出た粒の開く向きも。View メニューの Particle Shapes で全部まとめて消せる"));
 
 	ui.Separator("Start (Min, Max)");
 	ui.Field("Lifetime###lifetime", value.lifetime, AtLeast(kMinLifetime).Tip("消えるまでの秒。左と右の間でランダム"));
-	ui.Field("Speed###speed", value.speed, Tip("Shape の向きへの速さ（m/s）。負なら内へ（吸い込む）"));
+	ui.Field("Speed###speed", value.speed, Tip("Shape の向きへの速さ（m/s）。負なら内へ（吸い込む）。Converge Mode が To Center・Out And Back なら使わない"));
 	ui.Field("Size###size", value.size, AtLeast(0.0f).Tip("大きさ（m。板の1辺）"));
 	ui.ColorField("Color A###colorA", value.colorA);
 	ui.ColorField("Color B###colorB", value.colorB);
@@ -373,14 +398,18 @@ void DescribeParticleSystem(ComponentUI& ui, ParticleSystemComponent& value) {
 	ui.ColorField("End Color###endColor", value.endColor);
 	ui.Label("最後の色は初めの色に掛ける（A 0 でフェードアウト）");
 	ui.Field("Ease###ease", value.ease, Tip("大きさと色の変わり方（OutBack などは大きさが少し行き過ぎる）"));
-	ui.Field("Converge###converge", value.converge, Tip("中心（Entity の位置）へ集まる。寿命の終わりにちょうど着く（Speed・Gravity・Drag は使わない）。Shape の From Surface と合わせると、輪・球の表面から吸い込まれる"));
-	ui.Field("Converge Ease###convergeEase", value.convergeEase, Tip("中心へ集まるときの速さの変わり方"));
+	ui.Field("Converge Mode###convergeMode", value.convergeMode,
+	         Tip("速さで飛ぶか、年の割合で決めた所に置くか。To Center：中心（Entity の位置）へ集まり、寿命の終わりにちょうど着く（From Surface と合わせると輪・球の表面から吸い込まれる）。"
+	             "Out And Back：Shape の向きへ Out Distance だけ出て、寿命の終わりに出た所へ戻る。どちらも Speed・Gravity・Drag は使わない"));
+	ui.Field("Converge Ease###convergeEase", value.convergeEase,
+	         Tip("To Center：中心へ集まるときの速さの変わり方。Out And Back：山の形（OutSine：なめらかな山／OutQuad：投げたボール／OutCubic：外でしばらく漂う／Linear：てっぺんで跳ね返る）"));
+	ui.Field("Out Distance###outDistance", value.outDistance, Tip("Out And Back：一番外まで出る距離（m）。左と右の間でランダム。負なら内へ入って戻る。戻る前に消えないよう、End Color の A は 1 にしておく"));
 
 	ui.Separator("Rotation");
 	ui.Field("Start Rotation###startRotation", value.startRotation, Tip("初めの角度（度）。左と右の間でランダム。画面の上で、正で左回り（-180, 180 で全部の向き）"));
 	ui.Field("Angular Velocity###angularVelocity", value.angularVelocity, Tip("回る速さ（度/秒）。左と右の間でランダム。正で左回り、負で右回り"));
 	ui.Field("Random Spin Direction###randomSpinDirection", value.randomSpinDirection, Tip("半分の粒を逆にする（初めの角度も回る向きも）。葉が全部同じ向きに回らないように"));
-	ui.Field("Align To Velocity###alignToVelocity", value.alignToVelocity, Tip("絵の右（+X）を、画面の上で進む向きに向ける（Start Rotation はそこから足す）。Converge なら中心の方へ"));
+	ui.Field("Align To Velocity###alignToVelocity", value.alignToVelocity, Tip("絵の右（+X）を、画面の上で進む向きに向ける（Start Rotation はそこから足す）。To Center なら中心の方へ。Out And Back なら行きは外へ、帰りは戻る向きへ"));
 	ui.Field("Stretch###stretch", value.stretch, AtLeast(0.0f).Tip("絵の横（X）だけに掛ける長さの倍率。Align To Velocity と合わせると、進む向きに細長い線（風の筋・火花）"));
 
 	ui.Separator("Renderer");
@@ -489,8 +518,21 @@ void ParticleSystem::Draw() {
 			// 画面に写すのは VS（Scene ビューと Game ビューでカメラが違うので、ここでは角度にできない）
 			Vector3 direction = {0.0f, 0.0f, 0.0f};
 			if (component->alignToVelocity) {
-				// Converge は速さを使わないので、出た所から中心への向き
-				direction = component->converge ? (particle.center - particle.startPosition) : particle.velocity;
+				switch (component->convergeMode) {
+				// To Center は速さを使わないので、出た所から中心への向き
+				case ParticleConvergeMode::ToCenter:
+					direction = particle.center - particle.startPosition;
+					break;
+				// Out And Back は、山のてっぺん（t 0.5）までは外へ、その後は戻る向き（左右対称の山なので、t だけで分かる）
+				case ParticleConvergeMode::OutAndBack:
+					direction = (t < 0.5f) ? particle.outVector : -particle.outVector;
+					break;
+				// 速さで飛ぶ物は、今の速さの向き
+				case ParticleConvergeMode::None:
+				default:
+					direction = particle.velocity;
+					break;
+				}
 				if (isLocal) {
 					direction = TransformNormal(direction, worldMatrix); // Entity から見た向き → ワールドの向き
 				}

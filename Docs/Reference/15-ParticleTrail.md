@@ -12,7 +12,7 @@
 | Emission | Rate Over Time・Burst Count・Max Particles | 1秒に出す数／1回の始めにまとめて出す数／同時に出ている数の上限（4096 まで。いっぱいの間は出さない） |
 | Shape | Shape・Radius・Cone Angle・Box Size・From Surface・Mesh Source・Surface Offset・Show Gizmo | Point（全部の向き）・Sphere・Circle（**XY の面**。横から見る輪）・Cone（+Y へ開く）・Box・**Skinned Mesh**（自分か親の Model Renderer の、骨で曲がるモデルの今のポーズから。Mesh Source で Surface：表面から面の外へ／Bone：骨の線から外へ。Surface Offset だけ外に離して出す）。From Surface で表面（縁）から。向きは真ん中から外へ。Entity の向きで回る。Show Gizmo で形を Scene ビューに桃色の線で出す（Cone は縁から出た粒の開く向きも。Skinned Mesh は出さない。View → Gizmos → Particle Shapes で全部まとめて消せる） |
 | Start (Min, Max) | Lifetime・Speed・Size・Color A・Color B・Intensity | 左と右の間でランダム（Size は m で板の1辺）。色は A と B の間。Intensity は全部の粒の明るさの倍率（1 より大きいとブルームで光る） |
-| Over Lifetime | Gravity・Drag・End Size Rate・End Color・Ease・Converge・Converge Ease | 加速（m/s²）／1秒あたりの減速の割合／最後の大きさ（初めに掛ける。0 で縮んで消える）／最後の色（初めに掛ける。A 0 でフェードアウト）／大きさと色の変わり方／中心（Entity の位置）へ集まり、寿命の終わりにちょうど着く（Speed・Gravity・Drag は使わない。From Surface と合わせると輪・球の表面から吸い込まれる）／集まり方（InQuad：だんだん速く） |
+| Over Lifetime | Gravity・Drag・End Size Rate・End Color・Ease・Converge Mode・Converge Ease・Out Distance | 加速（m/s²）／1秒あたりの減速の割合／最後の大きさ（初めに掛ける。0 で縮んで消える）／最後の色（初めに掛ける。A 0 でフェードアウト）／大きさと色の変わり方／**Converge Mode**：None（速さで飛ぶ）・To Center（中心＝Entity の位置へ集まり、寿命の終わりにちょうど着く。From Surface と合わせると輪・球の表面から吸い込まれる）・Out And Back（Shape の向きへ Out Distance 出て、寿命の終わりに出た所へ戻る）。To Center・Out And Back は Speed・Gravity・Drag を使わない／To Center の集まり方・Out And Back の山の形（OutSine：なめらかな山）／Out And Back の一番外までの距離（m。Min〜Max） |
 | Rotation | Start Rotation・Angular Velocity・Random Spin Direction・Align To Velocity・Stretch | 画面の上で板を回す（度。**正で左回り**＝Transform の Rotation Z と同じ）。初めの角度・回る速さ（度/秒）は左と右の間でランダム／半分の粒を逆に／絵の右（+X）を進む向きへ／絵の横だけ伸ばす（Align と合わせて線） |
 | Renderer | Texture・Blend・Space・Use Fog・Use Depth Of Field | 無ければ**丸いぼかし**（白。色は Color で）／Add（光る）・Normal（奥から順には並べない）／World（出た所に残る）・Local（Entity と一緒に動く）／霧を混ぜるか（初めは ✓）／被写界深度でぼかすか（初めは外す。ぼけ方は粒の後ろにある物の距離で決まるので、奥の層の葉・湯気に） |
 
@@ -32,7 +32,7 @@ if (!ParticleSystem::IsAlive(burst.handle)) { … } // 出している途中で�
 ```
 
 - 1つの Entity に Particle System は1つ。キラキラと飛び散るの2つが要る物は、子を2つ作る（`FindChild` で探す）。
-- **Skinned Mesh は、モデル（Model Renderer）の Entity の子に置く**（親をたどって最初のモデルを使う）。アニメのポーズに合わせて表面から出る。出た粒はポーズには付いていかない（World なら出た所に残る・Local なら Entity の移動にだけ付いていく）。Converge にすると、Surface Offset 離れた所から体の表面へ集まる。Script の `Emit` で出した分は前のフレームのポーズから（`Play` で出る分は今のフレーム）。モデルが見つからないときは、何も出さずにログに1回警告。
+- **Skinned Mesh は、モデル（Model Renderer）の Entity の子に置く**（親をたどって最初のモデルを使う）。アニメのポーズに合わせて表面から出る。出た粒はポーズには付いていかない（World なら出た所に残る・Local なら Entity の移動にだけ付いていく）。Converge Mode を To Center にすると、Surface Offset 離れた所から体の表面へ集まる。Out And Back にすると、表面（から Surface Offset の所）から外へ出て、そこへ戻る（体から出て体へ戻すなら Space を Local に。World だと、体が動いても前に居た所へ戻る）。Script の `Emit` で出した分は前のフレームのポーズから（`Play` で出る分は今のフレーム）。モデルが見つからないときは、何も出さずにログに1回警告。
 - Prefab から作った同じフレームに `Play` してもよい（付くのは次のフレームの頭だが、覚えている）。`Emit` は Component が付いてから（付く前に呼ぶと何もしない）。
 - 飛び散って終わる物は、Prefab にして Looping を外し **Stop Action を Destroy** にすれば、出し終わったら Entity ごと消える（`IsAlive` を見て消すコードは要らない）。
 - ゲームが動き出した最初のフレーム（製品版の起動・エディタの Play。Script の `Start`）に `Play`・`Emit` してもよい。

@@ -225,7 +225,7 @@
 					"intensity": 2.0,
 					"endSizeRate": 1.0,
 					"endColor": [1.0, 1.0, 1.0, 1.0],
-					"converge": true,
+					"convergeMode": "ToCenter",
 					"convergeEase": "InQuad",
 					"blend": "Add",
 					"space": "World"
@@ -251,6 +251,111 @@
 					"rateOverTime": 50.0,
 					"shape": "SkinnedMesh",
 					"meshSource": "Surface"
+				}
+			}
+		},
+		{
+			"id": 10,
+			"name": "E Out And Back",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [6.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Animator": {
+					"enabled": true,
+					"animation": "resources/Model/AnimationBlend/AnimationBlendTest.glb",
+					"clip": "BendLeft",
+					"speed": 1.0,
+					"loop": true,
+					"playOnStart": true,
+					"blendTime": 0.0,
+					"previewTime": 0.5
+				},
+				"Model Renderer": {
+					"enabled": true,
+					"model": "resources/Model/AnimationBlend/AnimationBlendTest.glb",
+					"texture": "",
+					"shadingType": "HalfLambert"
+				}
+			}
+		},
+		{
+			"id": 11,
+			"name": "Out And Back Particle",
+			"parent": 10,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [0.0, 0.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Particle System": {
+					"enabled": true,
+					"playOnStart": true,
+					"looping": true,
+					"duration": 1.0,
+					"rateOverTime": 150.0,
+					"burstCount": 0,
+					"maxParticles": 1024,
+					"shape": "SkinnedMesh",
+					"meshSource": "Surface",
+					"surfaceOffset": 0.0,
+					"lifetime": [0.8, 1.2],
+					"size": [0.05, 0.08],
+					"colorA": [1.0, 0.8, 0.3, 1.0],
+					"colorB": [1.0, 1.0, 0.6, 1.0],
+					"intensity": 2.0,
+					"endSizeRate": 1.0,
+					"endColor": [1.0, 1.0, 1.0, 1.0],
+					"convergeMode": "OutAndBack",
+					"convergeEase": "OutSine",
+					"outDistance": [0.2, 0.5],
+					"blend": "Add",
+					"space": "Local"
+				}
+			}
+		},
+		{
+			"id": 12,
+			"name": "F Sphere Out And Back",
+			"parent": 0,
+			"active": true,
+			"components": {
+				"Transform": {
+					"translation": [-6.0, 1.0, 0.0],
+					"rotation": [0.0, 0.0, 0.0],
+					"scale": [1.0, 1.0, 1.0]
+				},
+				"Particle System": {
+					"enabled": true,
+					"playOnStart": true,
+					"looping": true,
+					"duration": 1.0,
+					"rateOverTime": 100.0,
+					"burstCount": 0,
+					"maxParticles": 1024,
+					"shape": "Sphere",
+					"radius": 0.3,
+					"fromSurface": true,
+					"lifetime": [1.0, 1.0],
+					"size": [0.06, 0.06],
+					"colorA": [0.3, 1.0, 0.5, 1.0],
+					"colorB": [0.3, 1.0, 0.5, 1.0],
+					"intensity": 2.0,
+					"endSizeRate": 1.0,
+					"endColor": [1.0, 1.0, 1.0, 1.0],
+					"convergeMode": "OutAndBack",
+					"convergeEase": "OutQuad",
+					"outDistance": [0.8, 0.8],
+					"alignToVelocity": true,
+					"stretch": 3.0,
+					"blend": "Add",
+					"space": "World"
 				}
 			}
 		}

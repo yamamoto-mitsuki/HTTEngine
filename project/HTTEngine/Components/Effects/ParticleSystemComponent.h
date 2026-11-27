@@ -89,6 +89,26 @@ constexpr auto EnumTips(ParticleSpace) {
 }
 
 /// <summary>
+/// 粒を、速さで飛ばすか、年の割合（寿命の何割か）で決めた所に置くか
+/// <para>To Center・Out And Back は、寿命の終わりに必ず決めた所に着く（Speed・Gravity・Drag は使わない）</para>
+/// </summary>
+enum class ParticleConvergeMode {
+	None,       // 速さで飛ぶ（Speed・Gravity・Drag を使う）
+	ToCenter,   // 出た所から中心（Entity の位置。Skinned Mesh なら表面の点）へ集まり、寿命の終わりにちょうど着く
+	OutAndBack, // 出た所から Shape の向きへ Out Distance だけ出て、寿命の終わりに出た所へ戻る
+};
+
+// 選択肢ごとの説明（Inspector で選択肢にマウスを乗せると出る。書き方は EnumTips.h）
+constexpr auto EnumTips(ParticleConvergeMode) {
+	using enum ParticleConvergeMode;
+	return MakeEnumTips<ParticleConvergeMode>({
+	    {None, "速さで飛ぶ（Speed・Gravity・Drag を使う）"},
+	    {ToCenter, "中心（Entity の位置。Skinned Mesh なら表面）へ集まり、寿命の終わりにちょうど着く"},
+	    {OutAndBack, "Shape の向きへ Out Distance だけ出て、寿命の終わりに出た所へ戻る（体から出て体へ戻る）"},
+	});
+}
+
+/// <summary>
 /// 出し終わったとき（出すのをやめて、粒が全部消えたとき）にすること。Unity の Stop Action
 /// <para>出すのをやめる＝Looping でなく Duration が過ぎた・ゲームが ParticleSystem::Stop を呼んだ。一度も Play していない物（Play On Start を外して Play を呼んでいない・Emit だけ）は出し終わりにならない</para>
 /// </summary>
@@ -131,7 +151,7 @@ struct ParticleSystemComponent {
 	Vector3 boxSize = {1.0f, 1.0f, 1.0f}; // Box の大きさ（m）
 	bool fromSurface = false;             // 形の表面（縁）から出す（円の輪から飛び散る）
 	ParticleMeshSource meshSource = ParticleMeshSource::Surface; // Skinned Mesh のとき：表面から・骨の線から
-	float surfaceOffset = 0.0f;           // Skinned Mesh のとき：表面（骨の線）から外へ離して出す距離（m）。Converge なら、ここから表面へ集まる
+	float surfaceOffset = 0.0f;           // Skinned Mesh のとき：表面（骨の線）から外へ離して出す距離（m）。To Center なら、ここから表面へ集まる。Out And Back なら、ここから出てここへ戻る
 	bool showGizmo = true;                // Scene ビューに、形を線で出す（エディタだけ。View メニューの Particle Shapes で全部まとめて消せる）
 
 	// ===== 粒の初めの値（Min〜Max の乱数）=====
@@ -148,8 +168,9 @@ struct ParticleSystemComponent {
 	float endSizeRate = 1.0f;                     // 最後の大きさ（初めの大きさに掛ける。0 で消えるように縮む）
 	Vector4 endColor = {1.0f, 1.0f, 1.0f, 0.0f};  // 最後の色（初めの色に掛ける。A 0 でフェードアウト）
 	Ease::Type ease = Ease::Type::Linear;         // 大きさと色の変わり方
-	bool converge = false;                        // 中心へ集まる（出た所から Entity の位置へ動き、寿命の終わりにちょうど着く。Speed・Gravity・Drag は使わない）
-	Ease::Type convergeEase = Ease::Type::InQuad; // 集まり方（InQuad：だんだん速く吸い込まれる）
+	ParticleConvergeMode convergeMode = ParticleConvergeMode::None; // 速さで飛ぶか、年の割合で決めた所に置くか（To Center：中心へ集まる／Out And Back：外へ出て戻る）
+	Ease::Type convergeEase = Ease::Type::InQuad; // To Center：集まり方（InQuad：だんだん速く吸い込まれる）／Out And Back：山の形（OutSine で sin の山）
+	Vector2 outDistance = {0.1f, 0.3f};           // Out And Back：一番外まで出る距離（m。Min〜Max の乱数。負なら内へ入って戻る）
 
 	// ===== 回転（Rotation）=====
 	// 角度は画面の上での板の回り方（粒はいつもカメラの方を向くので、回すのは画面の上だけ）。正で左回り（Transform の Rotation Z と同じ）
